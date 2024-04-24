@@ -1,0 +1,43 @@
+# Parsed by: 'parseLinksFile' in instCustomBrowserHomePage.ps1
+
+Favorites:
+	[Tom's Hardware](https://www.tomshardware.com/)
+	[AnandTech](https://www.anandtech.com/)
+	[Slashdot](https://m.slashdot.org/)
+	[Ars Technica](https://arstechnica.com/)
+	[Saturday Morning Breakfast Cereal](https://www.smbc-comics.com/)
+	[XKCD](https://xkcd.com/)
+	[Hacker News](https://news.ycombinator.com/)
+
+
+Software engineering:
+	[The Grug Brained Developer](https://grugbrain.dev/)
+	[The Engineers&apos; Manifesto](https://siddhesh.substack.com/p/engineers-manifesto)
+	[How to Do Great Work](http://paulgraham.com/greatwork.html)
+	[Finish your projects](https://github.com/readme/guides/finish-your-projects)
+	[Provable refactorings](https://github.com/digdeeproots/provable-refactorings)
+	[Testing Without Mocks](https://www.jamesshore.com/v2/blog/2018/testing-without-mocks)
+	[How to mentor software engineers](https://xdg.me/mentor-engineers/)
+	[8 Sources of Stress](https://thevaluable.dev/developer-stress/)
+	[Architecture, Conversationally](https://martinfowler.com/articles/scaling-architecture-conversationally.html)
+	[8 annoying A/B testing mistakes](https://posthog.com/blog/ab-testing-mistakes)
+	[It Takes Long to Become Gaussian](https://two-wrongs.com/it-takes-long-to-become-gaussian)
+	[Lezer](https://marijnhaverbeke.nl/blog/lezer.html)
+	[Tree-sitter](https://tree-sitter.github.io/tree-sitter/)
+	[Talks by Alan Kay](https://tinlizzie.org/IA/index.php/Talks_by_Alan_Kay)
+	[On Pioneers, Settlers, Town Planners and Theft](https://blog.gardeviance.org/2015/03/on-pioneers-settlers-town-planners-and.html?m=1)
+	[Creating And Sustaining Process Improvement](https://web.mit.edu/nelsonr/www/Repenning=Sterman_CMR_su01_.pdf)
+	[Irrational Exuberance](https://lethain.com/featured/)
+	[Notes on structured concurrency](https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/#conclusion)
+	[John Cleese on Creativity](https://m.youtube.com/watch?si=LfONYwvAxiDOyEC2&v=Pb5oIIPO62g&feature=youtu.be)
+
+
+Other languages:
+	[Introduction - Rust and WebAssembly](https://rustwasm.github.io/book/)
+	[CLR source code](https://referencesource.microsoft.com/#mscorlib)
+	[Our Error Handling, Ourselves - PowerShell error handling](https://github.com/MicrosoftDocs/PowerShell-Docs/issues/1583)
+	[The Seven Sources of Unsoundness in TypeScript](https://effectivetypescript.com/2021/05/06/unsoundness/)
+	[HTML events](https://www.w3schools.com/jsref/dom_obj_event.asp)
+	[HTML objects - starting with <a>](https://www.w3schools.com/jsref/dom_obj_anchor.asp)
+	[SQL for Data Scientists in 100 Queries](https://gvwilson.github.io/sql-tutorial/)
+

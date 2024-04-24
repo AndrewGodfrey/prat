@@ -1,0 +1,6 @@
+/**/*.ex
+/auto/*
+!/auto/Readme.txt
+/**/*.vtg
+/**/*.vpwhist
+

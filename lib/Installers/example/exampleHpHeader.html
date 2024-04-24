@@ -1,0 +1,106 @@
+
+<!-- 
+These are some custom web search boxes, that search on specific sites (such as Wikipedia, or Microsoft documentation).
+
+Design note: I want these in 2 columns, with the less-used things in the right-hand column. Which means
+manually interleaving them here. Meh.
+-->
+<table border=0 cellpadding=0 cellspacing=5>
+ <tr>
+  <td> 
+    <form action="https://www.google.com/search" name=f>
+     <table cellspacing=0 cellpadding=0>
+      <tr>
+       <td width=90>MS docs</td>
+       <td align=center>
+        <input type=hidden name=hl value=en>
+        <span id=hf></span>
+        <input type=hidden name=ie value="UTF-8">
+        <input type=hidden name=oe value="UTF-8">
+        <input type=hidden name=as_sitesearch value="learn.microsoft.com">
+        <input maxLength=256 size=55 name=q value="">
+        <input type=submit value="search" name=btnG>
+       </td>
+	   <td width=15/>
+      </tr>
+     </table>
+    </form>
+  </td>
+  <td> 
+    <form action="https://www.google.com/search" name=f onsubmit="this.q.value += this.searchSuffix.value">
+     <table cellspacing=0 cellpadding=0>
+      <tr>
+       <td width=110>Python</td>
+       <td align=center>
+        <input type=hidden name=hl value=en>
+        <span id=hf></span>
+        <input type=hidden name=ie value="UTF-8">
+        <input type=hidden name=oe value="UTF-8">
+        <input type=hidden name=searchSuffix value=" (site:https://www.w3schools.com/python OR site:https://docs.python.org/3.10/)">
+        <input maxLength=256 size=55 name=q value="">
+        <input type=submit value="search" name=btnG>
+       </td>
+	   <td width=15/>
+      </tr>
+     </table>
+    </form>
+  </td>
+ </tr>
+ <tr>
+  <td> 
+   <form id="search-form" action="https://www.wikipedia.org/search-redirect.php" data-el-section="search">
+     <table cellspacing=0 cellpadding=0>
+      <tr>
+       <td width=90>Wikipedia</td>
+       <td align=center>
+        <input type="hidden" name="family" value="Wikipedia">
+		<input type="hidden" id="hiddenLanguageInput" name="language" value="en">
+		<input id="searchInput" name="search" type="search" size="20" autofocus="autofocus" accesskey="F" dir="auto" autocomplete="off">
+        <input type=submit value="search">
+		<input type="hidden" value="Go" name="go">
+       </td>
+	   <td width=15/>
+      </tr>
+     </table>
+    </form>
+  </td>
+  <td> 
+    <form action="https://numpy.org/doc/stable/search.html">
+     <table cellspacing=0 cellpadding=0>
+      <tr>
+       <td width=110>Numpy</td>
+       <td align=center>
+        <input maxLength=256 size=55 name=q value="">
+        <input type=submit value="search">
+       </td>
+	   <td width=15/>
+      </tr>
+     </table>
+    </form>
+  </td>
+ </tr>
+ <tr>
+  <td> 
+    <form action="https://www.google.com/search" name=f>
+     <table cellspacing=0 cellpadding=0>
+      <tr>
+       <td width=90>CppReference</td>
+       <td align=center>
+        <input type=hidden name=hl value=en>
+        <span id=hf></span>
+        <input type=hidden name=ie value="UTF-8">
+        <input type=hidden name=oe value="UTF-8">
+        <input type=hidden name=as_sitesearch value="cppreference.com">
+        <input maxLength=256 size=55 name=q value="">
+        <input type=submit value="search" name=btnG>
+       </td>
+	   <td width=15/>
+      </tr>
+     </table>
+    </form>
+  </td>
+  <td> 
+  </td>
+ </tr>
+</table>
+
