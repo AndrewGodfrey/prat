@@ -14,6 +14,8 @@
 #   The contents of a *.cbTable.ps1 files need to be kept simple, because they are going to be executed by the prompt when the current directory
 #   changes. I tried putting a scriptblock for 'howToTest' in there and had problems that were hard to debug. So, making it a string instead
 #   and avoiding scriptblocks.
+using module PratBase\PratBase.psd1
+
 [CmdletBinding()]
 param ([string] $Location = $pwd)
 
@@ -46,7 +48,7 @@ foreach ($key in $cbTable.Keys) {
     $item = normalizeTableItem $cbTable[$key] $key $cbFile
     [System.IO.DirectoryInfo] $rootDI = $item.root
     if ($locationDI.FullName.StartsWith($rootDI.FullName)) {
-        Write-Verbose "Found: $(&$PsScriptRoot\ConvertTo-Expression $item)"
+        Write-Verbose "Found: $(ConvertTo-Expression $item)"
         $results += $item
     }
 }

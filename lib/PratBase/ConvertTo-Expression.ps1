@@ -3,7 +3,7 @@
 #         is version 2.2.7, commit 6e968392bb99ff790805066e7b596068e63ff84c (and that looks very close to what I downloaded).
 #
 # My changes from version 2.3.0:
-# - Convert from a module to a script
+# - Convert from a module to a function in PratBase
 # - Remove aliases
 # - Hide the $Iteration internal parameter
 #
@@ -184,12 +184,6 @@ License source: https://github.com/iRon7/ConvertTo-Expression/blob/master/LICENS
 			Invoke-Expression (Alias ConvertFrom-Pson)
 	#>
 
-[CmdletBinding()][OutputType([String])]Param (
-    [Parameter(ValueFromPipeLine = $True)][Object[]]$InputObject, [Int]$Depth = 9, [Int]$Expand = 9,
-    [Int]$Indentation = 1, [String]$IndentChar = "`t", [ValidateSet("None", "Native", "Cast", "Strict")][String]$TypePrefix = "Cast",
-    [String]$NewLine = [System.Environment]::NewLine
-)
-
 Function ConvertTo-Expression {
 	[CmdletBinding()][OutputType([String])]Param (
 		[Parameter(ValueFromPipeLine = $True)][Object[]]$InputObject, [Int]$Depth = 9, [Int]$Expand = 9,
@@ -233,6 +227,4 @@ Function ConvertTo-Expression {
 		}
 	}
 }
-
-ConvertTo-Expression $InputObject $Depth $Expand $Indentation $IndentChar $TypePrefix $NewLine
 

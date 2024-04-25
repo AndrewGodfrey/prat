@@ -24,4 +24,14 @@ function Get-RelativePath($expectedRoot, $path) {
     return $canonicalPath.SubString($canonicalRoot.Length + 1)
 }
 
+# This is analogous to Import-Alias, just with a different file format (and fewer properties supported).
+function Import-PratAliases($file) {
+    . $file
+    foreach ($name in $installedAliases.Keys) {
+        $value = $installedAliases[$name]
+        New-Alias -Force -Name $name -Value $value -Scope Global
+    }
+}
+
+. $PSScriptRoot\ConvertTo-Expression.ps1
 

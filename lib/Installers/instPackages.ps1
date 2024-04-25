@@ -1,3 +1,6 @@
+using module ..\PratBase\PratBase.psd1
+using module ..\TextFileEditor\TextFileEditor.psd1
+
 # There are so many package managers. Let's make another one!
 #
 # Requirements:
@@ -56,12 +59,23 @@ function installPratWingetPackage([string] $wingetPackageId) {
 }
 
 # Packages that set up aliases can be annoying. Perhaps that's why I observe that gerardog.gsudo thinks it does so and yet I can't find any evidence of it.
+#
 # Anyway, I do want to specifically opt in to aliases for use in scripts, and do it reliably. i.e. both add it in the current execution environment ('spackle')
-# and add it somewhere that's included in PowerShell profile.
-function installPratAlias([string] $Name, [string] $Value) {
-    # TODO: Add this somewhere that will be picked up by profile and other scripts.
+# and add it somewhere that's included in PowerShell profile. (This still leaves a gap - in other already-open windows - and I'll just try to avoid that case.)
+function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
+    $autoProfilePath = (Resolve-Path "$PSScriptRoot\..\..").Path + "\auto\profile"
+    $filename = "scriptAliases.ps1"
+    $installedAliasesFile = "$autoProfilePath\$filename"
 
-    # Add/updated it in the current execution environment.
+    if (!(Test-Path $installedAliasesFile)) {
+        Install-File $stage $PSScriptRoot $autoProfilePath $filename
+    }
+
+    $lineArray = [LineArray]::new((Import-TextFile $installedAliasesFile))
+    Add-HashTableItemInPowershellScript $lineArray 'installedAliases' $Name (ConvertTo-Expression $Value)
+    Install-TextToFile $stage $installedAliasesFile $lineArray.ToString()
+
+    # Add/update it in the current execution environment.
     New-Alias -Name $Name -Value $Value -Scope Global -Force
 }
 
@@ -86,7 +100,7 @@ function internal_installPratPackage($stage, [string] $packageId) {
             "sudo" { 
                 installPratWingetPackage "gerardog.gsudo"
                 fixupPathForWingetPackage "gerardog.gsudo_Microsoft.Winget.Source_8wekyb3d8bbwe\x64"
-                installPratAlias 'sudo' 'gsudo'  
+                installPratScriptAlias $stage 'sudo' 'gsudo'
             }
             "pester" {
                 # I would prefer to install in user scope, but for Pester on Windows, that seems unsupported, due to the

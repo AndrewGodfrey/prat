@@ -17,12 +17,18 @@ if ($pratProfile_shouldTrace) {
     function pratProfile_trace {}
 }
 
+$_pratroot = Resolve-Path $PSScriptRoot\..\..
+
 pratProfile_trace "scriptProfile.ps1 starting"
 
 . $PSScriptRoot\Define-ShortcutFunctions.ps1
 
 pratProfile_trace "Done: Define-ShortcutFunctions"
 
+
+$aliasFile = "$_pratroot\auto\profile\scriptAliases.ps1"
+if (Test-Path $aliasFile) { Import-PratAliases $aliasFile}
+pratProfile_trace "Done: Installed aliases"
 
 # Customize 'dir' output - better output format for 'length' column:
 . $PSScriptRoot\profile_GetOptimalSize.ps1
