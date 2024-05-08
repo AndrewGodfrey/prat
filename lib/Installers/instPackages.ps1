@@ -39,23 +39,31 @@ using module ..\TextFileEditor\TextFileEditor.psd1
 # To avoid stopping the script at this point, we need to a) hope we can predict the new value, and b) add it to $env:path.
 # 
 # TODO: Could we reliably update it from the registry?
-function fixupPathForWingetPackage($subdir) {
-    $newPath = $env:localappdata + "\Microsoft\WinGet\Packages\" + $subdir
+function fixupPath($newPath) {
     if (($env:path -split ';') -notcontains $newPath) {
         if (!$env:path.EndsWith(";")) { $env:path += ";" }
         $env:path += $newPath
     }
 }
 
-function installPratWingetPackage([string] $wingetPackageId) {
+function installPratWingetPackage([string] $wingetPackageId, [switch] $MachineScope) {
     # Consider: --disable-interactivity --accept-package-agreements
-    winget install --scope user --silent --exact --id $wingetPackageId
 
+    # I prefer user scope, but some packages don't support it.
+    if ($MachineScope) { 
+        Invoke-Gsudo {winget install --scope machine --silent --exact --id $using:wingetPackageId}
+    } else {
+        winget install --scope user --silent --exact --id $wingetPackageId
+    }
+
+    $errorName = ""
     switch ($lastExitCode) {
         0 { return }
         -1978335189 { return } # APPINSTALLER_CLI_ERROR_UPDATE_NOT_APPLICABLE 	No applicable update found
-        default { throw "winget failed. error code: $lastExitCode" } # https://github.com/microsoft/winget-cli/blob/master/doc/windows/package-manager/winget/returnCodes.md
+        -2147024891 { $errorName = "Access is denied" }
     }
+    if ($errorName -ne "") { $errorName = " ($errorName)" }
+    throw "winget failed. error code: $lastExitCode$errorName" # https://github.com/microsoft/winget-cli/blob/master/doc/windows/package-manager/winget/returnCodes.md
 }
 
 # Packages that set up aliases can be annoying. Perhaps that's why I observe that gerardog.gsudo thinks it does so and yet I can't find any evidence of it.
@@ -83,7 +91,7 @@ $pratPackageDependencies = @{
     "pester" = @("sudo", "nugetPackageProvider")
     "nugetPackageProvider" = @("sudo")
     "sudo" = @()
-    "pwsh" = @()
+    "pwsh" = @("sudo")
 }
 
 function internal_installPratPackage($stage, [string] $packageId) {
@@ -100,7 +108,7 @@ function internal_installPratPackage($stage, [string] $packageId) {
         switch ($packageId) {
             "sudo" { 
                 installPratWingetPackage "gerardog.gsudo"
-                fixupPathForWingetPackage "gerardog.gsudo_Microsoft.Winget.Source_8wekyb3d8bbwe\x64"
+                fixupPath ($env:localappdata + "\Microsoft\WinGet\Packages\gerardog.gsudo_Microsoft.Winget.Source_8wekyb3d8bbwe\x64")
                 installPratScriptAlias $stage 'sudo' 'gsudo'
             }
             "pester" {
@@ -112,7 +120,12 @@ function internal_installPratPackage($stage, [string] $packageId) {
             "nugetPackageProvider" {
                 sudo Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
             }
-            "pwsh" { installPratWingetPackage "Microsoft.PowerShell" }
+            "pwsh" {
+                # If I want the latest version, I have to use machine scope. As of May 2024, the last version that supported user scope was 7.2.6.0,
+                # and the latest version was 7.4.2.0. https://github.com/microsoft/winget-cli/issues/4318
+                installPratWingetPackage "Microsoft.PowerShell" -MachineScope
+                fixupPath "$env:programfiles\PowerShell\7"
+            }
             default { throw "Internal error: $packageId" }
         }
 
