@@ -66,7 +66,7 @@ function Install-PackageNuget($installationTracker) {
     Install-WingetPackage $stage "Microsoft.NuGet" $dest
 
     # This package updates PATH but doesn't load it in current environment.
-    $env:path += ";$dest\nuget.exe"
+    $env:path += ";$dest"
 
     $installationTracker.EndStage($stage)
 }

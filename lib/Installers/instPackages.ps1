@@ -22,7 +22,7 @@ using module ..\TextFileEditor\TextFileEditor.psd1
 #       some way of picking which one to invoke. One way is to know its installation path, which isn't provided and doesn't follow any rigid convention.
 #
 # Thoughts:
-#   - I'm aware that Powershell already has a "package manager manager" in Install-Package. Based on past experience, I expect to use 
+#   - I'm aware that Powershell already has a "package manager manager" in Install-Package. Based on past experience, I expect this code to use 
 #     winget directly, and nuget directly, and occasionally Install-Package. If Install-Package were to improve to meet all the requirements,
 #     I wouldn't complain! But that seems like a tall order - much more work than I have to do here (because I can ignore packages I don't use).
 #
@@ -83,6 +83,7 @@ $pratPackageDependencies = @{
     "pester" = @("sudo", "nugetPackageProvider")
     "nugetPackageProvider" = @("sudo")
     "sudo" = @()
+    "pwsh" = @()
 }
 
 function internal_installPratPackage($stage, [string] $packageId) {
@@ -111,6 +112,7 @@ function internal_installPratPackage($stage, [string] $packageId) {
             "nugetPackageProvider" {
                 sudo Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
             }
+            "pwsh" { installPratWingetPackage "Microsoft.PowerShell" }
             default { throw "Internal error: $packageId" }
         }
 
