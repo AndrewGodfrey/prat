@@ -111,8 +111,9 @@ function Install-DeleteFiles($stage, $destDir, $listOfFilenames) {
 }
 
 # Install a file from an in-memory text string
-function Install-TextToFile($stage, $file, $newText, [switch] $ShowUpdateDetails, [switch] $BackupFile=$false, [switch] $SudoOnWrite=$false) {
+function Install-TextToFile($stage, $file, $newText, [switch] $ShowUpdateDetails, [switch] $PreserveAcls=$false, [switch] $BackupFile=$false, [switch] $SudoOnWrite=$false) {
     $needUpdate = $False
+    $acl = $null
 
     if (Test-Path -PathType Leaf $file) {
         $currentText = Import-TextFile $file
@@ -128,6 +129,11 @@ function Install-TextToFile($stage, $file, $newText, [switch] $ShowUpdateDetails
     }
 
     if ($needUpdate) {
+        if ($PreserveAcls -and (Test-Path -PathType Leaf $file)) {
+            $acl = Get-Acl $file
+#           [string] $s = $acl | format-list | out-string
+#           Write-Warning $s
+        }
         if ($BackupFile) {
             copy $file ($file + ".backup")
         }
@@ -135,17 +141,11 @@ function Install-TextToFile($stage, $file, $newText, [switch] $ShowUpdateDetails
         $stage.OnChange()
         writeUpdateDetailIf "Updating (Install-TextToFile): $file" $ShowUpdateDetails
         if ($SudoOnWrite) {
-            if (-not (Split-Path $file -IsAbsolute)) { throw "-SudoOnWrite requires an absolute filepath, instead of: $file" }
-
-            $tempFile = [IO.Path]::GetTempFileName()
-            $newText | Out-File -Encoding ASCII $tempFile
-            try {
-                sudo Move-Item -Force $tempFile $file
-            } finally {
-                if (Test-Path $tempFile) { Remove-Item $tempFile }
-            }
+            $newText | Invoke-Gsudo { Out-File -Encoding ASCII $using:file } 
+            if ($acl) { $acl | Invoke-Gsudo { Set-Acl $using:file } }
         } else {
             $newText | Out-File -Encoding ASCII $file   # Seems equivalent: Set-Content $newText -LiteralPath $file
+            if ($acl) { $acl | Set-Acl $file }
         }
     }
 }
