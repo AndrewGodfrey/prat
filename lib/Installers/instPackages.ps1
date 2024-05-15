@@ -101,6 +101,7 @@ $pratPackageDependencies = @{
     "pwsh" = @("sudo")
     "wget" = @()
     "ditto" = @()
+    "df" = @()
 }
 
 function internal_installDitto($stage) {
@@ -185,6 +186,7 @@ function internal_installPratPackage($stage, [string] $packageId) {
                 # Dunno what that's about!
             }
             "ditto" { internal_installDitto $stage }
+            "df" { installPratScriptAlias $stage 'df' 'Get-DiskFreeSpace' }
             default { throw "Internal error: $packageId" }
         }
 
