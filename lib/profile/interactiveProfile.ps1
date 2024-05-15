@@ -2,6 +2,12 @@
 
 . $PSScriptRoot\scriptProfile.ps1
 
+# The remaining, 'interactive' part of this profile, is for "user interface" elements that aren't useful in scripting/automation.
+# Examples:
+# - set aliases like 'b'
+# - install tools like 'ditto'
+# - set prompt
+
 pratProfile_trace "interactiveProfile.ps1 starting"
 
 New-Alias stack "$PSScriptRoot\..\Get-StackTraceForLastException.ps1" -Description "Get the PS stack trace of the last exception"
