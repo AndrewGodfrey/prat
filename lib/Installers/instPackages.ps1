@@ -15,8 +15,8 @@ using module ..\TextFileEditor\TextFileEditor.psd1
 #   5. Abstraction: Keep in one place the 'boring' package-specific information, e.g.:
 #     - Which package manager should we use?
 #     - Does it need additional parameters to make it automatic? (Things like accepting licenses, acknowledging an upgrade)
-#     - nuget (and many others) adds itself to PATH in the registry, but not in the currently-running environment. This breaks scripts.
-#       We can 'spackle' the main this by adding to $env:path ourselves.
+#     - nuget (and many others) adds itself to PATH in the registry, but not in the currently-running environment. (Some other packages also
+#       update the currently-running environment, but many don't). This breaks scripts; we can work around this here.
 #     - Some packages make huge breaking changes from one major version to another. For those, auto-updating logic may need to focus on minor version #.
 #     - Later, I might re-encounter the need for multiple side-by-side versions (of a package which supports that). In such cases you need
 #       some way of picking which one to invoke. One way is to know its installation path, which isn't provided and doesn't follow any rigid convention.
@@ -99,6 +99,7 @@ $pratPackageDependencies = @{
     "nugetPackageProvider" = @("sudo")
     "sudo" = @()
     "pwsh" = @("sudo")
+    "wget" = @()
 }
 
 function internal_installPratPackage($stage, [string] $packageId) {
@@ -132,6 +133,25 @@ function internal_installPratPackage($stage, [string] $packageId) {
                 # and the latest version was 7.4.2.0. https://github.com/microsoft/winget-cli/issues/4318
                 installPratWingetPackage "Microsoft.PowerShell" -MachineScope
                 fixupPath "$env:programfiles\PowerShell\7"
+            }
+            "wget" {
+                # Windows Powershell (I'm not sure about Powershell) by default aliases 'wget' to Invoke-WebRequest. This sucks because:
+                # 1. the very common use case, "wget <url>", behaves differently.
+                # 2. it's EXTREMELY slow. See discussion here: https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
+                #
+                # I used to instead have a basic 'wget.ps1' that wrapped curl. But curl - at least the Windows version - doesn't know how to
+                # resume a download after an error - it restarts at the beginning of a file. For many-gigabyte files, that never works.
+                # See discussion here: https://stackoverflow.com/questions/19728930/how-to-resume-interrupted-download-automatically-in-curl
+                # So, install wget instead.
+
+                # wget documentation: https://www.gnu.org/software/wget/manual/
+
+                installPratWingetPackage "JernejSimoncic.Wget"
+
+                # The winget package updates PATH
+                #
+                # On one machine but not the other, it also created a symlink here: C:\Users\Andrew\AppData\Local\Microsoft\WinGet\Links\wget.exe
+                # Dunno what that's about!
             }
             default { throw "Internal error: $packageId" }
         }

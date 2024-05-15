@@ -72,32 +72,6 @@ function Install-PackageNuget($installationTracker) {
 }
 
 
-function Install-PackageWget($installationTracker) {
-    $stage = $installationTracker.StartStage("wget")
-
-    # PowerShell by default aliases 'wget' to Invoke-WebRequest. This sucks because:
-    # 1. the very common use case, "wget <url>", behaves differently.
-    # 2. it's EXTREMELY slow. See discussion here: https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
-    #
-    # I used to instead have a basic 'wget.ps1' that wrapped curl. But curl - at least the Windows version - doesn't know how to
-    # resume a download after an error - it restarts at the beginning of a file. For many-gigabyte files, that never works.
-    # See discussion here: https://stackoverflow.com/questions/19728930/how-to-resume-interrupted-download-automatically-in-curl
-    # So, install wget instead.
-
-    # wget documentation: https://www.gnu.org/software/wget/manual/
-
-    # Expected install path:
-    $installPath = "$env:localappdata\Microsoft\WinGet\Packages\JernejSimoncic.Wget_Microsoft.Winget.Source_8wekyb3d8bbwe" 
-
-    Install-WingetPackage $stage "JernejSimoncic.Wget" $installPath
-    # The winget package updates PATH
-
-    # On one machine but not the other, it also created a symlink here: C:\Users\Andrew\AppData\Local\Microsoft\WinGet\Links\wget.exe
-    # Dunno what that's about!
-
-    $installationTracker.EndStage($stage)
-}
-
 function Install-PackageWindbg($installationTracker) {
     $stage = $installationTracker.StartStage("windbg")
 

@@ -41,5 +41,12 @@ $env:path += (&$PSScriptRoot\getBinPaths.ps1)
 # Remove curl alias, as Windows 10+ comes with curl.exe
 if (Test-Path alias:curl) { del alias:curl }
 
+# Remove the wget alias that WindowsPowershell installs, if we've installed a replacement. (This assumes that the replacement is an exe that's in PATH).
+if ($PSVersionTable.PSVersion.Major -lt 6) {
+    if ((Test-Path alias:wget) -and (Get-Command 'wget.exe' -ErrorAction SilentlyContinue)) {
+        del alias:wget
+    }
+}
+
 pratProfile_trace "scriptProfile.ps1 ending"
 

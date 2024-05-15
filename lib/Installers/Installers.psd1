@@ -39,7 +39,7 @@ FunctionsToExport = @(
 	'Install-File', 'Install-Folder', 'Install-SetOfFiles', 'Install-DeleteFiles', 'Install-TextToFile', 'Install-BinaryDataToFile', 'Install-SmbShare', 'Install-ZipFileFromFolder',
 	'Install-RegistryKey', 'Install-RegistryDwordValue', 'Install-RegistryStringValue', 'Install-RegistryBinaryValue',
 	'Install-PratPackage',
-	'Install-WingetPackage', 'Install-PackageDnspy', 'Install-PackageNuget', 'Install-PackageWget', 'Install-PackageWindbg', 'Install-PackageWinmerge',
+	'Install-WingetPackage', 'Install-PackageDnspy', 'Install-PackageNuget', 'Install-PackageWindbg', 'Install-PackageWinmerge',
 	'Install-NugetPackage', 'Add-NugetPackageType',
 	'Set-InstalledItemVersion', 'Get-InstalledItemVersion', 'Test-InstalledItemVersion', 'Remove-InstalledItem',
 	'Install-WindowsStartMenuLocalOnly', 'Install-WindowsSecondaryClockUTC', 'Install-WindowsFileAssociation', 'Install-WindowsAppVerbAssociation',
