@@ -69,7 +69,7 @@ Description = 'Basic functions that Prat needs everywhere, and that will always 
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @('Get-CurrentUserIsElevated', 'Get-RelativePath', 'Import-PratAliases', 'ConvertTo-Expression')
+FunctionsToExport = @('Get-CurrentUserIsElevated', 'Get-RelativePath', 'Import-PratAliases', 'ConvertTo-Expression', 'Get-OptimalSize')
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()

@@ -31,7 +31,6 @@ if (Test-Path $aliasFile) { Import-PratAliases $aliasFile}
 pratProfile_trace "Done: Installed aliases"
 
 # Customize 'dir' output - better output format for 'length' column:
-. $PSScriptRoot\profile_GetOptimalSize.ps1
 Update-FormatData -PrependPath $PSScriptRoot\FileSystem.format.ps1xml
 
 pratProfile_trace "Done: Update-FormatData"

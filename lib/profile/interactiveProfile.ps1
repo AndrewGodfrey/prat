@@ -68,7 +68,6 @@ if (Test-Path alias:ls) { del alias:ls }
 
 
 # Customize 'dir' output - better output format for 'length' column:
-. $PSScriptRoot\profile_GetOptimalSize.ps1
 Update-FormatData -PrependPath $PSScriptRoot\FileSystem.format.ps1xml
 
 pratProfile_trace "Done: Update-FormatData"

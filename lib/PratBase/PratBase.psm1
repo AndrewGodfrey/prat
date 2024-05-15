@@ -33,5 +33,30 @@ function Import-PratAliases($file) {
     }
 }
 
+
+###############################################################################
+# Description:  Convert Bytes into the appropriate unit of measure
+# Author:       Unknown. But seems derived from Ed Wilson's blog: https://devblogs.microsoft.com/scripting/hey-scripting-guy-can-you-give-all-the-steps-for-creating-installing-and-using-windows-powershell-modules/
+# Last Update:  5/08/2010 2:03:57 PM
+# Arguments:    [int64] The byte value to be converted
+# Returns:      [string] Display friendly value
+###############################################################################
+function Get-OptimalSize($sizeInBytes) {
+    if ($sizeInBytes -eq $null) { return $null }
+    $sizeInBytes = [int64] $sizeInBytes
+
+    switch ($sizeInBytes) {
+        # Hmm. Disk size standards have changed. Nowadays, 1024 bytes is "one kibibyte, abbreviated KiB", and that unit is rarely used.
+        # And KB means 1000 bytes. So, instead of using Powershell's definitions for 1TB, 1GB, 1MB or 1KB:
+        {$sizeInBytes -ge 1000000000000000} {"{0:n1}" -f ($sizeInBytes/1000000000000) + "PB" ; break}
+        {$sizeInBytes -ge 1000000000000} {"{0:n1}" -f ($sizeInBytes/1000000000) + "TB" ; break}
+        {$sizeInBytes -ge 1000000000} {"{0:n1}" -f ($sizeInBytes/1000000000) + "GB" ; break}
+        {$sizeInBytes -ge 1000000} {"{0:n1}" -f ($sizeInBytes/1000000) + "MB" ; break}
+        {$sizeInBytes -ge 1000} {"{0:n1}" -f ($sizeInBytes/1000) + "K" ; break}
+        default { $sizeInBytes }
+    }
+}
+
 . $PSScriptRoot\ConvertTo-Expression.ps1
+
 
