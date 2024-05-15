@@ -1,5 +1,5 @@
 # For consumption by Get-CodebaseTable
 @{
-    prat = @{ howToTest = "Invoke-Pester"; howToDeploy = "Deploy-Prat" }
+    prat = @{ howToBuild = "Build-Prat"; howToTest = "Invoke-Pester"; howToDeploy = "Deploy-Prat" }
 }
 
