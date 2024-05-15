@@ -23,14 +23,50 @@ GUID = '1a015368-8a16-461a-b22f-ce3079df7545'
 # Author of this module
 Author = 'Andrew Godfrey'
 
+# Company or vendor of this module
+CompanyName = ' '
+
 # Copyright statement for this module
 Copyright = 'Copyright (c) 2024 Andrew Godfrey'
 
 # Description of the functionality provided by this module
-# Description = 'Basic functions that Prat needs everywhere, and that we'll always load in script and user profile.'
+Description = 'Basic functions that Prat needs everywhere, and that will always be loaded in script and user profile.'
+
+# Minimum version of the PowerShell engine required by this module
+# PowerShellVersion = ''
+
+# Name of the PowerShell host required by this module
+# PowerShellHostName = ''
+
+# Minimum version of the PowerShell host required by this module
+# PowerShellHostVersion = ''
+
+# Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
+# DotNetFrameworkVersion = ''
+
+# Minimum version of the common language runtime (CLR) required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
+# ClrVersion = ''
+
+# Processor architecture (None, X86, Amd64) required by this module
+# ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
 # RequiredModules = @()
+
+# Assemblies that must be loaded prior to importing this module
+# RequiredAssemblies = @()
+
+# Script files (.ps1) that are run in the caller's environment prior to importing this module.
+# ScriptsToProcess = @()
+
+# Type files (.ps1xml) to be loaded when importing this module
+# TypesToProcess = @()
+
+# Format files (.ps1xml) to be loaded when importing this module
+# FormatsToProcess = @()
+
+# Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
+# NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @('Get-CurrentUserIsElevated', 'Get-RelativePath', 'Import-PratAliases', 'ConvertTo-Expression')
@@ -43,6 +79,9 @@ VariablesToExport = '*'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @()
+
+# DSC resources to export from this module
+# DscResourcesToExport = @()
 
 # List of all modules packaged with this module
 # ModuleList = @()
@@ -69,6 +108,15 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         # ReleaseNotes = ''
+
+        # Prerelease string of this module
+        # Prerelease = ''
+
+        # Flag to indicate whether the module requires explicit user acceptance for install/update/save
+        # RequireLicenseAcceptance = $false
+
+        # External dependent modules of this module
+        # ExternalModuleDependencies = @()
 
     } # End of PSData hashtable
 
