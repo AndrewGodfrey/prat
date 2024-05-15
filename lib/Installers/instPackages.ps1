@@ -100,6 +100,37 @@ $pratPackageDependencies = @{
     "sudo" = @()
     "pwsh" = @("sudo")
     "wget" = @()
+    "ditto" = @()
+}
+
+function internal_installDitto($stage) {
+    # Installs Ditto (a clipboard manager). What I like about it:
+    # - Ctrl-Shift-V to paste without formatting (to any app, not just ones that have this feature)
+    # - Ctrl-` to bring up a searchable clipboard history
+
+    installPratWingetPackage "Ditto.Ditto" -MachineScope
+
+    # http://ditto-cp.sourceforge.net/
+    #
+    # A version that I used for a long time and worked great, published in 2017: 3.21.223.0.
+    # Latest version as of 3/27/2024: 3.24.246.0
+    # Release notes: https://ditto-cp.sourceforge.io/
+
+    # Bind Ctrl-Shift-V to text-only paste
+    Install-RegistryDwordValue $stage 'HKCU:\Software\Ditto' TextOnlyPaste 0x356
+
+    # Disable startup notification "Ditto is running minimized"
+    Install-RegistryDwordValue $stage 'HKCU:\Software\Ditto' ShowStartupMessage 0
+
+    # "Pasted entries expire after X days". Provides *some* protection if you happen to copy a password - but you should still:
+    # 1) try to avoid it - e.g. use drag-and-drop from your password manager where that's supported (not all websites/apps support this)
+    # 2) promptly delete the password from ditto when you're done with it
+    Install-RegistryDwordValue $stage 'HKCU:\Software\Ditto' ExpiredEntries 2
+
+    if ($stage.DidUpdate()) {
+       # Restart Ditto to ensure it picks up any registry changes we made.
+       Restart-Process "ditto.exe"
+    }
 }
 
 function internal_installPratPackage($stage, [string] $packageId) {
@@ -153,6 +184,7 @@ function internal_installPratPackage($stage, [string] $packageId) {
                 # On one machine but not the other, it also created a symlink here: C:\Users\Andrew\AppData\Local\Microsoft\WinGet\Links\wget.exe
                 # Dunno what that's about!
             }
+            "ditto" { internal_installDitto $stage }
             default { throw "Internal error: $packageId" }
         }
 
