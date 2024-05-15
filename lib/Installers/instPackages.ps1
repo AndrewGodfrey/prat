@@ -66,11 +66,8 @@ function installPratWingetPackage([string] $wingetPackageId, [switch] $MachineSc
     throw "winget failed. error code: $lastExitCode$errorName" # https://github.com/microsoft/winget-cli/blob/master/doc/windows/package-manager/winget/returnCodes.md
 }
 
-# Packages that set up aliases can be annoying. Perhaps that's why I observe that gerardog.gsudo thinks it does so and yet I can't find any evidence of it.
-#
-# Anyway, I do want to specifically opt in to aliases for use in scripts, and do it reliably. i.e. both add it in the current execution environment ('spackle')
-# and add it somewhere that's included in PowerShell profile. (This still leaves a gap - in other already-open windows - and I'll just try to avoid that case.)
-function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
+
+function installOrGetInstalledAliasesFile($stage) {
     $autoProfilePath = (Resolve-Path "$PSScriptRoot\..\..").Path + "\auto\profile"
     $filename = "scriptAliases.ps1"
     $installedAliasesFile = "$autoProfilePath\$filename"
@@ -78,6 +75,16 @@ function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
     if (!(Test-Path $installedAliasesFile)) {
         Install-File $stage $PSScriptRoot $autoProfilePath $filename
     }
+
+    return $installedAliasesFile
+}
+
+# Packages that set up aliases can be annoying. Perhaps that's why I observe that gerardog.gsudo thinks it does so and yet I can't find any evidence of it.
+#
+# Anyway, I do want to specifically opt in to aliases for use in scripts, and do it reliably. i.e. both add it in the current execution environment ('spackle')
+# and add it somewhere that's included in PowerShell profile. (This still leaves a gap - in other already-open windows - and I'll just try to avoid that case.)
+function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
+    $installedAliasesFile = installOrGetInstalledAliasesFile $stage
 
     $lineArray = [LineArray]::new((Import-TextFile $installedAliasesFile))
     Add-HashTableItemInPowershellScript $lineArray 'installedAliases' $Name (ConvertTo-Expression $Value)

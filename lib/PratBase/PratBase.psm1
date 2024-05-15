@@ -24,7 +24,7 @@ function Get-RelativePath($expectedRoot, $path) {
     return $canonicalPath.SubString($canonicalRoot.Length + 1)
 }
 
-# This is analogous to Import-Alias, just with a different file format (and fewer properties supported).
+# This is analogous to Import-Alias -Force, just with a different file format (and fewer properties supported).
 function Import-PratAliases($file) {
     . $file
     foreach ($name in $installedAliases.Keys) {
