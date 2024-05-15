@@ -49,10 +49,12 @@ class InstallationTracker {
     hidden [string] $installerName
 
     hidden [string] $installationDatabaseLocation
+    hidden [bool] $forceReinstallation = $false
 
-    InstallationTracker([string] $installerName, [string] $installationDatabaseLocation) {
+    InstallationTracker([string] $installerName, [string] $installationDatabaseLocation, [bool] $Force) {
         $this.installerName = $installerName
         $this.installationDatabaseLocation = $installationDatabaseLocation
+        $this.forceReinstallation = $Force
 
         $createdNew = $False
         $m = New-Object -TypeName System.Threading.Mutex($true, "Start_Installation_$installerName", [ref]$createdNew)
@@ -97,7 +99,19 @@ class InstallationTracker {
         Write-Progress $this.installerName -CurrentOperation $operationName
     }
 
-    [string] GetInstallationDatabaseLocation() { return $this.installationDatabaseLocation }
+    [bool] GetIsStepComplete($stepId, $version) {
+        if ($this.forceReinstallation) { return $false }
+        return (Test-InstalledItemVersion $this.installationDatabaseLocation $stepId $version)
+    }
+
+    # Mark the given step as complete
+    [Void] SetStepComplete($stepId, $version) {
+        Set-InstalledItemVersion $this.installationDatabaseLocation $stepId $version
+    }
+
+    [Void] ClearStep($stepId) {
+        Remove-InstalledItem $this.installationDatabaseLocation $stepId
+    }
 
     [Void] ReportErrorContext($e) {
         if ($this.currentStage -ne $null) {
@@ -191,13 +205,13 @@ class InstallationStage {
     #       For a downgrade, do a migration step or something - that's an error-prone situation that deserves thought.
     [bool] GetIsStepComplete($stepIdAndVersion) {
         ($stepId, $version) = $this.ParseStepIdAndVersion($stepIdAndVersion)
-        return (Test-InstalledItemVersion $this.parent.GetInstallationDatabaseLocation() $stepId $version)
+        return $this.parent.GetIsStepComplete($stepId, $version)
     }
 
     # Mark the given step as complete
     [Void] SetStepComplete($stepIdAndVersion) {
         ($stepId, $version) = $this.ParseStepIdAndVersion($stepIdAndVersion)
-        Set-InstalledItemVersion $this.parent.GetInstallationDatabaseLocation() $stepId $version
+        $this.parent.SetStepComplete($stepId, $version)
     }
 
     # If the given manual step hasn't been completed,
@@ -217,8 +231,9 @@ class InstallationStage {
             }
         }
     }
+
     [Void] ClearManualStep($stepId) {
-        Remove-InstalledItem $this.parent.GetInstallationDatabaseLocation() $stepId
+        $this.parent.ClearStep($stepId)
     }
 }
 
@@ -263,8 +278,8 @@ class InstallationStage {
 #     This design follows/assumes the "quit on error; manual retry" model - if the installation script doesn't emit "OK" at the end then it
 #     needs to be rerun. On error, we don't want $stage.End() to run because it would give the wrong impression ... the stage never did finish.
 
-function Start-Installation([Parameter(Position=0)] [string] $InstallerName, [Parameter(Position=-1)] [string] $InstallationDatabaseLocation) {
-    return [InstallationTracker]::new($InstallerName, $InstallationDatabaseLocation)
+function Start-Installation([Parameter(Position=0)] [string] $InstallerName, [Parameter(Position=-1)] [string] $InstallationDatabaseLocation, [switch] $Force) {
+    return [InstallationTracker]::new($InstallerName, $InstallationDatabaseLocation, $Force)
 }
 
 . $PSScriptRoot\instFilesAndFolders.ps1
