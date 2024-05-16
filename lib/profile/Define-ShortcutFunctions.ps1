@@ -4,10 +4,12 @@
 # Directory navigation
 #
 
-function .. {cd ..}
-function ... {cd ..\..}
-function .... {cd ..\..\..}
-function \ { cd $env:userprofile\$Args }
+function ..     {cd ../$Args}
+function ...    {cd ../../$Args}
+function ....   {cd ../../../$Args}
+function .....  {cd ../../../../$Args}
+function ...... {cd ../../../../../$Args}
+function ~      {cd $env:userprofile\$Args}
 
 # .SYNOPSIS
 # Pushes or pops a directory
