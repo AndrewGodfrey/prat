@@ -3,7 +3,7 @@
  
   See ..\README.md for installation instructions.
 #>
-param([switch] $PauseForTesting, [switch] $SkipDeployStep)
+param([switch] $PauseForManualTesting, [switch] $SkipDeployStep)
 $ErrorActionPreference = "stop"
 
 # winget is supposed to be included in Win10 now. And seems to have been removed from the Windows Store.
@@ -41,7 +41,7 @@ if (($lastExitCode -ne 0) -or !(Test-Path $target)) { throw "'git clone prat' fa
 
 pushd $target
 try {
-    if ($PauseForTesting) { pause }
+    if ($PauseForManualTesting) { pause }
     # Now we can pass control to a "phase 2" script running out of the git repo.
     
     # Dot-source it, in hope of getting a semi-decent profile setup when the script finishes (or while I'm debugging it).
