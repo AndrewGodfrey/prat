@@ -36,7 +36,7 @@ $env:path += ";$gitDir" # The git package adds itself to PATH in the registry, b
 $target = $home + "\prat"
 $source = "https://github.com/AndrewGodfrey/prat.git"
 if (!(Test-Path $target)) { git clone $source $target }
-if ((!$?) -or !(Test-Path $target)) { throw "'git clone prat' failed" }
+if (($lastExitCode -ne 0) -or !(Test-Path $target)) { throw "'git clone prat' failed" }
 
 pushd $target
 try {
