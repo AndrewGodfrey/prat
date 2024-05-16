@@ -4,7 +4,6 @@
   See ..\README.md for installation instructions.
 #>
 param([switch] $PauseForManualTesting, [switch] $SkipDeployStep)
-$ErrorActionPreference = "stop"
 
 # winget is supposed to be included in Win10 now. And seems to have been removed from the Windows Store.
 # But I found it not to be present even on a newly-downloaded ISO (downloaded on 20240419).
@@ -37,7 +36,7 @@ $env:path += ";$gitDir" # The git package adds itself to PATH in the registry, b
 $target = $home + "\prat"
 $source = "https://github.com/AndrewGodfrey/prat.git"
 if (!(Test-Path $target)) { git clone $source $target }
-if (($lastExitCode -ne 0) -or !(Test-Path $target)) { throw "'git clone prat' failed" }
+if ((!$?) -or !(Test-Path $target)) { throw "'git clone prat' failed" }
 
 pushd $target
 try {
