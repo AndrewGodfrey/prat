@@ -6,3 +6,6 @@ nugetPackages\
 built\
 	Built files (e.g. the output of Install-CustomBrowserHomePage)
 
+log\
+	Log files
+

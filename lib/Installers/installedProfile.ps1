@@ -1,4 +1,4 @@
-# This file is installed to %userprofile%\Documents\WindowsPowershell, by Install-PsProfile.ps1.
+# This file is installed to %userprofile%\Documents\[Windows]Powershell, by Install-PsProfile.ps1.
 
 . $home\prat\lib\profile\profilePicker.ps1
 

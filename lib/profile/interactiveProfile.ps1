@@ -1,4 +1,4 @@
-# This is called by %userprofile%\Documents\WindowsPowershell\profile.ps1
+# This is called by %userprofile%\Documents\[Windows]Powershell\profile.ps1
 
 . $PSScriptRoot\scriptProfile.ps1
 
