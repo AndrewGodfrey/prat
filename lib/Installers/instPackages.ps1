@@ -104,6 +104,7 @@ $pratPackageDependencies = @{
     "ditto" = @()
     "df" = @()
     "sysinternals" = @()
+    "pushoverNotification" = @()
 }
 
 function internal_installDitto($stage) {
@@ -136,7 +137,34 @@ function internal_installDitto($stage) {
     }
 }
 
-function internal_installPratPackage($stage, [string] $packageId) {
+# installPushoverNotification: Given some Pushover tokens, installs a 'Send-UserNotification' script that 
+#   uses those tokens to notify the user.
+#
+# $packageArgs[0]: Points to a file that contains a user token and some app tokens (from your Pushover account), in a hashtable. 
+#   Sample contents:
+#       @{
+#           user = "1fdz9"
+#           apps = @{
+#               Testing =      "qr0ng"
+#               prat =         "tw8ir"
+#               misc =         "o5n1v"
+#           }
+#       }
+#
+function installPushoverNotification($stage, [array] $packageArgs) {
+    [string] $tokenFile = $packageArgs[0]
+    if ($tokenFile -eq "") { throw 'Missing parameter: $tokenFile' }
+    if (!(Test-Path $tokenFile)) { throw "Not found: $tokenFile" }
+
+    $autoBinPath = (Resolve-Path "$PSScriptRoot/../..").Path + "/auto/pathbin"
+    Install-Folder $stage $autoBinPath
+
+    $template = Import-TextFile "$PSScriptRoot/Send-UserNotification.template.PushOver.ps1"
+    $newText = Format-ReplacePlaceholdersInTemplateString $template @{tokenfile = $tokenFile}
+    Install-TextToFile $stage "$autoBinPath/Send-UserNotification.ps1" $newText
+}
+
+function internal_installPratPackage($stage, [string] $packageId, [array] $packageArgs) {
     # Dependencies
     $deps = $pratPackageDependencies[$packageId]
     if ($deps -eq $null) { throw "Unrecognized Prat package id: $packageId" }
@@ -190,6 +218,7 @@ function internal_installPratPackage($stage, [string] $packageId) {
             "ditto" { internal_installDitto $stage }
             "df" { installPratScriptAlias $stage 'df' 'Get-DiskFreeSpace' }
             "sysinternals" { installPratWingetPackage "9P7KNL5RWT25"}
+            "pushoverNotification" { installPushoverNotification $stage $packageArgs }
             default { throw "Internal error: $packageId" }
         }
 
@@ -200,9 +229,11 @@ function internal_installPratPackage($stage, [string] $packageId) {
 # .SYNOPSIS
 # Install a package, and its dependencies, reporting to $installationTracker if it does anything
 # For each package, skips it if some version is already installed.
-function Install-PratPackage($installationTracker, [string] $packageId) {
+#
+# $packageArgs: Optional arguments to be passed to the package. Is NOT passed to dependent packages.
+function Install-PratPackage($installationTracker, [string] $packageId, $packageArgs) {
     $stage = $installationTracker.StartStage("Install-PratPackage($packageId)")
-    internal_installPratPackage $stage $packageId
+    internal_installPratPackage $stage $packageId $packageArgs
     $installationTracker.EndStage($stage)
 }
 
