@@ -47,13 +47,13 @@ function fixupPath($newPath) {
 }
 
 function installPratWingetPackage([string] $wingetPackageId, [switch] $MachineScope) {
-    # Consider: --disable-interactivity --accept-package-agreements
+    # Consider: --disable-interactivity
 
     # I prefer user scope, but some packages don't support it.
     if ($MachineScope) { 
-        Invoke-Gsudo {winget install --scope machine --silent --exact --id $using:wingetPackageId}
+        Invoke-Gsudo {winget install --scope machine --silent --exact --id $using:wingetPackageId --accept-package-agreements}
     } else {
-        winget install --scope user --silent --exact --id $wingetPackageId
+        winget install --scope user --silent --exact --id $wingetPackageId --accept-package-agreements
     }
 
     $errorName = ""
@@ -102,6 +102,7 @@ $pratPackageDependencies = @{
     "wget" = @()
     "ditto" = @()
     "df" = @()
+    "sysinternals" = @()
 }
 
 function internal_installDitto($stage) {
@@ -187,6 +188,7 @@ function internal_installPratPackage($stage, [string] $packageId) {
             }
             "ditto" { internal_installDitto $stage }
             "df" { installPratScriptAlias $stage 'df' 'Get-DiskFreeSpace' }
+            "sysinternals" { installPratWingetPackage "9P7KNL5RWT25"}
             default { throw "Internal error: $packageId" }
         }
 
