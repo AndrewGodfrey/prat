@@ -75,3 +75,43 @@ function Get-DiskFreeSpace {
         VolumeName, ProviderName
 }
 
+function Get-UserIdleTimeInSeconds {
+    if (('UserActivity' -as [type]) -eq $null) {
+        Add-Type @"
+            using System;
+            using System.Runtime.InteropServices;
+
+            public class UserActivity {
+                [DllImport("user32.dll")]
+                private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
+
+                [StructLayout(LayoutKind.Sequential)]
+                private struct LASTINPUTINFO {
+                    public uint cbSize;
+                    public uint dwTime;
+                }
+
+                public static uint GetUserIdleTimeInSeconds() {
+                    uint idleTime = 0;
+                    LASTINPUTINFO lastInputInfo = new LASTINPUTINFO();
+                    lastInputInfo.cbSize = (uint)Marshal.SizeOf(lastInputInfo);
+                    lastInputInfo.dwTime = 0;
+
+                    uint envTicks = (uint)Environment.TickCount;
+
+                    if (GetLastInputInfo(ref lastInputInfo)) {
+                        uint lastInputTick = lastInputInfo.dwTime;
+
+                        idleTime = envTicks - lastInputTick;
+                    }
+
+                    return idleTime / 1000;
+                }
+            }
+"@
+    }
+
+    return [UserActivity]::GetUserIdleTimeInSeconds()
+}
+
+
