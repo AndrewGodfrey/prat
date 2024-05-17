@@ -15,9 +15,8 @@ function formatDuration([double] $durationInSeconds) {
 }
 # Test: . .\lastCommandTime.ps1; @(0.03, 0.05, 1.53, 1.56, 10.3, 12.3, 59.3, 65, 100, (58*60 + 20), (58*60 + 40), 3900, 4200) | % { formatDuration $_ }
 
-function getLastCommandTime {
-    $historyInfo = Get-History -Count 1
-    return ($HistoryInfo.EndExecutionTime - $HistoryInfo.StartExecutionTime).TotalSeconds
+function getLastCommandTime($historyInfo) {
+    return ($historyInfo.EndExecutionTime - $historyInfo.StartExecutionTime).TotalSeconds
 }
 
 function displayLastCommandTime($duration) {
@@ -26,7 +25,7 @@ function displayLastCommandTime($duration) {
     Write-Host $s -ForegroundColor Magenta
 }
 
-function reportOnSlowCommands($duration, $lastCommandErrorStatus) {
+function reportOnSlowCommands($duration, $historyInfo, $lastCommandErrorStatus) {
     if ($duration -le 15) { return }
     MaybeReport-SlowCommand $historyInfo $lastCommandErrorStatus
 }

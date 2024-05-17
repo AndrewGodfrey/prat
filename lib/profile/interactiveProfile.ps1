@@ -59,9 +59,10 @@ function prompt {
     $lastCommandErrorStatus = $?
     try
     {
-        $duration = getLastCommandTime
+        $historyInfo = Get-History -Count 1
+        $duration = getLastCommandTime $historyInfo
         displayLastCommandTime $duration
-        reportOnSlowCommands $duration $lastCommandErrorStatus
+        reportOnSlowCommands $duration $historyInfo $lastCommandErrorStatus
 
         pratDetectLocationChange
     } catch { Write-Warning ("Exception during prompt: " + $Error[0] + "`n" + (stack)) }
