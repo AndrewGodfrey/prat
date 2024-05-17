@@ -132,8 +132,12 @@ function internal_installDitto($stage) {
     Install-RegistryDwordValue $stage 'HKCU:\Software\Ditto' ExpiredEntries 2
 
     if ($stage.DidUpdate()) {
-       # Restart Ditto to ensure it picks up any registry changes we made.
-       Restart-Process "ditto.exe"
+        if (Get-Process ditto -ErrorAction SilentlyContinue) {
+            # Restart Ditto to ensure it picks up any registry changes we made.
+            # 
+            # Sometimes I find it's running, sometimes not.
+            Restart-Process "ditto.exe"
+        }
     }
 }
 
