@@ -1,5 +1,5 @@
 # Tools for installing particular nuget packages.
-function installPackage([string] $packageId, [string] $version) {
+function installNugetPackage([string] $packageId, [string] $version) {
     nuget install $packageId -OutputDirectory $home\de\packages -Verbosity quiet -NonInteractive
 
 
@@ -25,12 +25,12 @@ $packages = @{
     }
 }
 
-function installPackageAndDeps($stage, [string] $myPackageId, [string] $packagesRoot) {
+function installNugetPackageAndDeps($stage, [string] $myPackageId, [string] $packagesRoot) {
     $p = $packages[$myPackageId]
     if ($p -eq $null) { throw "Unrecognized myPackageId: $myPackageId" }
 
     foreach ($dep in $p.dependencies) {
-        installPackageAndDeps $stage $dep $packagesRoot
+        installNugetPackageAndDeps $stage $dep $packagesRoot
     }
 
     $packageId = $p.id
@@ -41,7 +41,7 @@ function installPackageAndDeps($stage, [string] $myPackageId, [string] $packages
     if (-not (Test-Path $installPath)) {
         $stage.OnChange()
         $stage.SetSubstage("Install-NugetPackage($packageId) : install")
-        installPackage $packageId $version
+        installNugetPackage $packageId $version
 
         if (!(Test-Path $installPath)) {
             throw "Internal error: Expected install path wasn't created: $installPath"

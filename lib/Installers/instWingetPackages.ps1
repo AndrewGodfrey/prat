@@ -2,12 +2,12 @@
 # Winget packages aren't entirely regular, so this is 'spackle' to make them behave.
 
 
-function isPackageInstalled([string] $packageId) {
+function isWingetPackageInstalled([string] $packageId) {
     $outputStrings = winget list --exact -q $packageId
     return [String]::Join("", $outputStrings).Contains($packageId)
 }
 
-function installPackage([string] $packageId) {
+function installWingetPackage([string] $packageId) {
       winget install --silent --exact --id $packageId
 }
 
@@ -33,15 +33,15 @@ function Install-WingetPackage($stage, [string] $packageId, [string] $installPat
     if (-not (Test-Path $installPath)) {
         $stage.OnChange()
         $stage.SetSubstage("Install-WingetPackage($packageId) : install")
-        installPackage $packageId
+        installWingetPackage $packageId
 
         # Verify
         if (!(Test-Path $installPath)) {
             throw "Internal error: Expected install path wasn't created: $installPath"
         }
 
-        if (-not (isPackageInstalled $packageId)) {
-            throw "Internal error: Package installation succeeded but 'isPackageInstalled' returns false";
+        if (-not (isWingetPackageInstalled $packageId)) {
+            throw "Internal error: Package installation succeeded but 'isWingetPackageInstalled' returns false";
         }
     }
 }
