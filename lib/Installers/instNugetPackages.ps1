@@ -65,7 +65,7 @@ function installNugetPackageAndDeps($stage, [string] $myPackageId, [string] $pac
 # - Now find the location and update the code.
 function Install-NugetPackage($installationTracker, [string] $myPackageId, [string] $packagesRoot) {
     $stage = $installationTracker.StartStage("pkgNuget-$myPackageId")
-    installPackageAndDeps $stage $myPackageId $packagesRoot
+    installNugetPackageAndDeps $stage $myPackageId $packagesRoot
     $installationTracker.EndStage($stage)
 }
 
