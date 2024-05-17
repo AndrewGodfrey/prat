@@ -115,3 +115,48 @@ function Get-UserIdleTimeInSeconds {
 }
 
 
+# .SYNOPSIS
+# Given a name that matches exactly one running process:
+# Kills the process, and restarts it.
+#
+# Caveats:
+# - Only works when running non-elevated. Otherwise, the new instance will be elevated, which can cause many problems
+#   e.g. with files it creates having the wrong owner. 
+#   One could use something like [launchUnelevated](https://sourceforge.net/projects/launchunelevated/)
+#   to solve that, but my sense is that that direction is not reliable and it's better to change callers, if feasible.
+
+# TODO: Sort out the inherent confusion between needing to run some installers elevated, and needing to do this non-elevated.
+function Restart-Process($nameMatch) {
+    if (Get-CurrentUserIsElevated) { throw "Can't do this while elevated" }
+
+    $matches = @(Get-CimInstance Win32_Process | ? { $_.Name -like $nameMatch })
+    if ($matches.Length -eq 0) { throw "No running process found matching '$nameMatch'" }
+    if ($matches.Length -ne 1) { throw "Too many running processes found matching '$nameMatch'" }
+
+    $processId = $matches[0].ProcessId
+    $commandLine = $matches[0].CommandLine
+    $executablePath = $matches[0].ExecutablePath
+
+    function isRecognizedCommandLine($commandLine, $executablePath) {
+        if ($commandLine -eq $executablePath) { return $true }
+
+        # I can kinda understand why I see quotes around the filename:
+        $withQuotes = '"' + $executablePath + '"'
+        if ($commandLine -eq $withQuotes) { return $true }
+
+        # But for some reason, I typically see a trailing space too (after the end-quote)
+        if ($commandLine -eq "$withQuotes ") { return $true }
+        return $false
+    }
+
+    # No support for command-line arguments currently - so just check there aren't any
+    if (!(isRecognizedCommandLine $commandLine $executablePath)) {
+        throw "Unsupported: There seem to be command line arguments: $commandLine vs $withQuotes"
+    }
+
+    Stop-Process -Id $processId -Force
+    Start-Sleep -Milliseconds 100
+
+    Invoke-Item $executablePath
+}
+
