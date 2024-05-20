@@ -160,3 +160,21 @@ function Restart-Process($nameMatch) {
     Invoke-Item $executablePath
 }
 
+
+# Test-PathIsUnder: Hopefully there's a more reliable, built-in way to do this now.
+#   For now, this is what I've used. Returns whether '$path' is under '$root', at least in terms of looking at the paths themselves.
+#   This doesn't require the paths to exist on the filesystem. Does NOT consider symlinks, hardlinks etc; the purpose of this
+#   is for 'logical' structure, from the user-interface POV.
+function Test-PathIsUnder([string] $path, [string] $root) {
+    # Normalize
+    $path = Join-Path $path ''
+    $root = Join-Path $root ''
+
+    # Compute
+    $result = $path.StartsWith($root, [System.StringComparison]::InvariantCultureIgnoreCase)
+
+    Write-Verbose "Test-PathIsUnder($path, $root) = $result"
+
+    return $result
+}
+
