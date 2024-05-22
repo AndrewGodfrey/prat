@@ -185,7 +185,7 @@ function installPushoverNotification($stage, [array] $packageArgs) {
 # Keyboard shortcut: Ctrl-P is a very handy, non-discoverable shortcut, to [Quick-Launch view](https://fork.dev/blog/posts/quick-launch/)
 #
 #
-# $packageArgs[0]: Points to a file that contains fork activation information, in a hashtable. 
+# $packageArgs[0]: Points to a file that contains fork activation information, in a hashtable. Or null/empty, to skip activation.
 #   Sample contents:
 <#
         # My activation information for https://fork.dev/
@@ -197,8 +197,7 @@ function installPushoverNotification($stage, [array] $packageArgs) {
 # NOTE: Fork autoupdates, so for this package we only ever need to think about initial installation.
 function installForkGitClient($stage, [array] $packageArgs) {
     [string] $tokenFile = $packageArgs[0]
-    if ($tokenFile -eq "") { throw 'Missing parameter: $tokenFile' }
-    if (!(Test-Path $tokenFile)) { throw "Not found: $tokenFile" }
+    if (($tokenFile -ne "") -and (!(Test-Path $tokenFile))) { throw "Not found: $tokenFile" }
 
     if (Get-CurrentUserIsElevated) { 
         # Running elevated gave me this error: "Installer hash does not match; this cannot be overridden when running as admin".
@@ -213,14 +212,15 @@ function installForkGitClient($stage, [array] $packageArgs) {
 
     $stage.EnsureManualStep("fork\firstrun", "Run Fork (to trigger its 'first-run setup'). Give it my name and email.")
     $stage.EnsureManualStep("fork\dark", "Appearance > Dark")
-    $stage.EnsureManualStep("fork\gvfs", "File > Preferences > Git > Git Instance: Choose C:\Program Files\Git\bin\git.exe")
+    $stage.EnsureManualStep("fork\gitIntegration", "File > Preferences > Git > Git Instance: Choose C:\Program Files\Git\bin\git.exe")
     $stage.EnsureManualStep("fork\pin", "Pin Fork to taskbar")
-    $stage.EnsureManualStep("fork\openDe", "Open 'de' repo.")
-    $stage.EnsureManualStep("fork\close", "Close Fork so that we can activate it")
+    if (($tokenFile -ne "") {
+        $stage.EnsureManualStep("fork\close", "Close Fork so that we can activate it")
 
-    [hashtable] $tokens = . $tokenFile
-    $binDir = $env:localappdata + "\Fork"
-    &$destDir\Fork.exe activate $tokens.email $tokens.key
+        [hashtable] $tokens = . $tokenFile
+        $binDir = $env:localappdata + "\Fork"
+        &$destDir\Fork.exe activate $tokens.email $tokens.key
+    }
 }
 
 
