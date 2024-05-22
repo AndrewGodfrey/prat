@@ -67,7 +67,6 @@ function installPratWingetPackage([string] $wingetPackageId, [switch] $MachineSc
     throw "winget failed. error code: $lastExitCode$errorName" # https://github.com/microsoft/winget-cli/blob/master/doc/windows/package-manager/winget/returnCodes.md
 }
 
-
 function installOrGetInstalledAliasesFile($stage) {
     $autoProfilePath = (Resolve-Path "$PSScriptRoot\..\..").Path + "\auto\profile"
     $filename = "scriptAliases.ps1"
@@ -105,6 +104,7 @@ $pratPackageDependencies = @{
     "df" = @()
     "sysinternals" = @()
     "pushoverNotification" = @()
+    "forkGitClient" = @()
 }
 
 function internal_installDitto($stage) {
@@ -146,15 +146,17 @@ function internal_installDitto($stage) {
 #
 # $packageArgs[0]: Points to a file that contains a user token and some app tokens (from your Pushover account), in a hashtable. 
 #   Sample contents:
-#       @{
-#           user = "1fdz9"
-#           apps = @{
-#               Testing =      "qr0ng"
-#               prat =         "tw8ir"
-#               misc =         "o5n1v"
-#           }
-#       }
-#
+<# 
+        # My user and api keys for https://pushover.net/ 
+        @{
+            user = "1fdz9"
+            apps = @{
+                Testing =      "qr0ng"
+                prat =         "tw8ir"
+                misc =         "o5n1v"
+            }
+        }
+#>
 function installPushoverNotification($stage, [array] $packageArgs) {
     [string] $tokenFile = $packageArgs[0]
     if ($tokenFile -eq "") { throw 'Missing parameter: $tokenFile' }
@@ -167,6 +169,50 @@ function installPushoverNotification($stage, [array] $packageArgs) {
     $newText = Format-ReplacePlaceholdersInTemplateString $template @{tokenfile = $tokenFile}
     Install-TextToFile $stage "$autoBinPath/Send-UserNotification.ps1" $newText
 }
+
+# Install the "Fork" git client: https://fork.dev/
+# 
+# Keyboard shortcut: Ctrl-P is a very handy, non-discoverable shortcut, to [Quick-Launch view](https://fork.dev/blog/posts/quick-launch/)
+#
+#
+# $packageArgs[0]: Points to a file that contains fork activation information, in a hashtable. 
+#   Sample contents:
+<#
+        # My activation information for https://fork.dev/
+        @{
+            email = "bob@null.com"
+            key = "21A014C1-7137A92D-0A8F4857"
+        }
+#>
+# NOTE: Fork autoupdates, so for this package we only ever need to think about initial installation.
+function installForkGitClient($stage, [array] $packageArgs) {
+    [string] $tokenFile = $packageArgs[0]
+    if ($tokenFile -eq "") { throw 'Missing parameter: $tokenFile' }
+    if (!(Test-Path $tokenFile)) { throw "Not found: $tokenFile" }
+
+    if (Get-CurrentUserIsElevated) { 
+        # Running elevated gave me this error: "Installer hash does not match; this cannot be overridden when running as admin".
+        throw "Can't install Fork when elevated" 
+    }
+    $destDir = $env:localappdata + "\Fork"
+
+    installPratWingetPackage "Fork.Fork"   # TODO: Test. I'd been using the default scope before, which I think means machine scope, and yet Fork was installing itself in a per-user location. Also is "--accept-source-agreements" different from "--accept-package-agreements"?
+    if (-not (Test-Path $destDir)) {
+        throw "Fork installation failed / unexpected location"
+    }
+
+    $stage.EnsureManualStep("fork\firstrun", "Run Fork (to trigger its 'first-run setup'). Give it my name and email.")
+    $stage.EnsureManualStep("fork\dark", "Appearance > Dark")
+    $stage.EnsureManualStep("fork\gvfs", "File > Preferences > Git > Git Instance: Choose C:\Program Files\Git\bin\git.exe")
+    $stage.EnsureManualStep("fork\pin", "Pin Fork to taskbar")
+    $stage.EnsureManualStep("fork\openDe", "Open 'de' repo.")
+    $stage.EnsureManualStep("fork\close", "Close Fork so that we can activate it")
+
+    [hashtable] $tokens = . $tokenFile
+    $binDir = $env:localappdata + "\Fork"
+    &$destDir\Fork.exe activate $tokens.email $tokens.key
+}
+
 
 function internal_installPratPackage($stage, [string] $packageId, [array] $packageArgs) {
     # Dependencies
@@ -223,6 +269,7 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
             "df" { installPratScriptAlias $stage 'df' 'Get-DiskFreeSpace' }
             "sysinternals" { installPratWingetPackage "9P7KNL5RWT25"}
             "pushoverNotification" { installPushoverNotification $stage $packageArgs }
+            "forkGitClient" { installForkGitClient $stage $packageArgs }
             default { throw "Internal error: $packageId" }
         }
 
