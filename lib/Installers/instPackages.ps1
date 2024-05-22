@@ -214,7 +214,7 @@ function installForkGitClient($stage, [array] $packageArgs) {
     $stage.EnsureManualStep("fork\dark", "Appearance > Dark")
     $stage.EnsureManualStep("fork\gitIntegration", "File > Preferences > Git > Git Instance: Choose C:\Program Files\Git\bin\git.exe")
     $stage.EnsureManualStep("fork\pin", "Pin Fork to taskbar")
-    if (($tokenFile -ne "") {
+    if (($tokenFile -ne "")) {
         $stage.EnsureManualStep("fork\close", "Close Fork so that we can activate it")
 
         [hashtable] $tokens = . $tokenFile
