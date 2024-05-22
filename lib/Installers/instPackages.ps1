@@ -48,13 +48,23 @@ function fixupPath($newPath) {
 }
 
 function installPratWingetPackage([string] $wingetPackageId, [switch] $MachineScope) {
-    # Consider: --disable-interactivity
+    switch ($wingetPackageId) {
+        "ditto" { 
+            # Ditto doesn't support "--scope machine": If you sudo, then it runs elevated; if you don't sudo, then it fails with "access denied". 
+            # Fine so far, BUT: it doesn't support "--scope user" - it fails with APPINSTALLER_CLI_ERROR_NO_APPLICABLE_INSTALLER in that case.
+            # What it wants is no --scope parameter at all. !?
+            winget install --scope user --silent --exact --id "Ditto.Ditto" --accept-package-agreements
+        }
+        default {
+            # Consider: --disable-interactivity
 
-    # I prefer user scope, but some packages don't support it.
-    if ($MachineScope) { 
-        Invoke-Gsudo {winget install --scope machine --silent --exact --id $using:wingetPackageId --accept-package-agreements}
-    } else {
-        winget install --scope user --silent --exact --id $wingetPackageId --accept-package-agreements
+            # I prefer user scope, but some packages don't support it.
+            if ($MachineScope) { 
+                Invoke-Gsudo {winget install --scope machine --silent --exact --id $using:wingetPackageId --accept-package-agreements}
+            } else {
+                winget install --scope user --silent --exact --id $wingetPackageId --accept-package-agreements
+            }
+        }
     }
 
     $errorName = ""
