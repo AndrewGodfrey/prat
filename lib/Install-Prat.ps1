@@ -23,7 +23,9 @@ The 'official workaround' seems to be:
 
 if (([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
     # Although on Windows we (sadly) do need to elevate to install some things (git, Pester), there are many things we do NOT want to do elevated.
-    # For example, "git clone" will set the directory owner to "Administrators" instead of the current user, triggering a git security warning.
+    # For example
+    # - "git clone" will set the directory owner to "Administrators" instead of the current user, triggering a git security warning.
+    # - Any app we launch will launch as administrator, and any files that app creates for the user will similarly have the wrong owner.
     throw "Don't run as administrator"
 }
 
