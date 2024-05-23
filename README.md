@@ -26,7 +26,7 @@ You shouldn't blindly trust scripts from the internet! First consider:
 ### When ready to install
 From a regular (non-elevated) Powershell window:
 ```powershell
-  curl.exe -L -o $env:temp\Install-Prat.ps1 https://github.com/AndrewGodfrey/prat/raw/main/lib/Install-Prat.ps1; Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force; &$env:temp\Install-Prat.ps1
+  curl.exe -L -o $env:temp\Install-Prat.ps1 https://github.com/AndrewGodfrey/prat/raw/main/lib/Install-Prat.ps1; Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force; . $env:temp\Install-Prat.ps1
   ```
 
 
