@@ -49,11 +49,12 @@ function fixupPath($newPath) {
 
 function installPratWingetPackage([string] $wingetPackageId, [switch] $MachineScope) {
     switch ($wingetPackageId) {
-        "ditto" { 
+        "Ditto.Ditto" { 
             # Ditto doesn't support "--scope machine": If you sudo, then it runs elevated; if you don't sudo, then it fails with "access denied". 
-            # Fine so far, BUT: it doesn't support "--scope user" - it fails with APPINSTALLER_CLI_ERROR_NO_APPLICABLE_INSTALLER in that case.
-            # What it wants is no --scope parameter at all. !?
-            winget install --scope user --silent --exact --id "Ditto.Ditto" --accept-package-agreements
+            # Fine so far, BUT: Ditto also doesn't support "--scope user" - it fails with APPINSTALLER_CLI_ERROR_NO_APPLICABLE_INSTALLER in that case.
+            # 
+            # What it wants, is no --scope parameter at all. !?
+            winget install --silent --exact --id "Ditto.Ditto" --accept-package-agreements --accept-source-agreements
         }
         default {
             # Consider: --disable-interactivity
