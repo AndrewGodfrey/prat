@@ -84,6 +84,7 @@ New-Alias -Name b -Value Build-Codebase -Scope Global
 New-Alias -Name t -Value Test-Codebase -Scope Global
 New-Alias -Name d -Value Deploy-Codebase -Scope Global
 New-Alias -Name x -Value Start-CodebaseDevLoop -Scope Global
+New-Alias -Name c -Value Set-LocationUsingShortcut -Scope Global
 
 pratProfile_trace "interactiveProfile.ps1 ending"
 
