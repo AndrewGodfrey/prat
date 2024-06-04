@@ -4,7 +4,7 @@
 [CmdletBinding()]
 param($itemToFind, $startingDir)
 
-$searchDir = $startingDir
+$searchDir = Resolve-Path $startingDir
 $candidate = $null
 do {
     $candidate = Join-Path $searchDir $itemToFind
