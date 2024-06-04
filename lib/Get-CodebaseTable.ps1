@@ -35,8 +35,11 @@ function normalizeTableItem($item, $key, $cbFile) {
     return $item
 }
 
+$Location = Resolve-Path $Location
 $cbFile = &$PSScriptRoot\Get-ContainingItem "*.cbTable.ps1" $Location
 if ($cbFile -eq $null) { return $null }
+
+Write-Verbose "Load: $cbFile"
 
 $cbTable = . $cbFile
 
@@ -45,13 +48,16 @@ $cbTable = . $cbFile
 $results = @()
 
 foreach ($key in $cbTable.Keys) {
+    Write-Verbose "Considering: $key"
     $item = normalizeTableItem $cbTable[$key] $key $cbFile
     [System.IO.DirectoryInfo] $rootDI = $item.root
+    Write-Verbose "Compare: '$($rootDI.FullName)' vs '$($locationDI.FullName)'"
     if ($locationDI.FullName.StartsWith($rootDI.FullName)) {
-        Write-Verbose "Found: $(ConvertTo-Expression $item)"
+        Write-Verbose "Found: $($item | Out-String)" # This doesn't show scriptblocks properly, but at least it doesn't hang like ConvertTo-Expression!
         $results += $item
     }
 }
+Write-Verbose "Found $($results.Length) matches"
 
 if ($results.Length -eq 0) { return $null }
 if ($results.Length -gt 1) { throw "Found too many matches in $cbFile" }
