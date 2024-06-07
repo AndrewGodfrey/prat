@@ -65,8 +65,12 @@ function dirtop {
 #   /M    only print filenames.
 #   /R    regular expressions
 #   /V    only print non-matching lines
-function rf {
-    lssr | findstr /f:/ /p $Args
+function rf([switch] $IncludingBuiltFiles) {
+    if ($IncludingBuiltFiles) { 
+        lsr | findstr /f:/ /p $Args
+    } else { 
+        lssr | findstr /f:/ /p $Args
+    } 
 }
 
 # .SYNOPSIS
@@ -74,11 +78,25 @@ function rf {
 # 
 # .DESCRIPTION
 #
-# Enumerates source files in the current directory tree, excluding non-source casee like git/Mercurial directories and built files.
+# Enumerates source files in the current directory tree, excluding non-source cases like built files
 function lssr {
-    dir -r * | ? {-not $_.PsIsContainer} | % { $_.FullName } | ? { $_ -notmatch "\\\.(hg|git)\\"}
+    if ((up .git).Length -ne 0) {
+        git ls-files
+    } else {
+        lsr
+    }
 }
 
+
+# .SYNOPSIS
+# ls Recursive
+# 
+# .DESCRIPTION
+#
+# Enumerates all files in the current directory tree, only excluding git/Mercurial directories
+function lsr {
+    dir -r * | ? {-not $_.PsIsContainer} | % { $_.FullName } | ? { $_ -notmatch "\\\.(hg|git)\\"}
+}
 
 # .SYNOPSIS
 # Search path for executable files.
