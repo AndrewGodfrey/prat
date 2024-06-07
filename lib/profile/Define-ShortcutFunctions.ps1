@@ -53,7 +53,7 @@ function dirtop {
 # 
 # .DESCRIPTION
 #
-# Searches text files in the current directory tree
+# Searches source files in the current directory tree
 # for the given string. Excludes Mercurial/Git hidden directories.
 # 
 # This is handy for searching from the current directory. But it lacks some features (that I use SlickEdit's search for when I need them):
@@ -66,8 +66,19 @@ function dirtop {
 #   /R    regular expressions
 #   /V    only print non-matching lines
 function rf {
-    dir -r * | ? {-not $_.PsIsContainer} | % { $_.FullName } | ? { $_ -notmatch "\\\.(hg|git)\\"} | findstr /f:/ /p $Args
+    lssr | findstr /f:/ /p $Args
 }
+
+# .SYNOPSIS
+# ls Source Recursive
+# 
+# .DESCRIPTION
+#
+# Enumerates source files in the current directory tree, excluding non-source casee like git/Mercurial directories and built files.
+function lssr {
+    dir -r * | ? {-not $_.PsIsContainer} | % { $_.FullName } | ? { $_ -notmatch "\\\.(hg|git)\\"}
+}
+
 
 # .SYNOPSIS
 # Search path for executable files.
