@@ -1,5 +1,7 @@
 # Like Set-Location, but using a shortcut that's interpreted using Find-Shortcut and Find-CodebaseShortcut
-param($Shortcut="")
+param($Shortcut="", [switch] $Test, [switch] $OpenWorkspace)
+
+if ($Test -and $OpenWorkspace) { throw "Error: -Test and -OpenWorkspace are mutually exclusive"}
 
 function emit($key, $target) {
     $target = $target -replace "\\", "/"
@@ -27,6 +29,19 @@ if ($Shortcut -eq "?") {
     return
 }
 
+function findTestDir($tt) {
+    $c = "$($tt)Test"; if (Test-Path $c) { return $c }
+    $c = "$($tt)Tests"; if (Test-Path $c) { return $c }
+    if (Test-Path $tt) { return $tt }
+    while ($true) {
+        $parent = Split-Path -Parent $tt
+        if ($parent -eq $tt) { break }
+        if (Test-Path $parent) { return $parent }
+        $tt = $parent
+    }
+    return $null
+}
+
 $target = &$PSScriptRoot/../lib/Find-Shortcut $Shortcut
 if ($null -eq $target) { 
     $cbt = &$PSScriptRoot/../lib/Find-CodebaseShortcut $Shortcut
@@ -35,8 +50,30 @@ if ($null -eq $target) {
         return
     }
     $target = $cbt.root + "/" + $cbt.shortcuts[$Shortcut]
+    $target = $target -replace '\\', '/'
+
+    if ($OpenWorkspace) {
+        $workspace = $cbt.workspaces[$Shortcut]
+        if ($null -eq $workspace) {
+            throw "Don't know how to open workspace for '$Shortcut'"
+        }
+        $workspace = $workspace -replace "dev:", "$target/"
+        if ($workspace.Contains("test:")) { throw "NYI" }
+        if (!(Test-Path $workspace)) { throw "Not found: $workspace" }
+        &$workspace
+        return
+    }
+    if ($Test) {
+        if ($null -ne $cbt.irregularTestShorcuts[$Shortcut]) {
+            $target = $cbt.root + "/" + $cbt.irregularTestShorcuts[$Shortcut]
+        } elseif ($null -ne $cbt.testDirFromDevDir) {
+            $testTarget = &$cbt.testDirFromDevDir $target
+            $alt = findTestDir $testTarget
+            if ($null -ne $alt) { $target = $alt } else {
+                Write-Warning "No test dir found, leaving you in dev"
+            }
+        }
+    }
 }
 
 cd $target
-
-
