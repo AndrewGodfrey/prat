@@ -2,9 +2,9 @@
 # That's all it supports. I need it for apps that like to add a BOM (especially utf8 + BOM) when that's really not wanted.
 using module ../lib/PratBase/PratBase.psd1
 
-param ($pathspec)
+param ($pathspec, [switch] $FromScript)
 
-function ReadFirstBytes($file, $n) {
+function readFirstBytes($file, $n) {
     if ($PSVersionTable.PSVersion.Major -lt 6) {
         Get-Content $file -Encoding byte -TotalCount $n
     } else {
@@ -12,27 +12,20 @@ function ReadFirstBytes($file, $n) {
     }
 }
 
-$paths = @() + (Resolve-Path $pathspec)
-if (!$?) { return }
-if (($paths.Length -eq 1) -and (Test-Path -PathType Container $paths[0])) {
-    $pathspec = $paths[0].Path + "/*"
-    $paths = @() + (Resolve-Path $pathspec)
-}
-$files = @() + ($paths | ? { Test-Path -PathType Leaf $_ })
-foreach ($file in $files) {
-    [byte[]] $b = ReadFirstBytes $file 3
-
-    function startsWith($a, $prefix) {
-        if ($a.Count -lt $prefix.Count) { return $false }
-        $i = 0
-        foreach ($b in $prefix) {
-            if ($a[$i] -ne $b) { return $false }
-            $i++
-        }
-        return $true
+function startsWith($a, $prefix) {
+    if ($a.Count -lt $prefix.Count) { return $false }
+    $i = 0
+    foreach ($b in $prefix) {
+        if ($a[$i] -ne $b) { return $false }
+        $i++
     }
+    return $true
+}
 
-    function isAscii($val) { return ($val -gt 0x0) -and ($val -lt 0x80) }
+function isAscii($val) { return ($val -gt 0x0) -and ($val -lt 0x80) }
+
+function getEncoding($file) {
+    [byte[]] $b = readFirstBytes $file 3
 
     $fmt = "<unknown>"
     if ($b.Count -eq 0) { $fmt = "empty file"} else {
@@ -44,16 +37,32 @@ foreach ($file in $files) {
             if ((isAscii $b[0]) -and ($b[1] -eq 0)) { $fmt = "utf16" }
         }
     }
+    return $fmt
+}
 
-    if (Test-PathIsUnder $file $pwd) {
-        $message = "$(Get-RelativePath $pwd $file): $fmt"
-    } else {
-        $message = "$($file): $fmt"
+if ($FromScript) {
+    return getEncoding $pathspec
+} else {
+    $paths = @() + (Resolve-Path $pathspec)
+    if (!$?) { return }
+    if (($paths.Length -eq 1) -and (Test-Path -PathType Container $paths[0])) {
+        $pathspec = $paths[0].Path + "/*"
+        $paths = @() + (Resolve-Path $pathspec)
     }
-    if ($fmt -ne "utf8") {
-        Write-Host -ForegroundColor Yellow $message
-    } else {
-        Write-Host $message
+    $files = @() + ($paths | ? { Test-Path -PathType Leaf $_ })
+    foreach ($file in $files) {
+        $fmt = getEncoding $file
+
+        if (Test-PathIsUnder $file $pwd) {
+            $message = "$(Get-RelativePath $pwd $file): $fmt"
+        } else {
+            $message = "$($file): $fmt"
+        }
+        if ($fmt -ne "utf8") {
+            Write-Host -ForegroundColor Yellow $message
+        } else {
+            Write-Host $message
+        }
     }
 }
 
