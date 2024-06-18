@@ -1,6 +1,7 @@
 # Tools for installing particular nuget packages.
 function installNugetPackage([string] $packageId, [string] $version) {
     nuget install $packageId -OutputDirectory $home\de\packages -Verbosity quiet -NonInteractive
+    if (!$?) { throw }
 
 
     # I've tried the "native Powershell" way:
