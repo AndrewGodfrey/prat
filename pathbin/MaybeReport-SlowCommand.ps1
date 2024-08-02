@@ -11,9 +11,13 @@ if (!(Get-Command 'Send-UserNotification' -ErrorAction SilentlyContinue)) { retu
 
 $logFolder = "$home\prat\auto\log"
 if (-not (Test-Path $logFolder)) { md $logFolder >$null}
-function log($tolog) {
+function log($msg) {
+    $now = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss") # Note: Using local time instead of UTC
+    $toLog = "$($now): $msg"
     echo $toLog | Out-file -Append -encoding UTF8 $logFolder\MaybeReport-SlowCommand.txt
 }
+
+log "Starting" # For debugging an unexpected multi-second slowdown that I sometimes see. I mean, it's probably in Send-UserNotification, but still.
 
 $cmdArgs = $historyInfo.CommandLine.Split(" ")
 $cmd = $cmdArgs[0] # Note: Doesn't handle spaces in the command name.
@@ -40,4 +44,4 @@ $message += if (-not $lastCommandErrorStatus) { " failed" } else { " completed" 
 $app = "prat"
 log "Sending '$message' (app=$app), for command '$cmd'. Full command line: $($historyInfo.CommandLine)"
 Send-UserNotification $message $app
-
+log "Done"
