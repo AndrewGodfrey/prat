@@ -178,3 +178,5 @@ function Test-PathIsUnder([string] $path, [string] $root) {
     return $result
 }
 
+. $PSScriptRoot\appliedEnvironment.ps1
+

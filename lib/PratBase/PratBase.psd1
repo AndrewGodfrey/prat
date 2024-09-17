@@ -68,9 +68,9 @@ Description = 'Basic functions that Prat needs everywhere, and that will always 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 # NestedModules = @()
 
-# Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @('Get-CurrentUserIsElevated', 'Get-RelativePath', 'Import-PratAliases', 'ConvertTo-Expression', 'Get-OptimalSize',
-                      'Get-DiskFreeSpace', 'Get-UserIdleTimeInSeconds', 'Restart-Process', 'Test-PathIsUnder')
+                      'Get-DiskFreeSpace', 'Get-UserIdleTimeInSeconds', 'Restart-Process', 'Test-PathIsUnder',
+                      'Export-AppliedEnvironmentFromInvokedBatchScript', 'Invoke-CommandWithAppliedEnvironment')
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
