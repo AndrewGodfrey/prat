@@ -78,23 +78,23 @@ Describe "Export-EnvDeltaFromInvokedBatchScript" {
             # Assert
             Write-DebugValue $result.apply "result.apply"
             Write-DebugValue $result.prev "result.prev"
-            $result.apply.testValue_set       | Should -Be "set_updated"
-            $result.prev.testValue_set      | Should -Be "set_foo"
-            $result.apply.testValue_set2      | Should -Be ""
-            $result.prev.testValue_set2     | Should -Be "set2_foo"
-            $result.apply.testValue_cleared   | Should -Be "cleared_set"
-            $result.prev.testValue_cleared  | Should -Be ""
+            $result.apply.testValue_set     | Should -Be "set_updated"
+            $result.prev. testValue_set     | Should -Be "set_foo"
+            $result.apply.testValue_set2    | Should -Be ""
+            $result.prev. testValue_set2    | Should -Be "set2_foo"
+            $result.apply.testValue_cleared | Should -Be "cleared_set"
+            $result.prev. testValue_cleared | Should -Be ""
 
             # Sanity-check the empty-string value for set2:
             $result.apply.Contains('testValue_set2') | Should -BeTrue
 
             # Values that were untouched / unmodified, should be ignored
-            $result.apply. Contains('testValue_set3') | Should -BeFalse
-            $result.prev.Contains('testValue_set3') | Should -BeFalse
-            $result.apply. Contains('testValue_set4') | Should -BeFalse
-            $result.prev.Contains('testValue_set4') | Should -BeFalse
-            $result.apply. Contains('testValue_cleared2') | Should -BeFalse
-            $result.prev.Contains('testValue_cleared2') | Should -BeFalse
+            $result.apply.Contains('testValue_set3')     | Should -BeFalse
+            $result.prev. Contains('testValue_set3')     | Should -BeFalse
+            $result.apply.Contains('testValue_set4')     | Should -BeFalse
+            $result.prev. Contains('testValue_set4')     | Should -BeFalse
+            $result.apply.Contains('testValue_cleared2') | Should -BeFalse
+            $result.prev. Contains('testValue_cleared2') | Should -BeFalse
 
             # There should be no other values in these tables, since the script only changed these 3.
             $result.apply.Count | Should -Be 3
