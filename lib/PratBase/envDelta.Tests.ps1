@@ -57,7 +57,7 @@ Describe "captureCurrentEnv" {
     }
 }
 
-Describe "Export-AppliedEnvironmentFromInvokedBatchScript" {
+Describe "Export-EnvDeltaFromInvokedBatchScript" {
     It "Captures changes a batch script makes to environment variables" {
         $prev = pushTestEnvironment
         try {
@@ -73,7 +73,7 @@ Describe "Export-AppliedEnvironmentFromInvokedBatchScript" {
             $fn = createTestFile $batchScript
 
             # Act
-            $result = Export-AppliedEnvironmentFromInvokedBatchScript $fn
+            $result = Export-EnvDeltaFromInvokedBatchScript $fn
 
             # Assert
             Write-Debug-SimpleHashtable $result.apply "result.apply"
@@ -114,15 +114,15 @@ Describe "Export-AppliedEnvironmentFromInvokedBatchScript" {
             $fn = createTestFile $batchScript
 
             # Assert
-            {Export-AppliedEnvironmentFromInvokedBatchScript $fn} | Should -Throw -ExpectedMessage "batch script failed: error code: 1"
-            {Export-AppliedEnvironmentFromInvokedBatchScript $fn -checkExitCode:$false} | Should -Not -Throw
+            {Export-EnvDeltaFromInvokedBatchScript $fn} | Should -Throw -ExpectedMessage "batch script failed: error code: 1"
+            {Export-EnvDeltaFromInvokedBatchScript $fn -checkExitCode:$false} | Should -Not -Throw
         } finally {
             popTestEnvironment $prev
         }
     }
 }
 
-Describe "Invoke-CommandWithAppliedEnvironment" {
+Describe "Invoke-CommandWithEnvDelta" {
     It "Runs a scriptblock with the given environment temporarily applied" {
         $prev = pushTestEnvironment
         try {
@@ -135,13 +135,13 @@ Describe "Invoke-CommandWithAppliedEnvironment" {
 "@
             $fn = createTestFile $batchScript
 
-            $testEnvironment2 = Export-AppliedEnvironmentFromInvokedBatchScript $fn
+            $testEnvironment2 = Export-EnvDeltaFromInvokedBatchScript $fn
             $testScript = {
                 echo "hi: $($env:testValue_set), $($env:testValue_set2), $($env:testValue_cleared), $($env:testValue_set4)"
             }
 
             # Act
-            $result = Invoke-CommandWithAppliedEnvironment $testScript $testEnvironment2
+            $result = Invoke-CommandWithEnvDelta $testScript $testEnvironment2
 
             # Assert
             $result | Should -Be "hi: set_updated, , cleared_set, set4_foo"

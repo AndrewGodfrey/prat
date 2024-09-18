@@ -1,8 +1,16 @@
 # .SYNOPSIS
-# Functions for invoking a .bat script, and capturing the environment variables it changes.
-# The purpose is for 'build enlistment' scripts. We periodically may need the other side-effects it has, but not every time.
-# So we can periodically run it, capture the resulting environment changes, and then later just replay the environment changes when we
-# want to build.
+# 
+# Functions for manipulating an EnvDelta - a collection of env-var settings that need to be applied.
+# You can do the following:
+# 
+# Invoke-CommandWithEnvDelta:               Run a scriptblock while temporarily applying the EnvDelta.
+# Export-EnvDeltaFromInvokedBatchScript:    Execute a batch file, and capture any env-var modifications in a returned EnvDelta.
+# 
+#
+# The purpose of EnvDelta is for use with 'build enlistment' scripts. Many codebases provide an 'enlistment window' or 'build window'
+# that you're expected to work from - but many of them add a huge amount of work that is done when you open a new window.
+#
+# Instead, we can periodically run the update script, capture the resulting EnvDelta, and then later just use the EnvDelta when needed.
 #
 # Borrows from [Invoke-CmdScript.ps1](http://www.leeholmes.com/blog/2006/05/11/nothing-solves-everything-powershell-and-other-technologies/)
 
@@ -73,11 +81,11 @@ function applyDelta($delta) {
 }
 
 # .SYNOPSIS
-# Run a .bat or .cmd script, and capture the changes it makes to environment variables, for later use with Invoke-CommandWithAppliedEnvironment.
+# Run a .bat or .cmd script, and capture the changes it makes to environment variables, for later use with Invoke-CommandWithEnvDelta.
 # 
 # .RETURNS
-# A hashtable with 'apply' and 'revert' keys, for use with Invoke-CommandWithAppliedEnvironment. Each value is a hashtable of env-var name-value pairs.
-function Export-AppliedEnvironmentFromInvokedBatchScript([string] $script, [string] $parameters, [bool] $checkExitCode=$true) {
+# A hashtable with 'apply' and 'revert' keys, for use with Invoke-CommandWithEnvDelta. Each value is a hashtable of env-var name-value pairs.
+function Export-EnvDeltaFromInvokedBatchScript([string] $script, [string] $parameters, [bool] $checkExitCode=$true) {
     $currentEnvironment = captureCurrentEnv
     # Write-Debug-SimpleHashtable $currentEnvironment "current environment"
 
@@ -95,17 +103,17 @@ function Export-AppliedEnvironmentFromInvokedBatchScript([string] $script, [stri
 # while running the given script.
 # 
 # We assume the $script doesn't itself modify environment vars. Any such changes would not be 
-# reverted afterwards (unless they happen to be named in $appliedEnvironment).
+# reverted afterwards (unless they happen to be named in $EnvDelta).
 #
 # The intent is that the script will call out to some tool (whose changes to envvars will not affect the current script).
 #
-function Invoke-CommandWithAppliedEnvironment([scriptblock] $script, $appliedEnvironment) {
-    applyDelta $appliedEnvironment.apply
+function Invoke-CommandWithEnvDelta([scriptblock] $script, $EnvDelta) {
+    applyDelta $EnvDelta.apply
 
     try {
         & $script
     } finally {
-        applyDelta $appliedEnvironment.revert
+        applyDelta $EnvDelta.revert
     }
 }
 
