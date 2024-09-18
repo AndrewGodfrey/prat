@@ -76,8 +76,8 @@ Describe "Export-EnvDeltaFromInvokedBatchScript" {
             $result = Export-EnvDeltaFromInvokedBatchScript $fn
 
             # Assert
-            Write-Debug-SimpleHashtable $result.apply "result.apply"
-            Write-Debug-SimpleHashtable $result.revert "result.revert"
+            Write-DebugValue $result.apply "result.apply"
+            Write-DebugValue $result.revert "result.revert"
             $result.apply.testValue_set       | Should -Be "set_updated"
             $result.revert.testValue_set      | Should -Be "set_foo"
             $result.apply.testValue_set2      | Should -Be ""
