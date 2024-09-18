@@ -84,7 +84,8 @@ function applyDelta($delta) {
 # Run a .bat or .cmd script, and capture the changes it makes to environment variables, for later use with Invoke-CommandWithEnvDelta.
 # 
 # .RETURNS
-# A hashtable with 'apply' and 'revert' keys, for use with Invoke-CommandWithEnvDelta. Each value is a hashtable of env-var name-value pairs.
+# A hashtable with 'apply' and 'prev' keys, for use with Invoke-CommandWithEnvDelta. Each value is a hashtable of env-var name-value pairs.
+# The 'prev' key is just for information.
 function Export-EnvDeltaFromInvokedBatchScript([string] $script, [string] $parameters, [bool] $checkExitCode=$true) {
     $currentEnvironment = captureCurrentEnv
     # Write-Debug-SimpleHashtable $currentEnvironment "current environment"
@@ -94,7 +95,7 @@ function Export-EnvDeltaFromInvokedBatchScript([string] $script, [string] $param
 
     return @{
         apply = (removeDuplicateVars $currentEnvironment $newEnvironment)
-        revert = (removeDuplicateVars $newEnvironment $currentEnvironment)
+        prev = (removeDuplicateVars $newEnvironment $currentEnvironment)
     }
 }
 
@@ -118,5 +119,4 @@ function Invoke-CommandWithEnvDelta([scriptblock] $script, $EnvDelta) {
         applyDelta $toRevert
     }
 }
-
 
