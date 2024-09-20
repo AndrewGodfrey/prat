@@ -124,7 +124,12 @@ function Export-EnvDeltaFromInvokedBatchScript([string] $script, [string] $param
 #
 # The intent is that the script will call out to some tool (whose changes to envvars will not affect the current script).
 #
-function Invoke-CommandWithEnvDelta([scriptblock] $script, $EnvDelta) {
+function Invoke-CommandWithEnvDelta([scriptblock] $script, $optionalEnvDelta) {
+    if ($null -eq $optionalEnvDelta) {
+        $EnvDelta = @{ apply = @{}; prev = @{}}
+    } else {
+        $EnvDelta = $optionalEnvDelta
+    }
     $savedEnvironment = captureCurrentEnv
     $toRevert = (calculateEnvDelta $savedEnvironment $EnvDelta.apply).prev
     # Write-DebugValue $toRevert '$toRevert'

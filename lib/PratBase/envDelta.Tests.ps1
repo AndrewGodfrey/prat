@@ -298,4 +298,21 @@ Describe "Invoke-CommandWithEnvDelta" {
             popTestEnvironment $prev
         }
     }
+    It "Supports $null envdelta" {
+        $prev = pushTestEnvironment
+        try {
+            $testScript = {
+                echo "hi: $($env:testValue_set)"
+            }
+
+            # Act
+            $result = Invoke-CommandWithEnvDelta $testScript $null 
+
+            # Assert
+            $result | Should -Be "hi: set_foo"
+            $env:testValue_set | Should -Be "set_foo"
+        } finally {
+            popTestEnvironment $prev
+        }
+    }
 }
