@@ -13,7 +13,13 @@
 # Instead, we can periodically run the update script, capture the resulting EnvDelta, and then later just use the EnvDelta when needed.
 #
 # Borrows from [Invoke-CmdScript.ps1](http://www.leeholmes.com/blog/2006/05/11/nothing-solves-everything-powershell-and-other-technologies/)
-
+#
+# .ASSUMPTIONS
+# - Assumes that for an env-var (in env:, or in cmd.exe's 'set' command), 
+#   if the variable is equal to an empty string, that's identical to it not being present at all.
+# - But internally, this is NOT the case; in $envDelta.apply:
+#     If an empty env-var is present: This means that env-var is part of the delta. e.g. it would be emptied on 'apply', and restored to whatever it was before on 'revert'.
+#     Otherwise: The env-var is not part of the delta, meaning it should not be touched when this delta is applied/reverted.
 
 # Low-level function: Run a .bat or .cmd script, and capture all the environment variables afterwards.
 function runCmdAndCaptureEnv([string] $script, [string] $parameters, [bool] $checkExitCode) {
@@ -52,31 +58,43 @@ function captureCurrentEnv() {
     return $result
 }
 
-# Given an 'after' and 'before' capture, remove the variables in 'after' that were present and identical in 'before'.
-# I.e. this is like a subtraction: ($after - $before)
-# 
-# Since emptying an env-var removes it, we can represent removed items as 'present but empty'.
-function removeDuplicateVars($before, $after) {
-    $result = @{}
-    $seen = @{}
+# Given an 'after' and 'before' capture, calculates the 'apply' and 'prev' lists.
+# The subtlety is how we handle keys that are only present in one of the two:
+#   If in $before but not in $after:    These are not to be modified at all.
+#   If in $after but not $before:       These are to be temporarily deleted, and restored after.
+
+function calculateEnvDelta($before, $after, [switch] $MissingInAfterMeansDeletion = $false) {
+    $result = @{
+        apply = @{}
+        prev = @{}
+    }
+
     foreach ($key in $after.Keys) {
-        $seen[$key] = $true
         if ($before[$key] -ne $after[$key]) {
-            $result[$key] = $after[$key]
+            $beforeValue = $before[$key]
+            if ($null -eq $beforeValue) { $beforeValue = "" }
+            $result.prev[$key]  = $beforeValue
+            $result.apply[$key] = $after[$key]
         }
     }
-    foreach ($key in $before.Keys) {
-        if (!($seen[$key])) {
-            $result[$key] = ""
+
+    if ($MissingInAfterMeansDeletion) {
+        foreach ($key in $before.Keys) {
+            if (!$after.Contains($key)) {
+                $result.prev[$key]  = $before[$key]
+                $result.apply[$key] = ""
+            }
         }
     }
+
+    # Write-DebugValue $result '$result'
     return $result
 }
 
-# Apply the given env-var changes. ($delta is expected to be the output of removeDuplicateVars).
-function applyDelta($delta) {
-    foreach ($key in $delta.Keys) {
-        Set-Item env:$key -Value $delta[$key]
+# Apply the given env-var changes.
+function applyChanges($envVarChanges) {
+    foreach ($key in $envVarChanges.Keys) {
+        Set-Item env:$key -Value $envVarChanges[$key]
     }
 }
 
@@ -93,10 +111,8 @@ function Export-EnvDeltaFromInvokedBatchScript([string] $script, [string] $param
     $newEnvironment = runCmdAndCaptureEnv $script $parameters $checkExitCode
     # Write-Debug-SimpleHashtable $newEnvironment "new environment"
 
-    return @{
-        apply = (removeDuplicateVars $currentEnvironment $newEnvironment)
-        prev = (removeDuplicateVars $newEnvironment $currentEnvironment)
-    }
+    # We add -MissingInAfterMeansDeletion because: In this case, if the new environment is missing an item, we believe the script we just ran deleted it, on purpose.
+    return calculateEnvDelta $currentEnvironment $newEnvironment -MissingInAfterMeansDeletion
 }
 
 # .SYNOPSIS
@@ -110,13 +126,14 @@ function Export-EnvDeltaFromInvokedBatchScript([string] $script, [string] $param
 #
 function Invoke-CommandWithEnvDelta([scriptblock] $script, $EnvDelta) {
     $savedEnvironment = captureCurrentEnv
-    $toRevert = (removeDuplicateVars $EnvDelta.apply $savedEnvironment)
+    $toRevert = (calculateEnvDelta $savedEnvironment $EnvDelta.apply).prev
+    # Write-DebugValue $toRevert '$toRevert'
 
-    applyDelta $EnvDelta.apply
+    applyChanges $EnvDelta.apply
     try {
         & $script
     } finally {
-        applyDelta $toRevert
+        applyChanges $toRevert
     }
 }
 

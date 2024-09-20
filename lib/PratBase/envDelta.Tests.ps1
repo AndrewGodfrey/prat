@@ -20,6 +20,7 @@ BeforeAll {
             testValue_set4 = $env:testValue_set4
             testValue_cleared = $env:testValue_cleared
             testValue_cleared2 = $env:testValue_cleared2
+            testValue_uncovered = $env:testValue_uncovered
         }
         $env:testValue_set = "set_foo"
         $env:testValue_set2 = "set2_foo"
@@ -27,6 +28,7 @@ BeforeAll {
         $env:testValue_set4 = "set4_foo"
         $env:testValue_cleared = $null
         $env:testValue_cleared2 = $null
+        $env:testValue_uncovered = "uncovered_foo"
 
         return $prev
     }
@@ -38,6 +40,88 @@ BeforeAll {
         $env:testValue_set4 = $prev.testValue_set4
         $env:testValue_cleared = $prev.testValue_cleared
         $env:testValue_cleared2 = $prev.testValue_cleared2
+        $env:testValue_uncovered = $prev.testValue_uncovered
+    }
+}
+
+Describe "calculateEnvDelta" {
+    It "finds items added in 'after'" {
+        $before = @{
+            test_unchanged = 1
+            test_empty = ""
+        }
+        $after = @{
+            test_added = 42
+
+            test_unchanged = 1
+            test_empty = ""
+        }
+
+        # Act
+        $result = calculateEnvDelta $before $after
+
+        # Assert
+        $result.apply.Count | Should -Be 1
+        $result.apply.test_added | Should -Be 42
+        $result.prev.Count | Should -Be 1
+        $result.prev.test_added | Should -Be ""
+    }
+
+    It "finds items changed in 'after'" {
+        $before = @{
+            test_changed = 2
+
+            test_unchanged = 1
+            test_empty = ""
+        }
+        $after = @{
+            test_changed = 42
+
+            test_unchanged = 1
+            test_empty = ""
+        }
+
+        # Act
+        $result = calculateEnvDelta $before $after
+
+        # Assert
+        $result.apply.Count | Should -Be 1
+        $result.apply.test_changed | Should -Be 42
+        $result.prev.Count | Should -Be 1
+        $result.prev.test_changed | Should -Be 2
+    }
+
+    It "specially handles items deleted in 'after'" {
+        $before = @{
+            test_afterWillEmpty = 2
+            test_afterWontMention = 3
+
+            test_unchanged = 1
+            test_empty = ""
+        }
+        $after = @{
+            test_afterWillEmpty = ""
+
+            test_unchanged = 1
+            test_empty = ""
+        }
+
+        # Act
+        $result = calculateEnvDelta $before $after
+        $result2 = calculateEnvDelta $before $after -MissingInAfterMeansDeletion
+
+        # Assert
+        $result.apply.Count | Should -Be 1
+        $result.apply.test_afterWillEmpty | Should -Be ""
+        $result.prev.Count | Should -Be 1
+        $result.prev.test_afterWillEmpty | Should -Be 2
+
+        $result2.apply.Count | Should -Be 2
+        $result2.apply.test_afterWillEmpty | Should -Be ""
+        $result2.apply.test_afterWontMention | Should -Be ""
+        $result2.prev.Count | Should -Be 2
+        $result2.prev.test_afterWillEmpty | Should -Be 2
+        $result2.prev.test_afterWontMention | Should -Be 3
     }
 }
 
@@ -76,8 +160,9 @@ Describe "Export-EnvDeltaFromInvokedBatchScript" {
             $result = Export-EnvDeltaFromInvokedBatchScript $fn
 
             # Assert
-            Write-DebugValue $result.apply "result.apply"
-            Write-DebugValue $result.prev "result.prev"
+
+            # Write-DebugValue $result.apply '$result.apply'
+            # Write-DebugValue $result.prev '$result.prev'
             $result.apply.testValue_set     | Should -Be "set_updated"
             $result.prev. testValue_set     | Should -Be "set_foo"
             $result.apply.testValue_set2    | Should -Be ""
@@ -139,6 +224,7 @@ Describe "Invoke-CommandWithEnvDelta" {
             $testScript = {
                 echo "hi: $($env:testValue_set), $($env:testValue_set2), $($env:testValue_cleared), $($env:testValue_set4)"
             }
+            # Write-DebugValue $testEnvironment2 '$testEnvironment2'
 
             # Act
             $result = Invoke-CommandWithEnvDelta $testScript $testEnvironment2
@@ -152,6 +238,62 @@ Describe "Invoke-CommandWithEnvDelta" {
             $env:testValue_set4 | Should -Be "set4_foo"
             $env:testValue_cleared | Should -BeNull 
             $env:testValue_cleared2 | Should -BeNull
+        } finally {
+            popTestEnvironment $prev
+        }
+    }
+    It "Will, incidentally, restore changes that the called script makes TO COVERED env-vars" {
+        $prev = pushTestEnvironment
+        try {
+            $batchScript = @"
+                set testValue_set=set_updated
+                exit /b 0
+"@
+            $fn = createTestFile $batchScript
+
+            $testEnvironment2 = Export-EnvDeltaFromInvokedBatchScript $fn
+            $testScript = {
+                $env:testValue_set="set_updated2"
+                echo "hi: $($env:testValue_set)"
+            }
+
+            # Act
+            $result = Invoke-CommandWithEnvDelta $testScript $testEnvironment2
+
+            # Assert
+            $result | Should -Be "hi: set_updated2"
+            $env:testValue_set | Should -Be "set_foo"
+        } finally {
+            popTestEnvironment $prev
+        }
+    }
+    It "Will NOT restore changes that the called script makes to NON-COVERED env-vars" {
+        # For this reason, $testScript code should either avoid modifying env-vars, or save and restore all env-vars itself if that's appropriate.
+        # TODO: Consider whether to include that behavior by default.
+
+        $prev = pushTestEnvironment
+        try {
+            # The key thing about this batch script is it does NOT change $env:testValue_uncovered
+            $batchScript = @"
+                set testValue_set=set_updated
+                exit /b 0
+"@
+            $fn = createTestFile $batchScript
+
+            $testEnvironment2 = Export-EnvDeltaFromInvokedBatchScript $fn
+            $testScript = {
+                $env:testValue_uncovered="uncovered_updated"
+                echo "hi: $($env:testValue_set), $($env:testValue_uncovered)"
+            }
+
+            # Act
+            $result = Invoke-CommandWithEnvDelta $testScript $testEnvironment2
+
+            # Assert
+            $result | Should -Be "hi: set_updated, uncovered_updated"
+            $env:testValue_set | Should -Be "set_foo"
+
+            $env:testValue_uncovered | Should -Be "uncovered_updated" # Was NOT restored to "uncovered_foo"
         } finally {
             popTestEnvironment $prev
         }
