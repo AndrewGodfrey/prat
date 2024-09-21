@@ -321,9 +321,9 @@ Describe "Invoke-CommandWithEnvDelta" {
 Describe "Get-CachedEnvDelta" {
     It "Loads the structure from a file" {
         $cacheFile = @"
-        @{
-            'apply' = @{'testValue_set' = 'set_updated77'}
-            'prev'  = @{'testValue_set' = 'set_foo'}
+        [ordered] @{
+            'apply' = [ordered] @{'testValue_set' = 'set_updated77'}
+            'prev'  = [ordered] @{'testValue_set' = 'set_foo'}
         }
 "@
         # Write-DebugValue $cacheFile
@@ -342,9 +342,9 @@ Describe "Get-CachedEnvDelta" {
     }
     It "Handles a particular format of empty case without throwing" {
         $cacheFile = @"
-        @{
-            'apply' = @{}
-            'prev'  = @{}
+        [ordered] @{
+            'apply' = [ordered] @{}
+            'prev'  = [ordered] @{}
         }
 "@
 

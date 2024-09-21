@@ -64,9 +64,9 @@ function captureCurrentEnv() {
 #   If in $after but not $before:       These are to be temporarily deleted, and restored after.
 
 function calculateEnvDelta($before, $after, [switch] $MissingInAfterMeansDeletion = $false) {
-    $result = @{
-        apply = @{}
-        prev = @{}
+    $result = [ordered] @{
+        apply = [ordered] @{}
+        prev = [ordered] @{}
     }
 
     foreach ($key in $after.Keys) {
@@ -126,7 +126,7 @@ function Export-EnvDeltaFromInvokedBatchScript([string] $script, [string] $param
 #
 function Invoke-CommandWithEnvDelta([scriptblock] $script, $optionalEnvDelta) {
     if ($null -eq $optionalEnvDelta) {
-        $EnvDelta = @{ apply = @{}; prev = @{} }
+        $EnvDelta = [ordered] @{ apply = [ordered] @{}; prev = [ordered] @{} }
     } else {
         $EnvDelta = $optionalEnvDelta
     }
@@ -154,8 +154,8 @@ function Get-CachedEnvDelta($cacheFile) {
     $environmentChange = . $cacheFile
 
     if ($null -eq $environmentChange) { throw "internal error"}
-    if ($environmentChange.GetType().Name -ne "Hashtable") { throw "internal error"}
-    if (-not ($environmentChange.ContainsKey("apply"))) { throw "internal error"}
+    if ($environmentChange.GetType().Name -ne "OrderedDictionary") { throw "internal error"}
+    if (-not ($environmentChange.Keys.Contains("apply"))) { throw "internal error"}
 
     return $environmentChange
 }
