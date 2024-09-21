@@ -1,3 +1,4 @@
+# .SYNOPSIS
 # Given a location/pwd, finds what codebase it's 'in'.
 # This controls the behavior of various other tools.
 #
@@ -14,6 +15,25 @@
 #   The contents of a *.cbTable.ps1 files need to be kept simple, because they are going to be executed by the prompt when the current directory
 #   changes. I tried putting a scriptblock for 'howToTest' in there and had problems that were hard to debug. So, making it a string instead
 #   and avoiding scriptblocks.
+#
+#
+# Input properties from the cbTable: The cbTable is a table of hashtables, key being the codebase nickname.
+# Each codebase table has these properties:
+#   root:                      The root directory of the codebase - e.g. probably the location that .git and .gitignore are in.
+#   howToBuild, 
+#     howToTest, 
+#     howToDeploy:             Optional - gives the command to run when the user invokes Build-Codebase (alias: b), Test-Codebase (alias: t) 
+#                              or Deploy-Codebase (alias: d).
+#   shortcuts, 
+#     irregularTestShortcuts:  Optional table of shortcuts for use by Set-LocationUsingShortcut (alias: c).
+#   workspaces: 
+#   cachedEnvData:             An optional filename that stores a cached EnvDelta for the codebase. Must end in '.ps1'. 
+#                              e.g. "$home\prat\auto\cachedEnvDelta\envForCmake.ps1"
+#                              You'd populate it using Install-CachedEnvDelta from a deployment script.
+#
+# Other properties added to the $cbt object:
+#   subdir:                    A path for the given $Location, relative to $root
+
 using module PratBase\PratBase.psd1
 
 [CmdletBinding()]

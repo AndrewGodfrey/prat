@@ -60,7 +60,7 @@ if ($null -eq $target) {
         $workspace = $workspace -replace "dev:", "$target/"
         if ($workspace.Contains("test:")) { throw "NYI" }
         if (!(Test-Path $workspace)) { throw "Not found: $workspace" }
-        &$workspace
+        Invoke-CommandWithEnvDelta {&$workspace} (Get-CachedEnvDelta $cbt.cachedEnvDelta)
         return
     }
     if ($Test) {
