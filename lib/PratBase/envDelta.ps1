@@ -126,7 +126,7 @@ function Export-EnvDeltaFromInvokedBatchScript([string] $script, [string] $param
 #
 function Invoke-CommandWithEnvDelta([scriptblock] $script, $optionalEnvDelta) {
     if ($null -eq $optionalEnvDelta) {
-        $EnvDelta = @{ apply = @{}; prev = @{}}
+        $EnvDelta = @{ apply = @{}; prev = @{} }
     } else {
         $EnvDelta = $optionalEnvDelta
     }
