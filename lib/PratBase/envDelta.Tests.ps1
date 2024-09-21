@@ -2,7 +2,7 @@ BeforeAll {
     . $PSCommandPath.Replace('.Tests.ps1','.ps1')
 
     [int] $testFileNum = 0
-    function createTestFile($data, $extension = ".bat") {
+    function createTestFile($data, $extension) {
         $testFileNum += 1
 
         $tempFile = "$TestDrive\test.$testFileNum$extension"
@@ -154,7 +154,7 @@ Describe "Export-EnvDeltaFromInvokedBatchScript" {
                 exit /b 0
 "@
 
-            $fn = createTestFile $batchScript
+            $fn = createTestFile $batchScript ".bat"
 
             # Act
             $result = Export-EnvDeltaFromInvokedBatchScript $fn
@@ -196,7 +196,7 @@ Describe "Export-EnvDeltaFromInvokedBatchScript" {
                 exit /b 1
 "@
             # Act
-            $fn = createTestFile $batchScript
+            $fn = createTestFile $batchScript ".bat"
 
             # Assert
             {Export-EnvDeltaFromInvokedBatchScript $fn} | Should -Throw -ExpectedMessage "batch script failed: error code: 1"
@@ -218,7 +218,7 @@ Describe "Invoke-CommandWithEnvDelta" {
                 set testValue_cleared=cleared_set
                 exit /b 0
 "@
-            $fn = createTestFile $batchScript
+            $fn = createTestFile $batchScript ".bat"
 
             $testEnvironment2 = Export-EnvDeltaFromInvokedBatchScript $fn
             $testScript = {
@@ -249,7 +249,7 @@ Describe "Invoke-CommandWithEnvDelta" {
                 set testValue_set=set_updated
                 exit /b 0
 "@
-            $fn = createTestFile $batchScript
+            $fn = createTestFile $batchScript ".bat"
 
             $testEnvironment2 = Export-EnvDeltaFromInvokedBatchScript $fn
             $testScript = {
@@ -278,7 +278,7 @@ Describe "Invoke-CommandWithEnvDelta" {
                 set testValue_set=set_updated
                 exit /b 0
 "@
-            $fn = createTestFile $batchScript
+            $fn = createTestFile $batchScript ".bat"
 
             $testEnvironment2 = Export-EnvDeltaFromInvokedBatchScript $fn
             $testScript = {
@@ -316,3 +316,45 @@ Describe "Invoke-CommandWithEnvDelta" {
         }
     }
 }
+
+
+Describe "Get-CachedEnvDelta" {
+    It "Loads the structure from a file" {
+        $cacheFile = @"
+        @{
+            'apply' = @{'testValue_set' = 'set_updated77'}
+            'prev'  = @{'testValue_set' = 'set_foo'}
+        }
+"@
+        # Write-DebugValue $cacheFile
+
+        $fn = createTestFile $cacheFile ".ps1"
+
+        # Act
+        $result = Get-CachedEnvDelta $fn
+
+        # Assert
+        $testScript = {
+            echo "hi: $($env:testValue_set)"
+        }
+        $output = Invoke-CommandWithEnvDelta $testScript $result
+        $output | Should -Be "hi: set_updated77"
+    }
+    It "Handles a particular format of empty case without throwing" {
+        $cacheFile = @"
+        @{
+            'apply' = @{}
+            'prev'  = @{}
+        }
+"@
+
+        $fn = createTestFile $cacheFile ".ps1"
+
+        # Act
+        $result = Get-CachedEnvDelta $fn
+
+        # Assert
+        $result.prev.Keys.Count | Should -Be 0
+    }
+}
+

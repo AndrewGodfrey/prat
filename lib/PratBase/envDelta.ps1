@@ -142,3 +142,28 @@ function Invoke-CommandWithEnvDelta([scriptblock] $script, $optionalEnvDelta) {
     }
 }
 
+# .SYNOPSIS
+# Loads a saved EnvDelta structure from a file. Does basic verification.
+#
+# To create one of these files, you'd use Install-CachedEnvDelta, calling it from a codebase deployment script.
+function Get-CachedEnvDelta($cacheFile) {
+    if (!(Test-Path $cacheFile)) { throw "Need to deploy dev environment first. Cache file not found: $cacheFile" }
+
+    $environmentChange = . $cacheFile
+
+    if ($null -eq $environmentChange) { throw "internal error"}
+    if ($environmentChange.GetType().Name -ne "Hashtable") { throw "internal error"}
+    if (-not ($environmentChange.ContainsKey("apply"))) { throw "internal error"}
+
+    return $environmentChange
+}
+
+# .SYNOPSIS
+# Installs (creates/updates/nops) a file that holds the contents of an EnvDelta structure.
+#
+# You'd later load it using Get-CachedEnvDelta
+function Install-CachedEnvDelta($stage, $cacheFile, $envDelta) {
+    $asText = ConvertTo-Expression $environmentChange
+    Install-TextToFile $stage $cacheFile $asText -ShowUpdateDetails
+}
+
