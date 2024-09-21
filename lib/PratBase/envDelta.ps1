@@ -147,6 +147,7 @@ function Invoke-CommandWithEnvDelta([scriptblock] $script, $optionalEnvDelta) {
 #
 # To create one of these files, you'd use Install-CachedEnvDelta, calling it from a codebase deployment script.
 function Get-CachedEnvDelta($cacheFile) {
+    if (!($cacheFile.EndsWith(".ps1"))) { throw '$cacheFile needs to end in ".ps1"' }
     if (!(Test-Path $cacheFile)) { throw "Need to deploy dev environment first. Cache file not found: $cacheFile" }
 
     $environmentChange = . $cacheFile
@@ -163,6 +164,7 @@ function Get-CachedEnvDelta($cacheFile) {
 #
 # You'd later load it using Get-CachedEnvDelta
 function Install-CachedEnvDelta($stage, $cacheFile, $envDelta) {
+    if (!($cacheFile.EndsWith(".ps1"))) { throw '$cacheFile needs to end in ".ps1"' }
     $asText = ConvertTo-Expression $environmentChange
     Install-TextToFile $stage $cacheFile $asText -ShowUpdateDetails
 }
