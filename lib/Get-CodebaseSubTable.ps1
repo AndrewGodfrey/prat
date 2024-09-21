@@ -33,7 +33,16 @@ foreach ($key in $cbt.shortcuts.Keys) {
     }
 }
 
-if ($null -eq $longestMatch.key) { return $cbt }
+function addWorkspaceProperty($table, $subTable, $key) {
+    if ($null -ne $table.workspaces) {
+        $subTable.workspace = $table.workspaces[$key]
+    }
+    return $subTable
+}
+
+if ($null -eq $longestMatch.key) {
+    return (addWorkspaceProperty $cbt $cbt "")
+}
 Write-Verbose "Found: $($longestMatch.key)"
 $item = @{
     cbt = $cbt
@@ -43,4 +52,4 @@ $item = @{
 }
 $item.subdir = Get-RelativePath $item.root $Location
 
-return $item
+return (addWorkspaceProperty $cbt $item $longestMatch.key)

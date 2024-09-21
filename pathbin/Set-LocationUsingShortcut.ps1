@@ -1,7 +1,5 @@
 # Like Set-Location, but using a shortcut that's interpreted using Find-Shortcut and Find-CodebaseShortcut
-param($Shortcut="", [switch] $Test, [switch] $OpenWorkspace)
-
-if ($Test -and $OpenWorkspace) { throw "Error: -Test and -OpenWorkspace are mutually exclusive"}
+param($Shortcut="", [switch] $Test)
 
 function emit($key, $target) {
     $target = $target -replace "\\", "/"
@@ -52,17 +50,6 @@ if ($null -eq $target) {
     $target = $cbt.root + "/" + $cbt.shortcuts[$Shortcut]
     $target = $target -replace '\\', '/'
 
-    if ($OpenWorkspace) {
-        $workspace = $cbt.workspaces[$Shortcut]
-        if ($null -eq $workspace) {
-            throw "Don't know how to open workspace for '$Shortcut'"
-        }
-        $workspace = $workspace -replace "dev:", "$target/"
-        if ($workspace.Contains("test:")) { throw "NYI" }
-        if (!(Test-Path $workspace)) { throw "Not found: $workspace" }
-        Invoke-CommandWithEnvDelta {&$workspace} (Get-CachedEnvDelta $cbt.cachedEnvDelta)
-        return
-    }
     if ($Test) {
         if ($null -ne $cbt.irregularTestShorcuts[$Shortcut]) {
             $target = $cbt.root + "/" + $cbt.irregularTestShorcuts[$Shortcut]
