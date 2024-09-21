@@ -165,7 +165,7 @@ function Get-CachedEnvDelta($cacheFile) {
 # You'd later load it using Get-CachedEnvDelta
 function Install-CachedEnvDelta($stage, $cacheFile, $envDelta) {
     if (!($cacheFile.EndsWith(".ps1"))) { throw '$cacheFile needs to end in ".ps1"' }
-    $asText = ConvertTo-Expression $environmentChange
+    $asText = ConvertTo-Expression $envDelta
     Install-TextToFile $stage $cacheFile $asText -ShowUpdateDetails
 }
 
