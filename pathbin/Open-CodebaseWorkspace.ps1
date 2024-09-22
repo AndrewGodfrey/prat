@@ -2,7 +2,7 @@
 [CmdletBinding()]
 param()
 
-$cbt = &$PSScriptRoot\..\lib\Get-CodebaseSubTable $pwd -Verbose:$Verbose
+$cbt = &$PSScriptRoot\..\lib\Get-CodebaseSubTable $pwd -Verbose:$VerbosePreference
 Write-DebugValue $cbt
 
 if ($null -eq $cbt) { 
