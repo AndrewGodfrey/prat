@@ -56,7 +56,7 @@ function normalizeTableItem($item, $key, $cbFile) {
 }
 
 $Location = Resolve-Path $Location
-$cbFile = &$PSScriptRoot\Get-ContainingItem "*.cbTable.ps1" $Location
+$cbFile = &$PSScriptRoot\Get-ContainingItem "cbTable.*.ps1" $Location
 if ($cbFile -eq $null) { return $null }
 
 Write-Verbose "Get-CodebaseTable: Load: $cbFile"
