@@ -33,23 +33,31 @@ foreach ($key in $cbt.shortcuts.Keys) {
     }
 }
 
-function addWorkspaceProperty($table, $subTable, $key) {
-    if ($null -ne $table.workspaces) {
-        $subTable.workspace = $table.workspaces[$key]
-    }
-    return $subTable
-}
-
 if ($null -eq $longestMatch.key) {
-    return (addWorkspaceProperty $cbt $cbt "")
+    # TODO: Make an object more similar in type to the other cases - don't want 'subworkspaces' or 'shortcuts' properties
+    # TODO: Maybe we can hide Get-CodebaseTable completely behind Get-CodebaseSubTable? Change what we call a 'codebase' to refer to this object, unrelated to a repo.
+    return $cbt
 }
 Write-Verbose "Found: $($longestMatch.key)"
 $item = @{
     cbt = $cbt
     id = "$($cbt.id)/$($longestMatch.key)"
     root = $longestMatch.dest
-    buildKind = $cbt.buildKind
+    subdir = $(Get-RelativePath $longestMatch.dest $Location)
 }
-$item.subdir = Get-RelativePath $item.root $Location
 
-return (addWorkspaceProperty $cbt $item $longestMatch.key)
+if ($null -ne $cbt.subworkspaces) {
+    if ($cbt.subworkspaces.Keys.Contains($longestMatch.key)) {
+        $item.workspace = $cbt.subworkspaces[$longestMatch.key]
+    }
+}
+
+# Inherit any properties, that aren't already overridden, form $cbt. 
+#   e.g. it's useful for these properties: 'buildKind', 'workspace'
+foreach ($key in $cbt.Keys) {
+    if (!$item.Keys.Contains($key)) { # Using Keys.Contains, so that subtables can override a non-null value with $null if they really want to.
+        $item[$key] = $cbt[$key]
+    }
+}
+
+return $item
