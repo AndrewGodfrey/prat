@@ -123,6 +123,33 @@ Describe "calculateEnvDelta" {
         $result2.prev.test_afterWillEmpty | Should -Be 2
         $result2.prev.test_afterWontMention | Should -Be 3
     }
+
+    It "produces a sorted result" {
+        function assertSorted($keys) { # Designed for .NET type "System.Collections.Specialized.OrderedDictionary+OrderedDictionaryKeyValueCollection"
+            $prevKey = $null
+            foreach ($key in $keys) {
+                if ($null -ne $prevKey) {
+                    $key | Should -BeGreaterOrEqual $prevKey
+                }
+                $prevKey = $key
+            }
+        }
+
+        $beforeA = [ordered] @{ key1 = 0; key2 = 0; key3 = 0 }
+        $afterA  = [ordered] @{           key2 = 2; key3 = 3 } 
+        $beforeB = [ordered] @{ key3 = 0; key2 = 0; key1 = 0 }
+        $afterB  = [ordered] @{ key3 = 3; key2 = 2           }
+
+        # Act
+        $resultA = calculateEnvDelta $beforeA $afterA -MissingInAfterMeansDeletion
+        $resultB = calculateEnvDelta $beforeB $afterB -MissingInAfterMeansDeletion
+
+        # Assert
+        assertSorted $resultA.apply.Keys
+        assertSorted $resultA.prev.Keys
+        assertSorted $resultB.apply.Keys
+        assertSorted $resultB.prev.Keys
+    }
 }
 
 Describe "captureCurrentEnv" {

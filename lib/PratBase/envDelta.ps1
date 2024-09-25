@@ -64,27 +64,34 @@ function captureCurrentEnv() {
 #   If in $after but not $before:       These are to be temporarily deleted, and restored after.
 
 function calculateEnvDelta($before, $after, [switch] $MissingInAfterMeansDeletion = $false) {
-    $result = [ordered] @{
-        apply = [ordered] @{}
-        prev = [ordered] @{}
-    }
+    $temp = @{}
 
     foreach ($key in $after.Keys) {
         if ($before[$key] -ne $after[$key]) {
             $beforeValue = $before[$key]
             if ($null -eq $beforeValue) { $beforeValue = "" }
-            $result.prev[$key]  = $beforeValue
-            $result.apply[$key] = $after[$key]
+
+            $temp[$key] = @{ prev = $beforeValue; apply = $after[$key] }
         }
     }
 
     if ($MissingInAfterMeansDeletion) {
         foreach ($key in $before.Keys) {
             if (!$after.Contains($key)) {
-                $result.prev[$key]  = $before[$key]
-                $result.apply[$key] = ""
+                $temp[$key] = @{ prev = $before[$key]; apply = "" }
             }
         }
+    }
+
+    # Produce a result sorted by key
+    $result = [ordered] @{
+        apply = [ordered] @{}
+        prev = [ordered] @{}
+    }
+
+    foreach ($key in ($temp.Keys | Sort-Object)) {
+        $result.apply[$key] = $temp[$key].apply
+        $result.prev[$key] = $temp[$key].prev
     }
 
     # Write-DebugValue $result '$result'
