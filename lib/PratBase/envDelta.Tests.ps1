@@ -135,9 +135,9 @@ Describe "calculateEnvDelta" {
             }
         }
 
-        $beforeA = [ordered] @{ key1 = 0; key2 = 0; key3 = 0 }
+        $beforeA = [ordered] @{ key1 = 3; key2 = 0; key3 = 2 }
         $afterA  = [ordered] @{           key2 = 2; key3 = 3 } 
-        $beforeB = [ordered] @{ key3 = 0; key2 = 0; key1 = 0 }
+        $beforeB = [ordered] @{ key3 = 2; key2 = 0; key1 = 3 }
         $afterB  = [ordered] @{ key3 = 3; key2 = 2           }
 
         # Act
