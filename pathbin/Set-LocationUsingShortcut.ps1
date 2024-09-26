@@ -44,8 +44,7 @@ $target = &$PSScriptRoot/../lib/Find-Shortcut $Shortcut
 if ($null -eq $target) { 
     $cbt = &$PSScriptRoot/../lib/Find-CodebaseShortcut $Shortcut
     if ($null -eq $cbt) { 
-        Write-Error "Unrecognized: $Shortcut" 
-        return
+        throw "Unrecognized: $Shortcut" 
     }
     $target = $cbt.root + "/" + $cbt.shortcuts[$Shortcut]
     $target = $target -replace '\\', '/'
