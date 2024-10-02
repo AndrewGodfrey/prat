@@ -70,7 +70,7 @@ Description = 'Basic functions that Prat needs everywhere, and that will always 
 
 FunctionsToExport = @('Get-CurrentUserIsElevated', 'Get-RelativePath', 'Import-PratAliases', 'ConvertTo-Expression', 'Get-OptimalSize',
                       'Get-DiskFreeSpace', 'Get-UserIdleTimeInSeconds', 'Restart-Process', 'Test-PathIsUnder',
-                      'Export-EnvDeltaFromInvokedBatchScript', 'Invoke-CommandWithEnvDelta', 'Install-CachedEnvDelta', 'Get-CachedEnvDelta')
+                      'Export-EnvDeltaFromInvokedBatchScript', 'Invoke-CommandWithEnvDelta', 'Install-CachedEnvDelta', 'Get-CachedEnvDelta', 'Invoke-CommandWithCachedEnvDelta')
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()

@@ -150,6 +150,16 @@ function Invoke-CommandWithEnvDelta([scriptblock] $script, $optionalEnvDelta) {
 }
 
 # .SYNOPSIS
+# Wrapper for Invoke-CommandWithEnvDelta which does verbose logging, and loads the EnvDelta
+function Invoke-CommandWithCachedEnvDelta([scriptblock] $script, $optionalCachedEnvDeltaFilename) {
+    if ($null -ne $optionalCachedEnvDeltaFilename) {
+        Write-Verbose "Applying enviroment: $optionalCachedEnvDeltaFilename"
+    }
+
+    Invoke-CommandWithEnvDelta $script (Get-CachedEnvDelta $optionalCachedEnvDeltaFilename)
+}
+
+# .SYNOPSIS
 # Loads a saved EnvDelta structure from a file. Does basic verification.
 #
 # To create one of these files, you'd use Install-CachedEnvDelta, calling it from a codebase deployment script.

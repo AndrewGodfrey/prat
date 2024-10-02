@@ -19,8 +19,4 @@ if ($workspace.Contains("test:")) { throw "NYI" }
 if (!(Test-Path $workspace)) { throw "Not found: $workspace" }
 
 Write-Verbose "Opening workspace: $workspace"
-if ($null -ne $cbt.cachedEnvDelta) {
-    Write-Verbose "Applying enviroment: $($cbt.cachedEnvDelta)"
-}
-Invoke-CommandWithEnvDelta {&$workspace} (Get-CachedEnvDelta $cbt.cachedEnvDelta)
-
+Invoke-CommandWithCachedEnvDelta {&$workspace} $cbt.cachedEnvDelta
