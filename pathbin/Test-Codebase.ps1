@@ -10,17 +10,17 @@
 param()
 
 $cbt = &$home\prat\lib\Get-CodebaseTable (Get-Location)
-if ($cbt -eq $null) { 
+if ($null -eq $cbt) { 
     throw "Unknown codebase - can't run tests"
 }
 
-if ($cbt.howToTest -ne $null) {
+if ($null -ne $cbt.howToTest) {
     &$cbt.howToTest
 } else {
     # Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
     $script = Get-CodebaseScript "test" $cbt.id
 
-    if ($script -eq $null) {
+    if ($null -eq $script) {
         Write-Verbose "test: NOP"
     } else {
         Write-Debug "calling $script for ${$cbt.id}"

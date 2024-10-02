@@ -14,16 +14,17 @@ param(
 )
 
 $cbt = &$home\prat\lib\Get-CodebaseTable (Get-Location)
-if ($cbt -eq $null) { 
+if ($null -eq $cbt) { 
     throw "Unknown codebase - can't build"
 }
-if ($cbt.howToBuild -ne $null) {
+
+if ($null -ne $cbt.howToBuild) {
     &$cbt.howToBuild
 } else {
     # Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
     $script = Get-CodebaseScript "build" $cbt.id
 
-    if ($script -eq $null) {
+    if ($null -eq $script) {
         Write-Verbose "build: NOP"
     } else {
         Write-Debug "calling $script for ${$cbt.id}"
