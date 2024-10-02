@@ -15,7 +15,7 @@ if ($null -eq $cbt) {
 }
 
 if ($null -ne $cbt.howToTest) {
-    &$cbt.howToTest
+    Invoke-CommandWithCachedEnvDelta {&$cbt.howToTest} $cbt.cachedEnvDelta   
 } else {
     # Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
     $script = Get-CodebaseScript "test" $cbt.id
@@ -24,7 +24,7 @@ if ($null -ne $cbt.howToTest) {
         Write-Verbose "test: NOP"
     } else {
         Write-Debug "calling $script for ${$cbt.id}"
-        . $script $cbt
+        Invoke-CommandWithCachedEnvDelta {. $script $cbt} $cbt.cachedEnvDelta
     }
 }
 

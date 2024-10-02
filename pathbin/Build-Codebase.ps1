@@ -19,7 +19,7 @@ if ($null -eq $cbt) {
 }
 
 if ($null -ne $cbt.howToBuild) {
-    &$cbt.howToBuild
+    Invoke-CommandWithCachedEnvDelta {&$cbt.howToBuild} $cbt.cachedEnvDelta
 } else {
     # Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
     $script = Get-CodebaseScript "build" $cbt.id
@@ -28,6 +28,6 @@ if ($null -ne $cbt.howToBuild) {
         Write-Verbose "build: NOP"
     } else {
         Write-Debug "calling $script for ${$cbt.id}"
-        . $script $cbt $command
+        Invoke-CommandWithCachedEnvDelta {. $script $cbt $command} $cbt.cachedEnvDelta
     }
 }
