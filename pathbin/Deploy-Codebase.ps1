@@ -10,15 +10,15 @@
 param([switch] $Force)
 
 $cbt = &$home\prat\lib\Get-CodebaseTable (Get-Location)
-if ($cbt -eq $null) { 
+if ($null -eq $cbt) { 
     throw "Unknown codebase - can't deploy"
 }
 
 # Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
 $script = Get-CodebaseScript "deploy" $cbt.id
 
-if ($script -eq $null) {
-    if ($cbt.howToDeploy -ne $null) {
+if ($null -eq $script) {
+    if ($null -ne $cbt.howToDeploy) {
         &$cbt.howToDeploy -Force:$Force
     } else {
         Write-Verbose "deploy: NOP"
