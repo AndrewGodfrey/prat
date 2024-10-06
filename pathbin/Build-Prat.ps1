@@ -4,7 +4,10 @@
 # Caveat: This doesn't remove classes, like LineArray and InstallationTracker. For iterating on those, the only way I know is to start a new
 #         PS session.
 
-Remove-Module Installers -ErrorAction SilentlyContinue
-Remove-Module TextFileEditor -ErrorAction SilentlyContinue
-Remove-Module PratBase -ErrorAction SilentlyContinue
+function remove($module) {
+    Write-Host -ForegroundColor Green "Removing: $module"
+    Remove-Module $module -ErrorAction SilentlyContinue
+}
+"Installers", "TextFileEditor", "PratBase" | ForEach-Object {remove $_}
+
 
