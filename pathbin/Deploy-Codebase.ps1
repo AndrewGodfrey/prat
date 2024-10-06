@@ -23,4 +23,4 @@ if ($null -eq $script) {
 }
 
 Write-Debug "calling deploy script for $($cbt.id)"
-. $script $cbt -Force:$Force
+&$script $cbt -Force:$Force
