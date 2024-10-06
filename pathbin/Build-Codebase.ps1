@@ -26,5 +26,5 @@ if ($null -eq $script) {
     return
 }
 
-Write-Debug "calling $script for ${$cbt.id}"
+Write-Debug "calling build script for $($cbt.id)"
 Invoke-CommandWithCachedEnvDelta {. $script $cbt $command} $cbt.cachedEnvDelta

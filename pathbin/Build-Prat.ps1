@@ -9,5 +9,3 @@ function remove($module) {
     Remove-Module $module -ErrorAction SilentlyContinue
 }
 "Installers", "TextFileEditor", "PratBase" | ForEach-Object {remove $_}
-
-

@@ -22,5 +22,5 @@ if ($null -eq $script) {
     return
 }
 
-Write-Debug "calling $script for ${$cbt.id}"
+Write-Debug "calling deploy script for $($cbt.id)"
 . $script $cbt -Force:$Force
