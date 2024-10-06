@@ -14,17 +14,18 @@ if ($null -eq $cbt) {
     throw "Unknown codebase - can't run tests"
 }
 
-if ($null -ne $cbt.howToTest) {
-    Invoke-CommandWithCachedEnvDelta {&$cbt.howToTest} $cbt.cachedEnvDelta   
-} else {
-    # Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
-    $script = Get-CodebaseScript "test" $cbt.id
+# Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
+$script = Get-CodebaseScript "test" $cbt.id
 
-    if ($null -eq $script) {
-        Write-Verbose "test: NOP"
+if ($null -eq $script) {
+    if ($null -ne $cbt.howToTest) {
+        Invoke-CommandWithCachedEnvDelta {&$cbt.howToTest} $cbt.cachedEnvDelta   
     } else {
-        Write-Debug "calling $script for ${$cbt.id}"
-        Invoke-CommandWithCachedEnvDelta {. $script $cbt} $cbt.cachedEnvDelta
+        Write-Verbose "test: NOP"
     }
+} else {
+    Write-Debug "calling $script for ${$cbt.id}"
+    Invoke-CommandWithCachedEnvDelta {. $script $cbt} $cbt.cachedEnvDelta
 }
+
 

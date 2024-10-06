@@ -18,16 +18,16 @@ if ($null -eq $cbt) {
     throw "Unknown codebase - can't build"
 }
 
-if ($null -ne $cbt.howToBuild) {
-    Invoke-CommandWithCachedEnvDelta {&$cbt.howToBuild} $cbt.cachedEnvDelta
-} else {
-    # Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
-    $script = Get-CodebaseScript "build" $cbt.id
+# Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
+$script = Get-CodebaseScript "build" $cbt.id
 
-    if ($null -eq $script) {
-        Write-Verbose "build: NOP"
+if ($null -eq $script) {
+    if ($null -ne $cbt.howToBuild) {
+        Invoke-CommandWithCachedEnvDelta {&$cbt.howToBuild} $cbt.cachedEnvDelta
     } else {
-        Write-Debug "calling $script for ${$cbt.id}"
-        Invoke-CommandWithCachedEnvDelta {. $script $cbt $command} $cbt.cachedEnvDelta
+        Write-Verbose "build: NOP"
     }
+} else {
+    Write-Debug "calling $script for ${$cbt.id}"
+    Invoke-CommandWithCachedEnvDelta {. $script $cbt $command} $cbt.cachedEnvDelta
 }
