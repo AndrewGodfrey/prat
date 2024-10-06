@@ -18,14 +18,9 @@ if ($null -eq $cbt) {
 $script = Get-CodebaseScript "test" $cbt.id
 
 if ($null -eq $script) {
-    if ($null -ne $cbt.howToTest) {
-        Invoke-CommandWithCachedEnvDelta {&$cbt.howToTest} $cbt.cachedEnvDelta   
-    } else {
-        Write-Verbose "test: NOP"
-    }
-} else {
-    Write-Debug "calling $script for ${$cbt.id}"
-    Invoke-CommandWithCachedEnvDelta {. $script $cbt} $cbt.cachedEnvDelta
+    Write-Verbose "test: NOP"
+    return    
 }
 
-
+Write-Debug "calling $script for ${$cbt.id}"
+Invoke-CommandWithCachedEnvDelta {. $script $cbt} $cbt.cachedEnvDelta

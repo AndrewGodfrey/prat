@@ -18,12 +18,9 @@ if ($null -eq $cbt) {
 $script = Get-CodebaseScript "deploy" $cbt.id
 
 if ($null -eq $script) {
-    if ($null -ne $cbt.howToDeploy) {
-        &$cbt.howToDeploy -Force:$Force
-    } else {
-        Write-Verbose "deploy: NOP"
-    }
-} else {
-    Write-Debug "calling $script for ${$cbt.id}"
-    . $script $cbt -Force:$Force
+    Write-Verbose "deploy: NOP"
+    return
 }
+
+Write-Debug "calling $script for ${$cbt.id}"
+. $script $cbt -Force:$Force

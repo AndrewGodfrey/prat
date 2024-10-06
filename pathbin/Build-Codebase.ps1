@@ -22,12 +22,9 @@ if ($null -eq $cbt) {
 $script = Get-CodebaseScript "build" $cbt.id
 
 if ($null -eq $script) {
-    if ($null -ne $cbt.howToBuild) {
-        Invoke-CommandWithCachedEnvDelta {&$cbt.howToBuild} $cbt.cachedEnvDelta
-    } else {
-        Write-Verbose "build: NOP"
-    }
-} else {
-    Write-Debug "calling $script for ${$cbt.id}"
-    Invoke-CommandWithCachedEnvDelta {. $script $cbt $command} $cbt.cachedEnvDelta
+    Write-Verbose "build: NOP"
+    return
 }
+
+Write-Debug "calling $script for ${$cbt.id}"
+Invoke-CommandWithCachedEnvDelta {. $script $cbt $command} $cbt.cachedEnvDelta
