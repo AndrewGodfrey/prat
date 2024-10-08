@@ -65,14 +65,14 @@ class InstallationTracker {
     [Void] StopInstallation() {
         # Avoid things which might throw. It's used in a 'finally' and could hide some other exception
         $this.currentStage = $null
-        if ($this.mutex -ne $null) {
+        if ($null -ne $this.mutex) {
             $this.mutex.Close()
             $this.mutex = $null
         }
     }
 
     [Void] CheckEmptyStage() {
-        if ($this.currentStage -ne $null) { throw "Previous stage '$($this.currentStage.Name)' forgot to call EndStage()" }
+        if ($null -ne $this.currentStage) { throw "Previous stage '$($this.currentStage.Name)' forgot to call EndStage()" }
     }
 
     [InstallationStage] StartStage([string] $stageName) {
@@ -89,7 +89,7 @@ class InstallationTracker {
 
     [Void] UpdateProgress([string] $subStage) {
         $operationName = ""
-        if ($this.currentStage -ne $null)
+        if ($null -ne $this.currentStage)
         {
             $operationName = $this.currentStage.Name
             if ($subStage -ne "") {
@@ -114,7 +114,7 @@ class InstallationTracker {
     }
 
     [Void] ReportErrorContext($e) {
-        if ($this.currentStage -ne $null) {
+        if ($null -ne $this.currentStage) {
             $sc = $this.currentStage.GetPrintableStageContext()
             $psStack = $e.ScriptStackTrace
             Write-Error @"

@@ -66,7 +66,7 @@ function Find-XmlSection($xmlContent, $pathArray, $filename) {
             $terms = getMatchTerms $matchString
 
             if (-not $xmlReader.ReadToDescendant($terms.elementName)) { throw "Internal error ('$matchString')" }
-            if ($terms.attrName -ne $null) {
+            if ($null -ne $terms.attrName) {
                 while ($xmlReader.GetAttribute($terms.attrName) -ne $terms.attrValue) {
                     if (-not $xmlReader.ReadToNextSibling($terms.elementName)) { throw "Internal error ('$matchString')" }
                 }
@@ -90,8 +90,8 @@ function Find-XmlSection($xmlContent, $pathArray, $filename) {
             throw "Error: End node isn't on its own line ($filename : $($result.idxLast + 1))"
         }
     } finally {
-        if ($xmlReader -ne $null) { $xmlReader.Dispose() }
-        if ($stringReader -ne $null) { $stringReader.Dispose() }
+        if ($null -ne $xmlReader) { $xmlReader.Dispose() }
+        if ($null -ne $stringReader) { $stringReader.Dispose() }
     }
 
     return $result
@@ -109,7 +109,7 @@ function Update-XmlSection($xmlContent, $pathArray, $newSection, $filename) {
     #       we rely on the existing section to know where to put the replacement.
 
     $range = Find-XmlSection $xmlContent $pathArray $filename
-    if ($range -ne $null) {
+    if ($null -ne $range) {
         # Replace
         return Format-ReplaceLines $xmlContent $range $newSection
     } else {

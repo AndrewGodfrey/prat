@@ -11,7 +11,7 @@
 function processProperty([string] $propertyName, $defaultValue, $properties, $processed) {
     $processed[$propertyName] = $true
     $value = $properties[$propertyName]
-    if ($value -ne $null) { return $value }
+    if ($null -ne $value) { return $value }
     return $defaultValue
 }
 

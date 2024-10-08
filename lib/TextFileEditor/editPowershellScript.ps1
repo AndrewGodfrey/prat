@@ -72,7 +72,7 @@ function Add-HashTableItemInPowershellScript(
     }
 
     # Create the new lines to insert
-    if ($newValue -ne $null) {
+    if ($null -ne $newValue) {
         $laNewCode = [LineArray]::new("$newKey = $newValue")
         $laNewCode.IndentEachLine($subIndent)
     } else {
@@ -110,7 +110,7 @@ function Test-HashTableItemInPowershellScript(
 
     $itemPattern = '^\s*' + $key + ' *= '
     $itemRange = Find-MatchingPowershellBlock $lineArray $tableRange $itemPattern
-    return $itemRange -ne $null
+    return $null -ne $itemRange
 }
 
 
