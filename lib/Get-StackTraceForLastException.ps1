@@ -1,6 +1,6 @@
 # For the previous exception that was thrown, get the ScriptStackTrace
 
-if ($error[0] -eq $null) { return }
+if ($null -eq $error[0]) { return }
 
 # Select starting frame
 $errorToShow = $error[0]

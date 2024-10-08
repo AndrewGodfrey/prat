@@ -41,7 +41,7 @@ param ([string] $Location = $pwd)
 
 function normalizeTableItem($item, $key, $cbFile) {
     $item.id = $key
-    if ($item.root -eq $null) {
+    if ($null -eq $item.root) {
         # In this case, we'd expect $cbFile to have just one entry in it, describing the codebase rooted at the same location as $cbFile
         $item.root = Split-Path -parent $cbFile
     }
@@ -57,7 +57,7 @@ function normalizeTableItem($item, $key, $cbFile) {
 
 $Location = Resolve-Path $Location
 $cbFile = &$PSScriptRoot\Get-ContainingItem "cbTable.*.ps1" $Location
-if ($cbFile -eq $null) { return $null }
+if ($null -eq $cbFile) { return $null }
 
 Write-Verbose "Get-CodebaseTable: Load: $cbFile"
 

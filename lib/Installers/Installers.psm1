@@ -11,10 +11,10 @@
 #      $installationTracker = Start-Installation "<installer name>"
 #      [ ... installation steps ... ]
 #   } catch {
-#       if ($installationTracker -ne $null) { $installationTracker.ReportErrorContext($error[0]) }
+#       if ($null -ne $installationTracker) { $installationTracker.ReportErrorContext($error[0]) }
 #       throw
 #   } finally {
-#      if ($installationTracker -ne $null) { $installationTracker.StopInstallation() }
+#      if ($null -ne $installationTracker) { $installationTracker.StopInstallation() }
 #   }
 #
 # A well-formed installation step looks like this:

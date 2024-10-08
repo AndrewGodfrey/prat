@@ -13,7 +13,7 @@ function Find-MatchingLine(
     $range,
     $pattern)
 {
-    if ($range -eq $null) { $range = @{ idxFirst = 0; idxLast = $lineArray.lines.Count - 1} }
+    if ($null -eq $range) { $range = @{ idxFirst = 0; idxLast = $lineArray.lines.Count - 1} }
 
     [int] $idx = 0
     for ($idx=$range.idxFirst; $idx -le $range.idxLast; $idx++) {
@@ -74,7 +74,7 @@ function Format-ReplaceMatchingLines(
     $pattern,
     $replacement)
 {
-    if ($range -eq $null) { $range = @{ idxFirst = 0; idxLast = $lineArray.lines.Count - 1} }
+    if ($null -eq $range) { $range = @{ idxFirst = 0; idxLast = $lineArray.lines.Count - 1} }
 
     [int] $replacementCount = 0
     [int] $idx = 0

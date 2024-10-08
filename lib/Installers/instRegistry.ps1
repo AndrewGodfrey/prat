@@ -15,12 +15,12 @@ function Install-RegistryDwordValue($stage, [string] $path, $propertyName, [uint
     $key = Get-Item -Path $path
 
     $property = $key.GetValue($propertyName)
-    if (($property -eq $null) -or 
+    if (($null -eq $property) -or 
         ($key.GetValueKind($propertyName) -ne "DWord") -or
         ($property -ne $newData))
     {
         $stage.OnChange()
-        if ($propertyName -eq $null) { $propertyName = "(Default)" }
+        if ($null -eq $propertyName) { $propertyName = "(Default)" }
         New-ItemProperty -Path $path -Name $propertyName -PropertyType DWord -Value $newData -Force | Out-Null
     }
 }
@@ -30,12 +30,12 @@ function Install-RegistryDwordValue($stage, [string] $path, $propertyName, [uint
 function Install-RegistryStringValue($stage, [string] $path, $propertyName, [string] $newData) {
     $key = Get-Item -Path $path
     $property = $key.GetValue($propertyName)
-    if (($property -eq $null) -or 
+    if (($null -eq $property) -or 
         ($key.GetValueKind($propertyName) -ne "String") -or
         ($property -ne $newData))
     {
         $stage.OnChange()
-        if ($propertyName -eq $null) { $propertyName = "(Default)" }
+        if ($null -eq $propertyName) { $propertyName = "(Default)" }
         New-ItemProperty -Path $path -Name $propertyName -PropertyType String -Value $newData -Force | Out-Null
     }
 }
@@ -48,7 +48,7 @@ function areByteArraysEqual([byte[]] $a1, [byte[]] $a2) {
 function Install-RegistryBinaryValue($stage, [string] $path, [string] $propertyName, [byte[]] $newData) {
     $key = Get-Item -Path $path
     $property = $key.GetValue($propertyName)
-    if (($property -eq $null) -or 
+    if (($null -eq $property) -or 
         ($key.GetValueKind($propertyName) -ne "Binary") -or
         (-not (areByteArraysEqual $property $newData)))
     {

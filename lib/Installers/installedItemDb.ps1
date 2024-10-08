@@ -69,7 +69,7 @@ function Get-InstalledItemVersion($dbLocation, $itemId) {
 #       For a downgrade, do a migration step or something - that's an error-prone situation that deserves thought.
 function Test-InstalledItemVersion($dbLocation, $itemId, $expectedVersion = "1.0") {
     $currentVersion = Get-InstalledItemVersion $dbLocation $itemId
-    if ($currentVersion -eq $null) { return $false }
+    if ($null -eq $currentVersion) { return $false }
     if ($currentVersion -eq $expectedVersion) { return $true }
 
     $currentVersion = [System.Version] $currentVersion

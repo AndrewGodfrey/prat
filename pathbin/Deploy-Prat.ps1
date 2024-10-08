@@ -12,10 +12,10 @@ try {
 
     Install-PsProfile $it
 } catch {
-    if ($it -ne $null) { $it.ReportErrorContext($error[0]) }
+    if ($null -ne $it) { $it.ReportErrorContext($error[0]) }
     throw
 } finally {
-    if ($it -ne $null) { $it.StopInstallation() }
+    if ($null -ne $it) { $it.StopInstallation() }
 }
 
 

@@ -13,7 +13,7 @@ pratProfile_trace "interactiveProfile.ps1 starting"
 New-Alias stack "$PSScriptRoot\..\Get-StackTraceForLastException.ps1" -Description "Get the PS stack trace of the last exception"
 
 function pratSetWindowTitle($extraContext) {
-    if ($extraContext -eq $null) {
+    if ($null -eq $extraContext) {
         $ec = ""
     } else {
         $ec = ": $extraContext"
@@ -47,7 +47,7 @@ cd $env:userprofile
 # For 'prompt' function: Call a hook script if the current location has changed
 function pratDetectLocationChange {
     $location = (Get-Location).Path
-    if (($global:__prat_lastPromptLocation -eq $null) -or ($global:__prat_lastPromptLocation -ne $location)) {
+    if (($null -eq $global:__prat_lastPromptLocation) -or ($global:__prat_lastPromptLocation -ne $location)) {
         &$PSScriptRoot\..\On-PromptLocationChanged $location $global:__prat_lastPromptLocation
         $global:__prat_lastPromptLocation = $location
     }

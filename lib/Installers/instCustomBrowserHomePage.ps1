@@ -97,14 +97,14 @@ function emitPage($title, $header) {
 
 
 function defineCat($cat, $lineNumber) {
-   if ($categories[$cat] -ne $null) {
+   if ($null -ne $categories[$cat]) {
        throw "Duplicate category definition `"$cat`" at line $lineNumber"
    }
    $categories[$cat] = $True
 }
 
 function AddCatLink($cat, $link) {
-    if ($catLinks[$cat] -eq $null) {
+    if ($null -eq $catLinks[$cat]) {
         $catLinks[$cat] = New-Object System.Collections.ArrayList
     }
     $catLinks[$cat].Add($link) | Out-Null
@@ -122,11 +122,11 @@ function parseLinksFile([string] $filename) {
             $currCat = $matches[1]
             defineCat $currCat $lineNumber
         } elseif ($line -match '^\t\[(.*)\]\((.*)\) *$') {
-            if ($currCat -eq $null) { throw "$filename($linenumber): Unknown category" }
+            if ($null -eq $currCat) { throw "$filename($linenumber): Unknown category" }
 
             $newDesc = $matches[1]
             $newLink = $matches[2]
-            if ($links[$newLink] -ne $null) { throw "$filename($linenumber): Duplicate link" }
+            if ($null -ne $links[$newLink]) { throw "$filename($linenumber): Duplicate link" }
             # Todo: Do a duplicate check on the link description.
             $links[$newLink] = 1
             $linkDesc[$newLink] = $newDesc
@@ -166,7 +166,7 @@ function Install-CustomBrowserHomePage($installationTracker, $tempDir, $inputDir
 
     Install-File $stage $tempDir $generatedFileDir $fn
 
-    if ($smbShareName -ne $null) {
+    if ($null -ne $smbShareName) {
         $userDomainName = $env:userdomain + "\" + $env:username
         Install-SmbShare $stage $smbShareName $generatedFileDir $userDomainName
     }

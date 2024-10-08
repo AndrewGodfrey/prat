@@ -4,7 +4,7 @@ function writeUpdateDetailIf([string] $message, [bool] $doIt) {
 
 # Install one file
 function Install-File($stage, $srcDir, $destDir, $srcFilename, $destFilename, [switch] $ShowUpdateDetails) {
-    if ($destFilename -eq $null) {
+    if ($null -eq $destFilename) {
         $destFilename = $srcFilename
     }
     $copyFile = $false
@@ -190,7 +190,7 @@ function Install-SmbShare($stage, $shareName, $targetFolder, $credential) {
     [bool] $needUpdate = $false
     [bool] $needCreate = $false
 
-    if ($cimInstance -eq $null) {
+    if ($null -eq $cimInstance) {
         $needCreate = $true
         $stage.OnChange()
     } else {

@@ -228,7 +228,7 @@ function installForkGitClient($stage, [array] $packageArgs) {
 function internal_installPratPackage($stage, [string] $packageId, [array] $packageArgs) {
     # Dependencies
     $deps = $pratPackageDependencies[$packageId]
-    if ($deps -eq $null) { throw "Unrecognized Prat package id: $packageId" }
+    if ($null -eq $deps) { throw "Unrecognized Prat package id: $packageId" }
     foreach ($dep in $deps) { internal_installPratPackage $stage $dep }
 
     # The package itself

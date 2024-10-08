@@ -10,7 +10,7 @@ param(
 
 [hashtable] $tokens = . '[TOKENFILE]'  # See installPushoverNotification for sample data for this file
 $appToken = $tokens.apps.$app
-if ($appToken -eq $null) {
+if ($null -eq $appToken) {
     if ($nopIfNoAppToken) {
         return
     }

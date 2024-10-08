@@ -28,7 +28,7 @@ $packages = @{
 
 function installNugetPackageAndDeps($stage, [string] $myPackageId, [string] $packagesRoot) {
     $p = $packages[$myPackageId]
-    if ($p -eq $null) { throw "Unrecognized myPackageId: $myPackageId" }
+    if ($null -eq $p) { throw "Unrecognized myPackageId: $myPackageId" }
 
     foreach ($dep in $p.dependencies) {
         installNugetPackageAndDeps $stage $dep $packagesRoot
@@ -73,7 +73,7 @@ function Install-NugetPackage($installationTracker, [string] $myPackageId, [stri
 
 function Add-NugetPackageType([string] $myPackageId, [string] $packagesRoot) {
     $p = $packages[$myPackageId]
-    if ($p -eq $null) { throw "Unrecognized myPackageId: $myPackageId" }
+    if ($null -eq $p) { throw "Unrecognized myPackageId: $myPackageId" }
 
     foreach ($dep in $p.dependencies) {
         Add-NugetPackageType $dep $packagesRoot

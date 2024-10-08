@@ -42,7 +42,7 @@ function Import-PratAliases($file) {
 # Returns:      [string] Display friendly value
 ###############################################################################
 function Get-OptimalSize($sizeInBytes) {
-    if ($sizeInBytes -eq $null) { return $null }
+    if ($null -eq $sizeInBytes) { return $null }
     $sizeInBytes = [int64] $sizeInBytes
 
     switch ($sizeInBytes) {
@@ -76,7 +76,7 @@ function Get-DiskFreeSpace {
 }
 
 function Get-UserIdleTimeInSeconds {
-    if (('UserActivity' -as [type]) -eq $null) {
+    if ($null -eq ('UserActivity' -as [type])) {
         Add-Type @"
             using System;
             using System.Runtime.InteropServices;

@@ -46,13 +46,13 @@ function Update-PatchSlickOpenWkspace($file, $defaultProjectFolder)
     $linearray = [LineArray]::new($script)
 
     $range = Find-WorkspaceOpenCommand $linearray
-    if ($range -eq $null) {
+    if ($null -eq $range) {
         Write-Warning "Skipping broken patch for: $file. (Couldn't find command)"
         return $null
     }
 
     $range = Find-OpenDialogStatement $linearray $range
-    if ($range -eq $null) {
+    if ($null -eq $range) {
         Write-Warning "Skipping broken patch for: $file. (Couldn't find OpenDialog statement)"
         return $null
     }

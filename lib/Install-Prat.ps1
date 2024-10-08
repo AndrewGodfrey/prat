@@ -10,7 +10,7 @@ param([switch] $PauseForManualTesting, [switch] $SkipDeployStep)
 # 
 # https://github.com/microsoft/winget-cli/issues/1793
 # https://github.com/microsoft/winget-cli/discussions/1738#discussioncomment-5484927
-if ((where.exe winget) -eq $null) { 
+if ($null -eq (where.exe winget)) { 
     Write-Warning @"
 winget isn't installed. This is sadly 'by design' for new installs of Windows.
 The 'official workaround' seems to be: 

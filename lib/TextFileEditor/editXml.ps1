@@ -116,7 +116,7 @@ function Update-XmlSection($xmlContent, $pathArray, $newSection, $filename) {
         # Create
         $parentIndex = $pathArray.Length-2
         $parentSectionRange = Find-XmlSection $xmlContent $pathArray[0..$parentIndex] $filename
-        if ($parentSectionRange -eq $null) {
+        if ($null -eq $parentSectionRange) {
             throw "Can't find $($pathArray[$parentIndex]) section in $filename"
         }
         $targetLineNumber = $parentSectionRange.idxLast

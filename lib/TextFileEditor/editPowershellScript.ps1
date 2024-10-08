@@ -27,7 +27,7 @@ function Find-MatchingPowershellBlock(
     $range,
     $pattern)
 {
-    if ($range -eq $null) { $range = @{ idxFirst = 0; idxLast = $lineArray.lines.Count - 1} }
+    if ($null -eq $range) { $range = @{ idxFirst = 0; idxLast = $lineArray.lines.Count - 1} }
 
     [int] $idxFirst = Find-MatchingLine $lineArray $range $pattern
     if ($idxFirst -eq -1) { return $null; }
@@ -67,7 +67,7 @@ function Add-HashTableItemInPowershellScript(
     $tableRange = Find-MatchingPowershellBlock $lineArray $null $tablePattern
     $subIndent = Get-SubIndent $lineArray $tableRange
 
-    if ($tableRange -eq $null) {
+    if ($null -eq $tableRange) {
         throw "Initialization not found for table '$tableName'"
     }
 
@@ -81,7 +81,7 @@ function Add-HashTableItemInPowershellScript(
 
     $itemPattern = '^\s*' + $newKey + ' *= '
     $itemRange = Find-MatchingPowershellBlock $lineArray $tableRange $itemPattern
-    if ($itemRange -eq $null) {
+    if ($null -eq $itemRange) {
         # Insert case - need to find where to insert it
         # TODO: Keep items sorted. For now, insert at the end.
         $lineArray.InsertLines($tableRange.idxLast, $laNewCode)
@@ -104,7 +104,7 @@ function Test-HashTableItemInPowershellScript(
     $tableRange = Find-MatchingPowershellBlock $lineArray $null $tablePattern
     $subIndent = Get-SubIndent $lineArray $tableRange
 
-    if ($tableRange -eq $null) {
+    if ($null -eq $tableRange) {
         throw "Initialization not found for table '$tableName'"
     }
 
@@ -148,13 +148,13 @@ function Edit-HashOfArraysItemInPowershellScript (
     $tablePattern = '^\s*\$' + $tableName + ' *= *@{\s*$'
     $tableRange = Find-MatchingPowershellBlock $lineArray $null $tablePattern
 
-    if ($tableRange -eq $null) {
+    if ($null -eq $tableRange) {
         throw "Initialization not found for table '$tableName'"
     }
 
     $hashItemPattern = '^\s*' + $key + ' *= *@\(\s*$'
     $hashItemRange = Find-MatchingPowershellBlock $lineArray $tableRange $hashItemPattern
-    if ($hashItemRange -eq $null) {
+    if ($null -eq $hashItemRange) {
         if (-not $add) {
             # NOP: Hash item already removed
             return

@@ -17,7 +17,7 @@ function ~      {cd $env:userprofile\$Args}
 # .DESCRIPTION
 # With a parameter, this is 'pushd'. Without, it's 'popd'.
 function p($Target) {
-    if ($Target -eq $null) {
+    if ($null -eq $Target) {
         popd
     } else {
         pushd $Target

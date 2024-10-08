@@ -35,7 +35,7 @@ function queryDefaultStringValue([string] $regPath) {
     $key = Get-Item -Path $regPath
     $property = $key.GetValue($null) # Get default value
 
-    if (($property -eq $null) -or (-not ("String", "ExpandString" -Contains $key.GetValueKind($null)))) { return $null }
+    if (($null -eq $property) -or (-not ("String", "ExpandString" -Contains $key.GetValueKind($null)))) { return $null }
     return $property
 }
 
@@ -84,7 +84,7 @@ function Install-WindowsFileAssociation($stage, [string] $extension, [string] $c
     # Decide on assoc name
     $previousAssocName = getAssocName $extension
     $assocName = $previousAssocName
-    if ($assocName -eq $null) {
+    if ($null -eq $assocName) {
         $assocName = $assocNameIfNeeded
     }
 
@@ -103,7 +103,7 @@ function Install-WindowsFileAssociation($stage, [string] $extension, [string] $c
     }
 
     # Install assoc
-    if ($previousAssocName -eq $null) {
+    if ($null -eq $previousAssocName) {
         $stage.OnChange()
         setAssocName $extension $assocName
     }

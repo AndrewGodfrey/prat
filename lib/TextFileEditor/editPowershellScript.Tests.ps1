@@ -26,7 +26,7 @@ $table = @{
     }
     It "returns null on no match" {
         $result = Find-MatchingPowershellBlock $laTestScript @{idxFirst=2; idxLast=7} "^\skey3 = "
-        ($result -eq $null) | Should -BeTrue
+        ($null -eq $result) | Should -BeTrue
     }
 }
 
