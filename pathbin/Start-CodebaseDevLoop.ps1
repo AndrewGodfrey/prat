@@ -11,7 +11,10 @@
 #   - Similarly for 't', if you're iterating on failing tests and the build step is slow even when there's no work.
 #   - I use 'b' more rarely, but on some codebases, it can save time if you're iterating on build errors.
 [CmdletBinding()]
-param()
+param([switch] $Force=$false)
 
-Build-Codebase; Test-Codebase; Deploy-Codebase
+Prebuild-Codebase -Force:$Force
+Build-Codebase
+Test-Codebase
+Deploy-Codebase -Force:$Force
 

@@ -12,7 +12,7 @@
 # The first param passed to the scriptblock/script, is $cbt, the codebase table for this codebase.
 # For other params, see the implementations of Build-Codebase, Test-Codebase and Deploy-Codebase.
 param(
-    [ValidateSet("build", "test", "deploy")] [string] $action,
+    [ValidateSet("prebuild", "build", "test", "deploy")] [string] $action,
     [string] $codebase
 )
 

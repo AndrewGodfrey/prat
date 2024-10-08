@@ -80,6 +80,7 @@ Update-FormatData -PrependPath $PSScriptRoot\FileSystem.format.ps1xml
 
 pratProfile_trace "Done: Update-FormatData"
 
+New-Alias -Name pb -Value Prebuild-Codebase -Scope Global
 New-Alias -Name b -Value Build-Codebase -Scope Global
 New-Alias -Name t -Value Test-Codebase -Scope Global
 New-Alias -Name d -Value Deploy-Codebase -Scope Global
