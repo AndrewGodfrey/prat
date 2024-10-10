@@ -205,6 +205,8 @@ Function ConvertTo-Expression {
 		ElseIf ($Object -is [Char]) {$Cast = $Type; "'$Object'"}
 		ElseIf ($Object -is [String]) {If ($Object -Match "[`r`n]") {"@'$NewLine$Object$NewLine'@$NewLine"} Else {"'$($Object.Replace('''', ''''''))'"}}
 		ElseIf ($Object -is [DateTime]) {$Cast = $Type; "'$($Object.ToString('o'))'"}
+		ElseIf ($Object -is [Scriptblock]) {
+			"{$($Object.ToString())}"}
 		ElseIf ($Object -is [TimeSpan] -or $Object -is [Version]) {$Cast = $Type; "'$Object'"}
 		ElseIf ($Object -is [Enum]) {$Type = "String"; "'$($Object)'"}
 		ElseIf ($Object -is [Xml]) {$Cast = "Xml"; $SW = New-Object System.IO.StringWriter; $XW = New-Object System.Xml.XmlTextWriter $SW

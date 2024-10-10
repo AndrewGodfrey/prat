@@ -52,15 +52,16 @@ Describe "ConvertTo-Expression" {
     }
 
     # Can't run this, because it hangs
-    # It "chokes when given a scriptblock" {
-    #     $e = { echo 43 }
+    It "converts a scriptblock" {
+        $e = { echo 43  }
 
-    #     # Act
-    #     $result = ConvertTo-Expression $e
+        # Act
+        $result = ConvertTo-Expression $e
 
-    #     # Assert
-    #     $resultExpression = AssertRoundtrip $e $result
-    #     &$resultExpression | Should -Be "43"
-    # }
+        # Assert
+        $resultExpression = AssertRoundtrip $e $result
+        &$resultExpression | Should -Be "43"
+        $result | Should -Be "{ echo 43  }" # It seems like [scriptblock] records the source code, whitespace included. I didn't know I could rely on that but apparently I can.
+    }
 }
 
