@@ -27,8 +27,10 @@ if ($null -eq $fileOrScript) {
     if ($null -eq $workspace) {
         throw "Don't know how to open workspace for '$($cbt.id)'"
     }
-    $workspace = $workspace -replace "dev:", "$($cbt.root)/"
-    if ($workspace.Contains("test:")) { throw "NYI" }
+    if ($workspace -is [string]) {
+        $workspace = $workspace -replace "dev:", "$($cbt.root)/"
+        if ($workspace.Contains("test:")) { throw "NYI" }
+    }
 } else {
     $workspace = $fileOrScript
 }
