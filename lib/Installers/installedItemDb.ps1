@@ -34,7 +34,12 @@ function ensureDb($dbLocation) {
     }
 }
 
-function getStateFilePath($dbLocation, $itemId) { return "$dbLocation\$itemId.txt" }
+function getStateFilePath($dbLocation, $itemId) { 
+    if ($itemId -notmatch '^[a-z0-9][a-z0-9_]*$') {
+        throw "Unsupported format for itemId. Use only alphanumeric + underscore, with no initial underscore"
+    }
+    return "$dbLocation\$itemId.txt" 
+}
 
 
 # Set/update a version record for a given installed item.
