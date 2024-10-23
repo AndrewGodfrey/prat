@@ -25,5 +25,5 @@ if ($null -eq $script) {
     return
 }
 
-Write-Debug "calling prebuild script for $($cbt.id)"
+Write-Verbose "calling prebuild script for $($cbt.id); force: $Force"
 &$script $cbt -Force:$Force
