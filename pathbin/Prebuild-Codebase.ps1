@@ -12,18 +12,4 @@
 [CmdletBinding()]
 param([switch] $Force)
 
-$cbt = &$home\prat\lib\Get-CodebaseTable (Get-Location)
-if ($null -eq $cbt) { 
-    throw "Unknown codebase - can't prebuild"
-}
-
-# Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
-$script = Get-CodebaseScript "prebuild" $cbt.id
-
-if ($null -eq $script) {
-    Write-Verbose "prebuild: NOP"
-    return
-}
-
-Write-Verbose "calling prebuild script for $($cbt.id); force: $Force"
-&$script $cbt -Force:$Force
+&$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "prebuild" @("-Force", $Force)

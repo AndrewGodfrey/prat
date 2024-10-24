@@ -9,18 +9,4 @@
 [CmdletBinding()]
 param()
 
-$cbt = &$home\prat\lib\Get-CodebaseTable (Get-Location)
-if ($null -eq $cbt) { 
-    throw "Unknown codebase - can't run tests"
-}
-
-# Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
-$script = Get-CodebaseScript "test" $cbt.id
-
-if ($null -eq $script) {
-    Write-Verbose "test: NOP"
-    return    
-}
-
-Write-Debug "calling test script for $($cbt.id)"
-Invoke-CommandWithCachedEnvDelta {&$script $cbt} $cbt.cachedEnvDelta
+&$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "test"

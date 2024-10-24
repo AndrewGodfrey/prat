@@ -9,18 +9,4 @@
 [CmdletBinding()]
 param([switch] $Force)
 
-$cbt = &$home\prat\lib\Get-CodebaseTable (Get-Location)
-if ($null -eq $cbt) { 
-    throw "Unknown codebase - can't deploy"
-}
-
-# Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
-$script = Get-CodebaseScript "deploy" $cbt.id
-
-if ($null -eq $script) {
-    Write-Verbose "deploy: NOP"
-    return
-}
-
-Write-Debug "calling deploy script for $($cbt.id)"
-&$script $cbt -Force:$Force
+&$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "deploy" @("-Force", $Force)

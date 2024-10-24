@@ -12,19 +12,6 @@ param(
         "shell"  # Launches the appropriate build shell. For development of new automation, or for quick hacks.
     )] [string] $command="build"
 )
+Write-Host -ForegroundColor Green "command: $command"
 
-$cbt = &$home\prat\lib\Get-CodebaseTable (Get-Location)
-if ($null -eq $cbt) { 
-    throw "Unknown codebase - can't build"
-}
-
-# Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
-$script = Get-CodebaseScript "build" $cbt.id
-
-if ($null -eq $script) {
-    Write-Verbose "build: NOP"
-    return
-}
-
-Write-Debug "calling build script for $($cbt.id)"
-Invoke-CommandWithCachedEnvDelta {&$script $cbt $command} $cbt.cachedEnvDelta
+&$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "build" $command
