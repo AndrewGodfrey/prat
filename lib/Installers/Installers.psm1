@@ -113,6 +113,24 @@ class InstallationTracker {
         Remove-InstalledItem $this.installationDatabaseLocation $stepId
     }
 
+    # Return true if the given forkpoint-cache entry is valid (vs. needing to be invalidated, including if '-Force' was specified for this installation).
+    #
+    # This is for expensive work that needs to be redone in situations like (for example):
+    # - you're building against 'main' and you just pulled new commits.
+    # - you're working in a topic branch and you just rebased it to a newer 'main' commit.
+    [bool] GetForkpointCacheIsValid($cacheId, $currentForkpoint) {
+        if ($this.forceReinstallation) { return $false }
+
+        $fn = getForkpointCacheStateFilePath $this.installationDatabaseLocation $cacheId
+        return Get-ForkpointCacheIsValid $fn $currentForkpoint
+    }
+
+    # Set/update the given forkpoint-cache entry
+    [Void] SetForkpointCache($cacheId, $currentForkpoint) {
+        $fn = getForkpointCacheStateFilePath $this.installationDatabaseLocation $cacheId
+        Set-ForkpointCache $fn $currentForkpoint
+    }
+
     [Void] ReportErrorContext($e) {
         if ($null -ne $this.currentStage) {
             $sc = $this.currentStage.GetPrintableStageContext()
@@ -235,6 +253,9 @@ class InstallationStage {
     [Void] ClearManualStep($stepId) {
         $this.parent.ClearStep($stepId)
     }
+
+    [bool] GetForkpointCacheIsValid($cacheId, $currentForkpoint) { return $this.parent.GetForkpointCacheIsValid($cacheId, $currentForkpoint) }
+    [Void] SetForkpointCache($cacheId, $currentForkpoint) { $this.parent.SetForkpointCache($cacheId, $currentForkpoint) }
 }
 
 

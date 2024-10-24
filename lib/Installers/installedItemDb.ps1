@@ -35,12 +35,18 @@ function ensureDb($dbLocation) {
 }
 
 function getStateFilePath($dbLocation, $itemId) { 
-    if ($itemId -notmatch '^[a-z0-9][a-z0-9_]*$') {
-        throw "Unsupported format for itemId. Use only alphanumeric + underscore, with no initial underscore"
+    if ($itemId -notmatch '^[a-z0-9][a-z0-9_\\]*$') {
+        throw "Unsupported format for itemId '$itemId'. Use only alphanumeric, underscore and backslash; first char an alphanumeric."
     }
     return "$dbLocation\$itemId.txt" 
 }
 
+function getForkpointCacheStateFilePath($dbLocation, $itemId) {
+    if ($itemId -notmatch '^[a-z0-9][a-z0-9_\\]*$') {
+        throw "Unsupported format for itemId '$itemId'. Use only alphanumeric, underscore and backslash; first char an alphanumeric."
+    }
+    return "$dbLocation\_forkpointCache\$itemId.ps1" 
+}
 
 # Set/update a version record for a given installed item.
 function Set-InstalledItemVersion($dbLocation, $itemId, $newVersion = "1.0") {

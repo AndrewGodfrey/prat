@@ -62,6 +62,7 @@ if ($null -eq $cbFile) { return $null }
 Write-Verbose "Get-CodebaseTable: Load: $cbFile"
 
 $cbTable = . $cbFile
+# TODO: Validate cbTable. For one thing, the keys should -match '^[a-z0-9_]+$'.
 
 [System.IO.DirectoryInfo] $locationDI = $Location
 

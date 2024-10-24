@@ -179,4 +179,5 @@ function Test-PathIsUnder([string] $path, [string] $root) {
 }
 
 . $PSScriptRoot\envDelta.ps1
+. $PSScriptRoot\gitForkpoint.ps1
 
