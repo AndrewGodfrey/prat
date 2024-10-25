@@ -19,6 +19,18 @@ if ($null -eq $script) {
     return
 }
 
+if ($action -ne "prebuild") {
+    $envDelta = $cbt.cachedEnvDelta
+} else {
+    # In the case of prebuild, cachedEnvDelta is not needed.
+    # But also: Prebuild often would malfunction if cachedEnvDelta is applied, since it
+    # needs the unapplied state to accurately calculate/update cachedEnvDelta.
+    #
+    # TODO: Add detection for when prebuild is called with any envdelta applied.
+    #       Maybe Invoke-CommandWithEnvDelta could reserve some env-var name, and use it to maintain a 'nesting' counter.
+    $envDelta = $null
+}
+
 Write-Debug "calling $action script for $($cbt.id), with parameters: ($(ConvertTo-Expression $CommandParameters))"
 
-Invoke-CommandWithCachedEnvDelta {&$script $cbt @CommandParameters} $cbt.cachedEnvDelta -CommandParameters $CommandParameters
+Invoke-CommandWithCachedEnvDelta {&$script $cbt @CommandParameters} $envDelta -CommandParameters $CommandParameters
