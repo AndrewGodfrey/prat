@@ -16,11 +16,17 @@ param(
     [string] $codebase
 )
 
-if ($codebase -eq "prat") {
-    switch ($action) {
-        "build"  { return {Build-Prat} }
-        "test"   { return {Invoke-Pester} }
-        "deploy" { return {Deploy-Prat} }  # TODO: Pass through the -Force parameter, it's being dropped here.
+switch ($codebase) {
+    "prat" {
+        switch ($action) {
+            "build"  { return {Build-Prat} }
+            "test"   { return {Invoke-Pester} }
+            "deploy" { return {Deploy-Prat} }  # TODO: Pass through the -Force parameter, it's being dropped here.
+        }
+    }
+    "testCb" {
+        if ("prebuild", "build", "test", "deploy" -contains $action) { return {echo "testCb: $($action): $($env:testEnvvar)"} }
+        throw "Unrecognized action: $action"
     }
 }
 
