@@ -3,7 +3,7 @@ BeforeAll {
 }
 
 Describe "Deploy-Codebase" {
-    It "runs the 'deploy' script for the relevant codebase" {
+    It "runs the 'deploy' script for the 'testCb' codebase" {
         $prev = pushTestEnvironment
         try {
             $env:testenvvar = 'foo'
@@ -12,7 +12,7 @@ Describe "Deploy-Codebase" {
             $result = Deploy-Codebase
 
             # Assert
-            $result | Should -Be "testCb: deploy: foo"
+            $result | Should -Be "testCb: deploy: bar"
         } finally {
             popTestEnvironment $prev
         }

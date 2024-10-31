@@ -4,6 +4,7 @@
         shortcuts = @{
             testCb = ""
         }
+        cachedEnvDelta = "testCb_envDelta.ps1"
     }
 }
 
