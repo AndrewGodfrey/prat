@@ -21,6 +21,9 @@ if ($null -eq $script) {
 
 if ($action -ne "prebuild") {
     $envDelta = $cbt.cachedEnvDelta
+    if (($null -ne $envDelta) -and (-not (Split-Path $envDelta -IsAbsolute))) {
+        $envDelta = Join-Path $cbt.root $envDelta
+    }
 } else {
     # In the case of prebuild, cachedEnvDelta is not needed.
     # But also: Prebuild often would malfunction if cachedEnvDelta is applied, since it
