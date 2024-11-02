@@ -13,7 +13,8 @@
 # For other params, see the implementations of Build-Codebase, Test-Codebase and Deploy-Codebase.
 param(
     [ValidateSet("prebuild", "build", "test", "deploy")] [string] $action,
-    [string] $codebase
+    [string] $codebase,
+    [switch] $Force
 )
 
 switch ($codebase) {
@@ -21,7 +22,7 @@ switch ($codebase) {
         switch ($action) {
             "build"  { return {Build-Prat} }
             "test"   { return {Invoke-Pester} }
-            "deploy" { return {Deploy-Prat} }  # TODO: Pass through the -Force parameter, it's being dropped here.
+            "deploy" { return {Deploy-Prat -Force:$Force} }
         }
     }
     "testCb" {
