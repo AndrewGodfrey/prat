@@ -36,7 +36,12 @@ if ($null -eq $fileOrScript) {
 }
 
 if ($workspace -is [ScriptBlock]) {
-    Invoke-CommandWithCachedEnvDelta $workspace $cbt.cachedEnvDelta
+    pushd $cbt.root
+    try {
+        Invoke-CommandWithCachedEnvDelta $workspace $cbt.cachedEnvDelta
+    } finally {
+        popd
+    }
 } else {
     if (!(Test-Path $workspace)) { throw "Not found: $workspace" }
     Write-Verbose "Opening workspace: $workspace"
