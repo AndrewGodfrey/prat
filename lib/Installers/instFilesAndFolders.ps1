@@ -2,7 +2,7 @@ function writeUpdateDetailIf([string] $message, [bool] $doIt) {
     if ($doIt) { Write-Host $message -F Yellow }
 }
 
-# Install one file
+# Install one file, creating the containing folder if needed.
 function Install-File($stage, $srcDir, $destDir, $srcFilename, $destFilename, [switch] $ShowUpdateDetails) {
     if ($null -eq $destFilename) {
         $destFilename = $srcFilename
@@ -311,5 +311,34 @@ function New-FolderAndParents($path) {
 }
 
 
+# Install a soft link to a file.
+# Here 'dest' is where the link is created, and it points back to 'src', i.e. 'src' is the target of the link.
+#
+# Note: In Windows, a soft link is known as a 'symbolic link' in Windows. And apparently Windows means something else by 'soft link' - a 'junction' - but that's its business.
+function Install-SoftLinkToFile($stage, $srcDir, $destDir, $srcFilename, $destFilename) {
+    if ($null -eq $destFilename) {
+        $destFilename = $srcFilename
+    }
+
+    if ((Test-Path -PathType Container $destDir) -ne $True) {
+        throw "Containing folder not found: $destDir"
+    }
+
+    if ((Test-Path $destDir\$destFilename) -eq $True) {
+        $item = Get-Item $destDir\$destFilename
+        if ($item.GetType().Name -ne "FileInfo") { throw "Unexpected item type: $($item.GetType().Name) for file: '$destDir\$destFilename'"}
+        if ($item.LinkType -ne "SymbolicLink")  { 
+            $stage.OnChange()
+            Remove-Item $destDir\$destFilename
+        } else {
+            $sameTarget = (Resolve-Path $srcDir\$srcFilename).Path -eq (Resolve-Path $item.LinkTarget).Path
+            if ($sameTarget) { return }
+        }
+    }
+
+    $stage.OnChange()
+    Write-Host -ForegroundColor Green "New-Item -ItemType SymbolicLink -Path $destDir\$destFilename -Value $srcDir\$srcFilename"
+    sudo {New-Item -ItemType SymbolicLink -Path $destDir\$destFilename -Value $srcDir\$srcFilename}
+}
 
 

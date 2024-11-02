@@ -73,6 +73,7 @@ FunctionsToExport = @(
 	'Format-ReplacePlaceholdersInTemplateString', 'New-Subfolder', 'New-FolderAndParents',
 	'Start-Installation',
 	'Install-File', 'Install-Folder', 'Install-SetOfFiles', 'Install-DeleteFiles', 'Install-TextToFile', 'Install-BinaryDataToFile', 'Install-SmbShare', 'Install-ZipFileFromFolder',
+    'Install-SoftLinkToFile',
 	'Install-RegistryKey', 'Install-RegistryDwordValue', 'Install-RegistryStringValue', 'Install-RegistryBinaryValue',
 	'Install-PratPackage',
 	'Install-WingetPackage', 'Install-PackageDnspy', 'Install-PackageNuget', 'Install-PackageWindbg', 'Install-PackageWinmerge',
