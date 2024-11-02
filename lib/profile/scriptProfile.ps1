@@ -11,29 +11,31 @@ if ($pratProfile_shouldTrace) {
         $duration = ($now - $pratProfile_startDate).TotalSeconds
         $delta = ($now - $pratProfile_prevDate).TotalSeconds
         $script:pratProfile_prevDate = $now
-        echo ([String]::Format("{0} ({1:F1}s, {2:F2}s)", $msg, $duration, $delta))
+        Write-Host -ForegroundColor DarkCyan ([String]::Format("  Startup trace: {0} ({1:F1}s, {2:F2}s)", $msg, $duration, $delta))
     }
 } else {
     function pratProfile_trace {}
 }
 
+pratProfile_trace "Start: scriptProfile.ps1"
+
 $_pratroot = Resolve-Path $PSScriptRoot\..\..
 
-pratProfile_trace "scriptProfile.ps1 starting"
+pratProfile_trace "Done:  Resolve-Path"
 
 . $PSScriptRoot\Define-ShortcutFunctions.ps1
 
-pratProfile_trace "Done: Define-ShortcutFunctions"
+pratProfile_trace "Done:  Define-ShortcutFunctions"
 
 
 $aliasFile = "$_pratroot\auto\profile\scriptAliases.ps1"
 if (Test-Path $aliasFile) { Import-PratAliases $aliasFile}
-pratProfile_trace "Done: Installed aliases"
+pratProfile_trace "Done:  Installed aliases"
 
 # Customize 'dir' output - better output format for 'length' column:
 Update-FormatData -PrependPath $PSScriptRoot\FileSystem.format.ps1xml
 
-pratProfile_trace "Done: Update-FormatData"
+pratProfile_trace "Done:  Update-FormatData"
 
 $env:path += (&$PSScriptRoot\getBinPaths.ps1)
 
@@ -47,5 +49,5 @@ if ($PSVersionTable.PSVersion.Major -lt 6) {
     }
 }
 
-pratProfile_trace "scriptProfile.ps1 ending"
+pratProfile_trace "End:   scriptProfile.ps1"
 

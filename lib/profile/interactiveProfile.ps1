@@ -8,7 +8,7 @@
 # - install tools like 'ditto'
 # - set prompt
 
-pratProfile_trace "interactiveProfile.ps1 starting"
+pratProfile_trace "Start: interactiveProfile.ps1"
 
 New-Alias stack "$PSScriptRoot\..\Get-StackTraceForLastException.ps1" -Description "Get the PS stack trace of the last exception"
 
@@ -30,16 +30,16 @@ function pratSetWindowTitle($extraContext) {
     } else {
         $elev = ""
     }
-    pratProfile_trace "start: GetHostName"
+    pratProfile_trace "Start: GetHostName"
     $hostname = [System.Net.Dns]::GetHostName()
-    pratProfile_trace "end: GetHostName"
+    pratProfile_trace "End:   GetHostName"
 
     $host.ui.rawui.WindowTitle = "$elev$hostname$ec"
 }
 
-pratProfile_trace "start: Set window title"
+pratProfile_trace "Start: Set window title"
 pratSetWindowTitle
-pratProfile_trace "end: Set window title"
+pratProfile_trace "End:   Set window title"
 
 cd $env:userprofile
 
@@ -72,13 +72,13 @@ function prompt {
 }
 
 . $PSScriptRoot\Define-ShortcutFunctions.ps1
-if (Test-Path alias:ls) { del alias:ls }
+pratProfile_trace "Done:  Define-ShortcutFunctions"
 
+if (Test-Path alias:ls) { del alias:ls }
 
 # Customize 'dir' output - better output format for 'length' column:
 Update-FormatData -PrependPath $PSScriptRoot\FileSystem.format.ps1xml
-
-pratProfile_trace "Done: Update-FormatData"
+pratProfile_trace "Done:  Update-FormatData"
 
 New-Alias -Name pb -Value Prebuild-Codebase -Scope Global
 New-Alias -Name b -Value Build-Codebase -Scope Global
@@ -92,5 +92,5 @@ New-Alias -Name gll -Value GitLog-Local -Scope Global
 New-Alias -Name e -Value Open-FileInEditor -Scope Global
 New-Alias -Name ude -Value Update-DevEnvironment -Scope Global
 
-pratProfile_trace "interactiveProfile.ps1 ending"
+pratProfile_trace "End:   interactiveProfile.ps1"
 
