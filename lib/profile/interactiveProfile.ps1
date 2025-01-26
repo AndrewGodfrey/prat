@@ -90,6 +90,7 @@ New-Alias -Name ow -Value Open-CodebaseWorkspace -Scope Global
 New-Alias -Name gtfe -Value Get-TextFileEncoding -Scope Global
 New-Alias -Name gll -Value GitLog-Local -Scope Global
 New-Alias -Name e -Value Open-FileInEditor -Scope Global
+New-Alias -Name lsl -Value Get-LatestFiles -Scope Global
 New-Alias -Name ude -Value Update-DevEnvironment -Scope Global
 
 pratProfile_trace "End:   interactiveProfile.ps1"
