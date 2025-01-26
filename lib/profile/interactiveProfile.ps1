@@ -62,6 +62,11 @@ function contextPath {
     return "[[ENV: " + $env:__prat_contextPath + "]] "
 }
 
+function getPsversionString {
+    if ($psversiontable.PSEdition -eq 'Core') { return "" }
+    return "[PS $($psversiontable.PSEdition) v$($psversiontable.PSVersion.Major)] "
+}
+
 function prompt {
     $lastCommandErrorStatus = $?
     try
@@ -72,10 +77,11 @@ function prompt {
         reportOnSlowCommands $duration $historyInfo $lastCommandErrorStatus
 
         pratDetectLocationChange
+        $ver = getPsversionString
     } catch { Write-Warning ("Exception during prompt: " + $Error[0] + "`n" + (stack)) }
 
     # $global:__prat_currentLocation is maintained by On-PromptLocationChanged.ps1
-    return $global:__prat_notifications + (contextPath) + $global:__prat_currentLocation + "`n> "
+    return $global:__prat_notifications + (contextPath) + $ver + $global:__prat_currentLocation + "`n> "
 }
 
 . $PSScriptRoot\Define-ShortcutFunctions.ps1
