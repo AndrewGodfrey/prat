@@ -1,5 +1,5 @@
 # .SYNOPSIS
-# Shows git history under the current directory, for the last n months (default 3).
+# Shows git history under the current directory, for the last n commits or m months (default: 7 commits).
 # Uses a concise one-line format, that still includes date and author information.
 param ($Path=".", $n=$null, $Months=$null)
 
