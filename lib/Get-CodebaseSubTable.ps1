@@ -53,7 +53,7 @@ if ($null -ne $cbt.subworkspaces) {
 }
 
 # Inherit any properties, that aren't already overridden, form $cbt. 
-#   e.g. it's useful for these properties: 'buildKind', 'workspace'
+#   e.g. it's useful for these properties: 'buildKind', 'workspace', 'cachedEnvDelta'
 foreach ($key in $cbt.Keys) {
     if (!$item.ContainsKey($key)) { # Using ContainsKey, so that subtables can override a non-null value with $null if they really want to.
         $item[$key] = $cbt[$key]

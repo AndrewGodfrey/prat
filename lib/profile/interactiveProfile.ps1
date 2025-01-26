@@ -13,6 +13,7 @@ pratProfile_trace "Start: interactiveProfile.ps1"
 New-Alias stack "$PSScriptRoot\..\Get-StackTraceForLastException.ps1" -Description "Get the PS stack trace of the last exception"
 
 function pratSetWindowTitle($extraContext) {
+    $contextPath = ""
     if ($null -eq $extraContext) {
         $ec = ""
     } else {
@@ -55,6 +56,12 @@ function pratDetectLocationChange {
 
 . $PSScriptRoot\slowCommandFunctions.ps1
 
+function contextPath {
+    if ($null -eq $env:__prat_contextPath) { return "" }
+    if ("" -eq $env:__prat_contextPath) { return "" }
+    return "[[ENV: " + $env:__prat_contextPath + "]] "
+}
+
 function prompt {
     $lastCommandErrorStatus = $?
     try
@@ -68,7 +75,7 @@ function prompt {
     } catch { Write-Warning ("Exception during prompt: " + $Error[0] + "`n" + (stack)) }
 
     # $global:__prat_currentLocation is maintained by On-PromptLocationChanged.ps1
-    return $global:__prat_notifications + $global:__prat_currentLocation + "`n> "
+    return $global:__prat_notifications + (contextPath) + $global:__prat_currentLocation + "`n> "
 }
 
 . $PSScriptRoot\Define-ShortcutFunctions.ps1
