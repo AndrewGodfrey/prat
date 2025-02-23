@@ -8,7 +8,7 @@
 # - install tools like 'ditto'
 # - set prompt
 
-pratProfile_trace "Start: interactiveProfile.ps1"
+pratProfile_trace "Start: interactiveProfile_prat.ps1"
 
 New-Alias stack "$PSScriptRoot\..\Get-StackTraceForLastException.ps1" -Description "Get the PS stack trace of the last exception"
 
@@ -106,5 +106,5 @@ New-Alias -Name e -Value Open-FileInEditor -Scope Global
 New-Alias -Name lsl -Value Get-LatestFiles -Scope Global
 New-Alias -Name ude -Value Update-DevEnvironment -Scope Global
 
-pratProfile_trace "End:   interactiveProfile.ps1"
+pratProfile_trace "End:   interactiveProfile_prat.ps1"
 

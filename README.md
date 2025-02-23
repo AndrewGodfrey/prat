@@ -31,7 +31,7 @@ From a regular (non-elevated) Powershell window:
 
 
 ## Customization
-- You can override the profile, see `lib/profile/profilePicker.ps1`. You can either control when to invoke `interactiveProfile.ps1`, or skip
+- You can override the profile, see `lib/profile/profilePicker.ps1`. You can either control when to invoke `interactiveProfile_prat.ps1`, or skip
   it entirely to pick-and-choose things from Prat.
 - I haven't (yet) made it easy to avoid updating profile.ps1 (aside from the `-SkipDeployStep` option on `Install-Prat.ps1`). The reason is, 
   the "one environment for many projects" goal means that Prat needs to defend against projects like 'conda' which edit your `profile.ps1` to

@@ -38,7 +38,7 @@ if ($null -eq $fileOrScript) {
     $workspace = $fileOrScript
 }
 
-# Adds the given context to $env:__prat_contextPath. This is shown on the prompt (see interactiveProfile.ps1)
+# Adds the given context to $env:__prat_contextPath. This is shown on the prompt (see interactiveProfile_prat.ps1)
 function appendContextPath($cachedEnvDelta, $id) {
     if ($null -ne $cachedEnvDelta) {
         if (($null -ne $env:__prat_contextPath) -and ($env:__prat_contextPath -ne "")) {
