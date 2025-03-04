@@ -37,7 +37,7 @@ Update-FormatData -PrependPath $PSScriptRoot\FileSystem.format.ps1xml
 
 pratProfile_trace "Done:  Update-FormatData"
 
-$env:path += (&$PSScriptRoot\getBinPaths.ps1)
+&$PSScriptRoot\getBinPaths.ps1
 
 # Remove curl alias, as Windows 10+ comes with curl.exe
 if (Test-Path alias:curl) { del alias:curl }
