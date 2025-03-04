@@ -11,8 +11,9 @@ param(
         "clean", # TODO: Replace 'clean' with a $Force parameter that can be passed from Start-CodebaseDevLoop.
         "shell"  # Launches the appropriate build shell. For development of new automation, or for quick hacks.
     )] [string] $command="build",
-    [switch] $Force
+    [switch] $Force,
+    [switch] $Quiet
 )
-Write-Host -ForegroundColor Green "command: $command"
+if (!$Quiet) { Write-Host -ForegroundColor Green "command: $command" }
 
 &$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "build" @($command, "-Force", $Force)

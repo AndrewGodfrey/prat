@@ -9,7 +9,7 @@ Describe "Build-Codebase" {
             $env:testenvvar = 'foo'
             
             # Act
-            $result = Build-Codebase
+            $result = Build-Codebase -Quiet
 
             # Assert
             $result | Should -Be "testCb: build: bar"
