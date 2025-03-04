@@ -1,8 +1,6 @@
 # SYNOPSIS
 #   Add Prat's binpaths to $env:Path if they have not been added already in this session.
 
-# TODO: Rename this to "Add-PratBinPaths.ps1"
-
 function addPath($path) {
     # I find that some packages - like gsudo - leave $env:path with a trailing ';'. So I won't assume there isn't one.
     if (!$env:Path.EndsWith(";")) {

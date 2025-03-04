@@ -9,7 +9,7 @@
 # TODO: Move this to lib\override.
 # TODO: And rename to "interactiveProfile.ps1"? Or something like "select_interactiveProfile.ps1"?
 
-&$PSScriptRoot\getBinPaths.ps1
+&$PSScriptRoot\Add-PratBinPaths.ps1
 
 # Now that path is set up, we can use Resolve-PratLibFile.
 # Run prat's profile, or an overridden one.
