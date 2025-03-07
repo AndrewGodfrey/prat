@@ -309,6 +309,8 @@ function Start-Installation([Parameter(Position=0)] [string] $InstallerName, [Pa
 
 . $PSScriptRoot\instPackages.ps1
 
+. $PSScriptRoot\instScheduledTasks.ps1
+
 . $PSScriptRoot\instWingetPackages.ps1
 
 . $PSScriptRoot\instNugetPackages.ps1
