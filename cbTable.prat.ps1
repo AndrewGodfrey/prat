@@ -4,6 +4,7 @@
         shortcuts = @{
             pr = ""
             pa = "auto"
+            pbin = "pathbin"
             plog = "auto/log"
             plib = "lib"
         }
