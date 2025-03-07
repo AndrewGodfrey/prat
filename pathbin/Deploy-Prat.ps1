@@ -9,7 +9,10 @@ $it = $null
 
 function instSchTasks($it) {
     $stage = $it.StartStage('schTasks')
+
     Install-DailyScheduledTask $stage "test" "Prat - test task" $PSScriptRoot\..\lib\schtasks\daily_test.ps1 "1:08AM"
+    Install-DailyScheduledTask $stage "cleanManagedDirectories" "Prat - Clean managed directories"  $PSScriptRoot\..\lib\schtasks\daily_cleanManagedDirectories.ps1 "1:30AM"
+
     $it.EndStage($stage)
 }
 
