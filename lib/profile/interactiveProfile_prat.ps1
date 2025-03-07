@@ -108,6 +108,7 @@ New-Alias -Name ude -Value Update-DevEnvironment -Scope Global
 New-Alias -Name ch -Value Compare-Hash -Scope Global
 New-Alias -Name aext -Value Analyze-FileExtensions -Scope Global
 New-Alias -Name filever -Value Get-FileVersionInfo -Scope Global
+New-Alias -Name hex -Value Format-NumberAsHex -Scope Global
 
 pratProfile_trace "End:   interactiveProfile_prat.ps1"
 
