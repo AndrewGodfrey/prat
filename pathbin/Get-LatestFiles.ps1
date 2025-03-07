@@ -1,5 +1,7 @@
 # .SYNOPSIS
-# Get-LatestFiles (alias: lsl) - get the most recent n files
+# Gets the most recent n files
+#
+# Alias: lsl
 param($filespec=$null, $n, [switch] $Recurse=$false)
 $default_n = 10
 

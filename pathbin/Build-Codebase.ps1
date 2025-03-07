@@ -1,7 +1,9 @@
-# Build a codebase
+# .SYNOPSIS
+# Builds a codebase
 #
 # Recommended alias: b
 # 
+# .NOTES
 # What this does, depends on the codebase. It might do nothing.
 # The purpose of this is to provide a consistent dev inner loop. I alias 'b' to run this directly, or 'x' to run it as part of a larger loop.
 [CmdletBinding()]

@@ -1,5 +1,10 @@
 # .SYNOPSIS
-# Shows git history under the current directory, for the last n commits or m months (default: 7 commits).
+# Shows recent git history for the current directory/given pathspec. 
+#
+# Alias: gll
+#
+# .NOTES
+# Shows history for the last n commits or m months (default: 7 commits).
 # Uses a concise one-line format, that still includes date and author information.
 param ($Path=".", $n=$null, $Months=$null)
 

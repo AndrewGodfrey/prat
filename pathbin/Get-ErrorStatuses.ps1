@@ -1,4 +1,7 @@
 # .SYNOPSIS
+# Gets the error statuses of the last command/script/Windows program etc.
+#
+# .NOTES
 # Powershell has many ways of getting the error status of the last X. I need to observe them in order to make
 # sense of them.
 #

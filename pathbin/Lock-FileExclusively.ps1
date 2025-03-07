@@ -1,6 +1,7 @@
 # .SYNOPSIS
-# Test tool for grabbing an exclusive lock on a file
-
+# (Test tool) Grabs an exclusive lock on a file
+#
+# .NOTES
 # Source: https://superuser.com/questions/857725/how-to-lock-a-file-in-windows-without-changing-it-or-using-third-party-tools/857735#857735
 
 param($FileName)

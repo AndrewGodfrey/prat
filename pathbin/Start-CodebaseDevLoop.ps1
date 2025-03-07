@@ -1,8 +1,9 @@
 # .SYNOPSIS
-# Build, test and deploy a codebase
+# Builds, tests and deploys a codebase
 # 
 # Recommended alias: x
 #
+# .NOTES
 # What this does, depends on the codebase. It might do nothing; it may build stuff and test stuff and deploy to the current machine, or even deploy to remote machines.
 # The purpose of this is to provide a consistent dev inner loop.
 # 

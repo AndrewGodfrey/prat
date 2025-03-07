@@ -1,3 +1,4 @@
+# .SYNOPSIS
 # Converts a file encoding from "utf8 + BOM" to "utf8"
 param ($file)
 

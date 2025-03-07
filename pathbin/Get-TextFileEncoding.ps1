@@ -1,4 +1,7 @@
+# .SYNOPSIS
 # Looks at the preamble of the given text file to distinguish utf8 with and without BOM, and utf16.
+#
+# .NOTES
 # That's all it supports. I need it for apps that like to add a BOM (especially utf8 + BOM) when that's really not wanted.
 using module ../lib/PratBase/PratBase.psd1
 

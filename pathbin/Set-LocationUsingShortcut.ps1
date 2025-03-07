@@ -1,4 +1,10 @@
-# Like Set-Location, but using a shortcut that's interpreted using Find-Shortcut and Find-CodebaseShortcut
+# .SYNOPSIS
+# Sets the current working location (like Set-Location), but using a shortcut.
+#
+# Alias: c
+#
+# .NOTES
+# Shortcuts are interpreted using Find-Shortcut and Find-CodebaseShortcut
 param($Shortcut="", [switch] $Test)
 
 function emit($key, $target) {

@@ -1,5 +1,9 @@
 # .SYNOPSIS
-# Does 'git pull' and 'deploy' on both prat and (if present) your custom dev environment.
+# Does 'git pull' and 'deploy' on prat - plus, if present, your custom dev environment.
+#
+# Alias: ude
+#
+# .NOTES
 # Uses Set-LocationUsingShortcut to find those things, specifically these shortcuts:
 #   'de': your custom dev enviroment
 #   'pr': prat

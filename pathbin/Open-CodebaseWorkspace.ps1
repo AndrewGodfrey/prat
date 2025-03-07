@@ -1,17 +1,21 @@
 # .SYNOPSIS
-# Open-CodebaseWorkspace (alias: ow)
-# Opens a workspace with the configured temporary environment for a codebase.
+# Opens a workspace with the configured temporary environment for the codebase we're in ($pwd).
 #
+# Alias: ow
+#
+# .NOTES
 # With no params, opens the default workspace for the codebase / sub-codebase.
-# Given a file, launches that. e.g.
-#    Open-CodebaseWorkspace MyProject.sln
+# Given a script, runs it. 
+# Given a file, launches it.
 # 
-#    Open-CodebaseWorkspace MyProject.code-workspace
-# 
-# Given a script, runs that. e.g. 
-#    Open-CodebaseWorkspace {cmd /k}
-#
-#    Open-CodebaseWorkspace {pwsh}
+# .EXAMPLE
+#    ow MyProject.sln
+# .EXAMPLE
+#    ow MyProject.code-workspace
+# .EXAMPLE
+#    ow {cmd /k}
+# .EXAMPLE
+#    ow {pwsh}
 [CmdletBinding()]
 param($fileOrScript = $null, $cbt = $null)
 

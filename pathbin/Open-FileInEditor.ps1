@@ -1,8 +1,16 @@
 # .SYNOPSIS
-# Open-FileInEditor (alias: e)
-# For opening in your favorite editor.
+# Opens a file in your favorite editor.
 #
+# Alias: e
+#
+# .NOTES
 # I'm trying vscode (previously was using SlickEdit).
+#
+# .EXAMPLE
+# e log.txt
+#
+# .EXAMPLE
+# e (wh Get-TextFileEncoding)
 try {
     code @args
 } catch {

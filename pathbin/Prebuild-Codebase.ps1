@@ -1,7 +1,9 @@
-# Prebuild a codebase
+# .SYNOPSIS
+# Prebuilds a codebase
 #
 # Recommended alias: pb
 # 
+# .NOTES
 # The idea of "prebuild" is to install expensive things that are needed (if any) for the "build" step to work.
 # Some other common names for this step are "depends", "bootstrap", "prepare".
 #
