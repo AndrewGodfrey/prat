@@ -8,5 +8,5 @@ scriptFile = Arg(1)
 Set shell = CreateObject("WScript.Shell")
 
 shell.CurrentDirectory = pwdForScript
-command = "powershell.exe -nologo -File " & scriptFile
+command = "pwsh.exe -nologo -File " & scriptFile
 shell.Run command,0,True
