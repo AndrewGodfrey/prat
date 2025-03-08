@@ -9,5 +9,5 @@ $shortcuts = [ordered] @{
 }
 
 if ($ListAll) { return $shortcuts }
-if ($null -ne $shortcuts[$Shortcut]) { return $shortcuts[$Shortcut] }
+return $shortcuts[$Shortcut] # or $null
 
