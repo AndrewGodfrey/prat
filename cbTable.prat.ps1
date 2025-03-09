@@ -2,11 +2,11 @@
 @{
     prat = @{ 
         shortcuts = @{
-            pr = ""
-            pa = "auto"
-            pbin = "pathbin"
-            plog = "auto/log"
-            plib = "lib"
+            prat      = ""
+            pauto     = "auto"
+            pbin      = "pathbin"
+            plog      = "auto/log"
+            plib      = "lib"
         }
     }
 }

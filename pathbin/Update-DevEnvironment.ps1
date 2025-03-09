@@ -6,7 +6,7 @@
 # .NOTES
 # Uses Set-LocationUsingShortcut to find those things, specifically these shortcuts:
 #   'de': your custom dev enviroment
-#   'pr': prat
+#   'prat': prat
 
 function say($msg) { Write-Host -ForegroundColor Green $msg }
 
@@ -28,5 +28,5 @@ function updateEnvironment($environmentShortcut, [switch] $EnvironmentMayNotExis
     }
 }
 
-updateEnvironment pr
+updateEnvironment prat
 updateEnvironment de -EnvironmentMayNotExist
