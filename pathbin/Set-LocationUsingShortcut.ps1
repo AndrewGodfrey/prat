@@ -101,9 +101,7 @@ $cbt = $result.cbt
 $target = $target -replace '\\', '/'
 
 if ($Test) {    
-    if ($null -ne $cbt.irregularTestShorcuts[$Shortcut]) {
-        $target = $cbt.root + "/" + $cbt.irregularTestShorcuts[$Shortcut]
-    } elseif ($null -ne $cbt.testDirFromDevDir) {
+    if ($null -ne $cbt.testDirFromDevDir) {
         $testTarget = &$cbt.testDirFromDevDir $target
         $alt = findTestDir $testTarget
         if ($null -ne $alt) { $target = $alt } else {
