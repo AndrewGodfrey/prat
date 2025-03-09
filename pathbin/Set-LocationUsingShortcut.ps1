@@ -15,7 +15,7 @@ function emit($key, $target) {
     echo "$key$padding$target"
 }
 
-if ($ListAll) {
+function GetAllShortcuts() {
     [System.Collections.Specialized.OrderedDictionary] $result = &$PSScriptRoot/../lib/Find-Shortcut -ListAll
 
     $cbts = &$PSScriptRoot/../lib/Find-CodebaseShortcut -ListAll
@@ -29,6 +29,10 @@ if ($ListAll) {
     }
 
     return $result
+}
+
+if ($ListAll) {
+    return GetAllShortcuts
 }
 
 if ($Shortcut -eq "?") {
