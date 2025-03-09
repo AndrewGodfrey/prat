@@ -4,24 +4,60 @@
 # Alias: c
 #
 # .NOTES
-# Shortcuts are interpreted using Find-Shortcut and Find-CodebaseShortcut
-param($Shortcut="", [switch] $Test, [switch] $ListAll)
+# Shortcuts are interpreted using: 
+#  1. Find-Shortcut_<devenv>  
+#     i.e. each dev environment can supply one. e.g. see: Find-Shortcut_prat.ps1
+#  2. Find-CodebaseShortcut 
+#     - its behavior can be extended/overridden by overriding Get-GlobalCodebases (which by default also includes $pwd)
+param(
+    [ArgumentCompleter(
+        {
+            param($cmd, $param, $wordToComplete)
+            [array] $validValues = &$PSScriptRoot\..\lib\Get-CompletionList.ps1 "Set-LocationUsingShortcut-Shortcut"
+            $validValues -like "$wordToComplete*"
+        }
+        )]   
+    $Shortcut="", 
+    [switch] $Test, 
+    [switch] $ListAll)
 
+function TryAdd($dict, $key, $value) {
+    if (!$dict.Contains($key)) {
+        $dict.Add($key, $value)
+    }
+}
 
 function GetAllShortcuts() {
-    [System.Collections.Specialized.OrderedDictionary] $result = &$PSScriptRoot/../lib/Find-Shortcut -ListAll
+    $result = [System.Collections.Specialized.OrderedDictionary]::new()
+
+    foreach ($globalShortcutFile in (Resolve-PratLibFile "lib/Find-Shortcut.ps1" -ListAll)) {
+        $globalShortcuts = &$globalShortcutFile -ListAll
+        foreach ($key in ($globalShortcuts.Keys | Sort-Object)) {
+            TryAdd $result $key $globalShortcuts[$key]
+        }
+    }
 
     $cbts = &$PSScriptRoot/../lib/Find-CodebaseShortcut -ListAll
     foreach ($cbt in $cbts) {
-        # echo "$($cbt.id):"
         foreach ($key in ($cbt.shortcuts.Keys | Sort-Object)) {
-            if (!$result.Contains($key)) {
-                $result.Add($key, $cbt.root + "/" + $cbt.shortcuts[$key])
-            }   
+            TryAdd $result $key ($cbt.root + "/" + $cbt.shortcuts[$key])
         }
     }
 
     return $result
+}
+
+function FindShortcut($Shortcut) {
+    foreach ($globalShortcutFile in (Resolve-PratLibFile "lib/Find-Shortcut.ps1" -ListAll)) {
+        $result = &$globalShortcutFile $Shortcut
+        if ($null -ne $result) { return @{target = $result; cbt = $null} }
+    }
+
+    $cbt = &$PSScriptRoot/../lib/Find-CodebaseShortcut $Shortcut
+    if ($null -ne $cbt) { 
+        return @{target = $cbt.root + "/" + $cbt.shortcuts[$Shortcut]; cbt = $cbt}
+    }
+    return $null
 }
 
 if ($ListAll) {
@@ -45,24 +81,23 @@ function findTestDir($tt) {
     return $null
 }
 
-$target = &$PSScriptRoot/../lib/Find-Shortcut $Shortcut
-if ($null -eq $target) { 
-    $cbt = &$PSScriptRoot/../lib/Find-CodebaseShortcut $Shortcut
-    if ($null -eq $cbt) { 
-        throw "Unrecognized: $Shortcut" 
-    }
-    $target = $cbt.root + "/" + $cbt.shortcuts[$Shortcut]
-    $target = $target -replace '\\', '/'
+$result = FindShortcut $Shortcut
+if ($null -eq $result) { 
+    throw "Unrecognized: $Shortcut" 
+}
 
-    if ($Test) {
-        if ($null -ne $cbt.irregularTestShorcuts[$Shortcut]) {
-            $target = $cbt.root + "/" + $cbt.irregularTestShorcuts[$Shortcut]
-        } elseif ($null -ne $cbt.testDirFromDevDir) {
-            $testTarget = &$cbt.testDirFromDevDir $target
-            $alt = findTestDir $testTarget
-            if ($null -ne $alt) { $target = $alt } else {
-                Write-Warning "No test dir found, leaving you in dev"
-            }
+$target = $result.target
+$cbt = $result.cbt
+$target = $target -replace '\\', '/'
+
+if ($Test) {    
+    if ($null -ne $cbt.irregularTestShorcuts[$Shortcut]) {
+        $target = $cbt.root + "/" + $cbt.irregularTestShorcuts[$Shortcut]
+    } elseif ($null -ne $cbt.testDirFromDevDir) {
+        $testTarget = &$cbt.testDirFromDevDir $target
+        $alt = findTestDir $testTarget
+        if ($null -ne $alt) { $target = $alt } else {
+            Write-Warning "No test dir found, leaving you in dev"
         }
     }
 }
