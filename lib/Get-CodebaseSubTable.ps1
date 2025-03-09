@@ -24,7 +24,7 @@ foreach ($key in $cbt.shortcuts.Keys) {
     Write-Verbose "Considering: $key"
     [System.IO.DirectoryInfo] $destDI = $dest
     Write-Verbose "Compare: '$($destDI.FullName)' vs '$($locationDI.FullName)'"
-    if ($locationDI.FullName.StartsWith($destDI.FullName)) {
+    if ($locationDI.FullName.StartsWith($destDI.FullName, 'InvariantCultureIgnoreCase')) {
         Write-Verbose "Found: $key"
         if ($dest.Length -gt ($longestMatch.dest.Length)) {
             $longestMatch.key = $key
