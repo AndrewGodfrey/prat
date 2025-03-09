@@ -73,7 +73,7 @@ foreach ($key in $cbTable.Keys) {
     $item = normalizeTableItem $cbTable[$key] $key $cbFile
     [System.IO.DirectoryInfo] $rootDI = $item.root
     Write-Verbose "Get-CodebaseTable: Compare: '$($rootDI.FullName)' vs '$($locationDI.FullName)'"
-    if ($locationDI.FullName.StartsWith($rootDI.FullName)) {
+    if ($locationDI.FullName.StartsWith($rootDI.FullName, 'InvariantCultureIgnoreCase')) {
         Write-Verbose "Get-CodebaseTable: Found: $($item | Out-String)" # This doesn't show scriptblocks properly, but at least it doesn't hang like ConvertTo-Expression!
         $results += $item
     }

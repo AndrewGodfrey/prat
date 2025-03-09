@@ -69,7 +69,7 @@ function rf([switch] $IncludingBuiltFiles) {
     $p = $pwd.Path
     if ($IncludingBuiltFiles) { $ls = "lsr" } else { $ls = "lssr" }
     &$ls | findstr /f:/ /p $Args |
-        ForEach-Object { if ($_.StartsWith($p)) { "." + $_.Substring($p.Length) } else { $_ } }  # Convert paths to relative from $pwd
+        ForEach-Object { if ($_.StartsWith($p, 'InvariantCultureIgnoreCase')) { "." + $_.Substring($p.Length) } else { $_ } }  # Convert paths to relative from $pwd
 }
 
 # .SYNOPSIS

@@ -9,7 +9,7 @@ if ($null -eq $n) { $n = $default_n }
 
 function Get-RelativePath($path) {
     $p = $pwd.Path
-    if ($path.StartsWith($p)) { "." + $path.Substring($p.Length) } else { $path }
+    if ($path.StartsWith($p, 'InvariantCultureIgnoreCase')) { "." + $path.Substring($p.Length) } else { $path }
 }
 
 Get-ChildItem $filespec -Recurse:$Recurse | 
