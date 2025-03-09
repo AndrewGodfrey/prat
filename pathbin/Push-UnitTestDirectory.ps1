@@ -30,7 +30,7 @@ function findIt($CodeDir) {
     # First, see if there's codebase-specific logic
     $cbt = &$PSScriptRoot/../lib/Get-CodebaseTable $CodeDir
     if (($null -ne $cbt) -and ($null -ne $cbt.testDirFromDevDir)) {
-        $candidate = &$cbt.testDirFromDevDir $CodeDir
+        $candidate = &$cbt.testDirFromDevDir $CodeDir $cbt.root
         if ($null -ne $candidate) {
             # First check for 'test' subdirectories
             $candidate = checkSubDirs $candidate
