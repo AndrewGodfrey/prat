@@ -1,5 +1,7 @@
 # This is called by %userprofile%\Documents\[Windows]Powershell\profile.ps1
 
+pratProfile_trace start "interactiveProfile_prat.ps1"
+
 . $PSScriptRoot\scriptProfile.ps1
 
 # The remaining, 'interactive' part of this profile, is for "user interface" elements that aren't useful in scripting/automation.
@@ -7,8 +9,6 @@
 # - set aliases like 'b'
 # - install tools like 'ditto'
 # - set prompt
-
-pratProfile_trace "Start: interactiveProfile_prat.ps1"
 
 New-Alias stack "$PSScriptRoot\..\Get-StackTraceForLastException.ps1" -Description "Get the PS stack trace of the last exception"
 
@@ -31,16 +31,16 @@ function pratSetWindowTitle($extraContext) {
     } else {
         $elev = ""
     }
-    pratProfile_trace "Start: GetHostName"
+    pratProfile_trace start "GetHostName"
     $hostname = [System.Net.Dns]::GetHostName()
-    pratProfile_trace "End:   GetHostName"
+    pratProfile_trace end "GetHostName"
 
     $host.ui.rawui.WindowTitle = "$elev$hostname$ec"
 }
 
-pratProfile_trace "Start: Set window title"
+pratProfile_trace start "Set window title"
 pratSetWindowTitle
-pratProfile_trace "End:   Set window title"
+pratProfile_trace end "Set window title"
 
 cd $env:userprofile
 
@@ -85,13 +85,13 @@ function prompt {
 }
 
 . $PSScriptRoot\Define-ShortcutFunctions.ps1
-pratProfile_trace "Done:  Define-ShortcutFunctions"
+pratProfile_trace done "Define-ShortcutFunctions"
 
 if (Test-Path alias:ls) { del alias:ls }
 
 # Customize 'dir' output - better output format for 'length' column:
 Update-FormatData -PrependPath $PSScriptRoot\FileSystem.format.ps1xml
-pratProfile_trace "Done:  Update-FormatData"
+pratProfile_trace done "Update-FormatData"
 
 New-Alias -Name pb -Value Prebuild-Codebase -Scope Global
 New-Alias -Name b -Value Build-Codebase -Scope Global
@@ -111,5 +111,4 @@ New-Alias -Name filever -Value Get-FileVersionInfo -Scope Global
 New-Alias -Name hex -Value Format-NumberAsHex -Scope Global
 New-Alias -Name ec -Value Enter-Codebase -Scope Global
 
-pratProfile_trace "End:   interactiveProfile_prat.ps1"
-
+pratProfile_trace end "interactiveProfile_prat.ps1"

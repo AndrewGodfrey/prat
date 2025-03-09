@@ -1,7 +1,11 @@
 # This file is installed to %userprofile%\Documents\[Windows]Powershell, by Install-PsProfile.ps1.
 
+. $home\prat\lib\profile\initProfileTracing.ps1
+pratProfile_trace start "profile.ps1"
+
 . $home\prat\lib\profile\profilePicker.ps1
 
+pratProfile_trace end "profile.ps1"
 return
 
 # I don't want 'conda init' to mess with my profile. I'd rather integrate it myself.
