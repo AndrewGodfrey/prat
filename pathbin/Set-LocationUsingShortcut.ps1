@@ -1,7 +1,9 @@
 # .SYNOPSIS
 # Sets the current working location (like Set-Location), but using a shortcut.
+# Command-completion is available for the shortcut parameter.
 #
 # Alias: c
+# The shortcut "?" lists all shortcuts.
 #
 # .NOTES
 # Shortcuts are interpreted using: 
@@ -9,6 +11,14 @@
 #     i.e. each dev environment can supply one. e.g. see: Find-Shortcut_prat.ps1
 #  2. Find-CodebaseShortcut 
 #     - its behavior can be extended/overridden by overriding Get-GlobalCodebases (which by default also includes $pwd)
+#
+# .EXAMPLE
+# c appdata
+#
+# .EXAMPLE
+# c ?
+# hosts                          C:\WINDOWS\system32\drivers\etc
+#    [and so on...]
 param(
     [ArgumentCompleter(
         {
