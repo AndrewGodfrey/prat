@@ -78,19 +78,6 @@ if ($Shortcut -eq "?") {
     return (GetAllShortcuts | Format-Table -HideTableHeaders)
 }
 
-function findTestDir($tt) {
-    $c = "$($tt)Test"; if (Test-Path $c) { return $c }
-    $c = "$($tt)Tests"; if (Test-Path $c) { return $c }
-    if (Test-Path $tt) { return $tt }
-    while ($true) {
-        $parent = Split-Path -Parent $tt
-        if ($parent -eq $tt) { break }
-        if (Test-Path $parent) { return $parent }
-        $tt = $parent
-    }
-    return $null
-}
-
 $result = FindShortcut $Shortcut
 if ($null -eq $result) { 
     throw "Unrecognized: $Shortcut" 
@@ -100,14 +87,13 @@ $target = $result.target
 $cbt = $result.cbt
 $target = $target -replace '\\', '/'
 
-if ($Test) {    
-    if ($null -ne $cbt.testDirFromDevDir) {
-        $testTarget = &$cbt.testDirFromDevDir $target
-        $alt = findTestDir $testTarget
-        if ($null -ne $alt) { $target = $alt } else {
-            Write-Warning "No test dir found, leaving you in dev"
-        }
+if ($Test) {
+    $testTarget = Push-UnitTestDirectory $target -JustReturnIt
+    if ($null -ne $testTarget) {
+        $target = $testTarget
+    } else {
+        Write-Warning "No test dir found, leaving you in dev"
     }
 }
 
-cd $target
+Set-Location $target

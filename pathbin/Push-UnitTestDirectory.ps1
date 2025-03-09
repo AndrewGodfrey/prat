@@ -16,12 +16,33 @@
 
 param ($CodeDir = $pwd, [switch] $JustReturnIt)
 
-function findIt($CodeDir) {
-    $candidate = Join-Path $CodeDir "tests"
+function checkSubDirs($dir) {
+    $candidate = Join-Path $dir "tests"
     if (Test-Path -PathType Container $candidate) { return $candidate }
-    $candidate = Join-Path $CodeDir "test"
+
+    $candidate = Join-Path $dir "test"  # I prefer to use this name for test data, not tests. But some codebases use it for tests.
     if (Test-Path -PathType Container $candidate) { return $candidate }
     return $null
+}
+
+
+function findIt($CodeDir) {
+    # First, see if there's codebase-specific logic
+    $cbt = &$PSScriptRoot/../lib/Get-CodebaseTable $CodeDir
+    if (($null -ne $cbt) -and ($null -ne $cbt.testDirFromDevDir)) {
+        $candidate = &$cbt.testDirFromDevDir $CodeDir
+        if ($null -ne $candidate) {
+            # First check for 'test' subdirectories
+            $candidate = checkSubDirs $candidate
+            if ($null -ne $candidate) { return $candidate }
+
+            # Otherwise, return whatever we were given, provided it exists.
+            if (Test-Path -PathType Container $candidate) { return $candidate }
+        }
+    }
+
+    # Otherwise, look nearby to the input code dir.
+    return checkSubDirs $CodeDir
 }
 
 $result = findIt $CodeDir
