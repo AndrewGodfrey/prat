@@ -5,7 +5,7 @@
 #
 # .NOTES
 # Shortcuts are interpreted using Find-Shortcut and Find-CodebaseShortcut
-param($Shortcut="", [switch] $Test)
+param($Shortcut="", [switch] $Test, [switch] $ListAll)
 
 function emit($key, $target) {
     $target = $target -replace "\\", "/"
@@ -13,6 +13,22 @@ function emit($key, $target) {
     if ($p -lt 1) { $p = 1 }
     $padding = ' ' * $p
     echo "$key$padding$target"
+}
+
+if ($ListAll) {
+    [System.Collections.Specialized.OrderedDictionary] $result = &$PSScriptRoot/../lib/Find-Shortcut -ListAll
+
+    $cbts = &$PSScriptRoot/../lib/Find-CodebaseShortcut -ListAll
+    foreach ($cbt in $cbts) {
+        # echo "$($cbt.id):"
+        foreach ($key in ($cbt.shortcuts.Keys | Sort-Object)) {
+            if (!$result.Contains($key)) {
+                $result.Add($key, $cbt.root + "/" + $cbt.shortcuts[$key])
+            }   
+        }
+    }
+
+    return $result
 }
 
 if ($Shortcut -eq "?") {
