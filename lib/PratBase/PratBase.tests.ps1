@@ -13,6 +13,10 @@ Describe "Get-RelativePath" {
         $p = Get-RelativePath $PSScriptRoot "$PSScriptRoot\test\dummytestfile.txt"
         $p | Should -Be "test\dummytestfile.txt"
     }
+    It "uses upper/lowercase from the filesystem, not the parameter" {
+        $p = Get-RelativePath "$PSScriptRoot\TeSt" "$PSScriptRoot\test\dummyTestfile.txt"
+        $p | Should -Be "dummytestfile.txt"
+    }
     It "returns an empty string (not '.') if given the root" {
         $p = Get-RelativePath $PSScriptRoot $PSScriptRoot
         $p | Should -Be ""

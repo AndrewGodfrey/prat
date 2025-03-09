@@ -12,12 +12,13 @@ function Get-CurrentUserIsElevated {
 
 
 function Get-RelativePath($expectedRoot, $path) {
+    if (-not (Split-Path $expectedRoot -IsAbsolute)) { throw "Expected absolute root path. Actual: $expectedRoot" }
     if (-not (Split-Path $path -IsAbsolute)) { throw "Expected absolute path. Actual: $path" }
-    if (-not (Test-Path -LiteralPath $path)) { throw "Expected literal path to existing item. Actual: $path" }
+    if (-not (Test-Path -LiteralPath $path)) { throw "Expected literal path to existing item. Actual: $path" } # Because we're using Resolve-Path, which only works for existing items.
 
     $canonicalRoot = (Resolve-Path $expectedRoot).Path
     $canonicalPath = (Resolve-Path $path).Path
-    if (-not ($canonicalPath.StartsWith($canonicalRoot))) { throw "Expected subpath. '$root' does not seem to be a root of '$path'" }
+    if (-not ($canonicalPath.StartsWith($canonicalRoot, 'InvariantCultureIgnoreCase'))) { throw "Expected subpath. '$root' does not seem to be a root of '$path'" }
     if ($canonicalPath -eq $canonicalRoot) { return "" }
 
     # "+1" to strip off leading path separator.
