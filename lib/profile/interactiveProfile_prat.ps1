@@ -110,5 +110,6 @@ New-Alias -Name aext -Value Analyze-FileExtensions -Scope Global
 New-Alias -Name filever -Value Get-FileVersionInfo -Scope Global
 New-Alias -Name hex -Value Format-NumberAsHex -Scope Global
 New-Alias -Name ec -Value Enter-Codebase -Scope Global
+New-Alias -Name pt -Value Push-UnitTestDirectory -Scope Global
 
 pratProfile_trace end "interactiveProfile_prat.ps1"
