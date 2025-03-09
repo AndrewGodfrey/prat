@@ -33,8 +33,8 @@ function findIt($CodeDir) {
         $candidate = &$cbt.testDirFromDevDir $CodeDir $cbt.root
         if ($null -ne $candidate) {
             # First check for 'test' subdirectories
-            $candidate = checkSubDirs $candidate
-            if ($null -ne $candidate) { return $candidate }
+            $subdir = checkSubDirs $candidate
+            if ($null -ne $subdir) { return $subdir }
 
             # Otherwise, return whatever we were given, provided it exists.
             if (Test-Path -PathType Container $candidate) { return $candidate }
