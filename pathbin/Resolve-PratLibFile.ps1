@@ -9,7 +9,7 @@
 # Instead of returning the first matching filename, returns an array of all matching filenames.
 param ($file, [switch] $ListAll)
 
-$ext = Split-Path $file -Extension
+$ext = [IO.Path]::GetExtension($file)
 $fileWithoutExt = $file.SubString(0, $file.Length - $ext.Length)
 
 $listAllResults = @()
