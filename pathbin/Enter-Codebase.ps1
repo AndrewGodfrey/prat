@@ -20,4 +20,4 @@
 #   [[ENV: %llamacpp%]] [llamacpp](CMake)
 #   >
 #
-Open-CodebaseWorkspace.ps1 {pwsh -NoExit -Command "cd $pwd"}
+Open-CodebaseWorkspace.ps1 {pwsh -NoExit -Command "cd $pwd"} -DescriptionScript {param($cbtId); "Entering: $cbtId" }

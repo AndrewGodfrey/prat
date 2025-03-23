@@ -17,7 +17,7 @@
 # .EXAMPLE
 #    ow {pwsh}
 [CmdletBinding()]
-param($fileOrScript = $null, $cbt = $null)
+param($fileOrScript = $null, $cbt = $null, [ScriptBlock] $DescriptionScript = $null)
 
 if ($null -eq $cbt) {
     $cbt = &$PSScriptRoot\..\lib\Get-CodebaseSubTable $pwd -Verbose:$VerbosePreference
@@ -54,11 +54,18 @@ function appendContextPath($cachedEnvDelta, $id) {
     }
 }
 
+if ($null -eq $DescriptionScript) {
+    $Description = "Opening workspace for: $($cbt.id)"
+} else {
+    $Description = (& $DescriptionScript $cbt.id)
+}
+
 if ($workspace -is [ScriptBlock]) {
     pushd $cbt.root
     $savedContextPath = $env:__prat_contextPath
     try {
         appendContextPath $cbt.cachedEnvDelta $cbt.id
+        Write-Host -ForegroundColor Green $Description
         Invoke-CommandWithCachedEnvDelta $workspace $cbt.cachedEnvDelta
     } finally {
         $env:__prat_contextPath = $savedContextPath
@@ -70,7 +77,7 @@ if ($workspace -is [ScriptBlock]) {
     #
     # TODO: Further refactor so that *every* use of Invoke-CommandWithCachedEnvDelta will update $env:__prat_contextPath
     if (!(Test-Path $workspace)) { throw "Not found: $workspace" }
-    Write-Verbose "Opening workspace: $workspace"
+    Write-Host -ForegroundColor Green $Description
     Invoke-CommandWithCachedEnvDelta {&$workspace} $cbt.cachedEnvDelta
 }
 
