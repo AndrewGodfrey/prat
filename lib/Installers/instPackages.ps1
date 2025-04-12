@@ -196,8 +196,8 @@ function installPushoverNotification($stage, [array] $packageArgs) {
         }
 #>
 # NOTE: Fork autoupdates, so for this package we only ever need to think about initial installation.
-function installForkGitClient($stage, [array] $packageArgs) {
-    [string] $tokenFile = $packageArgs[0]
+function installForkGitClient($stage) {
+    [string] $tokenFile = & (Resolve-PratLibFile "lib/inst/Get-PratTokens.ps1") "forkActivation"
     if (($tokenFile -ne "") -and (!(Test-Path $tokenFile))) { throw "Not found: $tokenFile" }
 
     if (Get-CurrentUserIsElevated) { 
@@ -219,7 +219,6 @@ function installForkGitClient($stage, [array] $packageArgs) {
         $stage.EnsureManualStep("fork\close", "Close Fork so that we can activate it")
 
         [hashtable] $tokens = . $tokenFile
-        $binDir = $env:localappdata + "\Fork"
         &$destDir\Fork.exe activate $tokens.email $tokens.key
     }
 }
@@ -280,7 +279,7 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
             "df" { installPratScriptAlias $stage 'df' 'Get-DiskFreeSpace' }
             "sysinternals" { installPratWingetPackage "9P7KNL5RWT25"}
             "pushoverNotification" { installPushoverNotification $stage $packageArgs }
-            "forkGitClient" { installForkGitClient $stage $packageArgs }
+            "forkGitClient" { installForkGitClient $stage }
             default { throw "Internal error: $packageId" }
         }
 
