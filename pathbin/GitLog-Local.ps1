@@ -18,5 +18,5 @@ if ($null -ne $Months) {
     if ($null -eq $n) { $n = 7 }
     $optArgs += "--max-count=$n"
 }
-git log @optArgs --pretty="%C(auto)%as: %<(18,trunc)%an %h  %Cgreen%s%Creset" $Path
+GitLog-Pretty @optArgs $Path
 
