@@ -77,6 +77,7 @@ class InstallationTracker {
 
     [InstallationStage] StartStage([string] $stageName) {
         $this.CheckEmptyStage()
+        Write-Verbose "Starting stage: $stageName"
 
         $this.currentStage = [InstallationStage]::new($this, $stageName)
         return $this.currentStage
@@ -84,6 +85,7 @@ class InstallationTracker {
 
     [Void] EndStage([InstallationStage] $stage) {
         if ($this.currentStage -ne $stage) { throw "Internal error" }
+        Write-Verbose "Ending stage: $($stage.Name)"
         $this.currentStage = $null
     }
 
