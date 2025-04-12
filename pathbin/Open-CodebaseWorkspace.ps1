@@ -61,7 +61,6 @@ if ($null -eq $DescriptionScript) {
 }
 
 if ($workspace -is [ScriptBlock]) {
-    pushd $cbt.root
     $savedContextPath = $env:__prat_contextPath
     try {
         appendContextPath $cbt.cachedEnvDelta $cbt.id
@@ -69,7 +68,6 @@ if ($workspace -is [ScriptBlock]) {
         Invoke-CommandWithCachedEnvDelta $workspace $cbt.cachedEnvDelta
     } finally {
         $env:__prat_contextPath = $savedContextPath
-        popd
     }
 } else {
     # TODO: Refactor; we can do the same save/restore work (for $pwd and $env:__prat_contextPath) here.
