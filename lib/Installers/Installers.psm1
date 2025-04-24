@@ -98,7 +98,11 @@ class InstallationTracker {
                 $operationName += " - " + $subStage
             }
         }
-        Write-Progress $this.installerName -CurrentOperation $operationName
+        if ($operationName -eq "") { 
+            Write-Progress $this.installerName
+        } else {
+            Write-Progress $this.installerName -Status $operationName
+        }
     }
 
     [bool] GetIsStepComplete($stepId, $version) {
