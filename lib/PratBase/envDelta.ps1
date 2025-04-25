@@ -106,6 +106,19 @@ function applyChanges($envVarChanges) {
 }
 
 # .SYNOPSIS
+# Returns a simple $onOutput scriptblock, for use with Export-EnvDeltaFromInvokedBatchScript.
+function Get-DefaultOnOutputBlock() {
+
+    return {
+        param ($line)
+        if ($line -is [string]) {
+            if ($line -match "^\s*$") { return }
+            Write-Progress "Export-EnvDeltaFromInvokedBatchScript" -Status $line
+        }
+    }
+}
+
+# .SYNOPSIS
 # Run a .bat or .cmd script, and capture the changes it makes to environment variables, for later use with Invoke-CommandWithEnvDelta.
 # 
 # .RETURNS
