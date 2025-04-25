@@ -222,12 +222,57 @@ Describe "Export-EnvDeltaFromInvokedBatchScript" {
                 set testValue_set=set_updated
                 exit /b 1
 "@
-            # Act
             $fn = createTestFile $batchScript ".bat"
 
-            # Assert
+            # Act & Assert
             {Export-EnvDeltaFromInvokedBatchScript $fn} | Should -Throw -ExpectedMessage "batch script failed: error code: 1"
             {Export-EnvDeltaFromInvokedBatchScript $fn -checkExitCode:$false} | Should -Not -Throw
+        } finally {
+            popTestEnvironment $prev
+        }
+    }
+    It "Can capture stdout" {
+        $prev = pushTestEnvironment
+        try {
+            $batchScript = @"
+                @echo off
+                echo Hello
+"@
+            $fn = createTestFile $batchScript ".bat"
+            $savedResult = [ref] @()
+            $onOutput = [scriptblock] { $savedResult.Value += $_ }
+
+            # Act
+            Export-EnvDeltaFromInvokedBatchScript $fn -OnOutput $onOutput
+
+            # Assert
+            $savedResult.Value.Count | Should -Be 1
+            $savedResult.Value[0] | Should -Be "Hello"
+        } finally {
+            popTestEnvironment $prev
+        }
+    }
+    It "Can capture stdout and stderr" {
+        $prev = pushTestEnvironment
+        try {
+            $batchScript = @"
+                @echo off
+                echo Hello
+                echo Simulated error 1>&2
+                echo Hello2
+"@
+            $fn = createTestFile $batchScript ".bat"
+            $savedResult = [ref] @()
+            $onOutput = [scriptblock] { $savedResult.Value += $_ }
+
+            # Act
+            Export-EnvDeltaFromInvokedBatchScript $fn -OnOutput $onOutput
+
+            # Assert
+            $savedResult.Value.Count | Should -Be 3
+            $savedResult.Value[2] | Should -Be "Hello2"
+            $savedResult.Value[1] | Should -BeOfType [System.Management.Automation.ErrorRecord]
+            $savedResult.Value[1].Exception.Message | Should -Be "Simulated error "
         } finally {
             popTestEnvironment $prev
         }

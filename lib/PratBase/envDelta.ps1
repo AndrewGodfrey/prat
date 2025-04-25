@@ -22,13 +22,13 @@
 #     Otherwise: The env-var is not part of the delta, meaning it should not be touched when this delta is applied/reverted.
 
 # Low-level function: Run a .bat or .cmd script, and capture all the environment variables afterwards.
-function runCmdAndCaptureEnv([string] $script, [string] $parameters, [bool] $checkExitCode) {
+function runCmdAndCaptureEnv([string] $script, [string] $parameters, [bool] $checkExitCode, [scriptblock] $onOutput = $null) {
     $tempFile = [IO.Path]::GetTempFileName()
 
     # Keys are case-insensitive, which matches how env-vars work.
     $result = @{}
     try {
-        cmd /c " `"$script`" $parameters && set > `"$tempFile`" " | Out-Null
+        cmd /c " `"$script`" $parameters && set > `"$tempFile`" " 2>&1 | ForEach-Object { if ($null -ne $onOutput) {&$onOutput $_} } # A mixture of type [string] and type [System.Management.Automation.ErrorRecord]
         if ($checkExitCode -and ($LastExitCode -ne 0)) { throw "batch script failed: error code: $LastExitCode" }
 
         foreach ($line in (Get-Content $tempFile)) {
@@ -111,11 +111,11 @@ function applyChanges($envVarChanges) {
 # .RETURNS
 # A hashtable with 'apply' and 'prev' keys, for use with Invoke-CommandWithEnvDelta. Each value is a hashtable of env-var name-value pairs.
 # The 'prev' key is just for information.
-function Export-EnvDeltaFromInvokedBatchScript([string] $script, [string] $parameters, [bool] $checkExitCode=$true) {
+function Export-EnvDeltaFromInvokedBatchScript([string] $script, [string] $parameters, [bool] $checkExitCode=$true, [scriptblock] $onOutput = $null) {
     $currentEnvironment = captureCurrentEnv
     # Write-Debug-SimpleHashtable $currentEnvironment "current environment"
 
-    $newEnvironment = runCmdAndCaptureEnv $script $parameters $checkExitCode
+    $newEnvironment = runCmdAndCaptureEnv $script $parameters $checkExitCode $onOutput
     # Write-Debug-SimpleHashtable $newEnvironment "new environment"
 
     # We add -MissingInAfterMeansDeletion because: In this case, if the new environment is missing an item, we believe the script we just ran deleted it, on purpose.
@@ -184,6 +184,8 @@ function Get-CachedEnvDelta($cacheFile) {
 function Install-CachedEnvDelta($stage, $cacheFile, $envDelta) {
     if (!($cacheFile.EndsWith(".ps1"))) { throw '$cacheFile needs to end in ".ps1"' }
     $asText = ConvertTo-Expression $envDelta
-    Install-TextToFile $stage $cacheFile $asText -ShowUpdateDetails -BackupFile
+    # Suppressing -ShowUpdateDetails because: 
+    #     With many repos, it's not interesting. They tend to make new random values each time you run them,
+    #     e.g. to make unique temp paths.
+    Install-TextToFile $stage $cacheFile $asText -BackupFile
 }
-
