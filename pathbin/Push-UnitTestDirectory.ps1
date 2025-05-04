@@ -16,12 +16,19 @@
 
 param ($CodeDir = $pwd, [switch] $JustReturnIt)
 
-function checkSubDirs($dir) {
+function checkTestDirs($dir) {
     $candidate = Join-Path $dir "tests"
     if (Test-Path -PathType Container $candidate) { return $candidate }
 
     $candidate = Join-Path $dir "test"  # I prefer to use this name for test data, not tests. But some codebases use it for tests.
     if (Test-Path -PathType Container $candidate) { return $candidate }
+
+    $candidate = "$($dir)Test"
+    if (Test-Path -PathType Container $candidate) { return $candidate }
+    
+    $candidate = "$($dir)Tests"
+    if (Test-Path -PathType Container $candidate) { return $candidate }
+    
     return $null
 }
 
@@ -32,8 +39,8 @@ function findIt($CodeDir) {
     if (($null -ne $cbt) -and ($null -ne $cbt.testDirFromDevDir)) {
         $candidate = &$cbt.testDirFromDevDir $CodeDir $cbt.root
         if ($null -ne $candidate) {
-            # First check for 'test' subdirectories
-            $subdir = checkSubDirs $candidate
+            # First check for 'test' subdirectories/alternate names
+            $subdir = checkTestDirs $candidate
             if ($null -ne $subdir) { return $subdir }
 
             # Otherwise, return whatever we were given, provided it exists.
@@ -42,7 +49,7 @@ function findIt($CodeDir) {
     }
 
     # Otherwise, look nearby to the input code dir.
-    return checkSubDirs $CodeDir
+    return checkTestDirs $CodeDir
 }
 
 $result = findIt $CodeDir
