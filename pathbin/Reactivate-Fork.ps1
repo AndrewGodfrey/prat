@@ -3,4 +3,4 @@ if (($tokenFile -eq "") -or (!(Test-Path $tokenFile))) { throw "Not found: $toke
 
 $destDir = $env:localappdata + "\Fork"
 [hashtable] $tokens = . $tokenFile
-&$destDir\Fork.exe activate $tokens.email $tokens.key
+&$destDir\current\Fork.exe activate $tokens.email $tokens.key

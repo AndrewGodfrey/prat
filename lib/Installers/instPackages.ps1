@@ -219,7 +219,7 @@ function installForkGitClient($stage) {
         $stage.EnsureManualStep("fork\close", "Close Fork so that we can activate it")
 
         [hashtable] $tokens = . $tokenFile
-        &$destDir\Fork.exe activate $tokens.email $tokens.key
+        &$destDir\current\Fork.exe activate $tokens.email $tokens.key
     }
 }
 
