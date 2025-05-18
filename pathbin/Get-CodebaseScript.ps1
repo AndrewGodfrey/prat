@@ -21,7 +21,7 @@ switch ($codebase) {
     "prat" {
         switch ($action) {
             "build"  { return {Build-Prat} }
-            "test"   { return {Invoke-Pester} }
+            "test"   { return {Test-Prat} }
             "deploy" { return {Deploy-Prat -Force:$Force} }
         }
     }
