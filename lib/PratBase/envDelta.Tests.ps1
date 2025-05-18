@@ -169,6 +169,8 @@ Describe "captureCurrentEnv" {
 }
 
 Describe "Export-EnvDeltaFromInvokedBatchScript" {
+    # Crap. Anaconda breaks this test via what it installs in "HKCU:SOFTWARE\Microsoft\Command Processor" - it runs ~\anaconda3\condabin\conda_hook.bat which
+    # sets some more variables.
     It "Captures changes a batch script makes to environment variables" {
         $prev = pushTestEnvironment
         try {
@@ -208,9 +210,10 @@ Describe "Export-EnvDeltaFromInvokedBatchScript" {
             $result.apply.Contains('testValue_cleared2') | Should -BeFalse
             $result.prev. Contains('testValue_cleared2') | Should -BeFalse
 
-            # There should be no other values in these tables, since the script only changed these 3.
-            $result.apply.Count | Should -Be 3
-            $result.prev.Count | Should -Be 3 
+            # Ideally, there should be exactly 3 values in these tables, since the script only changed these 3.
+            # BUT. For example: If you have Anaconda installed, it installs a hook in "HKCU:SOFTWARE\Microsoft\Command Processor" which sets "CONDA_BAT" amongst other things.
+            $result.apply.Count | Should -BeGreaterOrEqual 3
+            $result.prev.Count | Should -BeGreaterOrEqual 3 
         } finally {
             popTestEnvironment $prev
         }
