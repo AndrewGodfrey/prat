@@ -3,7 +3,8 @@ param(
     [Parameter(Position=0, Mandatory)]
     [ValidateSet("build", "test", "deploy", "prebuild")] [string] $action,
     [Parameter(Position = 1, ValueFromRemainingArguments = $true)]
-    [object[]] $CommandParameters
+    [object[]] $CommandParameters,
+    [hashtable] $CommandSwitches = @{}
 )
 
 $cbt = &$home\prat\lib\Get-CodebaseTable (Get-Location)
@@ -36,4 +37,8 @@ if ($action -ne "prebuild") {
 
 Write-Debug "calling $action script for $($cbt.id), with parameters: ($(ConvertTo-Expression $CommandParameters))"
 
-Invoke-CommandWithCachedEnvDelta {&$script $cbt @CommandParameters} $envDelta -CommandParameters $CommandParameters
+$wrapperScriptBlock = {
+    param($CommandParameters, $CommandSwitches)
+    & $script $cbt @CommandParameters -CommandSwitches:$CommandSwitches
+}
+Invoke-CommandWithCachedEnvDelta $wrapperScriptBlock $envDelta -CommandParameters $CommandParameters -CommandSwitches $CommandSwitches

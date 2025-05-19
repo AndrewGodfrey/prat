@@ -16,6 +16,6 @@ param([switch] $Force=$false)
 
 Prebuild-Codebase -Force:$Force
 Build-Codebase
-Test-Codebase
+Test-Codebase -CodeCoverage
 Deploy-Codebase -Force:$Force
 

@@ -144,7 +144,7 @@ function Export-EnvDeltaFromInvokedBatchScript([string] $script, [string] $param
 #
 # The intent is that the script will call out to some tool (whose changes to envvars will not affect the current script).
 #
-function Invoke-CommandWithEnvDelta([scriptblock] $script = {throw "script needed"}, $optionalEnvDelta, $CommandParameters) {
+function Invoke-CommandWithEnvDelta([scriptblock] $script = {throw "script needed"}, $optionalEnvDelta, $CommandParameters, [hashtable] $CommandSwitches = @{}) {
     if ($null -eq $optionalEnvDelta) {
         $EnvDelta = [ordered] @{ apply = [ordered] @{}; prev = [ordered] @{} }
     } else {
@@ -156,7 +156,7 @@ function Invoke-CommandWithEnvDelta([scriptblock] $script = {throw "script neede
 
     applyChanges $EnvDelta.apply
     try {
-        & $script @CommandParameters
+        & $script -CommandParameters:$CommandParameters -CommandSwitches:$CommandSwitches
     } finally {
         applyChanges $toRevert
     }
@@ -164,12 +164,12 @@ function Invoke-CommandWithEnvDelta([scriptblock] $script = {throw "script neede
 
 # .SYNOPSIS
 # Wrapper for Invoke-CommandWithEnvDelta which does verbose logging, and loads the EnvDelta
-function Invoke-CommandWithCachedEnvDelta([scriptblock] $script, $optionalCachedEnvDeltaFilename, [object[]] $CommandParameters) {
+function Invoke-CommandWithCachedEnvDelta([scriptblock] $script, $optionalCachedEnvDeltaFilename, [object[]] $CommandParameters, [hashtable] $CommandSwitches = @{}) {
     if ($null -ne $optionalCachedEnvDeltaFilename) {
         Write-Verbose "Applying enviroment: $optionalCachedEnvDeltaFilename"
     }
 
-    Invoke-CommandWithEnvDelta $script (Get-CachedEnvDelta $optionalCachedEnvDeltaFilename) -CommandParameters:$CommandParameters
+    Invoke-CommandWithEnvDelta $script (Get-CachedEnvDelta $optionalCachedEnvDeltaFilename) -CommandParameters:$CommandParameters -CommandSwitches:$CommandSwitches
 }
 
 # .SYNOPSIS

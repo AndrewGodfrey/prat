@@ -17,11 +17,14 @@ param(
     [switch] $Force
 )
 
-switch ($codebase) {
+switch ($codebase) {    
     "prat" {
         switch ($action) {
             "build"  { return {Build-Prat} }
-            "test"   { return {Test-Prat} }
+            "test"   { return { 
+                param([hashtable] $CommandSwitches = @{})
+                Test-Prat -CodeCoverage:$CommandSwitches['CodeCoverage']} 
+            }
             "deploy" { return {Deploy-Prat -Force:$Force} }
         }
     }
