@@ -22,6 +22,13 @@ Describe "[LineArray]::new" {
         $lineArray.ToString() | Should -Be "a`nb"
     }
 
+    It "recognizes Mac-style newlines" {
+        $lineArray = [LineArray]::new("a`rb")
+
+        $lineArray.GetNl() | Should -Be "`r"
+        $lineArray.ToString() | Should -Be "a`rb"
+    }
+
     Context "trailingNewline" {
         It "includes an empty string at the end" {
             $lineArray = [LineArray]::new("a`r`n")
