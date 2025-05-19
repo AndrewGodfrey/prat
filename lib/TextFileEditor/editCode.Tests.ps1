@@ -69,11 +69,16 @@ $table = @{
     It "returns the first line found" {
         Find-CorrespondingIndent $laTestScript 4 @{idxFirst=1; idxLast=8} | Should -Be 1
     }
-    It "returns null on no match" {
+    It "returns -1 on no match" {
         Find-CorrespondingIndent $laTestScript 0 @{idxFirst=1; idxLast=7} | Should -Be -1
     }
     It "ignores blank lines" {
         Find-CorrespondingIndent $laTestScript 0 @{idxFirst=2; idxLast=8} | Should -Be 8
+    }
+    It "warns on unexpected indent" {
+        $testScript = [LineArray]::new("  a`nb`n c`n  d`n")
+        Find-CorrespondingIndent $testScript 1 @{idxFirst=0; idxLast=2}  3>&1 | Tee-Object -Variable warnings
+        $warnings[0] | Should -Be "Unexpected indentation at line 1"  
     }
 }
 
