@@ -10,6 +10,6 @@
 param ($pattern)
 $results = &$PSScriptRoot/../lib/Get-ContainingItem -Multiple $pattern $pwd
 if ($null -ne $results) {
-    echo $results.FullName
+    Write-Output $results.FullName
 }
 

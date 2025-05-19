@@ -5,19 +5,19 @@
 # set: Changes the encoding for each matching file. Only utf8 and utf8 + BOM are supported.
 #      (And I don't recommend utf8 + BOM - it's just for testing).
 
-param ([ValidateSet("get", "apply")] $command, $pathspec="*.csproj", $toApply)
+param ([ValidateSet("get", "apply")] $command, $pathspec = "*.csproj", $toApply)
 
 switch ($command) {
   "get" { 
     $result = @{}
-    Get-ChildItem -Recurse -File $pathSpec | % { 
+    Get-ChildItem -Recurse -File $pathSpec | ForEach-Object { 
       $fmt = Get-TextFileEncoding $_.FullName -FromScript
-      echo @{ File = $_; Format = $fmt }
+      Write-Output @{ File = $_; Format = $fmt }
     }
   }
 
   "set" {
-    Get-ChildItem -Recurse -File $pathSpec | % {
+    Get-ChildItem -Recurse -File $pathSpec | ForEach-Object {
       $file = $_.FullName
       $expectedFmt = $toApply[$file]
       if ($null -eq $expectedFmt) { throw "Missing information for file: $file" }
@@ -25,9 +25,11 @@ switch ($command) {
       if ($expectedFmt -ne $actualFmt) { 
         if (($expectedFmt -eq 'utf8') -and ($actualFmt -eq 'utf8 + BOM')) {
           Remove-Utf8Bom $file
-        } elseif (($expectedFmt -eq 'utf8 + BOM') -and ($actualFmt -eq 'utf8')) {
+        }
+        elseif (($expectedFmt -eq 'utf8 + BOM') -and ($actualFmt -eq 'utf8')) {
           Add-Utf8Bom $file
-        } else {
+        }
+        else {
           Write-Warning "Not implemented: $actualFmt -> $($expectedFmt): $file"
         }
       }
