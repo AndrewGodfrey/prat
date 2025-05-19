@@ -21,6 +21,7 @@ BeforeAll {
 
 Describe "Open-CodebaseWorkspace" {
     It "runs the given script with a temporary environment" {
+        Mock Write-Host {}
         $prev = pushTestEnvironment
         try {
             $cacheFile = @"
