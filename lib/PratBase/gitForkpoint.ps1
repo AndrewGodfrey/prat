@@ -38,12 +38,12 @@ function Get-CurrentGitForkpoint($repoRoot, $mainBranch="origin/main") {
 #   currentIsOlder:     Depends on the situation. Reuse the cache if the 'newer' one is likely to be valid, or if it's hard/impossible to reliably go 'backwards'.
 #   unrelated/complex:  Warn, and invalidate the cache
 function Get-ForkpointRelationship($previousForkpoint, $currentForkpoint) {
-    if ($currentForkpoint.repoRoot -ne $previousForkpoint.repoRoot) {
-        throw "Internal error - comparing forkpoints from different repo roots"
-    }
-
     if ($currentForkpoint.forkpointType -ne $previousForkpoint.forkpointType) {
         throw "Internal error - comparing forkpoints of different types"
+    }
+
+    if ($currentForkpoint.repoRoot -ne $previousForkpoint.repoRoot) {
+        throw "Internal error - comparing forkpoints from different repo roots"
     }
 
     if ($currentForkpoint.forkpointType -ne 'git') {
