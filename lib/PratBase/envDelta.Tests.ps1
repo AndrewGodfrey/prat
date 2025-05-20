@@ -433,3 +433,16 @@ Describe "Get-CachedEnvDelta" {
     }
 }
 
+Describe "Get-DefaultOnOutputBlock" {
+    It "returns a scriptblock which writes progress" {
+        # Act
+        $result = Get-DefaultOnOutputBlock
+
+        # Assert
+        $result | Should -BeOfType [scriptblock]
+
+        Mock Write-Progress {} -Verifiable
+        $result.Invoke("foo")
+        Should -Invoke -CommandName Write-Progress -Times 1 -ParameterFilter {$Status -eq "foo"}
+    }
+}

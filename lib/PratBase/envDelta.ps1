@@ -108,7 +108,6 @@ function applyChanges($envVarChanges) {
 # .SYNOPSIS
 # Returns a simple $onOutput scriptblock, for use with Export-EnvDeltaFromInvokedBatchScript.
 function Get-DefaultOnOutputBlock() {
-
     return {
         param ($line)
         if ($line -is [string]) {
