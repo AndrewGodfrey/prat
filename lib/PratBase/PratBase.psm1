@@ -49,8 +49,8 @@ function Get-OptimalSize($sizeInBytes) {
     switch ($sizeInBytes) {
         # Hmm. Disk size standards have changed. Nowadays, 1024 bytes is "one kibibyte, abbreviated KiB", and that unit is rarely used.
         # And KB means 1000 bytes. So, instead of using Powershell's definitions for 1TB, 1GB, 1MB or 1KB:
-        {$sizeInBytes -ge 1000000000000000} {"{0:n1}" -f ($sizeInBytes/1000000000000) + "PB" ; break}
-        {$sizeInBytes -ge 1000000000000} {"{0:n1}" -f ($sizeInBytes/1000000000) + "TB" ; break}
+        {$sizeInBytes -ge 1000000000000000} {"{0:n1}" -f ($sizeInBytes/1000000000000000) + "PB" ; break}
+        {$sizeInBytes -ge 1000000000000} {"{0:n1}" -f ($sizeInBytes/1000000000000) + "TB" ; break}
         {$sizeInBytes -ge 1000000000} {"{0:n1}" -f ($sizeInBytes/1000000000) + "GB" ; break}
         {$sizeInBytes -ge 1000000} {"{0:n1}" -f ($sizeInBytes/1000000) + "MB" ; break}
         {$sizeInBytes -ge 1000} {"{0:n1}" -f ($sizeInBytes/1000) + "K" ; break}
@@ -68,8 +68,8 @@ function getUsedPercentage([int64] $free, [int64] $size) {
     [double] $used = $size - $free
     return "{0:F1}%" -f (100*($used / $size))
 }
-function Get-DiskFreeSpace {
-    Get-CimInstance win32_logicaldisk  | format-table -Property DeviceID, 
+function Get-DiskFreeSpace([switch] $HideTableHeaders) {
+    Get-CimInstance win32_logicaldisk  | format-table -HideTableHeaders:$HideTableHeaders -Property DeviceID, 
         @{Name="FreeSpace";Expression={Get-OptimalSize $_.FreeSpace}},
         @{Name="Size";Expression={Get-OptimalSize $_.Size}},
         @{Name="Used";Expression={getUsedPercentage $_.FreeSpace $_.Size}},
@@ -152,7 +152,7 @@ function Restart-Process($nameMatch) {
 
     # No support for command-line arguments currently - so just check there aren't any
     if (!(isRecognizedCommandLine $commandLine $executablePath)) {
-        throw "Unsupported: There seem to be command line arguments: $commandLine vs $withQuotes"
+        throw "Unsupported: There seem to be command line arguments: $commandLine"
     }
 
     Stop-Process -Id $processId -Force
