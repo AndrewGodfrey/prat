@@ -145,5 +145,4 @@ function Add-Lines($data, $idxLine, $newText) {
 
 . $PSScriptRoot\editPowershellScript.ps1
 
-. $PSScriptRoot\patchSlickSourceCode.ps1
 

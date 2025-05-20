@@ -73,8 +73,7 @@ FunctionsToExport = @(
 	'Import-TextFile', 'Format-IndentLine', 'Format-ReplaceLines', 'Read-Lines', 'Add-Lines',
 	'Find-XmlSection', 'Update-XmlSection',
 	'Get-IndentLevel', 'Find-MatchingLine', 'Find-CorrespondingIndent', 'Get-SubIndent', 'Format-ReplaceMatchingLines',
-	'Test-IsSingleLinePowershellBlock', 'Find-MatchingPowershellBlock', 'Add-HashTableItemInPowershellScript', 'Test-HashTableItemInPowershellScript', 'Edit-HashOfArraysItemInPowershellScript',
-	'Update-PatchSlickOpenWkspace'
+	'Test-IsSingleLinePowershellBlock', 'Find-MatchingPowershellBlock', 'Add-HashTableItemInPowershellScript', 'Test-HashTableItemInPowershellScript', 'Edit-HashOfArraysItemInPowershellScript'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
