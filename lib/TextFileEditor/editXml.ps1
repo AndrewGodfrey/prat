@@ -80,14 +80,13 @@ function Find-XmlSection($xmlContent, $pathArray, $filename) {
         }
 
         $xmlReader.Skip();
-        if ($xmlReader.NodeType -ne "Whitespace") {
-            throw "Internal error ('" +$xmlReader.NodeType+"')"
-        }
         $result.idxLast = $xmlReader.LineNumber - 1
-
-        $xmlReader.Skip();
-        if ($xmlReader.LineNumber -eq ($result.idxLast + 1)) {
-            throw "Error: End node isn't on its own line ($filename : $($result.idxLast + 1))"
+        if ($xmlReader.NodeType -ne "None") {
+            if ($xmlReader.NodeType -ne "Whitespace") { throw "Internal error ('" +$xmlReader.NodeType+"') on line $($xmlReader.LineNumber)" }
+            $xmlReader.Skip();
+            if ($xmlReader.LineNumber -eq ($result.idxLast + 1)) {
+                throw "Error: End node isn't on its own line ($filename : $($result.idxLast + 1))"
+            }
         }
     } finally {
         if ($null -ne $xmlReader) { $xmlReader.Dispose() }
@@ -117,7 +116,7 @@ function Update-XmlSection($xmlContent, $pathArray, $newSection, $filename) {
         $parentIndex = $pathArray.Length-2
         $parentSectionRange = Find-XmlSection $xmlContent $pathArray[0..$parentIndex] $filename
         if ($null -eq $parentSectionRange) {
-            throw "Can't find $($pathArray[$parentIndex]) section in $filename"
+            throw "Can't find '$($pathArray[$parentIndex])' section in '$filename'"
         }
         $targetLineNumber = $parentSectionRange.idxLast
         

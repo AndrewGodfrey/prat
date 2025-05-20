@@ -199,27 +199,57 @@ Function ConvertTo-Expression {
 	}
 	$Object = If (@($InputObject).Count -eq 1) {@($InputObject)[0]} Else {$InputObject}
 	If ($Null -eq $Object) {"`$Null"} Else {
-		$Space = If ($Iteration -gt $Expand) {""} Else {" "}; $Tab = $IndentChar * $Indentation; $LineUp = "$NewLine$($Tab * $Iteration)"
+		$Space = If ($Iteration -gt $Expand) {
+			""
+		} Else {
+			" "
+		}
+		$Tab = $IndentChar * $Indentation; $LineUp = "$NewLine$($Tab * $Iteration)"
 		$Type = $Object.GetType().Name; $Cast = $Null; $Enumerator = $Object.GetEnumerator.OverloadDefinitions
-		$Expression = If ($Object -is [Boolean]) {If ($Object) {'$True'} Else {'$False'}}
-		ElseIf ($Object -is [Char]) {$Cast = $Type; "'$Object'"}
-		ElseIf ($Object -is [String]) {If ($Object -Match "[`r`n]") {"@'$NewLine$Object$NewLine'@$NewLine"} Else {"'$($Object.Replace('''', ''''''))'"}}
-		ElseIf ($Object -is [DateTime]) {$Cast = $Type; "'$($Object.ToString('o'))'"}
-		ElseIf ($Object -is [Scriptblock]) {
-			"{$($Object.ToString())}"}
-		ElseIf ($Object -is [TimeSpan] -or $Object -is [Version]) {$Cast = $Type; "'$Object'"}
-		ElseIf ($Object -is [Enum]) {$Type = "String"; "'$($Object)'"}
-		ElseIf ($Object -is [Xml]) {$Cast = "Xml"; $SW = New-Object System.IO.StringWriter; $XW = New-Object System.Xml.XmlTextWriter $SW
+		$Expression = If ($Object -is [Boolean]) {
+			If ($Object) {'$True'} Else {'$False'}
+		} ElseIf ($Object -is [Char]) {
+			$Cast = $Type; "'$Object'"
+		} ElseIf ($Object -is [String]) {
+			If ($Object -Match "[`r`n]") {
+				"@'$NewLine$Object$NewLine'@$NewLine"
+			} Else {
+				"'$($Object.Replace('''', ''''''))'"
+			}
+		} ElseIf ($Object -is [DateTime]) {
+			$Cast = $Type; "'$($Object.ToString('o'))'"
+		} ElseIf ($Object -is [Scriptblock]) {
+			"{$($Object.ToString())}"
+		} ElseIf ($Object -is [TimeSpan] -or $Object -is [Version]) {
+			$Cast = $Type; "'$Object'"
+		} ElseIf ($Object -is [Enum]) {
+			$Type = "String"; "'$($Object)'"
+		} ElseIf ($Object -is [Xml]) {
+			$Cast = "Xml"; $SW = New-Object System.IO.StringWriter; $XW = New-Object System.Xml.XmlTextWriter $SW
 			$XW.Formatting = If ($Level -gt $Expand) {"None"} Else {"Indented"}; $XW.Indentation = $Indentation; $XW.IndentChar = $IndentChar
-			$Object.WriteContentTo($XW); If ($Level -gt $Expand) {"'$SW'"} Else {"@'$NewLine$SW$NewLine'@$NewLine"}}
-		ElseIf ($Object.GetType().Name -eq "DictionaryEntry" -or $Type -like "KeyValuePair*") {$Type = "Hashtable"; Embed $Object.Key @{$Object.Key = $Object.Value}}
-		ElseIf ($Object.GetType().Name -eq "OrderedDictionary") {$Type = "Hashtable"; $Cast = "Ordered"; Embed $Object.Keys $Object}
-		ElseIf ($Enumerator -match "[\W]IDictionaryEnumerator[\W]") {$Type = "Hashtable"; Embed $Object.Keys $Object}
-		ElseIf ($Enumerator -match "[\W]IEnumerator[\W]" -or $Object.GetType().Name -eq "DataTable") {$Type = "Array"; Embed $Object}
-		Else {$Property = $Object | Get-Member -Type Property; If (!$Property) {$Property = $Object | Get-Member -Type NoteProperty}
-			$Names = ForEach ($Name in ($Property | Select-Object -Expand "Name")) {$Object.PSObject.Properties |
-				Where-Object {$_.Name -eq $Name -and $_.IsGettable} | Select-Object -Expand "Name"}
-			If ($Property) {$Type = "PSCustomObject"; $Cast = $Type; Embed $Names $Object} Else {$Object}
+			$Object.WriteContentTo($XW); If ($Level -gt $Expand) {"'$SW'"} Else {"@'$NewLine$SW$NewLine'@$NewLine"}
+		} ElseIf ($Object.GetType().Name -eq "DictionaryEntry" -or $Type -like "KeyValuePair*") {
+			$Type = "Hashtable"; Embed $Object.Key @{$Object.Key = $Object.Value}
+		} ElseIf ($Object.GetType().Name -eq "OrderedDictionary") {
+			$Type = "Hashtable"; $Cast = "Ordered"; Embed $Object.Keys $Object
+		} ElseIf ($Enumerator -match "[\W]IDictionaryEnumerator[\W]") {
+			$Type = "Hashtable"; Embed $Object.Keys $Object
+		} ElseIf ($Enumerator -match "[\W]IEnumerator[\W]" -or $Object.GetType().Name -eq "DataTable") {
+			$Type = "Array"; Embed $Object
+		} Else {
+			$Property = $Object | Get-Member -Type Property
+			If (!$Property) {
+				$Property = $Object | Get-Member -Type NoteProperty
+			}
+			$Names = ForEach ($Name in ($Property | Select-Object -Expand "Name")) {
+				$Object.PSObject.Properties |
+				Where-Object {$_.Name -eq $Name -and $_.IsGettable} | Select-Object -Expand "Name"
+			}
+			If ($Property) {
+				$Type = "PSCustomObject"; $Cast = $Type; Embed $Names $Object
+			} Else {
+				$Object
+			}
 		}
 		Switch ($TypePrefix) {
 			'None'  	{"$Expression"}
