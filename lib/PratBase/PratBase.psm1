@@ -179,6 +179,24 @@ function Test-PathIsUnder([string] $path, [string] $root) {
     return $result
 }
 
+# Creates the given folder if needed, but only if its parent folder already exists
+function New-Subfolder($path) {
+    if (-not (Test-Path -PathType Container $path)) {
+         $parent = Split-Path $path -parent
+         if (-not (Test-Path -PathType Container $parent)) {
+             throw "Not found: $parent"
+         }
+
+         New-Item -Type Directory $path | Out-Null
+         $path = Resolve-Path $path
+         if (Get-CurrentUserIsElevated) {
+             icacls $path /setowner $env:username /q | Out-Null
+             if (-not $?) {
+                 throw ("Failed to set ownership on '$path'")
+             }
+         }
+    }
+}
 
 # Creates the given folder if needed, recursively creating parent folders
 function New-FolderAndParents($path) {

@@ -98,3 +98,47 @@ Describe "Restart-Process" {
         {Restart-Process "test.exe"} | Should -Throw "Unsupported: There seem to be command line arguments: foo bar"
     }
 }
+
+Describe "New-FolderAndParents" {
+    BeforeAll {
+        $root = "TestDrive:\New-FolderAndParents"
+        New-Item -Path $root -ItemType Directory -Force | Out-Null
+    }
+    It "creates a folder and its parents" {
+        $newPath = "$root\test\subfolder"
+        Test-Path $newPath | Should -Be $false
+
+        New-FolderAndParents $newPath
+
+        Test-Path $newPath | Should -Be $true
+    }
+    It "does not create an existing folder" {
+        Mock New-Subfolder { } -Verifiable
+
+        New-FolderAndParents $root
+
+        Should -Invoke New-Subfolder -Times 0
+    }
+}
+
+Describe "New-Subfolder" {
+    Context "User not elevated" {
+        BeforeAll {
+            Mock Get-CurrentUserIsElevated { $false }
+            $root = "TestDrive:\New-Subfolder"
+            New-Item -Path $root -ItemType Directory -Force | Out-Null
+        }
+        It "creates a subfolder" {
+            $newPath = "$root\test"
+            Test-Path $newPath | Should -Be $false
+            New-Subfolder $newPath
+            Test-Path $newPath | Should -Be $true
+        }
+        It "fails if the parent folder does not exist" {
+            Test-Path "$root\test2" | Should -Be $false
+            $newPath = "$root\test2\foo"
+
+            {New-Subfolder $newPath} | Should -Throw "Not found: $root\test2"
+        }
+    }
+}

@@ -277,26 +277,6 @@ function Format-ReplacePlaceholdersInTemplateString([string] $template, $substit
 }
 
 
-# Creates the given folder if needed, but only if its parent folder already exists
-function New-Subfolder($path) {
-    if (-not (Test-Path -PathType Container $path)) {
-         $parent = Split-Path $path -parent
-         if (-not (Test-Path -PathType Container $parent)) {
-             throw "Not found: $parent"
-         }
-
-         New-Item -Type Directory $path | Out-Null
-         $path = Resolve-Path $path
-         if (Get-CurrentUserIsElevated) {
-             icacls $path /setowner $env:username /q | Out-Null
-             if (-not $?) {
-                 throw ("Failed to set ownership on '$path'")
-             }
-         }
-    }
-}
-
-
 # Install a soft link to a file.
 # Here 'dest' is where the link is created, and it points back to 'src', i.e. 'src' is the target of the link.
 #

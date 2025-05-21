@@ -70,7 +70,7 @@ Copyright = 'Copyright (c) 2024 Andrew Godfrey'
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @(
-	'Format-ReplacePlaceholdersInTemplateString', 'New-Subfolder',
+	'Format-ReplacePlaceholdersInTemplateString',
 	'Start-Installation',
 	'Install-File', 'Install-Folder', 'Install-SetOfFiles', 'Install-DeleteFiles', 'Install-TextToFile', 'Install-BinaryDataToFile', 'Install-SmbShare', 'Install-ZipFileFromFolder',
     'Install-SoftLinkToFile',
