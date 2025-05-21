@@ -238,7 +238,9 @@ Describe "ConvertTo-Expression" {
         $result = ConvertTo-Expression $e -Expand 1
 
         # Assert
-        $result -replace "[`r`n`t]+", "" | Should -Be "@(@{'foo' = 1},@{'foo' = 1; 'bar' = @{'a'=1;'b'=2}})"
+        $result2 = $result -replace "[`r`n`t]+", "" # Remove newlines
+        $result2 = $result2 -replace "'b'=2;'a'=1", "'a'=1;'b'=2" # Reorder hashtable if needed
+        $result2 | Should -Be "@(@{'foo' = 1},@{'foo' = 1; 'bar' = @{'a'=1;'b'=2}})"
         AssertRoundtrip $e $result
     }
 
