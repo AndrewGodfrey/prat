@@ -56,11 +56,13 @@ Describe "Test-PathIsUnder" {
 }
 
 Describe "Restart-Process" {
-    It "restarts a process" {
+    BeforeAll {
         Mock -ModuleName PratBase Get-CurrentUserIsElevated { $false }
         Mock -ModuleName PratBase Stop-Process {} -Verifiable
         Mock -ModuleName PratBase Start-Sleep {}
         Mock -ModuleName PratBase Invoke-Item {} -Verifiable
+    }
+    It "restarts a process" {
         Mock -ModuleName PratBase Get-CimInstance{
             return @(
                 @{
@@ -80,10 +82,6 @@ Describe "Restart-Process" {
     }
 
     It "throws if it doesn't understand the command-line arguments" {
-        Mock -ModuleName PratBase Get-CurrentUserIsElevated { $false }
-        Mock -ModuleName PratBase Stop-Process {}
-        Mock -ModuleName PratBase Start-Sleep {}
-        Mock -ModuleName PratBase Invoke-Item {}
         Mock -ModuleName PratBase Get-CimInstance {
             return @(
                 @{
