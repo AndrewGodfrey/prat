@@ -84,7 +84,7 @@ Describe "Restart-Process" {
         Mock -ModuleName PratBase Stop-Process {}
         Mock -ModuleName PratBase Start-Sleep {}
         Mock -ModuleName PratBase Invoke-Item {}
-        Mock -ModuleName PratBase Get-CimInstance{
+        Mock -ModuleName PratBase Get-CimInstance {
             return @(
                 @{
                 Name = "test.exe"

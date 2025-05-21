@@ -296,20 +296,6 @@ function New-Subfolder($path) {
     }
 }
 
-# Creates the given folder if needed, recursively creating parent folders
-function New-FolderAndParents($path) {
-    if (-not (Test-Path -PathType Container $path)) {
-         $parent = Split-Path $path -parent
-         if ($parent -eq $path) { throw "Internal error" }
-
-         if (-not (Test-Path -PathType Container $parent)) {
-             New-FolderAndParents $parent
-         }
-
-         New-Subfolder $path
-    }
-}
-
 
 # Install a soft link to a file.
 # Here 'dest' is where the link is created, and it points back to 'src', i.e. 'src' is the target of the link.

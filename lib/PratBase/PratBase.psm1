@@ -179,6 +179,21 @@ function Test-PathIsUnder([string] $path, [string] $root) {
     return $result
 }
 
+
+# Creates the given folder if needed, recursively creating parent folders
+function New-FolderAndParents($path) {
+    if (-not (Test-Path -PathType Container $path)) {
+         $parent = Split-Path $path -parent
+         if ($parent -eq $path) { throw "Internal error" }
+
+         if (-not (Test-Path -PathType Container $parent)) {
+             New-FolderAndParents $parent
+         }
+
+         New-Subfolder $path
+    }
+}
+
 . $PSScriptRoot\envDelta.ps1
 . $PSScriptRoot\gitForkpoint.ps1
 
