@@ -89,7 +89,10 @@ function Get-ForkpointCacheIsValid($fn, $currentForkpoint, $slopInterval = $null
     switch ($rel) {
         'equal'          { return $true }
         'currentIsNewer' { return $false }
-        'currentIsOlder' { return $true }
+        'currentIsOlder' { 
+            Write-Warning "Current forkpoint is older than cached forkpoint. Reusing cache."
+            return $true 
+        }
         default {
             Write-Warning "Can't find common ancestor between cached forkpoint and current forkpoint"
             return $false 
