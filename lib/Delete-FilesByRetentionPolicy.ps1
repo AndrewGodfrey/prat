@@ -9,11 +9,14 @@
 param(
     [string] $path = $(throw ("path parameter is required")),
     [int] $retentionDays = $(throw ("retentionDays parameter is required")),
-    [string] $optionalFilenameMatch="")
+    [string] $optionalFilenameMatch = "")
 
 
+# TODO: Rename the script and functions referring to "retention".
+#       This design is focused on deleting old files, not retaining them.
+#       By "UnderRetention" I really meant "considered for automatic deletion".
 function FilenameIsUnderRetention([string] $filename, [string] $reportFilename, [string] $optionalFilenameMatch) {
-#    Write-Host $filename
+    #    Write-Host $filename
     if ($filename -Match "^$reportFilename$") {
         return $false
     }
@@ -25,13 +28,13 @@ function FilenameIsUnderRetention([string] $filename, [string] $reportFilename, 
     return $true
 }
 
-function GetReport {
+function GetReport($retentionDays, $optionalFilenameMatch, $date = (Get-Date)) {
     "$retentionDays days"
     if ($optionalFilenameMatch -ne "") {
         "Only filenames matching Powershell regex: $optionalFilenameMatch"
     }
     ""
-    "Last run: " + (Get-Date)
+    "Last run: " + $date
 }
 
 function RemoveDirectory($item) {
@@ -39,29 +42,30 @@ function RemoveDirectory($item) {
     $item | Remove-Item -Force -Recurse
 }
 
-if (!(Test-Path -PathType Container $path)) { 
-    Write-Host -ForegroundColor Green "Ignoring: $path"
-    return 
+if ($MyInvocation.InvocationName -ne ".") {
+    if (!(Test-Path -PathType Container $path)) { 
+        Write-Host -ForegroundColor Green "Ignoring: $path"
+        return 
+    }
+
+    Write-Host -ForegroundColor Yellow "Cleaning: $path ($retentionDays days)"
+
+    $ErrorActionPreference = "stop"
+
+    $reportFilename = "retentionpolicy.txt"
+
+    $threshold = (Get-Date).AddDays(-$retentionDays)
+    #    Write-Host $threshold
+
+    $ErrorActionPreference = "continue"
+
+    # Delete old files (by CreationTime, not LastWriteTime)
+    Get-ChildItem -Path $path -Recurse -Force | Where-Object { !$_.PSIsContainer -and $_.CreationTime -lt $threshold -and (FilenameIsUnderRetention $_.Name $reportFilename $optionalFilenameMatch) } | Remove-Item -Force
+
+    # Now, delete any old empty directories left behind
+    Get-ChildItem -Path $path -Recurse -Force | Where-Object { $_.PSIsContainer -and $_.CreationTime -lt $threshold -and ($null -eq (Get-ChildItem -Path $_.FullName -Recurse -Force | Where-Object { !$_.PSIsContainer })) } | ForEach-Object { RemoveDirectory $_ }
+
+    # Write report file
+    $report = GetReport $retentionDays $optionalFilenameMatch
+    Write-Output $report > "$path\$reportFilename"
 }
-
-Write-Host -ForegroundColor Yellow "Cleaning: $path ($retentionDays days)"
-
-$ErrorActionPreference = "stop"
-
-$reportFilename = "retentionpolicy.txt"
-
-$threshold = (Get-Date).AddDays(-$retentionDays)
-#    Write-Host $threshold
-
-$ErrorActionPreference = "continue"
-
-# Delete old files (by CreationTime, not LastWriteTime)
-Get-ChildItem -Path $path -Recurse -Force | Where-Object { !$_.PSIsContainer -and $_.CreationTime -lt $threshold -and (FilenameIsUnderRetention $_.Name $reportFilename $optionalFilenameMatch)} | Remove-Item -Force
-
-# Now, delete any old empty directories left behind
-Get-ChildItem -Path $path -Recurse -Force | Where-Object { $_.PSIsContainer -and $_.CreationTime -lt $threshold -and ($null -eq (Get-ChildItem -Path $_.FullName -Recurse -Force | Where-Object { !$_.PSIsContainer })) } | % { RemoveDirectory $_ }
-
-# Write report file
-$report = GetReport
-echo $report > "$path\$reportFilename"
-

@@ -2,7 +2,7 @@
 # By using lineArray, we can preserve the file's line-ending format. e.g. Slick-C files use Unix line-endings.
 function Get-IndentLevel([string] $line)
 {
-    $dummy = $line -match "^(\s)*"
+    $line -match "^(\s)*" | Out-Null
     return $Matches[0].Length
 }
 
