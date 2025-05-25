@@ -3,4 +3,4 @@
 #
 # Alias: ch
 param ($file, $hash=$(throw "need hash"))
-(Get-FileHash $file).Hash -eq $hash
+(Get-FileHash -Algorithm SHA256 $file).Hash -eq $hash
