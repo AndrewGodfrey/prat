@@ -67,6 +67,11 @@ $table2 = @{
 '@
         }
 
+        It "throws if the table is not found" {
+            $laTestScript = [LineArray]::new($testScript)
+            { Add-HashTableItemInPowershellScript $laTestScript "table3" "key1" "value" } | 
+                Should -Throw "Initialization not found for table 'table3'"
+        }
         It "adds a new key at the end of the table" {
             $laTestScript = [LineArray]::new($testScript)
             Add-HashTableItemInPowershellScript $laTestScript "table2" "key3" "@{`n    foo=2`n}"
@@ -155,6 +160,12 @@ $table1 = @{
         $laTestScript = [LineArray]::new($testScript)
     }
 
+    It "throws if the table is not found" {
+        $laTestScript = [LineArray]::new($testScript)
+        { Test-HashTableItemInPowershellScript $laTestScript "table3" "key" } | 
+            Should -Throw "Initialization not found for table 'table3'"
+    }
+
     It "detects keys but doesn't return their values" {
         Test-HashTableItemInPowershellScript $laTestScript "table1" "key3" | Should -BeFalse
         Test-HashTableItemInPowershellScript $laTestScript "table1" "key2" | Should -BeTrue
@@ -180,6 +191,14 @@ $table2 = @{
     )
 }
 '@
+    }
+
+    Context "exception cases" {
+        It "throws if the table is not found" {
+            $laTestScript = [LineArray]::new($testScript)
+            { Edit-HashOfArraysItemInPowershellScript $true $laTestScript "table3" "key" "value" } | 
+                Should -Throw "Initialization not found for table 'table3'"
+        }
     }
 
     Context "add cases" {

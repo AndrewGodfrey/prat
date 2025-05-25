@@ -65,11 +65,11 @@ function Add-HashTableItemInPowershellScript(
     # TODO: Add a required comment to this type of hashtable declaration, to make the reader aware of the limited syntax
     $tablePattern = '^\s*\$' + $tableName + ' *= *@{\s*$'
     $tableRange = Find-MatchingPowershellBlock $lineArray $null $tablePattern
-    $subIndent = Get-SubIndent $lineArray $tableRange
-
     if ($null -eq $tableRange) {
         throw "Initialization not found for table '$tableName'"
     }
+
+    $subIndent = Get-SubIndent $lineArray $tableRange
 
     # Create the new lines to insert
     if ($null -ne $newValue) {
@@ -102,8 +102,6 @@ function Test-HashTableItemInPowershellScript(
     # TODO: Add a required comment to this type of hashtable declaration, to make the reader aware of the limited syntax
     $tablePattern = '^\s*\$' + $tableName + ' *= *@{\s*$'
     $tableRange = Find-MatchingPowershellBlock $lineArray $null $tablePattern
-    $subIndent = Get-SubIndent $lineArray $tableRange
-
     if ($null -eq $tableRange) {
         throw "Initialization not found for table '$tableName'"
     }
@@ -147,7 +145,6 @@ function Edit-HashOfArraysItemInPowershellScript (
     # TODO: Add a required comment to this type of hashtable declaration, to make the reader aware of the limited syntax
     $tablePattern = '^\s*\$' + $tableName + ' *= *@{\s*$'
     $tableRange = Find-MatchingPowershellBlock $lineArray $null $tablePattern
-
     if ($null -eq $tableRange) {
         throw "Initialization not found for table '$tableName'"
     }
