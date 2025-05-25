@@ -71,6 +71,7 @@ if ($file.EndsWith(".ps1")) {
         $testContent = GetTestContent $functions
     }
 
+    $testContent = $testContent -join ''
     New-Item -Path $testFile -ItemType File -Value $testContent | Out-Null
     Write-Host "Created: $testFile"
     return
