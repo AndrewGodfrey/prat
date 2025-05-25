@@ -13,6 +13,19 @@ pratProfile_trace start "profilePicker.ps1"
 
 &$PSScriptRoot\Add-PratBinPaths.ps1
 
+if ($false) {
+    # This was handy when looking at the behavior of vscode's Terminal.
+    # May be useful when debugging other  pwsh hosts/terminals.
+    $logFile = "$home\profileDebug.log"
+    @(
+        "`n`nStarting: $(Get-Date)"
+        "Env:"
+        dir env:
+        "`nMyInvocation"
+        (&$home\prat\lib\pratbase\ConvertTo-Expression $MyInvocation)
+    ) | ForEach-Object { echo $_.ToString() >> $logFile }
+}
+
 # Now that path is set up, we can use Resolve-PratLibFile.
 # Run prat's profile, or an overridden one.
 . (Resolve-PratLibFile "lib/profile/interactiveProfile.ps1")
