@@ -13,4 +13,4 @@ if ($CodeCoverage) {
     $Configuration.CodeCoverage.CoveragePercentTarget = 70
 }
 
-    Invoke-Pester -Configuration $Configuration
+Invoke-Pester -Configuration $Configuration
