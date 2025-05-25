@@ -67,21 +67,28 @@ function getPsversionString {
     return "[PS $($psversiontable.PSEdition) v$($psversiontable.PSVersion.Major)] "
 }
 
-function prompt {
-    $lastCommandErrorStatus = $?
-    try
-    {
-        $historyInfo = Get-History -Count 1
-        $duration = getLastCommandTime $historyInfo
-        displayLastCommandTime $duration
-        reportOnSlowCommands $duration $historyInfo $lastCommandErrorStatus
+# Custom Powershell prompt.
+#
+# But, avoid customizing it in the vscode terminal. When you debug Pester tests in vscode,
+# it somehow manages to call the prompt (most of the time).
+# Which means breakpoints in things the prompt uses, get hit when debugging unit tests.
+if ($env:TERM_PROGRAM -ne "vscode") { 
+    function prompt {
+        $lastCommandErrorStatus = $?
+        try
+        {
+            $historyInfo = Get-History -Count 1
+            $duration = getLastCommandTime $historyInfo
+            displayLastCommandTime $duration
+            reportOnSlowCommands $duration $historyInfo $lastCommandErrorStatus
 
-        pratDetectLocationChange
-        $ver = getPsversionString
-    } catch { Write-Warning ("Exception during prompt: " + $Error[0] + "`n" + (stack)) }
+            pratDetectLocationChange
+            $ver = getPsversionString
+        } catch { Write-Warning ("Exception during prompt: " + $Error[0] + "`n" + (stack)) }
 
-    # $global:__prat_currentLocation is maintained by On-PromptLocationChanged.ps1
-    return $global:__prat_notifications + (contextPath) + $ver + $global:__prat_currentLocation + "`n> "
+        # $global:__prat_currentLocation is maintained by On-PromptLocationChanged.ps1
+        return $global:__prat_notifications + (contextPath) + $ver + $global:__prat_currentLocation + "`n> "
+    }
 }
 
 . $PSScriptRoot\Define-ShortcutFunctions.ps1
