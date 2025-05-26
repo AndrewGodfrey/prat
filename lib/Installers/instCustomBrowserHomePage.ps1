@@ -154,7 +154,7 @@ function New-CustomBrowserHomePage(
     emitPage $title $header | Out-File -Encoding ASCII $output
 }
 
-# .PARAM $smbShareName
+# .PARAMETER $smbShareName
 # If non-null, will create SMB share that points to $generatedFileDir. This is how I access it from my browser,
 # but there may be better ways.
 function Install-CustomBrowserHomePage($installationTracker, $tempDir, $inputDir, $generatedFileDir, $smbShareName) {
