@@ -14,6 +14,10 @@ param (
 Import-Module Pester
 $Configuration = [PesterConfiguration]::Default
 $Configuration.Run.Path = $PathToTest
+if ($VerbosePreference -ne "SilentlyContinue") {
+    # This is handy for pinpointing some unwanted output - e.g. an uncaught Write-Warning.
+    $Configuration.Output.Verbosity = "Detailed"
+}
 
 if ($CoverageType -ne "None") {
     $Configuration.CodeCoverage.OutputPath = "$RepoRoot/auto/coverage.xml"
