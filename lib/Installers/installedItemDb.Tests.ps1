@@ -3,7 +3,7 @@ BeforeAll {
 }
 
 Describe "getCurrentSchemaVersion" {
-    It "Returns a version number" {
+    It "ReturnsVersionNumber" {
         $result = getCurrentSchemaVersion
 
         $result | Should -BeOfType String
@@ -23,29 +23,29 @@ Describe "checkSchemaVersion" {
             "2.1"
         }
     }
-    It "Verifies silently" {
+    It "VerifiesSilently" {
         checkSchemaVersion "dbLocation" | Should -Be $null
     }
-    It "Throws on mismatch" {
+    It "ThrowsWhenMismatch" {
         Mock getCurrentSchemaVersion { "2.2" }
         {checkSchemaVersion "dbLocation"} | Should -Throw "Schema version mismatch. Expected: '2.2'  Actual: '2.1'"
     }
 }
 
 Describe "getStateFilePath" {
-    It "concatenates" {
+    It "Concatenates" {
         getStateFilePath "db" "id" | Should -Be "db\id.txt"
     }
-    It "limits character set on id" {
+    It "ThrowsWhenInvalidIdChars" {
         {getStateFilePath "db" "#a"} | Should -Throw "Unsupported format for itemId '#a'. Use only alphanumeric, underscore and slash; first char an alphanumeric."
     }
 }
 
 Describe "getForkpointCacheStateFilePath" {
-    It "concatenates" {
+    It "Concatenates" {
         getForkpointCacheStateFilePath "db" "id_" | Should -Be "db\_forkpointCache\id_.ps1"
     }
-    It "limits character set on id" {
+    It "ThrowsWhenInvalidIdChars" {
         {getForkpointCacheStateFilePath "db" "_a"} | Should -Throw "Unsupported format for itemId '_a'. Use only alphanumeric, underscore and slash; first char an alphanumeric."
     }
 }
@@ -54,22 +54,22 @@ Describe "Test-InstalledItemVersion" {
     BeforeEach {
         Mock Get-InstalledItemVersion {"9.7"}
     }
-    It "Returns true when the versions match" {
+    It "ReturnsTrueWhenVersionsMatch" {
         Test-InstalledItemVersion $dbLocation "item" "9.7" | Should -Be $true
     }
-    It "Returns false when expected version is newer" {
+    It "ReturnsFalseWhenExpectedVersionNewer" {
         Test-InstalledItemVersion $dbLocation "item" "10.1" | Should -Be $false
     }
-    It "Returns false when there's no installed version" {
+    It "ReturnsFalseWhenNoInstalledVersion" {
         Mock Get-InstalledItemVersion { $null }
         Test-InstalledItemVersion $dbLocation "item" "10.1" | Should -Be $false
     }
-    It "Throws when expected version is older" {
+    It "ThrowsWhenExpectedVersionOlder" {
         {Test-InstalledItemVersion $dbLocation "item" "8.0"} | Should -Throw "Unexpected: item: Current version is newer: 9.7 > 8.0"
     }
 }
 
-Describe "Using TestDrive" {
+Describe "TestsUsingTestDrive" {
     BeforeEach {
         $dbLocation = "TestDrive:\installedItemDb.Tests.ps1"
         mkdir $dbLocation | Out-Null
@@ -78,16 +78,16 @@ Describe "Using TestDrive" {
         Remove-Item -Recurse $dbLocation | Out-Null
     }
     Context "Get-InstalledItemVersion" {
-        It "Returns the state file contents" {
+        It "ReturnsStateFileContents" {
             Mock checkSchemaVersion {}
             New-Item -Path "$dbLocation\item.txt" -ItemType File -Value "9.7" | Out-Null
             
             Get-InstalledItemVersion $dbLocation "item" | Should -Be "9.7"
         }
-        It "Returns null (i.e. no installed version) when dbLocation doesn't exist" {
+        It "ReturnsNullWhenDbLocationDoesNotExist" {
             Get-InstalledItemVersion "$dbLocation\notExist" "id" | Should -BeNull
         }
-        It "Returns null when item has no state file" {
+        It "ReturnsNullWhenItemNotInstalled" {
             Mock checkSchemaVersion {}
             Test-Path $dbLocation | Should -BeTrue
 
@@ -95,7 +95,7 @@ Describe "Using TestDrive" {
         }
     }
     Context "Set-InstalledItemVersion" {
-        It "Returns the state file contents" {
+        It "SetsStateFileContents" {
             Mock checkSchemaVersion {}
             
             Set-InstalledItemVersion $dbLocation "parent/item" "9.2.1"
@@ -105,7 +105,7 @@ Describe "Using TestDrive" {
         }
     }
     Context "Remove-InstalledItem" {
-        It "Removes the item" {
+        It "Removes" {
             Mock checkSchemaVersion {}
             Set-InstalledItemVersion $dbLocation "parent/item" "9.2.1"
             Test-Path "$dbLocation\parent\item.txt" | Should -BeTrue
@@ -117,7 +117,7 @@ Describe "Using TestDrive" {
         }
     }
     Context "ensureDb" {
-        It "Creates the folder and schema version" {
+        It "CreatesFolderAndSchemaVersionFile" {
             Mock getCurrentSchemaVersion {"5.5"}
             $db = "$dbLocation\notExist2"
             Test-Path $db | Should -BeFalse
@@ -127,7 +127,7 @@ Describe "Using TestDrive" {
             Test-Path $db | Should -BeTrue
             Get-Content "$db\installationDb.schemaVersion.txt" | Should -Be "5.5"
         }
-        It "Does nothing for an existing folder" {
+        It "DoesNothingWhenFolderExists" {
             Test-Path $dbLocation | Should -BeTrue
 
             ensureDb $dbLocation
