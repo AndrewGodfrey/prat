@@ -37,6 +37,21 @@ Describe "$command" {
 "@
 }
 
+function GetScriptTestContent($command) {
+    @"
+BeforeAll {
+    `$scriptToTest = `$PSCommandPath.Replace('.Tests.ps1','.ps1')
+}
+
+Describe "$command" {
+    It "" {
+        &`$scriptToTest
+    }
+}
+
+"@
+}
+
 function IsPathbinFile($file) {
     return (Resolve-Path $file) -match '\\prat\\pathbin\\[^\\/]+$'
 }
@@ -65,10 +80,11 @@ if ($file.EndsWith(".ps1")) {
         #           if ($MyInvocation.InvocationName -ne ".") {
 
         if ($functions.Count -eq 0) {
-            throw "No functions found in $file"
+            $command = Split-Path -LeafBase $file
+            $testContent = GetScriptTestContent $command
+        } else {
+            $testContent = GetTestContent $functions
         }
-
-        $testContent = GetTestContent $functions
     }
 
     $testContent = $testContent -join ''
