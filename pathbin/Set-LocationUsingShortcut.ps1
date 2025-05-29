@@ -70,30 +70,32 @@ function FindShortcut($Shortcut) {
     return $null
 }
 
-if ($ListAll) {
-    return GetAllShortcuts
-}
-
-if ($Shortcut -eq "?") {
-    return (GetAllShortcuts | Format-Table -HideTableHeaders)
-}
-
-$result = FindShortcut $Shortcut
-if ($null -eq $result) { 
-    throw "Unrecognized: $Shortcut" 
-}
-
-$target = $result.target
-$cbt = $result.cbt
-$target = $target -replace '\\', '/'
-
-if ($Test) {
-    $testTarget = Push-UnitTestDirectory $target -JustReturnIt
-    if ($null -ne $testTarget) {
-        $target = $testTarget
-    } else {
-        Write-Warning "No test dir found, leaving you in dev"
+if ($MyInvocation.InvocationName -ne ".") {
+    if ($ListAll) {
+        return GetAllShortcuts
     }
-}
 
-Set-Location $target
+    if ($Shortcut -eq "?") {
+        return (GetAllShortcuts | Format-Table -HideTableHeaders)
+    }
+
+    $result = FindShortcut $Shortcut
+    if ($null -eq $result) { 
+        throw "Unrecognized: $Shortcut" 
+    }
+
+    $target = $result.target
+    $cbt = $result.cbt
+    $target = $target -replace '\\', '/'
+
+    if ($Test) {
+        $testTarget = Push-UnitTestDirectory $target -JustReturnIt
+        if ($null -ne $testTarget) {
+            $target = $testTarget
+        } else {
+            Write-Warning "No test dir found, leaving you in dev"
+        }
+    }
+
+    Set-Location $target
+}
