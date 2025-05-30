@@ -62,26 +62,43 @@ Describe "Set-LocationUsingShortcut" {
     }
 }
 
-<#
-Describe "Find-Shortcut" {
+
+Describe "FindShortcut" {
     BeforeEach { 
         function Resolve-PratLibFile($file, [switch] $ListAll) {
             if ($file -ne "lib/Find-Shortcut.ps1") { throw }
-            if ($ListAll) {
+            if (!$ListAll) {
                 throw
             }
-            return "$PSScriptRoot\lib\Find-Shortcut.ps1"
+            return @("$PSScriptRoot\mock_Find-Shortcut.ps1")
         }
 
     }
     It "ReturnsTargetForKnownShortcut" {
-        $result = Find-Shortcut "hosts"
+        $result = FindShortcut "b"
 
-        $result.target | Should -Be "C:\WINDOWS\system32\drivers\etc"
+        $result.target | Should -Be "/a/b"
     }
     It "ReturnsNullForUnknownShortcut" {
-        $result = Find-Shortcut "notExist"
+        Mock Get-GlobalCodebases { return @() }
+        $result = FindShortcut "notExist"
 
         $result | Should -BeNull
     }
-}#>
+    It "AlsoLooksAtCodebases" {
+        function Get-GlobalCodebases {}
+        Mock Get-GlobalCodebases { return @('foo') }
+
+        function Get-CodebaseTable($codebase) {}
+        Mock Get-CodebaseTable {
+            if ($codebase -eq 'foo') {
+                return @{ root = '/a'; shortcuts = @{ c = 'b/c' } }
+            }
+            throw "Unexpected codebase: $codebase"
+        }
+ 
+        $result = FindShortcut "c"
+
+        $result.target | Should -Be "/a/b/c"
+    }
+}
