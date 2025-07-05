@@ -135,7 +135,14 @@ function Install-TextToFile($stage, $file, $newText, [switch] $ShowUpdateDetails
 #           Write-Warning $s
         }
         if ($BackupFile) {
-            copy $file ($file + ".backup")
+            if ($SudoOnWrite) {
+                Invoke-Gsudo { 
+                    $file = $using:file
+                    copy $file ($file + ".backup")
+                }
+            } else {
+                copy $file ($file + ".backup")
+            }
         }
 
         $stage.OnChange()
