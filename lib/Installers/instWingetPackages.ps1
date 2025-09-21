@@ -7,8 +7,12 @@ function isWingetPackageInstalled([string] $packageId) {
     return [String]::Join("", $outputStrings).Contains($packageId)
 }
 
-function installWingetPackage([string] $packageId) {
-      winget install --silent --exact --id $packageId
+function installWingetPackage([string] $packageId, [string] $version = $null) {
+    $versionParam = @()
+    if ($null -ne $version) {
+        $versionParam = @("--version", $version)
+    }
+    winget install --silent --exact --id $packageId @versionParam
 }
 
 # .SYNOPSIS
@@ -16,6 +20,10 @@ function installWingetPackage([string] $packageId) {
 #
 # .PARAMETER installPath
 # A folder/file that is used as a sanity check for whether the package is installed.
+#
+# .PARAMETER version
+# Optional - specific version number to install. ONLY USED if the package isn't already installed.
+# Doesn't upgrade or downgrade.
 # 
 # .NOTES
 #
@@ -24,7 +32,7 @@ function installWingetPackage([string] $packageId) {
 # - Use something that doesn't exist, like "\foo". 
 # - The 'verify' step will fail, after installing the package.
 # - Now find the location, update the code, and rerun.
-function Install-WingetPackage($stage, [string] $packageId, [string] $installPath) {
+function Install-WingetPackage($stage, [string] $packageId, [string] $installPath, [string] $version = $null) {
     $stage.SetSubstage("Install-WingetPackage($packageId) : package check")
 
     if ($installPath -eq "") { throw "Install path required" }
@@ -33,7 +41,7 @@ function Install-WingetPackage($stage, [string] $packageId, [string] $installPat
     if (-not (Test-Path $installPath)) {
         $stage.OnChange()
         $stage.SetSubstage("Install-WingetPackage($packageId) : install")
-        installWingetPackage $packageId
+        installWingetPackage $packageId $version
 
         # Verify
         if (!(Test-Path $installPath)) {
@@ -94,6 +102,16 @@ function Install-PackageWinmerge($installationTracker, $generatedBinDir) {
 
     $stubScript = '. ' + $installPath + '\WinMergeU.exe $Args'
     Install-TextToFile $stage "$genbin\winmerge.ps1" $stubScript
+
+    $installationTracker.EndStage($stage)
+}
+
+# Install v1.x of AutoHotKey.
+function Install-PackageAutoHotKeyV1($installationTracker) {
+    $stage = $installationTracker.StartStage("AutoHotKey")
+
+    $expectedInstallPath = "C:\Program Files\AutoHotKey"
+    Install-WingetPackage $stage "AutoHotkey.AutoHotkey" $expectedInstallPath "1.1.37.02"
 
     $installationTracker.EndStage($stage)
 }
