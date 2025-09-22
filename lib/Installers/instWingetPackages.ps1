@@ -106,13 +106,11 @@ function Install-PackageWinmerge($installationTracker, $generatedBinDir) {
     $installationTracker.EndStage($stage)
 }
 
-# Install v1.x of AutoHotKey.
-function Install-PackageAutoHotKeyV1($installationTracker) {
+function Install-PackageAutoHotKey($installationTracker) {
     $stage = $installationTracker.StartStage("AutoHotKey")
 
-    $expectedInstallPath = "C:\Program Files\AutoHotKey"
-    Install-WingetPackage $stage "AutoHotkey.AutoHotkey" $expectedInstallPath "1.1.37.02"
+    $expectedInstallPath = "$env:localAppData\programs\AutoHotKey"
+    Install-WingetPackage $stage "AutoHotkey.AutoHotkey" $expectedInstallPath
 
     $installationTracker.EndStage($stage)
 }
-

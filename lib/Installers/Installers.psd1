@@ -77,7 +77,7 @@ FunctionsToExport = @(
 	'Install-RegistryKey', 'Install-RegistryDwordValue', 'Install-RegistryStringValue', 'Install-RegistryBinaryValue',
     'Install-DailyScheduledTask', 'Install-AtLogonScheduledTask',
 	'Install-PratPackage',
-	'Install-WingetPackage', 'Install-PackageDnspy', 'Install-PackageNuget', 'Install-PackageWindbg', 'Install-PackageWinmerge', 'Install-PackageAutoHotKeyV1',
+	'Install-WingetPackage', 'Install-PackageDnspy', 'Install-PackageNuget', 'Install-PackageWindbg', 'Install-PackageWinmerge', 'Install-PackageAutoHotKey',
 	'Install-NugetPackage', 'Add-NugetPackageType',
 	'Set-InstalledItemVersion', 'Get-InstalledItemVersion', 'Test-InstalledItemVersion', 'Remove-InstalledItem',
 	'Install-WindowsStartMenuLocalOnly', 'Install-WindowsSecondaryClockUTC', 'Install-WindowsFileAssociation', 'Install-WindowsAppVerbAssociation',
