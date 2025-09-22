@@ -12,6 +12,10 @@ function instSchTasks($it) {
 
     Install-DailyScheduledTask $stage "test" "Prat - test task" $PSScriptRoot\..\lib\schtasks\daily_test.ps1 "1:08AM"
     Install-DailyScheduledTask $stage "cleanManagedDirectories" "Prat - Clean managed directories"  $PSScriptRoot\..\lib\schtasks\daily_cleanManagedDirectories.ps1 "1:30AM"
+    $onLogonScripts = & (Resolve-PratLibFile "lib/schtasks/Get-OnLogonScripts.ps1")
+    if ($onLogonScripts.Count -gt 0) {
+        Install-AtLogonScheduledTask $stage "onLogonScripts" "Prat - invoke on-logon scripts" $PSScriptRoot\..\lib\schtasks\onLogon_Invoke-OnLogonScripts.ps1
+    }
 
     $it.EndStage($stage)
 }
