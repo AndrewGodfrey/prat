@@ -79,6 +79,7 @@ FunctionsToExport = @(
 	'Install-PratPackage',
 	'Install-WingetPackage', 'Install-PackageDnspy', 'Install-PackageNuget', 'Install-PackageWindbg', 'Install-PackageWinmerge', 'Install-PackageAutoHotKey',
 	'Install-NugetPackage', 'Add-NugetPackageType',
+    'Install-StartAutoHotKeyScript',
 	'Set-InstalledItemVersion', 'Get-InstalledItemVersion', 'Test-InstalledItemVersion', 'Remove-InstalledItem',
 	'Install-WindowsStartMenuLocalOnly', 'Install-WindowsSecondaryClockUTC', 'Install-WindowsFileAssociation', 'Install-WindowsAppVerbAssociation',
 	'New-WindowsConsoleShortcut', 'Install-WindowsConsoleShortcut',
