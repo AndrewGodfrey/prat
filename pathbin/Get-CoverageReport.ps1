@@ -4,7 +4,11 @@
 # Expects a Pester-generated coverage XML file in CoverageGutters format.
 
 param ($coverageFile = "$PSScriptRoot/../auto/coverage.xml",
-    [switch] $ShowAll, $CoverageGoalPercent = $(& (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1")))
+    [switch] $ShowAll, 
+    $CoverageGoalPercent = $(& (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1"))
+    )
+
+$exclusionFilter = & (Resolve-PratLibFile "lib/Get-CoverageExclusionFilter.ps1")
 
 function LoadCoverageReport($coverageFile) {
     if (!(Test-Path $coverageFile)) {
@@ -86,6 +90,10 @@ $filesMeetingGoal = 0
 $mungedPerFileReport = @($report.perFileReport.GetEnumerator() | Sort-Object Name | ForEach-Object {
     $name = $_.Name
     $data = $_.Value
+
+    if (& $exclusionFilter $name) {
+        return
+    }
 
     $fileMeetsGoal = FileMeetsGoal $data $CoverageGoalPercent
     if ($fileMeetsGoal) {
