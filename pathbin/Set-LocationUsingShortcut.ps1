@@ -47,6 +47,7 @@ function GetAllShortcuts() {
         }
     }
 
+    # TODO: Fix an n^2 problem here - e.g. I have many codebases at C:\git, and c:\git\cbTable.C_git.ps1 gets loaded for each one.
     $cbts = &$PSScriptRoot/../lib/Find-CodebaseShortcut -ListAll
     foreach ($cbt in $cbts) {
         foreach ($key in ($cbt.shortcuts.Keys | Sort-Object)) {
@@ -70,6 +71,21 @@ function FindShortcut($Shortcut) {
     return $null
 }
 
+function ReverseSearchForShortcut($path) {
+    $allShortcuts = GetAllShortcuts
+    $path = $path -replace '\\', '/'
+    foreach ($key in $allShortcuts.Keys) {
+        $target = $allShortcuts[$key] -replace '\\', '/'
+        if ($target.endswith('/')) {
+            $target = $target.Substring(0, $target.Length - 1)
+        }
+        if ($path -like "$target*") {
+            return $key
+        }
+    }
+    return $null
+}
+
 if ($MyInvocation.InvocationName -ne ".") {
     if ($ListAll) {
         return GetAllShortcuts
@@ -77,6 +93,16 @@ if ($MyInvocation.InvocationName -ne ".") {
 
     if ($Shortcut -eq "?") {
         return (GetAllShortcuts | Format-Table -HideTableHeaders)
+    }
+
+    if ($Shortcut -eq ".") {
+        $rev = ReverseSearchForShortcut $pwd.Path
+        if ($null -ne $rev) {
+            Write-Output $rev
+        } else {
+            Write-Warning "No shortcut found for $pwd"
+        }
+        return
     }
 
     $result = FindShortcut $Shortcut
