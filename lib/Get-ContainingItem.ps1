@@ -23,7 +23,9 @@ do {
 
 $results = @()
 $results += Get-ChildItem $candidate # For a directory this lists their contents, not quite what we want.
-if ($Multiple) { return $results }
+if ($Multiple) { 
+    return $results
+}
 if ($results.Length -gt 1) {
     Write-Warning "Multiple matches found - ignoring them all"
     return $null
