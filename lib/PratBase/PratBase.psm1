@@ -226,7 +226,9 @@ function Invoke-PesterAsJob {
         [string[]] $ExcludeTagFilter,
         [string[]] $FullNameFilter,
         [switch] $EnableExit,
-        [switch] $PassThru
+        [switch] $PassThru,
+        [Pester.ContainerInfo[]] $Container,
+        [PesterConfiguration] $Configuration
     )
 
     $params = $PSBoundParameters
