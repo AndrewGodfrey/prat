@@ -212,6 +212,29 @@ if ($PSVersiontable.PSEdition -eq "Core") {
    }
 }
 
+# Invoke-PesterAsJob: Like Invoke-Pester, but from a separate job, which allows it to test newly-changed class definitions.
+#
+# Source: https://pester.dev/docs/usage/mocking (named "Invoke-PesterJob" there)
+# Updated example based on https://github.com/pester/Pester/issues/797#issuecomment-314495326
+function Invoke-PesterAsJob {
+    [CmdletBinding()]
+    param(
+        [Parameter(Position=0)]
+        [string[]] $Path = '.',
+        [string[]] $ExcludePath = @(),
+        [string[]] $TagFilter,
+        [string[]] $ExcludeTagFilter,
+        [string[]] $FullNameFilter,
+        [switch] $EnableExit,
+        [switch] $PassThru
+    )
+
+    $params = $PSBoundParameters
+
+    Start-Job -ScriptBlock { Set-Location $using:pwd; Invoke-Pester @using:params } |
+    Receive-Job -Wait -AutoRemoveJob
+}
+
 . $PSScriptRoot\envDelta.ps1
 . $PSScriptRoot\gitForkpoint.ps1
 
