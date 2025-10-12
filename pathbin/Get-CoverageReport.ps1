@@ -3,9 +3,12 @@
 #
 # Expects a Pester-generated coverage XML file in CoverageGutters format.
 
+using namespace System.Diagnostics.CodeAnalysis
+
 param ($coverageFile = "$PSScriptRoot/../auto/coverage.xml",
     [switch] $ShowAll, 
     [switch] $FullPaths,
+    [switch] $Unformatted,
     $CoverageGoalPercent = $(& (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1"))
     )
 
@@ -66,7 +69,7 @@ function LoadCoverageReport($coverageFile) {
 function CalculateCoverage($counter, [switch] $AsDouble) {
     $covered = [long] $counter.covered
     $total = ([long] $counter.missed) + $covered
-    if ($AsDouble) {
+    if ($AsDouble -or $Unformatted) {
         if ($total -eq 0) {
             return 0.0
         } else {
@@ -76,7 +79,8 @@ function CalculateCoverage($counter, [switch] $AsDouble) {
     if ($total -eq 0) {
         return "n/a"
     } else {
-        return [string] [math]::Round(($covered * 100.0) / $total, 0)
+        $result = [string] [math]::Round(($covered * 100.0) / $total, 0)
+        return " " * (3 - $result.Length) + $result
     }
 }
 
@@ -88,6 +92,27 @@ function FileMeetsGoal($data, $goalPercent) {
         }
     }
     return $true
+}
+
+
+function emitRows {
+    [ExcludeFromCodeCoverageAttribute()] # Oops, I thought this was already supported in Pester 5.5 - but it's coming in Pester 6.
+    param($rows, $unformatted)
+
+    if ($unformatted) {
+        $rows
+    } else {
+        $rows | Format-Table -AutoSize
+    }
+}
+
+function emitBlankLine {
+    [ExcludeFromCodeCoverageAttribute()] # Oops, I thought this was already supported in Pester 5.5 - but it's coming in Pester 6.    
+    param ($Unformatted)
+
+    if (!$Unformatted) {
+        Write-Host ""
+    }
 }
 
 $report = LoadCoverageReport $coverageFile
@@ -110,9 +135,9 @@ $mungedPerFileReport = @($report.perFileReport.GetEnumerator() | Sort-Object Nam
     if ($ShowAll -or !$fileMeetsGoal) {
         return [pscustomobject] @{
             File = $name
-            MethodsCovered = CalculateCoverage $data.METHOD
-            LinesCovered = CalculateCoverage $data.LINE
-            InstructionsCovered = CalculateCoverage $data.INSTRUCTION
+            Methods = CalculateCoverage $data.METHOD
+            Lines = CalculateCoverage $data.LINE
+            Instructions = CalculateCoverage $data.INSTRUCTION
         }
     }
 })
@@ -138,18 +163,24 @@ if (!$FullPaths -and $mungedPerFileReport.Count -gt 1) {
     }
 }
 
-$mungedPerFileReport += [pscustomobject] @{}
-$mungedPerFileReport +=  
+
+emitRows $mungedPerFileReport $Unformatted
+
+$totals = @(
     [pscustomobject] @{
-        File = "TOTALS"
-        MethodsCovered = CalculateCoverage $report.totals.METHOD
-        LinesCovered = CalculateCoverage $report.totals.LINE
-        InstructionsCovered = CalculateCoverage $report.totals.INSTRUCTION
-    }
-    
-$mungedPerFileReport | Format-Table -AutoSize
+        Methods = CalculateCoverage $report.totals.METHOD
+        Lines = CalculateCoverage $report.totals.LINE
+        Instructions = CalculateCoverage $report.totals.INSTRUCTION
+})
+
+emitRows $totals $Unformatted
+
+emitBlankLine $Unformatted
+
 $notShown = ""
-if ($ShowAll -eq $false) {
+if ($ShowAll -eq $false -and $filesMeetingGoal -gt 0) {
     $notShown = " (not shown)"
 }
-Write-Host "`nFiles meeting goal: $($filesMeetingGoal)$notShown"
+
+"Files meeting goal: $($filesMeetingGoal)$notShown"
+emitBlankLine $Unformatted

@@ -1,7 +1,3 @@
-BeforeAll {
-    $scriptToTest = Resolve-Path "$PSScriptRoot\..\Convert-BookmarkToLnks.ps1"
-}
-
 Describe "Convert-BookmarkToLnks.ps1" {
     It "Converts a link from a Firefox bookmark" {
         function Get-HtmlFromClipboard {}
@@ -15,7 +11,7 @@ Describe "Convert-BookmarkToLnks.ps1" {
         $ref_setToClipboard = [ref] $setToClipboard
         Mock Set-Clipboard { $ref_setToClipboard.Value = $Value }
 
-        $output = &$scriptToTest 6>&1
+        $output = Convert-BookmarkToLnks 6>&1
 
         $output | Should -Be "Success"
         $setToClipboard | Should -Be "`t[Cargo Cult Science](https://calteches.library.caltech.edu/51/2/CargoCult.htm)`r`n"
