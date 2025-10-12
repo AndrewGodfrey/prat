@@ -12,18 +12,6 @@ param ($coverageFile = "$PSScriptRoot/../auto/coverage.xml",
 $exclusionFilter = & (Resolve-PratLibFile "lib/Get-CoverageExclusionFilter.ps1")
 
 function LoadCoverageReport($coverageFile) {
-    if (!(Test-Path $coverageFile)) {
-        Write-Error "Coverage file not found: $coverageFile"
-        exit 1
-    }
-    [xml]$xml = Get-Content $coverageFile
-    $report = @{}
-    $totals = @{
-        INSTRUCTION = @{ missed = 0; covered = 0 }
-        LINE = @{ missed = 0; covered = 0 } 
-        METHOD = @{ missed = 0; covered = 0 }
-    }
-
     function appendCounterData($filename, $counters) {
         if ($null -eq $report[$filename]) {
             $report[$filename] = @{
@@ -42,11 +30,29 @@ function LoadCoverageReport($coverageFile) {
         }
     }
 
+    function calculateFullFilename($className, $sourceFileName) {
+        # For some reason, className ends in the filename of the .ps1 file, without the extension. So remove that to avoid repeating it.
+        $path = Split-Path -parent $className
+        return Join-Path $path $sourcefilename
+    }
+
+    if (!(Test-Path $coverageFile)) {
+        Write-Error "Coverage file not found: $coverageFile"
+        exit 1
+    }
+    [xml]$xml = Get-Content $coverageFile
+    $report = @{}
+    $totals = @{
+        INSTRUCTION = @{ missed = 0; covered = 0 }
+        LINE = @{ missed = 0; covered = 0 } 
+        METHOD = @{ missed = 0; covered = 0 }
+    }
+
     if ($null -eq $xml.report) { throw "Invalid coverage file: $coverageFile - missing <report> element" }
 
     foreach ($package in $xml.report.package) { # This glosses over $xml.report.Count being 2. The first one is empty. I guess the doctype element?
         foreach ($class in $package.class) {
-            $filename = Join-Path $class.name $class.sourcefilename
+            $filename = calculateFullFilename $class.name $class.sourcefilename
 
             foreach ($method in $class.method) {
                 appendCounterData $filename $method.counter
