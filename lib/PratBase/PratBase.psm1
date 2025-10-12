@@ -198,6 +198,20 @@ function New-FolderAndParents($path) {
     }
 }
 
+# Gets text from the clipboard in HTML format.
+# In PowerShell Core, the "-TextFormatType" parameter of 'Get-Clipboard' is not supported.
+if ($PSVersiontable.PSEdition -eq "Core") {
+   function Get-HtmlFromClipboard {
+      # I imagine this implementation doesn't work on all OSes, but have only tested on Windows so far.
+      Add-Type -AssemblyName System.Windows.Forms
+      [System.Windows.Forms.Clipboard]::GetData("HTML Format")
+   }
+} else {
+   function Get-HtmlFromClipboard {
+      Get-Clipboard -TextFormatType Html
+   }
+}
+
 . $PSScriptRoot\envDelta.ps1
 . $PSScriptRoot\gitForkpoint.ps1
 
