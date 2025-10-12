@@ -5,6 +5,7 @@
 
 param ($coverageFile = "$PSScriptRoot/../auto/coverage.xml",
     [switch] $ShowAll, 
+    [switch] $FullPaths,
     $CoverageGoalPercent = $(& (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1"))
     )
 
@@ -110,6 +111,27 @@ $mungedPerFileReport = @($report.perFileReport.GetEnumerator() | Sort-Object Nam
     }
 })
 
+if (!$FullPaths -and $mungedPerFileReport.Count -gt 1) {
+    function GetCommonPrefix($s1, $s2) {
+        $minLen = [math]::Min($s1.Length, $s2.Length)
+        for ([int] $i=0; $i -lt $minLen; $i++) {
+            if ($s1[$i] -ne $s2[$i]) {
+                return $s1.Substring(0, $i)
+            }
+        }
+        return $s1.Substring(0, $minLen)
+    }
+    $commonPrefix = $mungedPerFileReport[0].File;
+    for ([int] $i=1; $i -lt $mungedPerFileReport.Count; $i++) {
+        $commonPrefix = GetCommonPrefix $commonPrefix $mungedPerFileReport[$i].File
+    }
+    if ($commonPrefix.Length -gt 0) {
+        for ([int] $i=0; $i -lt $mungedPerFileReport.Count; $i++) {
+            $mungedPerFileReport[$i].File = $mungedPerFileReport[$i].File.Substring($commonPrefix.Length)
+        }
+    }
+}
+
 $mungedPerFileReport += [pscustomobject] @{}
 $mungedPerFileReport +=  
     [pscustomobject] @{
@@ -118,7 +140,7 @@ $mungedPerFileReport +=
         LinesCovered = CalculateCoverage $report.totals.LINE
         InstructionsCovered = CalculateCoverage $report.totals.INSTRUCTION
     }
-
+    
 $mungedPerFileReport | Format-Table -AutoSize
 $notShown = ""
 if ($ShowAll -eq $false) {
