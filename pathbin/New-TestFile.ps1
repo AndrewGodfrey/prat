@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param($file)
+param($file, [switch] $Launch)
 
 if (!(Test-Path $file)) {
     throw "Not found: $file"
@@ -90,6 +90,9 @@ if ($file.EndsWith(".ps1")) {
     $testContent = $testContent -join ''
     New-Item -Path $testFile -ItemType File -Value $testContent | Out-Null
     Write-Host "Created: $testFile"
+    if ($Launch) {
+        Open-FileInEditor.ps1 $testFile
+    }
     return
 }
 
