@@ -20,7 +20,15 @@ if ($VerbosePreference -ne "SilentlyContinue") {
 }
 
 if ($CoverageType -ne "None") {
-    $Configuration.CodeCoverage.OutputPath = "$RepoRoot/auto/coverage.xml"
+    # We send the coverage data to a temp file and then move it.
+    # Why: Otherwise, Pester 5.5.0 puts relative path names in coverage.xml for any .ps1 files it finds under auto/.
+    #      Which causes trouble e.g. in Get-CoverageReport.ps1.
+    $coverageDest = "$RepoRoot/auto/coverage.xml"
+    if (Test-Path $coverageDest) {
+        Remove-Item $coverageDest | Out-Null
+    }
+    $tempFile = [IO.Path]::GetTempFileName()
+    $Configuration.CodeCoverage.OutputPath = $tempFile
     $Configuration.CodeCoverage.Enabled = [bool] $true
     $Configuration.CodeCoverage.OutputFormat = "CoverageGutters"
     if ($CoverageType -eq "Subset") {
@@ -28,7 +36,13 @@ if ($CoverageType -ne "None") {
     } else {
         $Configuration.CodeCoverage.Path = $RepoRoot
     }
-    $Configuration.CodeCoverage.CoveragePercentTarget = 70
+    $Configuration.CodeCoverage.CoveragePercentTarget = & (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1")
 }
 
 Invoke-Pester -Configuration $Configuration
+
+if ($CoverageType -ne "None") {
+    if (Test-Path $tempFile) {
+        Move-Item $tempFile $coverageDest
+    }
+}
