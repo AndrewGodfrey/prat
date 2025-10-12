@@ -39,7 +39,7 @@ if ($CoverageType -ne "None") {
     $Configuration.CodeCoverage.CoveragePercentTarget = & (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1")
 }
 
-Invoke-Pester -Configuration $Configuration
+Invoke-PesterAsJob -Configuration $Configuration
 
 if ($CoverageType -ne "None") {
     if (Test-Path $tempFile) {
