@@ -5,4 +5,7 @@ Describe "Compare-Hash" {
         Compare-Hash $PSScriptRoot\testHash.txt $hash | Should -Be $true
         Compare-Hash $PSScriptRoot\testHash.txt $wrongHash | Should -Be $false
     }
+    It "Throws if no hash given" {
+        { Compare-Hash $PSScriptRoot\testHash.txt } | Should -Throw
+    }
 }
