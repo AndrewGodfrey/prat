@@ -259,7 +259,3 @@ Function ConvertTo-Expression {
 		}
 	}
 }
-
-if ($MyInvocation.InvocationName -ne ".") {
-	ConvertTo-Expression @args
-}

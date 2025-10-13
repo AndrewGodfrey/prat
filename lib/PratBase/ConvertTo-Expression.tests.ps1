@@ -1,6 +1,4 @@
 BeforeAll {
-    . $PSCommandPath.Replace('.Tests.ps1','.ps1')
-
     function AssertEqual($a, $b) {
         if ($a -is [array]) {
             $a.Count | Should -Be $b.Count
@@ -263,4 +261,3 @@ Describe "ConvertTo-Expression" {
         {AssertRoundtrip $e $result} | Should -Throw
     }
 }
-

@@ -1,5 +1,10 @@
 using module .\PratBase.psd1
 
+BeforeAll {
+    . $PSScriptRoot\..\..\pathbin\tests\cbTest.common.ps1
+}
+
+
 Describe "Get-RelativePath" {
     It "returns a relative path" {
         $p = Get-RelativePath $PSScriptRoot "$PSScriptRoot\PratBase.psd1"
@@ -111,18 +116,18 @@ Describe "New-FolderAndParents" {
         Test-Path $newPath | Should -Be $true
     }
     It "does not create an existing folder" {
-        Mock New-Subfolder { } -Verifiable
+        Mock -ModuleName PratBase New-Subfolder { } -Verifiable
 
         New-FolderAndParents $root
 
-        Should -Invoke New-Subfolder -Times 0
+        Should -Invoke -ModuleName PratBase New-Subfolder -Times 0
     }
 }
 
 Describe "New-Subfolder" {
     Context "User not elevated" {
         BeforeAll {
-            Mock Get-CurrentUserIsElevated { $false }
+            Mock -ModuleName PratBase Get-CurrentUserIsElevated { $false }
             $root = "TestDrive:\New-Subfolder"
             New-Item -Path $root -ItemType Directory -Force | Out-Null
         }
@@ -138,5 +143,78 @@ Describe "New-Subfolder" {
 
             {New-Subfolder $newPath} | Should -Throw "Not found: $root\test2"
         }
+    }
+    Context "User elevated" {
+        BeforeAll {
+            Mock -ModuleName PratBase Get-CurrentUserIsElevated { $true }
+            $root = "TestDrive:\New-Subfolder2"
+            New-Item -Path $root -ItemType Directory -Force | Out-Null
+        }
+        It "creates a subfolder" {
+            $newPath = "$root\test"
+            Test-Path $newPath | Should -Be $false
+            Mock -ModuleName PratBase icacls -Verifiable {}
+
+            # Act
+            New-Subfolder $newPath
+
+            # Assert
+            Test-Path $newPath | Should -Be $true
+            Should -Invoke -ModuleName PratBase icacls -Times 1
+        }
+    }
+}
+
+Describe "Import-PratAliases" {
+    It "Imports aliases from a file" {
+         $aliasFile = @"
+            `$installedAliases = @{
+                sudo = 'gsudo'         
+            }
+"@
+
+        $fn = createTestFile $aliasFile ".ps1"
+
+        $newAliases = @()
+        $ref_newAliases = [ref] $newAliases
+
+        Mock -ModuleName PratBase New-Alias {
+            $ref_newAliases.Value += @{ name = $Name; value = $Value }
+        }
+
+        # Act
+        Import-PratAliases $fn
+
+        # Assert
+        $newAliases.Count | Should -Be 1
+        $newAliases[0].name | Should -Be "sudo"
+        $newAliases[0].value | Should -Be "gsudo" 
+    }
+}       
+
+Describe "Get-UserIdleTimeInSeconds" {
+    It "returns a number" {
+        $n = Get-UserIdleTimeInSeconds
+        $n.GetType().Name | Should -Be "UInt32"
+    }
+}
+
+Describe "Invoke-PesterAsJob" {
+    BeforeEach {
+        $dummyJob = Start-Job -ScriptBlock { }
+    }
+    AfterEach {
+        Receive-Job -Job $dummyJob -Wait -AutoRemoveJob
+    }
+    It "starts a job" {
+        Mock -ModuleName PratBase Start-Job -Verifiable { return $dummyJob }
+        Mock -ModuleName PratBase Receive-Job -Verifiable -ParameterFilter {($job -eq $dummyJob) -and $Wait -and $AutoRemoveJob} {}
+        
+        # Act
+        Invoke-PesterAsJob
+
+        # Assert
+        Should -Invoke -ModuleName PratBase Start-Job -Times 1
+        Should -Invoke -ModuleName PratBase Receive-Job -Times 1
     }
 }
