@@ -3,6 +3,9 @@ Describe "Test-Prat" {
         $expectedCoverageType = "None"
         function Invoke-PesterWithCodeCoverage($CoverageType) {}
         Mock Invoke-PesterWithCodeCoverage { $CoverageType | Should -Be $expectedCoverageType }
+
+        $simualtedTestFocus = $null
+        function Get-TestFocus { return $simualtedTestFocus }
     }
     It "Chooses no coverage by default" {
         Test-Prat
@@ -20,5 +23,16 @@ Describe "Test-Prat" {
 
             Test-Prat $type -CodeCoverage
         }
+    }
+    It "Supports test focus" {
+        $simualtedTestFocus = "somePath"
+
+        Test-Prat
+    }
+    It "Changes the -CodeCoverage switch behavior when test focus is set" {
+        $expectedCoverageType = "Subset"
+        $simualtedTestFocus = "somePath"
+
+        Test-Prat -CodeCoverage
     }
 }

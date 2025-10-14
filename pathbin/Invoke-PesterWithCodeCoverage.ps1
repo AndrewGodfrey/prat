@@ -32,7 +32,18 @@ if ($CoverageType -ne "None") {
     $Configuration.CodeCoverage.Enabled = [bool] $true
     $Configuration.CodeCoverage.OutputFormat = "CoverageGutters"
     if ($CoverageType -eq "Subset") {
-        $Configuration.CodeCoverage.Path = $Configuration.Run.Path
+        if (!(Test-Path -PathType Container $PathToTest)) {
+            # Pester coverage makes an empty xml if given a single file here.
+            $guess = $PathToTest -replace ".tests.ps1", ".ps1"
+            $codeFile = &$PSScriptRoot/../lib/Get-ContainingItem (Split-Path -Leaf $guess) (Split-Path -Parent $guess)
+            if ($null -ne $codeFile) {
+                $Configuration.CodeCoverage.Path = $codeFile.FullName
+            } else {
+                $Configuration.CodeCoverage.Path = $RepoRoot
+            }
+        } else {
+            $Configuration.CodeCoverage.Path = $PathToTest
+        }
     } else {
         $Configuration.CodeCoverage.Path = $RepoRoot
     }

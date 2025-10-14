@@ -4,7 +4,17 @@ param (
     [ValidateSet("None", "Standard", "Subset")] [string] $CoverageType = "None",
     [switch] $CodeCoverage)
 
-if ($CodeCoverage) {
-    $CoverageType = "Standard"
+
+$testFocus = Get-TestFocus
+if ($null -eq $testFocus) {
+    if ($CodeCoverage) {
+        $CoverageType = "Standard"
+    }
+    $pathToTest = "."
+} else {
+    $pathToTest = $testFocus
+    if ($CodeCoverage) {
+        $CoverageType = "Subset"
+    }
 }
-Invoke-PesterWithCodeCoverage -CoverageType $CoverageType -PathToTest "." -RepoRoot (Resolve-Path "$PSScriptRoot\..")
+Invoke-PesterWithCodeCoverage -CoverageType $CoverageType -PathToTest $pathToTest -RepoRoot (Resolve-Path "$PSScriptRoot\..")
