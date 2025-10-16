@@ -19,3 +19,4 @@ Build-Codebase
 Test-Codebase -CodeCoverage
 Deploy-Codebase -Force:$Force
 
+# OmitFromCoverageReport: a unit test would just restate it
