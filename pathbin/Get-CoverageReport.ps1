@@ -9,6 +9,7 @@ param ($coverageFile = "$PSScriptRoot/../auto/coverage.xml",
     [switch] $ShowAll, 
     [switch] $FullPaths,
     [switch] $Unformatted,
+    [switch] $Ignore_OmitFromCoverageReport,
     $CoverageGoalPercent = $(& (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1"))
     )
 
@@ -115,6 +116,20 @@ function emitBlankLine {
     }
 }
 
+function GetLastLine($filename) {
+    $lines = Get-Content $filename
+    if ($lines.Length -eq 0) { return "" }
+    return $lines[$lines.Length - 1]
+}
+
+function IsFileOmitted($filename) {
+    $lastLine = GetLastLine($filename)
+    if ($lastLine -match '^\s*#\s*OmitFromCoverageReport\s*:\s*[^\s]') { # e.g. "# OmitFromCoverageReport: a unit test would just restate it"
+        return $true
+    }
+    return $false
+}
+
 $report = LoadCoverageReport $coverageFile
 # return $report.GetEnumerator() | Sort-Object Name
 $filesMeetingGoal = 0
@@ -128,6 +143,11 @@ $mungedPerFileReport = @($report.perFileReport.GetEnumerator() | Sort-Object Nam
     }
 
     $fileMeetsGoal = FileMeetsGoal $data $CoverageGoalPercent
+    if (!$fileMeetsGoal -and !$Ignore_OmitFromCoverageReport) {
+        if (IsFileOmitted $name) {
+            $fileMeetsGoal = $true
+        }
+    }
     if ($fileMeetsGoal) {
         $filesMeetingGoal += 1
     }
@@ -155,6 +175,15 @@ if (!$FullPaths -and $mungedPerFileReport.Count -gt 1) {
     $commonPrefix = $mungedPerFileReport[0].File;
     for ([int] $i=1; $i -lt $mungedPerFileReport.Count; $i++) {
         $commonPrefix = GetCommonPrefix $commonPrefix $mungedPerFileReport[$i].File
+    }
+    if ($commonPrefix -ne "") {
+        # Trim to last path separator
+        $lastSep = $commonPrefix.LastIndexOfAny(@('\', '/'))
+        if ($lastSep -ge 0) {
+            $commonPrefix = $commonPrefix.Substring(0, $lastSep + 1)
+        } else {
+            $commonPrefix = ""
+        }
     }
     if ($commonPrefix.Length -gt 0) {
         for ([int] $i=0; $i -lt $mungedPerFileReport.Count; $i++) {

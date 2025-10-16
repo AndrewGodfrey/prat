@@ -77,7 +77,7 @@ Describe "Get-CoverageReport" {
         $fn = createTestFile $coverageFile.Trim() ".xml"
 
         # Act
-        $result = Get-CoverageReport $fn -ShowAll -CoverageGoalPercent 70 -Unformatted
+        $result = Get-CoverageReport $fn -ShowAll -CoverageGoalPercent 70 -Unformatted -Ignore_OmitFromCoverageReport
 
         # Assert
         shouldMatchRow $result[0] @{File='Add-Utf8Bom.ps1'; Methods=0; Lines=0; Instructions=0}
@@ -85,5 +85,49 @@ Describe "Get-CoverageReport" {
         shouldMatchRow $result[2] @{File='Write-DebugValue.ps1'; Methods=90; Lines=90; Instructions=0}
         shouldMatchRow $result[3] @{Methods=90; Lines=59.375; Instructions=67.5}
         $result[4] | Should -Be 'Files meeting goal: 1'
+    }
+}
+
+Describe "Per-file suppression" {
+    It "Omits 'OmitFromCoverageReport' files from the goal count, but still displays them" {
+        $sourceFileText = @"
+            a
+            b
+            # OmitFromCoverageReport: unit test
+"@
+        $sourceFileText | Out-File -Encoding ASCII "TestDrive:\UnitTestFile1.ps1"
+
+        "foo" | Out-File -Encoding ASCII "TestDrive:\UnitTestFile2.ps1"
+
+        $coverageFile = @"
+            <report name="name">
+            <package name="TestDrive:\">
+                <class name="TestDrive:\UnitTestFile1" sourcefilename="UnitTestFile1.ps1">
+                <method name="&lt;script&gt;" desc="()" line="5">
+                    <counter type="INSTRUCTION" missed="1" covered="0" />
+                    <counter type="LINE" missed="1" covered="0" />
+                    <counter type="METHOD" missed="1" covered="0" />
+                </method>
+                </class>
+                <class name="TestDrive:\UnitTestFile2" sourcefilename="UnitTestFile2.ps1">
+                <method name="&lt;script&gt;" desc="()" line="5">
+                    <counter type="INSTRUCTION" missed="1" covered="0" />
+                    <counter type="LINE" missed="1" covered="0" />
+                    <counter type="METHOD" missed="1" covered="0" />
+                </method>
+                </class>
+            </package>
+            </report>
+"@
+        $coverageFile = createTestFile $coverageFile.Trim() ".xml"
+
+        # Act
+        $result = Get-CoverageReport $coverageFile -ShowAll -CoverageGoalPercent 70 -Unformatted
+
+        # Assert
+        $result[3] | Should -Be 'Files meeting goal: 1'
+        
+        shouldMatchRow $result[0] @{File='UnitTestFile1.ps1'; Methods=0; Lines=0; Instructions=0}
+        shouldMatchRow $result[1] @{File='UnitTestFile2.ps1'; Methods=0; Lines=0; Instructions=0}
     }
 }
