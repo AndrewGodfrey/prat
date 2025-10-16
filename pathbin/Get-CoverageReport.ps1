@@ -86,7 +86,11 @@ function CalculateCoverage($counter, [switch] $AsDouble) {
 }
 
 function FileMeetsGoal($data, $goalPercent) {
-    foreach ($counterType in @("METHOD", "LINE", "INSTRUCTION")) {
+    # We exclude "METHOD" counters because:
+    #
+    # It's common to add a wrapper method explicitly to create a safe point to mock. So then that wrapper isn't covered or worth covering.
+    # A small script with 3 wrappers would be a very reasonable situation, but would count as only having  25% method coverage.
+    foreach ($counterType in @("LINE", "INSTRUCTION")) {
         $coverage = CalculateCoverage $data[$counterType] -AsDouble
         if ($coverage -lt $goalPercent) {
             return $false
