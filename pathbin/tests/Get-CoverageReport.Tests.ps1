@@ -19,6 +19,7 @@ Describe "Get-CoverageReport" {
             <report name="Pester (1/1/2025 00:00:00)">
             <sessioninfo id="this" start="1" dump="2" />
             <package name="C:/Users/Alice/prat/pathbin">
+
                 <class name="C:/Users/Alice/prat/pathbin/Add-Utf8Bom" sourcefilename="Add-Utf8Bom.ps1">
                 <method name="&lt;script&gt;" desc="()" line="5">
                     <counter type="INSTRUCTION" missed="13" covered="0" />
@@ -34,37 +35,24 @@ Describe "Get-CoverageReport" {
                 <method name="&lt;script&gt;" desc="()" line="7">
                     <counter type="INSTRUCTION" missed="0" covered="27" />
                     <counter type="LINE" missed="0" covered="1" />
-                    <counter type="METHOD" missed="0" covered="1" />
+                    <counter type="METHOD" missed="0" covered="9" />
                 </method>
-                <counter type="INSTRUCTION" missed="0" covered="2" />
-                <counter type="LINE" missed="0" covered="1" />
-                <counter type="METHOD" missed="0" covered="1" />
-                <counter type="CLASS" missed="0" covered="1" />
                 </class>
+
                 <class name="C:/Users/Alice/prat/pathbin/Write-DebugValue" sourcefilename="Write-DebugValue.ps1">
                 <method name="Format-IndentEachLine" desc="()" line="9">
                     <counter type="INSTRUCTION" missed="0" covered="0" /> <!-- testing the 'total = 0' case -->
-                    <counter type="LINE" missed="7" covered="0" />
+                    <counter type="LINE" missed="1" covered="6" />
                     <counter type="METHOD" missed="1" covered="0" />
                 </method>
                 <method name="&lt;script&gt;" desc="()" line="21">
                     <counter type="INSTRUCTION" missed="0" covered="0" />
-                    <counter type="LINE" missed="12" covered="1" />
-                    <counter type="METHOD" missed="0" covered="1" />
+                    <counter type="LINE" missed="1" covered="12" />
+                    <counter type="METHOD" missed="0" covered="9" /> <!-- hacked to give 90% method coverage -->
                 </method>
-                <counter type="INSTRUCTION" missed="24" covered="1" />
-                <counter type="LINE" missed="19" covered="1" />
-                <counter type="METHOD" missed="1" covered="1" />
-                <counter type="CLASS" missed="1" covered="0" />
                 </class>
-                <sourcefile name="Analyze-FileExtensions.ps1">
-                <line nr="7" mi="0" ci="2" mb="0" cb="0" />
-                <counter type="INSTRUCTION" missed="0" covered="2" />
-                <counter type="LINE" missed="0" covered="1" />
-                <counter type="METHOD" missed="0" covered="1" />
-                <counter type="CLASS" missed="0" covered="1" />
-                </sourcefile>
-                <sourcefile name="Write-DebugValue.ps1">
+
+                <sourcefile name="Write-DebugValue.ps1"> <!-- this section is ignored (not sure what it is) -->
                 <line nr="9" mi="2" ci="0" mb="0" cb="0" />
                 <line nr="10" mi="2" ci="0" mb="0" cb="0" />
                 <counter type="INSTRUCTION" missed="22" covered="1" />
@@ -72,11 +60,13 @@ Describe "Get-CoverageReport" {
                 <counter type="METHOD" missed="1" covered="1" />
                 <counter type="CLASS" missed="1" covered="0" />
                 </sourcefile>
+
                 <counter type="INSTRUCTION" missed="632" covered="90" /> <!-- this section is ignored (package-level stats) -->
                 <counter type="LINE" missed="445" covered="67" />
                 <counter type="METHOD" missed="62" covered="16" />
                 <counter type="CLASS" missed="32" covered="13" />
             </package>
+            
             <counter type="INSTRUCTION" missed="638" covered="114" /> <!-- this section is ignored (report-level stats) -->
             <counter type="LINE" missed="449" covered="91" />
             <counter type="METHOD" missed="63" covered="22" />
@@ -92,8 +82,8 @@ Describe "Get-CoverageReport" {
         # Assert
         shouldMatchRow $result[0] @{File='Add-Utf8Bom.ps1'; Methods=0; Lines=0; Instructions=0}
         shouldMatchRow $result[1] @{File='Analyze-FileExtensions.ps1'; Methods=100; Lines=100; Instructions=100}
-        shouldMatchRow $result[2] @{File='Write-DebugValue.ps1'; Methods=50; Lines=5; Instructions=0}
-        shouldMatchRow $result[3] @{Methods=50; Lines=6.25; Instructions=67.5}
+        shouldMatchRow $result[2] @{File='Write-DebugValue.ps1'; Methods=90; Lines=90; Instructions=0}
+        shouldMatchRow $result[3] @{Methods=90; Lines=59.375; Instructions=67.5}
         $result[4] | Should -Be 'Files meeting goal: 1'
     }
 }
