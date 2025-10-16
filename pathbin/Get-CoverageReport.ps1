@@ -1,3 +1,5 @@
+# Get-CoverageReport (alias: gcr)
+#
 # Gets a simple code-coverage report from the result of Invoke-PesterWithCodeCoverage.ps1
 # This is useful to find files that need more coverage.
 #
