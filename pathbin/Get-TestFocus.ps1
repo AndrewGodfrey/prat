@@ -5,3 +5,5 @@ if (!(Test-Path $stateFile)) {
 }
 $currentState = &$stateFile
 return $currentState.DirectoryOrFile
+
+# OmitFromCoverageReport: a unit test would just restate it

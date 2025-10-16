@@ -8,3 +8,5 @@
 $modules = "Installers", "TextFileEditor", "PratBase"
 Write-Host -ForegroundColor Green "Removing modules: $($modules -join ", ")"
 $modules | ForEach-Object {Remove-Module $_ -ErrorAction SilentlyContinue}
+
+# OmitFromCoverageReport: a unit test would just restate it

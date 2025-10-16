@@ -21,3 +21,5 @@
 #   >
 #
 Open-CodebaseWorkspace.ps1 {pwsh -NoExit -Command "cd $pwd"} -DescriptionScript {param($cbtId); "Entering: $cbtId" }
+
+# OmitFromCoverageReport: a unit test would just restate it
