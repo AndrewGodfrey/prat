@@ -20,4 +20,5 @@ try {
     if ($null -ne $it) { $it.StopInstallation() }
 }
 
+Write-Host -ForegroundColor Green "Install-MyPratPhase3"
 pwsh $home\prat\lib\Install-PratPhase3.ps1 -SkipDeployStep:$SkipDeployStep

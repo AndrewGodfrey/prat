@@ -25,6 +25,7 @@ try {
 }
 
 if (!$SkipDeployStep) {
+    Write-Host -ForegroundColor Green "Install-MyPratPhase3.ps1: Run prat deploy"
     # Build, test, deploy:
     Start-CodebaseDevLoop
 }
