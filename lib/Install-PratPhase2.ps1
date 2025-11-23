@@ -1,8 +1,6 @@
 # Part 2 of Install-Prat.ps1
 #
-# This needs to install:
-# - Anything needed to run Build-Codebase or Test-Codebase for prat.
-using module ..\lib\TextFileEditor\TextFileEditor.psd1
+# This needs to install Powershell Core.
 using module ..\lib\Installers\Installers.psd1
 
 param([switch] $SkipDeployStep)
@@ -12,9 +10,9 @@ param([switch] $SkipDeployStep)
 $it = $null
 
 try {
-    $it = Start-Installation "Install-Prat" -InstallationDatabaseLocation "$home\prat\auto\instDb"
+    $it = Start-Installation "Install-PratPhase2" -InstallationDatabaseLocation "$home\prat\auto\instDb"
 
-    Install-PratPackage $it "pester"
+    Install-PratPackage $it "pwsh"
 } catch {
     if ($null -ne $it) { $it.ReportErrorContext($error[0]) }
     throw
@@ -22,8 +20,4 @@ try {
     if ($null -ne $it) { $it.StopInstallation() }
 }
 
-if (!$SkipDeployStep) {
-    # Build, test, deploy:
-    Start-CodebaseDevLoop
-}
-
+pwsh $home\prat\lib\Install-PratPhase3.ps1 -SkipDeployStep:$SkipDeployStep
