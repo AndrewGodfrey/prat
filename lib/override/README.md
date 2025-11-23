@@ -11,14 +11,29 @@ Mechanisms are provided so that you can 'override' various things in Prat:
 
 ## Shouldn't this be more flexible?
 
-### Multiple dev envs
-I could imagine someone wanting to have more than one overridden devenv, but I think "no".
+### Multiple dev envs (one per machine)
+It's logical to have distinct dev envs for different machines - e.g. personal, school, work, test machine.
+This design supports that.
+
+I still recommend sharing "your" customization between these environments, as much as you can.
+e.g. My 'personal' environment installs an "Install-MyPrat.ps1" script somewhere I can use from all of them.
+
+
+### Multiple dev envs on a single machine
+I could imagine someone wanting to have more than one overridden devenv on one machine, but that would be more complicated
+and I think it's confusing too.
+
 The design philosophy I'm following here is:
 
-One human should use one dev environment. It might be specific to them, or they might share it with others, but they shouldn't have more than one.
+One human should use "one" dev environment. It might be specific to them, or they might share parts of it with others, but they shouldn't have more than one.
 This is a "human-computer interface", and all codebases should be subservient to that. So if you have to work with some codebase that thinks of itself
 as being 'your' interface, don't let it. Isolate it. e.g. see Invoke-CommandWithEnvDelta. (I could imagine needing even more isolation for some codebases - if they
 install something really obnoxious, they might need to be sandboxed.)
+
+So then (returning to the previous section) if you do have different dev envs on different machines - they should still try to use
+the same human-computer interface as much as possible. e.g. I arrange for "b" to build on all of them (as much as possible - 
+yes I still live with some edge cases, but the cognitive load is still much lower).
+
 
 ### Nested dev envs
 I could also imagine someone wanting it to be nestable. This makes sense:
