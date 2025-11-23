@@ -1,3 +1,5 @@
+#Requires -PSEdition Core, Desktop
+
 <#
   Installs Prat to $home\prat, and then runs its build/test/deploy loop once.
  

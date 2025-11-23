@@ -1,6 +1,6 @@
+#Requires -PSEdition Core
+
 # Part 3 of Install-Prat.ps1
-#
-# This part can finally rely on Powershell Core.
 #
 # This needs to install:
 # - Anything needed to run Build-Codebase or Test-Codebase for prat.

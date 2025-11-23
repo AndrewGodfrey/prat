@@ -1,3 +1,5 @@
+#Requires -PSEdition Core, Desktop
+
 # This file is installed to %userprofile%\Documents\[Windows]Powershell, by Install-PsProfile.ps1.
 
 . $home\prat\lib\profile\initProfileTracing.ps1

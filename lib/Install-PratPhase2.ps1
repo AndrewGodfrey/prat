@@ -1,3 +1,5 @@
+#Requires -PSEdition Core, Desktop
+
 # Part 2 of Install-Prat.ps1
 #
 # This needs to install Powershell Core.
