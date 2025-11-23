@@ -7,9 +7,9 @@ function isWingetPackageInstalled([string] $packageId) {
     return [String]::Join("", $outputStrings).Contains($packageId)
 }
 
-function installWingetPackage([string] $packageId, [string] $version = $null) {
+function installWingetPackage([string] $packageId, [string] $version = """") {
     $versionParam = @()
-    if ($null -ne $version) {
+    if ($version -ne "") {
         $versionParam = @("--version", $version)
     }
     winget install --silent --exact --id $packageId @versionParam
@@ -32,7 +32,7 @@ function installWingetPackage([string] $packageId, [string] $version = $null) {
 # - Use something that doesn't exist, like "\foo". 
 # - The 'verify' step will fail, after installing the package.
 # - Now find the location, update the code, and rerun.
-function Install-WingetPackage($stage, [string] $packageId, [string] $installPath, [string] $version = $null) {
+function Install-WingetPackage($stage, [string] $packageId, [string] $installPath, [string] $version = "") {
     $stage.SetSubstage("Install-WingetPackage($packageId) : package check")
 
     if ($installPath -eq "") { throw "Install path required" }
