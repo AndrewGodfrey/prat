@@ -327,7 +327,7 @@ function Install-SoftLinkToFile($stage, $srcDir, $destDir, $srcFilename, $destFi
 
     $stage.OnChange()
     Write-Host -ForegroundColor Green "New-Item -ItemType SymbolicLink -Path $destDir\$destFilename -Value $srcDir\$srcFilename"
-    sudo {New-Item -ItemType SymbolicLink -Path $destDir\$destFilename -Value $srcDir\$srcFilename}
+    Invoke-Gsudo {New-Item -ItemType SymbolicLink -Path $using:destDir\$using:destFilename -Value $using:srcDir\$using:srcFilename}
 }
 
 
