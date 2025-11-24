@@ -72,7 +72,7 @@ Copyright = 'Copyright (c) 2024 Andrew Godfrey'
 FunctionsToExport = @(
 	'Format-ReplacePlaceholdersInTemplateString',
 	'Start-Installation',
-	'Install-File', 'Install-Folder', 'Install-SetOfFiles', 'Install-DeleteFiles', 'Install-TextToFile', 'Install-BinaryDataToFile', 'Install-SmbShare', 'Install-ZipFileFromFolder',
+	'Install-File', 'Install-Folder', 'Install-SetOfFiles', 'Install-DeleteFiles', 'Install-TextToFile', 'Install-BinaryDataToFile', 'Install-SmbShare', 'Test-SmbShareConnection', 'Install-ZipFileFromFolder',
     'Install-SoftLinkToFile',
 	'Install-RegistryKey', 'Install-RegistryDwordValue', 'Install-RegistryStringValue', 'Install-RegistryBinaryValue',
     'Install-DailyScheduledTask', 'Install-AtLogonScheduledTask',
