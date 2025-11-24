@@ -35,7 +35,7 @@ function Install-File($stage, $srcDir, $destDir, $srcFilename, $destFilename, [s
 
 }
 
-# Install one folder
+# Install one user folder. If it's not under $home, also overwrite its permissions with those of $home\prat
 function Install-Folder($stage, $destDir) {
     if ((Test-Path -PathType Container $destDir) -ne $True) {
         $stage.OnChange()
@@ -43,11 +43,11 @@ function Install-Folder($stage, $destDir) {
         if (-not $?) {
             throw ("Failed to create '$destDir'")
         }
-        if (Get-CurrentUserIsElevated) {
-            icacls $destDir /setowner $env:username /q | Out-Null
-            if (-not $?) {
-                throw ("Failed to set ownership on '$destDir'")
-            }
+
+        if (!(Test-PathIsUnder $destDir $home)) {
+            $sourceACL = Get-Acl "$home\prat"
+            $sourceACL.SetAccessRuleProtection($true, $false)
+            Invoke-Gsudo { Set-Acl -Path $destDir -AclObject $using:sourceACL }
         }
     }
 }
