@@ -211,6 +211,7 @@ function Install-SmbShare($stage, $shareName, $targetFolder, $userCredential, [s
         Remove-SmbShare $shareName
     }
     if ($needCreate) {
+        $ErrorActionPreference = "stop"
         writeUpdateDetailIf "Updating (Install-SmbShare): $shareName, $userCredential" $ShowUpdateDetails
         Invoke-Gsudo {
             New-SmbShare -Name $using:shareName -Path $using:targetFolder -ReadAccess $using:userCredential | Out-Null
