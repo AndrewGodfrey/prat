@@ -326,8 +326,12 @@ function Install-SoftLinkToFile($stage, $srcDir, $destDir, $srcFilename, $destFi
     }
 
     $stage.OnChange()
-    Write-Host -ForegroundColor Green "New-Item -ItemType SymbolicLink -Path $destDir\$destFilename -Value $srcDir\$srcFilename"
-    Invoke-Gsudo {New-Item -ItemType SymbolicLink -Path $using:destDir\$using:destFilename -Value $using:srcDir\$using:srcFilename}
+    $linkPath = "$destDir\$destFilename"
+    $linkValue = "$srcDir\$srcFilename"
+    # Write-Host -ForegroundColor Green "New-Item -ItemType SymbolicLink -Path $linkPath -Value $linkValue"
+    Invoke-Gsudo {
+        New-Item -ItemType SymbolicLink -Path $using:linkPath -Value $using:linkValue | Out-Null
+    }
 }
 
 
