@@ -191,7 +191,7 @@ function Install-BinaryDataToFile($stage, $file, [byte[]] $newData, [switch] $Ba
 }
 
 # Install a SMB share
-function Install-SmbShare($stage, $shareName, $targetFolder, $credential) {
+function Install-SmbShare($stage, $shareName, $targetFolder, $userCredential, [switch] $ShowUpdateDetails) {
     $cimInstance = Get-SmbShare | ? {$_.Name -eq $shareName}
 
     [bool] $needUpdate = $false
@@ -211,8 +211,10 @@ function Install-SmbShare($stage, $shareName, $targetFolder, $credential) {
         Remove-SmbShare $shareName
     }
     if ($needCreate) {
-        # TODO: This operation requires sudo
-        New-SmbShare -Name $shareName -Path $targetFolder -ReadAccess $credential
+        writeUpdateDetailIf "Updating (Install-SmbShare): $shareName, $userCredential" $ShowUpdateDetails
+        Invoke-Gsudo {
+            New-SmbShare -Name $using:shareName -Path $using:targetFolder -ReadAccess $using:userCredential | Out-Null
+        }        
     }
 }
 
