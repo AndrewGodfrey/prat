@@ -47,7 +47,7 @@ function Install-Folder($stage, $destDir) {
         if (!(Test-PathIsUnder $destDir $home)) {
             $sourceACL = Get-Acl "$home\prat"
             $sourceACL.SetAccessRuleProtection($true, $false)
-            Invoke-Gsudo { Set-Acl -Path $destDir -AclObject $using:sourceACL }
+            Invoke-Gsudo { Set-Acl -Path $using:destDir -AclObject $using:sourceACL }
         }
     }
 }
