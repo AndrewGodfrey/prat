@@ -214,7 +214,20 @@ function Install-SmbShare($stage, $shareName, $targetFolder, $credential) {
         # TODO: This operation requires sudo
         New-SmbShare -Name $shareName -Path $targetFolder -ReadAccess $credential
     }
+}
 
+# Quietly test if a SMB share connection is present
+function Test-SmbShareConnection([string] $sharePath) {
+    $ErrorActionPreference = "stop"
+    $exists = $false
+    try { 
+        $exists = Test-Path $sharePath
+    } 
+    catch 
+    { 
+        return $false 
+    }
+    return $exists
 }
 
 function getManifestFromFolder($srcDir) {
