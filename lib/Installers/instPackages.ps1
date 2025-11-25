@@ -211,7 +211,7 @@ function installForkGitClient($stage) {
         throw "Fork installation failed / unexpected location"
     }
 
-    $stage.EnsureManualStep("fork\firstrun", "Run Fork (to trigger its 'first-run setup'). Give it my name and email.")
+    $stage.EnsureManualStep("fork\firstrun", "Run Fork (to trigger its 'first-run setup'). Give it my name and email. Leave it running for the next steps.")
     $stage.EnsureManualStep("fork\dark", "Appearance > Dark")
     $stage.EnsureManualStep("fork\gitIntegration", "File > Preferences > Git > Git Instance: Choose C:\Program Files\Git\bin\git.exe")
     $stage.EnsureManualStep("fork\pin", "Pin Fork to taskbar")
