@@ -21,6 +21,10 @@ using module ..\TextFileEditor\TextFileEditor.psd1
 #     - Some packages make huge breaking changes from one major version to another. For those, auto-updating logic may need to focus on minor version #.
 #     - Later, I might re-encounter the need for multiple side-by-side versions (of a package which supports that). In such cases you need
 #       some way of picking which one to invoke. One way is to know its installation path, which isn't provided and doesn't follow any rigid convention.
+#   6. Known, validated package install location.
+#      winget on its own, lacks this. It assumes the installer knows how to 'hook up' the package to my environment. Problems with that:
+#      - The "obvious" deal-breaker: They don't know how to integrate themselves with Prat, so that they get installed on every dev-environment machine.
+#      - Just noting: Some packages update PATH in the registry, but not in the current environment. Some don't update PATH at all (or maybe try and silently fail).
 #
 # Thoughts:
 #   - I'm aware that Powershell already has a "package manager manager" in Install-Package. Based on past experience, I expect this code to use 
@@ -111,6 +115,7 @@ $pratPackageDependencies = @{
     "sudo" = @()
     "pwsh" = @("sudo")
     "wget" = @()
+    "python" = @()
     "ditto" = @()
     "df" = @()
     "sysinternals" = @()
@@ -249,6 +254,13 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
             }
             "nugetPackageProvider" {
                 sudo Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+            }
+            "python" {
+                installPratWingetPackage "Python.PythonInstallManager"
+
+                # This is a rare case where I don't need to fix up PATH, not even in the current instance.
+                # The reason is that PythonInstallManager overwrites the existing link at $env:LocalAppData\Microsoft\WindowsApps\python.exe, 
+                # which is *already* in the path (Windows 10 does that).
             }
             "pwsh" {
                 # If I want the latest version, I have to use machine scope. As of May 2024, the last version that supported user scope was 7.2.6.0,
