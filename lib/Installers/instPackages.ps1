@@ -105,7 +105,6 @@ function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
 }
 
 $pratPackageDependencies = @{
-    "forkGitClient" = @()
 }
 
 function internal_installDitto($stage) {
@@ -296,6 +295,9 @@ $pratPackages = @{
     pushoverNotification = @{
         install = { installPushoverNotification $stage $packageArgs }
     }
+    forkGitClient = @{
+        install = { installForkGitClient $stage }
+    }
 }
 
 function internal_installPratPackage($stage, [string] $packageId, [array] $packageArgs) {
@@ -328,7 +330,6 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
             return
         }
         switch ($packageId) {
-            "forkGitClient" { installForkGitClient $stage }
             default { throw "Internal error: $packageId" }
         }
 
