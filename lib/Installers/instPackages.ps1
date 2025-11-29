@@ -105,7 +105,6 @@ function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
 }
 
 $pratPackageDependencies = @{
-    "pester" = @("sudo", "removeBuiltinPester")
     "pwsh" = @("sudo")
     "wget" = @()
     "python" = @()
@@ -246,6 +245,13 @@ $pratPackages = @{
         }
         dependencies = @("sudo")
     }
+    pester = @{
+        install = {
+            # I'm pinning Pester to major version 5, because 4->5 was a breaking change, so 5->6 likely will be too.
+            Install-Module -Name Pester -Scope CurrentUser -Force -SkipPublisherCheck -MinimumVersion "5.0" -MaximumVersion "5.999"
+        }
+        dependencies = @("sudo", "removeBuiltinPester")
+    }
 }
 
 function internal_installPratPackage($stage, [string] $packageId, [array] $packageArgs) {
@@ -278,12 +284,6 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
             return
         }
         switch ($packageId) {
-            "pester" {
-                # I would prefer to install in user scope, but for Pester on Windows, that seems unsupported, due to the
-                # [pre-installed old version on Windows](https://pester.dev/docs/introduction/installation)
-                # I'm pinning Pester to major version 5, because 4->5 was a breaking change, so 5->6 likely will be too.
-                sudo Install-Module -Name Pester -Force -SkipPublisherCheck -MinimumVersion "5.0" -MaximumVersion "5.999"
-            }
             "python" {
                 installPratWingetPackage "Python.PythonInstallManager"
 
