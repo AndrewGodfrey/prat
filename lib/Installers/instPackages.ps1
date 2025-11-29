@@ -105,7 +105,6 @@ function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
 }
 
 $pratPackageDependencies = @{
-    "pushoverNotification" = @()
     "forkGitClient" = @()
 }
 
@@ -294,6 +293,9 @@ $pratPackages = @{
     sysinternals = @{
         install = { installPratWingetPackage "9P7KNL5RWT25"}
     }
+    pushoverNotification = @{
+        install = { installPushoverNotification $stage $packageArgs }
+    }
 }
 
 function internal_installPratPackage($stage, [string] $packageId, [array] $packageArgs) {
@@ -326,7 +328,6 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
             return
         }
         switch ($packageId) {
-            "pushoverNotification" { installPushoverNotification $stage $packageArgs }
             "forkGitClient" { installForkGitClient $stage }
             default { throw "Internal error: $packageId" }
         }
