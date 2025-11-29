@@ -44,6 +44,7 @@ using module ..\TextFileEditor\TextFileEditor.psd1
 # To avoid stopping the script at this point, we need to a) hope we can predict the new value, and b) add it to $env:path.
 # 
 # TODO: Could we reliably update it from the registry?
+# TODO: Could already-open windows apply the change via a check in prompt?
 function fixupPath($newPath) {
     if (($env:path -split ';') -notcontains $newPath) {
         if (!$env:path.EndsWith(";")) { $env:path += ";" }
@@ -51,28 +52,22 @@ function fixupPath($newPath) {
     }
 }
 
-function installPratWingetPackage([string] $wingetPackageId, [switch] $MachineScope) {
-    switch ($wingetPackageId) {
-        "Ditto.Ditto" { 
-            # Ditto doesn't support "--scope machine": If you sudo, then it runs elevated; if you don't sudo, then it fails with "access denied". 
-            # Fine so far, BUT: Ditto also doesn't support "--scope user" - it fails with APPINSTALLER_CLI_ERROR_NO_APPLICABLE_INSTALLER in that case.
-            # 
-            # What it wants, is no --scope parameter at all. !?
-            winget install --silent --exact --id "Ditto.Ditto" --accept-package-agreements --accept-source-agreements
-        }
-        default {
-            # Consider: --disable-interactivity
+function installPratWingetPackage([string] $wingetPackageId, [switch] $MachineScope, [switch] $NoScope) {
+    if ($NoScope -and $MachineScope) { throw "Can't specify both -NoScope and -MachineScope" }
+    $errorName = ""
 
-            # I prefer user scope, but some packages don't support it.
-            if ($MachineScope) { 
-                Invoke-Gsudo {winget install --scope machine --silent --exact --id $using:wingetPackageId --accept-package-agreements}
-            } else {
-                winget install --scope user --silent --exact --id $wingetPackageId --accept-package-agreements
-            }
-        }
+    if ($NoScope) {
+        # This was added specifically for package "Ditto.Ditto". 
+        #   It doesn't support "--scope machine": If you sudo, then it runs elevated; if you don't sudo, then it fails with "access denied". 
+        #   And it doesn't support "--scope user" - it fails with APPINSTALLER_CLI_ERROR_NO_APPLICABLE_INSTALLER in that case.
+        winget install --silent --exact --id $wingetPackageId --accept-package-agreements --accept-source-agreements
+    } elseif ($MachineScope) {
+        # I prefer user scope, but some packages don't support it.
+        Invoke-Gsudo {winget install --scope machine --silent --exact --id $using:wingetPackageId --accept-package-agreements}
+    } else {
+        winget install --scope user --silent --exact --id $wingetPackageId --accept-package-agreements
     }
 
-    $errorName = ""
     switch ($lastExitCode) {
         0 { return }
         -1978335189 { return } # APPINSTALLER_CLI_ERROR_UPDATE_NOT_APPLICABLE 	No applicable update found
@@ -128,7 +123,7 @@ function internal_installDitto($stage) {
     # - Ctrl-Shift-V to paste without formatting (to any app, not just ones that have this feature)
     # - Ctrl-` to bring up a searchable clipboard history
 
-    installPratWingetPackage "Ditto.Ditto" -MachineScope
+    installPratWingetPackage "Ditto.Ditto" -NoScope
 
     # http://ditto-cp.sourceforge.net/
     #
