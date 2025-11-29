@@ -121,6 +121,18 @@ $table2 = @{
 '@
         }
 
+        It "replaces an existing key - another pattern, which currently fails" {
+            $script = @'
+# blah
+$installedAliases = @{
+    sudo = 'gsudo'
+}
+'@
+            $laTestScript = [LineArray]::new($script)
+            Add-HashTableItemInPowershellScript $laTestScript "installedAliases" "sudo" "'gsudo'"
+            $laTestScript | Should -Be $script
+        }
+
         It "deletes a key entirely if given a null value" {
             $laTestScript = [LineArray]::new($testScript)
             Add-HashTableItemInPowershellScript $laTestScript "table2" "key2" $null
