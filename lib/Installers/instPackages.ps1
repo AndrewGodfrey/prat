@@ -104,9 +104,6 @@ function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
     New-Alias -Name $Name -Value $Value -Scope Global -Force
 }
 
-$pratPackageDependencies = @{
-}
-
 function internal_installDitto($stage) {
     # Installs Ditto (a clipboard manager). What I like about it:
     # - Ctrl-Shift-V to paste without formatting (to any app, not just ones that have this feature)
@@ -304,14 +301,13 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
     $packageEntry = $pratPackages[$packageId]
 
     # Get dependencies
-    if ($null -ne $packageEntry) {
-        $deps = $packageEntry.dependencies
-        if ($null -eq $deps) {
-            $deps = @()
-        }
-    } else {
-        $deps = $pratPackageDependencies[$packageId]
-        if ($null -eq $deps) { throw "Unrecognized Prat package id: $packageId" }
+    if ($null -eq $packageEntry) {
+        throw "Unrecognized Prat package id: $packageId" 
+    }
+
+    $deps = $packageEntry.dependencies
+    if ($null -eq $deps) {
+        $deps = @()
     }
 
     # Install dependencies
@@ -324,14 +320,7 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
         $stage.OnChange()
 
         $ErrorActionPreference = "stop"
-        if ($null -ne $packageEntry) {
-            &($packageEntry.install) $stage
-            $stage.SetStepComplete("pkg\$packageId")
-            return
-        }
-        switch ($packageId) {
-            default { throw "Internal error: $packageId" }
-        }
+        &($packageEntry.install) $stage
 
         $stage.SetStepComplete("pkg\$packageId")
     }
