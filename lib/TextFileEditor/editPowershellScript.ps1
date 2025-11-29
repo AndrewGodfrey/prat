@@ -11,9 +11,10 @@ function Test-IsSingleLinePowershellBlock([string] $line)
     if ($line -match "^\s*\w*\s*=\s*@\([^\)]*\)\s*(#.*)?$") { return $true; }   # Example:  a = @(1, 2)
     if ($line -match "^\s*\w*\s*=\s*@\{[^\}]*\}\s*(#.*)?$") { return $true; }   # Example:  a = @{a=1;b=2}  #test
     if ($line -match "^\s*\w*\s*=\s*""[^\""]*\""\s*(#.*)?$") { return $true; }  # Example:  a = "foo"
+    if ($line -match "^\s*\w*\s*=\s*'[^\']*\'\s*(#.*)?$") { return $true; }     # Example:  a = 'foo'
+    if ($line -match "^\s*\w*\s*=\s*[\d\.][\d\.e]*\s*$") { return $true; }      # Example:  a = 4
 
     # NYI: Here are some examples that are NOT supported currently, and I'm just avoiding them in any single-line code that's targeted by this script.
-    #    a = @(1, 2);
     #    a = @("this(that)")
     #    a = @{ b = @{ c=1 } }
     

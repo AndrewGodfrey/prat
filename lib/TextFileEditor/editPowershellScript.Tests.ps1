@@ -31,6 +31,9 @@ $table = @{
 }
 
 Describe "Test-IsSingleLinePowershellBlock" {
+    It "detects a simple unfinished definition" {
+        Test-IsSingleLinePowershellBlock " a = " | Should -BeFalse
+    }
     It "detects unfinished arrays and hashtables" {
         Test-IsSingleLinePowershellBlock " a = @(1, " | Should -BeFalse
         Test-IsSingleLinePowershellBlock " a = @{a=1 " | Should -BeFalse
@@ -41,6 +44,15 @@ Describe "Test-IsSingleLinePowershellBlock" {
     }
     It "detects string values" {
         Test-IsSingleLinePowershellBlock 'a = "foo"' | Should -BeTrue
+        Test-IsSingleLinePowershellBlock "a = 'foo'" | Should -BeTrue
+    }
+    It "detects numbers" {
+        Test-IsSingleLinePowershellBlock 'a = 4' | Should -BeTrue
+        Test-IsSingleLinePowershellBlock 'a = .4' | Should -BeTrue
+        Test-IsSingleLinePowershellBlock 'a = 1e4' | Should -BeTrue
+
+        Test-IsSingleLinePowershellBlock 'a = e4' | Should -BeFalse
+        Test-IsSingleLinePowershellBlock 'a = 1s4' | Should -BeFalse
     }
 }
 
