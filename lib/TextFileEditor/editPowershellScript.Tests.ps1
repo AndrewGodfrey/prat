@@ -57,6 +57,38 @@ Describe "Test-IsSingleLinePowershellBlock" {
 }
 
 Describe "Add-HashTableItemInPowershellScript" {
+    Context "single-line cases" {
+        It "replaces an existing numeric value" {
+            $script = @'
+$a = @{
+    key1 = 4
+}
+'@
+            $laTestScript = [LineArray]::new($script)
+            Add-HashTableItemInPowershellScript $laTestScript "a" "key1" "5"
+            $laTestScript | Should -Be @'
+$a = @{
+    key1 = 5
+}
+'@
+        }
+
+        It "replaces an existing array value" {
+            $script = @'
+$a = @{
+    key1 = @('foo')
+}
+'@
+            $laTestScript = [LineArray]::new($script)
+            Add-HashTableItemInPowershellScript $laTestScript "a" "key1" "@('bar')"
+            $laTestScript | Should -Be @'
+$a = @{
+    key1 = @('bar')
+}
+'@
+        }
+    }
+
     Context "multiline cases" {
         BeforeAll {
             $testScript = @'
@@ -131,28 +163,6 @@ $table2 = @{
     }
 }
 '@
-        }
-
-        It "replaces an existing key - another pattern, which currently fails" {
-            $script = @'
-$a = @{
-    key1 = 4
-}
-'@
-            $laTestScript = [LineArray]::new($script)
-            Add-HashTableItemInPowershellScript $laTestScript "a" "key1" "4"
-            $laTestScript | Should -Be $script
-        }
-
-        It "... whereas this one passes" {
-            $script = @'
-$a = @{
-    key1 = @(4)
-}
-'@
-            $laTestScript = [LineArray]::new($script)
-            Add-HashTableItemInPowershellScript $laTestScript "a" "key1" "@(4)"
-            $laTestScript | Should -Be $script
         }
 
         It "deletes a key entirely if given a null value" {
