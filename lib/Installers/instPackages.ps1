@@ -223,6 +223,17 @@ function installForkGitClient($stage) {
     }
 }
 
+$pratPackages = @{
+    sudo = @{
+        install = { 
+            param($stage)
+            if ($null -eq $stage) { throw "Missing parameter: stage" }
+            installPratWingetPackage "gerardog.gsudo"
+            fixupPath ($env:localappdata + "\Microsoft\WinGet\Packages\gerardog.gsudo_Microsoft.Winget.Source_8wekyb3d8bbwe\x64")
+            installPratScriptAlias $stage 'sudo' 'gsudo'
+        }
+    }
+}
 
 function internal_installPratPackage($stage, [string] $packageId, [array] $packageArgs) {
     # Dependencies
@@ -235,12 +246,12 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
         $stage.SetSubstage($packageId)
         $stage.OnChange()
 
+        if ($pratPackages.ContainsKey($packageId)) {
+            &($pratPackages[$packageId].install) $stage
+            $stage.SetStepComplete("pkg\$packageId")
+            return
+        }
         switch ($packageId) {
-            "sudo" { 
-                installPratWingetPackage "gerardog.gsudo"
-                fixupPath ($env:localappdata + "\Microsoft\WinGet\Packages\gerardog.gsudo_Microsoft.Winget.Source_8wekyb3d8bbwe\x64")
-                installPratScriptAlias $stage 'sudo' 'gsudo'
-            }
             "pester" {
                 # I would prefer to install in user scope, but for Pester on Windows, that seems unsupported, due to the
                 # [pre-installed old version on Windows](https://pester.dev/docs/introduction/installation)
