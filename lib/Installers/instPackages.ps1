@@ -210,13 +210,41 @@ function installForkGitClient($stage) {
 }
 
 $pratPackages = @{
-    sudo = @{
-        install = { 
-            param($stage)
-            if ($null -eq $stage) { throw "Missing parameter: stage" }
-            installPratWingetPackage "gerardog.gsudo"
-            fixupPath ($env:localappdata + "\Microsoft\WinGet\Packages\gerardog.gsudo_Microsoft.Winget.Source_8wekyb3d8bbwe\x64")
-            installPratScriptAlias $stage 'sudo' 'gsudo'
+    df = @{
+        install = { installPratScriptAlias $stage 'df' 'Get-DiskFreeSpace' }
+    }
+    ditto = @{
+        install = { internal_installDitto $stage }
+    }
+    forkGitClient = @{
+        install = { installForkGitClient $stage }
+    }
+    pester = @{
+        install = {
+            # I'm pinning Pester to major version 5, because 4->5 was a breaking change, so 5->6 likely will be too.
+            Install-Module -Name Pester -Scope CurrentUser -Force -SkipPublisherCheck -MinimumVersion "5.0" -MaximumVersion "5.999"
+        }
+        dependencies = @("sudo", "removeBuiltinPester")
+    }
+    pushoverNotification = @{
+        install = { installPushoverNotification $stage $packageArgs }
+    }
+    pwsh = @{
+        install = {
+            # If I want the latest version, I have to use machine scope. As of May 2024, the last version that supported user scope was 7.2.6.0,
+            # and the latest version was 7.4.2.0. https://github.com/microsoft/winget-cli/issues/4318
+            installPratWingetPackage "Microsoft.PowerShell" -MachineScope
+            fixupPath "$env:programfiles\PowerShell\7"
+        }
+        dependencies = @("sudo")
+    }
+    python = @{
+        install = {
+            installPratWingetPackage "Python.PythonInstallManager"
+
+            # This is a rare case where I don't need to fix up PATH, not even in the current instance.
+            # The reason is that PythonInstallManager overwrites the existing link at $env:LocalAppData\Microsoft\WindowsApps\python.exe, 
+            # which is *already* in the path (Windows 10 does that).
         }
     }
     removeBuiltinPester = @{
@@ -234,21 +262,17 @@ $pratPackages = @{
         }
         dependencies = @("sudo")
     }
-    pester = @{
-        install = {
-            # I'm pinning Pester to major version 5, because 4->5 was a breaking change, so 5->6 likely will be too.
-            Install-Module -Name Pester -Scope CurrentUser -Force -SkipPublisherCheck -MinimumVersion "5.0" -MaximumVersion "5.999"
+    sudo = @{
+        install = { 
+            param($stage)
+            if ($null -eq $stage) { throw "Missing parameter: stage" }
+            installPratWingetPackage "gerardog.gsudo"
+            fixupPath ($env:localappdata + "\Microsoft\WinGet\Packages\gerardog.gsudo_Microsoft.Winget.Source_8wekyb3d8bbwe\x64")
+            installPratScriptAlias $stage 'sudo' 'gsudo'
         }
-        dependencies = @("sudo", "removeBuiltinPester")
     }
-    python = @{
-        install = {
-            installPratWingetPackage "Python.PythonInstallManager"
-
-            # This is a rare case where I don't need to fix up PATH, not even in the current instance.
-            # The reason is that PythonInstallManager overwrites the existing link at $env:LocalAppData\Microsoft\WindowsApps\python.exe, 
-            # which is *already* in the path (Windows 10 does that).
-        }
+    sysinternals = @{
+        install = { installPratWingetPackage "9P7KNL5RWT25"}
     }
     wget = @{
         install = {
@@ -270,30 +294,6 @@ $pratPackages = @{
             # On one machine but not the other, it also created a symlink here: C:\Users\Andrew\AppData\Local\Microsoft\WinGet\Links\wget.exe
             # Dunno what that's about!
         }
-    }
-    pwsh = @{
-        install = {
-            # If I want the latest version, I have to use machine scope. As of May 2024, the last version that supported user scope was 7.2.6.0,
-            # and the latest version was 7.4.2.0. https://github.com/microsoft/winget-cli/issues/4318
-            installPratWingetPackage "Microsoft.PowerShell" -MachineScope
-            fixupPath "$env:programfiles\PowerShell\7"
-        }
-        dependencies = @("sudo")
-    }
-    ditto = @{
-        install = { internal_installDitto $stage }
-    }
-    df = @{
-        install = { installPratScriptAlias $stage 'df' 'Get-DiskFreeSpace' }
-    }
-    sysinternals = @{
-        install = { installPratWingetPackage "9P7KNL5RWT25"}
-    }
-    pushoverNotification = @{
-        install = { installPushoverNotification $stage $packageArgs }
-    }
-    forkGitClient = @{
-        install = { installForkGitClient $stage }
     }
 }
 
