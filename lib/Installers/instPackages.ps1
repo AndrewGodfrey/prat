@@ -107,7 +107,6 @@ function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
 $pratPackageDependencies = @{
     "pester" = @("sudo", "nugetPackageProvider")
     "nugetPackageProvider" = @("sudo")
-    "sudo" = @()
     "pwsh" = @("sudo")
     "wget" = @()
     "python" = @()
@@ -236,9 +235,21 @@ $pratPackages = @{
 }
 
 function internal_installPratPackage($stage, [string] $packageId, [array] $packageArgs) {
-    # Dependencies
-    $deps = $pratPackageDependencies[$packageId]
-    if ($null -eq $deps) { throw "Unrecognized Prat package id: $packageId" }
+    $packageEntry = $pratPackages[$packageId]
+
+    # Get dependencies
+    if ($null -ne $packageEntry) {
+        $deps = $packageEntry.dependencies
+        if ($null -eq $deps) {
+            $deps = @()
+        }
+    } else {
+        $deps = $pratPackageDependencies[$packageId]
+        if ($null -eq $deps) { throw "Unrecognized Prat package id: $packageId" }
+    }
+
+    # Install dependencies
+    # TODO: Prevent infinite recursion
     foreach ($dep in $deps) { internal_installPratPackage $stage $dep }
 
     # The package itself
@@ -246,8 +257,8 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
         $stage.SetSubstage($packageId)
         $stage.OnChange()
 
-        if ($pratPackages.ContainsKey($packageId)) {
-            &($pratPackages[$packageId].install) $stage
+        if ($null -ne $packageEntry) {
+            &($packageEntry.install) $stage
             $stage.SetStepComplete("pkg\$packageId")
             return
         }

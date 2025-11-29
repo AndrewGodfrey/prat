@@ -77,7 +77,7 @@ if ($env:TERM_PROGRAM -ne "vscode") {
         $lastCommandErrorStatus = $?
         try
         {
-            # This works around an output glitch in Windows Terminal, where the progress info isn't cleared before the prompt is written.
+            # This mostly works around an output glitch in Windows Terminal, where the progress info isn't cleared before the prompt is written.
             Write-Progress -Completed
 
             $historyInfo = Get-History -Count 1
