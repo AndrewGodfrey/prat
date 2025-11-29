@@ -107,7 +107,6 @@ function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
 $pratPackageDependencies = @{
     "pwsh" = @("sudo")
     "wget" = @()
-    "python" = @()
     "ditto" = @()
     "df" = @()
     "sysinternals" = @()
@@ -252,6 +251,15 @@ $pratPackages = @{
         }
         dependencies = @("sudo", "removeBuiltinPester")
     }
+    python = @{
+        install = {
+            installPratWingetPackage "Python.PythonInstallManager"
+
+            # This is a rare case where I don't need to fix up PATH, not even in the current instance.
+            # The reason is that PythonInstallManager overwrites the existing link at $env:LocalAppData\Microsoft\WindowsApps\python.exe, 
+            # which is *already* in the path (Windows 10 does that).
+        }
+    }
 }
 
 function internal_installPratPackage($stage, [string] $packageId, [array] $packageArgs) {
@@ -284,13 +292,6 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
             return
         }
         switch ($packageId) {
-            "python" {
-                installPratWingetPackage "Python.PythonInstallManager"
-
-                # This is a rare case where I don't need to fix up PATH, not even in the current instance.
-                # The reason is that PythonInstallManager overwrites the existing link at $env:LocalAppData\Microsoft\WindowsApps\python.exe, 
-                # which is *already* in the path (Windows 10 does that).
-            }
             "pwsh" {
                 # If I want the latest version, I have to use machine scope. As of May 2024, the last version that supported user scope was 7.2.6.0,
                 # and the latest version was 7.4.2.0. https://github.com/microsoft/winget-cli/issues/4318
