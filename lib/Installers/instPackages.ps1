@@ -105,7 +105,6 @@ function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
 }
 
 $pratPackageDependencies = @{
-    "pwsh" = @("sudo")
     "ditto" = @()
     "df" = @()
     "sysinternals" = @()
@@ -280,6 +279,15 @@ $pratPackages = @{
             # Dunno what that's about!
         }
     }
+    pwsh = @{
+        install = {
+            # If I want the latest version, I have to use machine scope. As of May 2024, the last version that supported user scope was 7.2.6.0,
+            # and the latest version was 7.4.2.0. https://github.com/microsoft/winget-cli/issues/4318
+            installPratWingetPackage "Microsoft.PowerShell" -MachineScope
+            fixupPath "$env:programfiles\PowerShell\7"
+        }
+        dependencies = @("sudo")
+    }
 }
 
 function internal_installPratPackage($stage, [string] $packageId, [array] $packageArgs) {
@@ -312,12 +320,6 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
             return
         }
         switch ($packageId) {
-            "pwsh" {
-                # If I want the latest version, I have to use machine scope. As of May 2024, the last version that supported user scope was 7.2.6.0,
-                # and the latest version was 7.4.2.0. https://github.com/microsoft/winget-cli/issues/4318
-                installPratWingetPackage "Microsoft.PowerShell" -MachineScope
-                fixupPath "$env:programfiles\PowerShell\7"
-            }
             "ditto" { internal_installDitto $stage }
             "df" { installPratScriptAlias $stage 'df' 'Get-DiskFreeSpace' }
             "sysinternals" { installPratWingetPackage "9P7KNL5RWT25"}
