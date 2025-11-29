@@ -76,9 +76,15 @@ $table = @{
         Find-CorrespondingIndent $laTestScript 0 @{idxFirst=2; idxLast=8} | Should -Be 8
     }
     It "warns on unexpected indent" {
-        $testScript = [LineArray]::new("  a`nb`n c`n  d`n")
-        Find-CorrespondingIndent $testScript 1 @{idxFirst=0; idxLast=2}  3>&1 | Tee-Object -Variable warnings
-        $warnings[0] | Should -Be "Unexpected indentation at line 1"  
+        $testScript = [LineArray]::new(@'
+  a
+b
+ c
+  d
+'@)
+        Find-CorrespondingIndent $testScript 1 @{idxFirst=0; idxLast=2}  3>&1 | Tee-Object -Variable output
+        $output[0] | Should -Be "Unexpected indentation at line 1 - expected: 1, actual: 0"
+        $output[1] | Should -Be 2  # i.e. it found line 2
     }
 }
 

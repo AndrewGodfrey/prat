@@ -42,7 +42,7 @@ function Find-CorrespondingIndent(
             return $idx
         }
         if ($currentIndent -lt $targetIndentLevel) {
-            Write-Warning "Unexpected indentation at line $idx"
+            Write-Warning "Unexpected indentation at line $idx - expected: $targetIndentLevel, actual: $currentIndent"
         }
     }
 
