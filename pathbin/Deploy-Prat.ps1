@@ -26,6 +26,9 @@ try {
     Install-PsProfile $it
     
     instSchTasks $it
+
+    # This is already done in Install-PratPhase3.ps1. Just putting it here for ease of Prat development.
+    Install-PratPackage $it "pester"
 } catch {
     if ($null -ne $it) { $it.ReportErrorContext($error[0]) }
     throw

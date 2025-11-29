@@ -105,8 +105,7 @@ function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
 }
 
 $pratPackageDependencies = @{
-    "pester" = @("sudo", "nugetPackageProvider")
-    "nugetPackageProvider" = @("sudo")
+    "pester" = @("sudo", "removeBuiltinPester")
     "pwsh" = @("sudo")
     "wget" = @()
     "python" = @()
@@ -232,6 +231,21 @@ $pratPackages = @{
             installPratScriptAlias $stage 'sudo' 'gsudo'
         }
     }
+    removeBuiltinPester = @{
+        install = {
+            sudo {
+                $ErrorActionPreference = "stop"
+
+                # Source: https://pester.dev/docs/introduction/installation
+                $module = "C:\Program Files\WindowsPowerShell\Modules\Pester"
+                takeown.exe /F $module /A /R | Out-Null
+                icacls.exe $module /reset | Out-Null
+                icacls.exe $module /grant "*S-1-5-32-544:F" /inheritance:d /T | Out-Null
+                Remove-Item -Path $module -Recurse -Force -Confirm:$false | Out-Null
+            }
+        }
+        dependencies = @("sudo")
+    }
 }
 
 function internal_installPratPackage($stage, [string] $packageId, [array] $packageArgs) {
@@ -257,6 +271,7 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
         $stage.SetSubstage($packageId)
         $stage.OnChange()
 
+        $ErrorActionPreference = "stop"
         if ($null -ne $packageEntry) {
             &($packageEntry.install) $stage
             $stage.SetStepComplete("pkg\$packageId")
@@ -268,9 +283,6 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
                 # [pre-installed old version on Windows](https://pester.dev/docs/introduction/installation)
                 # I'm pinning Pester to major version 5, because 4->5 was a breaking change, so 5->6 likely will be too.
                 sudo Install-Module -Name Pester -Force -SkipPublisherCheck -MinimumVersion "5.0" -MaximumVersion "5.999"
-            }
-            "nugetPackageProvider" {
-                sudo Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
             }
             "python" {
                 installPratWingetPackage "Python.PythonInstallManager"
