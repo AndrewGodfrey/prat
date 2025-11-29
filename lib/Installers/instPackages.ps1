@@ -106,7 +106,6 @@ function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
 
 $pratPackageDependencies = @{
     "pwsh" = @("sudo")
-    "wget" = @()
     "ditto" = @()
     "df" = @()
     "sysinternals" = @()
@@ -260,6 +259,27 @@ $pratPackages = @{
             # which is *already* in the path (Windows 10 does that).
         }
     }
+    wget = @{
+        install = {
+            # Windows Powershell (I'm not sure about Powershell) by default aliases 'wget' to Invoke-WebRequest. This sucks because:
+            # 1. the very common use case, "wget <url>", behaves differently.
+            # 2. it's EXTREMELY slow. See discussion here: https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
+            #
+            # I used to instead have a basic 'wget.ps1' that wrapped curl. But curl - at least the Windows version - doesn't know how to
+            # resume a download after an error - it restarts at the beginning of a file. For many-gigabyte files, that never works.
+            # See discussion here: https://stackoverflow.com/questions/19728930/how-to-resume-interrupted-download-automatically-in-curl
+            # So, install wget instead.
+
+            # wget documentation: https://www.gnu.org/software/wget/manual/
+
+            installPratWingetPackage "JernejSimoncic.Wget"
+
+            # The winget package updates PATH
+            #
+            # On one machine but not the other, it also created a symlink here: C:\Users\Andrew\AppData\Local\Microsoft\WinGet\Links\wget.exe
+            # Dunno what that's about!
+        }
+    }
 }
 
 function internal_installPratPackage($stage, [string] $packageId, [array] $packageArgs) {
@@ -297,25 +317,6 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
                 # and the latest version was 7.4.2.0. https://github.com/microsoft/winget-cli/issues/4318
                 installPratWingetPackage "Microsoft.PowerShell" -MachineScope
                 fixupPath "$env:programfiles\PowerShell\7"
-            }
-            "wget" {
-                # Windows Powershell (I'm not sure about Powershell) by default aliases 'wget' to Invoke-WebRequest. This sucks because:
-                # 1. the very common use case, "wget <url>", behaves differently.
-                # 2. it's EXTREMELY slow. See discussion here: https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
-                #
-                # I used to instead have a basic 'wget.ps1' that wrapped curl. But curl - at least the Windows version - doesn't know how to
-                # resume a download after an error - it restarts at the beginning of a file. For many-gigabyte files, that never works.
-                # See discussion here: https://stackoverflow.com/questions/19728930/how-to-resume-interrupted-download-automatically-in-curl
-                # So, install wget instead.
-
-                # wget documentation: https://www.gnu.org/software/wget/manual/
-
-                installPratWingetPackage "JernejSimoncic.Wget"
-
-                # The winget package updates PATH
-                #
-                # On one machine but not the other, it also created a symlink here: C:\Users\Andrew\AppData\Local\Microsoft\WinGet\Links\wget.exe
-                # Dunno what that's about!
             }
             "ditto" { internal_installDitto $stage }
             "df" { installPratScriptAlias $stage 'df' 'Get-DiskFreeSpace' }
