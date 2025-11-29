@@ -123,13 +123,23 @@ $table2 = @{
 
         It "replaces an existing key - another pattern, which currently fails" {
             $script = @'
-# blah
-$installedAliases = @{
-    sudo = 'gsudo'
+$a = @{
+    key1 = 4
 }
 '@
             $laTestScript = [LineArray]::new($script)
-            Add-HashTableItemInPowershellScript $laTestScript "installedAliases" "sudo" "'gsudo'"
+            Add-HashTableItemInPowershellScript $laTestScript "a" "key1" "4"
+            $laTestScript | Should -Be $script
+        }
+
+        It "... whereas this one passes" {
+            $script = @'
+$a = @{
+    key1 = @(4)
+}
+'@
+            $laTestScript = [LineArray]::new($script)
+            Add-HashTableItemInPowershellScript $laTestScript "a" "key1" "@(4)"
             $laTestScript | Should -Be $script
         }
 
