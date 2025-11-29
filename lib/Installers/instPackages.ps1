@@ -89,7 +89,7 @@ function installOrGetInstalledAliasesFile($stage) {
     return $installedAliasesFile
 }
 
-# Packages that set up aliases can be annoying. Perhaps that's why I observe that gerardog.gsudo thinks it does so and yet I can't find any evidence of it.
+# Packages that set up aliases can be annoying. e.g. gerardog.gsudo thinks it does so and yet I can't find any evidence of it. (Maybe it just adds a cmd.exe alias)
 #
 # Anyway, I do want to specifically opt in to aliases for use in scripts, and do it reliably. i.e. both add it in the current execution environment ('spackle')
 # and add it somewhere that's included in PowerShell profile. (This still leaves a gap - in other already-open windows - and I'll just try to avoid that case.)
@@ -105,9 +105,6 @@ function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
 }
 
 $pratPackageDependencies = @{
-    "ditto" = @()
-    "df" = @()
-    "sysinternals" = @()
     "pushoverNotification" = @()
     "forkGitClient" = @()
 }
@@ -288,6 +285,15 @@ $pratPackages = @{
         }
         dependencies = @("sudo")
     }
+    ditto = @{
+        install = { internal_installDitto $stage }
+    }
+    df = @{
+        install = { installPratScriptAlias $stage 'df' 'Get-DiskFreeSpace' }
+    }
+    sysinternals = @{
+        install = { installPratWingetPackage "9P7KNL5RWT25"}
+    }
 }
 
 function internal_installPratPackage($stage, [string] $packageId, [array] $packageArgs) {
@@ -320,9 +326,6 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
             return
         }
         switch ($packageId) {
-            "ditto" { internal_installDitto $stage }
-            "df" { installPratScriptAlias $stage 'df' 'Get-DiskFreeSpace' }
-            "sysinternals" { installPratWingetPackage "9P7KNL5RWT25"}
             "pushoverNotification" { installPushoverNotification $stage $packageArgs }
             "forkGitClient" { installForkGitClient $stage }
             default { throw "Internal error: $packageId" }

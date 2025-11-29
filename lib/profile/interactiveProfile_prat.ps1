@@ -108,6 +108,8 @@ if (Test-Path alias:ls) { del alias:ls }
 Update-FormatData -PrependPath $PSScriptRoot\FileSystem.format.ps1xml
 pratProfile_trace done "Update-FormatData"
 
+# If any of these aliases prove objectionable, they can be made opt-in using pratPackages.
+# For an example see the package "df", which aliases to Get-DiskFreeSpace.
 New-Alias -Name pb -Value Prebuild-Codebase -Scope Global
 New-Alias -Name b -Value Build-Codebase -Scope Global
 New-Alias -Name t -Value Test-Codebase -Scope Global
