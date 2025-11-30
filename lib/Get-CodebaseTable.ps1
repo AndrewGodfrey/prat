@@ -36,41 +36,21 @@
 
 using module PratBase\PratBase.psd1
 
+#TODO: Resolve confusion between "cbtable" in filename, and this script which only returns one entry.
+#      And reconcile with Get-CodebaseSubTable.
+
 [CmdletBinding()]
 param ([string] $Location = $pwd)
 
-function normalizeTableItem($item, $key, $cbFile) {
-    $item.id = $key
-    if ($null -eq $item.root) {
-        # In this case, we'd expect $cbFile to have just one entry in it, describing the codebase rooted at the same location as $cbFile
-        $item.root = Split-Path -parent $cbFile
-    }
-
-    # Remove trailing \ from subdirectories, but leave cases like "F:\" alone.
-    if ($item.root.EndsWith([IO.Path]::DirectorySeparatorChar)) {
-        if ((Split-Path -parent $item.root) -ne "") {
-            $item.root = $item.root.SubString(0, $item.root - 1)
-        }
-    }
-    return $item
-}
-
-$Location = Resolve-Path $Location
-$cbFile = &$PSScriptRoot\Get-ContainingItem "cbTable.*.ps1" $Location
-if ($null -eq $cbFile) { return $null }
-
-Write-Verbose "Get-CodebaseTable: Load: $cbFile"
-
-$cbTable = . $cbFile
-# TODO: Validate cbTable. For one thing, the keys should -match '^[a-z0-9_]+$'.
+$cbTable = &$PSScriptRoot\Get-CodebaseTables $Location
+if ($null -eq $cbTable) { return $null }
 
 [System.IO.DirectoryInfo] $locationDI = $Location
 
 $results = @()
 
-foreach ($key in $cbTable.Keys) {
-    Write-Verbose "Get-CodebaseTable: Considering: $key"
-    $item = normalizeTableItem $cbTable[$key] $key $cbFile
+foreach ($item in $cbTable.Values) {
+    Write-Verbose "Get-CodebaseTable: Considering: $($item.id)"
     [System.IO.DirectoryInfo] $rootDI = $item.root
     Write-Verbose "Get-CodebaseTable: Compare: '$($rootDI.FullName)' vs '$($locationDI.FullName)'"
     if ($locationDI.FullName.StartsWith($rootDI.FullName, 'InvariantCultureIgnoreCase')) {
@@ -86,4 +66,3 @@ if ($results.Length -gt 1) { throw "Found too many matches in $cbFile" }
 $item = $results[0]
 $item.subdir = Get-RelativePath $item.root $Location
 return $item
-
