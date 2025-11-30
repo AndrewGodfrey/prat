@@ -14,6 +14,7 @@ using module ..\TextFileEditor\TextFileEditor.psd1
 #   4. Recency: Pinning indefinitely to a known-good version, works in the short term but eventually fails, for many reasons.
 #      So the system should resist long-term pinning. (If a dependency has gone in a bad direction permanently, then it's time for a fork).
 #   5. Abstraction: Keep in one place the 'boring' package-specific information, e.g.:
+#     - Which package should we use? (e.g. I need 'sudo'; I can abstract away "which implementation I picked").
 #     - Which package manager should we use?
 #     - Does it need additional parameters to make it automatic? (Things like accepting licenses, acknowledging an upgrade)
 #     - nuget (and many others) adds itself to PATH in the registry, but not in the currently-running environment. (Some other packages also
@@ -43,7 +44,6 @@ using module ..\TextFileEditor\TextFileEditor.psd1
 # This is the 'spackle' mentioned in the file comment: Some packages emit "Path environment variable modified; restart your shell to use the new value.".
 # To avoid stopping the script at this point, we need to a) hope we can predict the new value, and b) add it to $env:path.
 # 
-# TODO: Could we reliably update it from the registry?
 # TODO: Could already-open windows apply the change via a check in prompt?
 function fixupPath($newPath) {
     if (($env:path -split ';') -notcontains $newPath) {
