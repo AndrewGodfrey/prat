@@ -15,13 +15,10 @@ $results = @()
 
 $rootsFound = @{}
 
-function Get-CodebaseTable { &$PSScriptRoot/Get-CodebaseTable @args }
-
 foreach ($codebaseLocation in $codebaseLocations) {
     Write-Verbose "Find-CodebaseShortcut: $codebaseLocation"
-    $cbt = Get-CodebaseTable $codebaseLocation
-
-    if ($null -ne $cbt) {
+    $cbTables = &$PSScriptRoot/Get-CodebaseTables $codebaseLocation
+    foreach ($cbt in $cbTables.Values) {
         if ($rootsFound[$cbt.root]) { continue }
         $rootsFound[$cbt.root] = $true
         Write-Verbose "Find-CodebaseShortcut: Considering: $($cbt.root)"
