@@ -2,17 +2,17 @@
 # Given a location/pwd, finds what codebase it's 'in'.
 # This controls the behavior of various other tools.
 #
-# Relies on information kept in '*.cbTable.ps1' files.
+# Relies on information kept in 'cbTable.*.ps1' files.
 # These can either be included in a git repo (for projects you own), or
 # in a parent folder.
 # 
 #
 # Limitations: 
 #   Currently, only the nearest parent directory containing a cbTable.ps1 file is used.
-#   I could imagine one day needing to override a *.cbTable.ps1 that's checked in.
+#   I could imagine one day needing to override a cbTable.*.ps1 that's checked in.
 #
 # Design: 
-#   The contents of a *.cbTable.ps1 files need to be kept simple, because they are going to be executed by the prompt when the current directory
+#   The contents of a cbTable.*.ps1 files need to be kept simple, because they are going to be executed by the prompt when the current directory
 #   changes. I tried putting a scriptblock for 'howToTest' in there and had problems that were hard to debug. So, making it a string instead
 #   and avoiding scriptblocks.
 #
