@@ -20,6 +20,13 @@ normalizedSelection(StringFromClipboard) {
     return Temp
 }
 
+sendCopyToClipboard() {
+    if (WinGetClass("A") == "CASCADIA_HOSTING_WINDOW_CLASS")
+        Send("^+c")  ; Ctrl-Shift-C is copy in Windows Terminal
+    else
+        Send("^c")
+}
+
 get_normalizedSelectionFromApp(&result) {
     ; Get the text currently selected. The clipboard is used instead of
     ;   "ControlGet Selected" because it works in a greater variety of editors
@@ -27,7 +34,7 @@ get_normalizedSelectionFromApp(&result) {
 
     ClipboardOld := ClipboardAll()
     A_Clipboard := "" ; Must start off blank for detection to work.
-    Send("^c")
+    sendCopyToClipboard()
     waitResult := ClipWait(1)
     if waitResult = 0 ; ClipWait timed out.
         return false
