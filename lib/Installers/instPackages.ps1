@@ -210,6 +210,12 @@ function installForkGitClient($stage) {
 }
 
 $pratPackages = @{
+    claude = @{
+        install = {
+            # Use winget, not npm, to avoid claude depending on the version of node installed on the machine.
+            installPratWingetPackage "Anthropic.ClaudeCode" 
+        }
+    }
     df = @{
         install = { installPratScriptAlias $stage 'df' 'Get-DiskFreeSpace' }
     }
