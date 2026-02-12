@@ -14,13 +14,14 @@ accumulate_foundPos(&FoundPos, newPos) {
 
 ; Test strings:
 ;     c:\foo\bar\file.cpp(53,32): error C2248:
+;     c:\foo\prat\lib\Invoke-CodebaseCommand.ps1:12
 match_filenameAndLine(normalizedInputString, &filename, &lineNumber) {
     foundPos := 0
     lineNumber := ""
     filename := ""
 
     ; Note: Doesn't recognize filenames having spaces.
-    if (accumulate_foundPos(&foundPos, RegExMatch(normalizedInputString, "(?P<File>([\w]:)\\[\w~]+\\[\w\.\\]+)(?P<LineSection>(, line \d+| @ \d+|:\d+| ?\(\d+(,\d+)?\)))?", &Match))) {
+    if (accumulate_foundPos(&foundPos, RegExMatch(normalizedInputString, "(?P<File>([\w]:)\\[\w~-]+\\[\w\.\\-]+)(?P<LineSection>(, line \d+| @ \d+|:\d+| ?\(\d+(,\d+)?\)))?", &Match))) {
         filename := Match.File
         if (RegExMatch(Match.LineSection, "(?P<Line>\d+)", &Match) > 0)
             lineNumber := Match.Line
