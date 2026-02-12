@@ -83,7 +83,8 @@ FunctionsToExport = @(
 	'Set-InstalledItemVersion', 'Get-InstalledItemVersion', 'Test-InstalledItemVersion', 'Remove-InstalledItem',
 	'Install-WindowsStartMenuLocalOnly', 'Install-WindowsSecondaryClockUTC', 'Install-WindowsFileAssociation', 'Install-WindowsAppVerbAssociation',
 	'New-WindowsConsoleShortcut', 'Install-WindowsConsoleShortcut', 'Install-WindowsTaskbarCleanup',
-	'Install-CustomBrowserHomePage', 'Install-PsProfile'
+	'Install-CustomBrowserHomePage', 'Install-PsProfile',
+	'Install-ClaudeUserConfig'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.

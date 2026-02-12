@@ -332,3 +332,5 @@ function Start-Installation([Parameter(Position=0)] [string] $InstallerName, [Pa
 . $PSScriptRoot\instPsProfile.ps1
 
 . $PSScriptRoot\instStartAhkScript.ps1
+
+. $PSScriptRoot\instClaude.ps1
