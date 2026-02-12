@@ -21,7 +21,12 @@ function Install-RegistryDwordValue($stage, [string] $path, $propertyName, [uint
     {
         $stage.OnChange()
         if ($null -eq $propertyName) { $propertyName = "(Default)" }
-        New-ItemProperty -Path $path -Name $propertyName -PropertyType DWord -Value $newData -Force | Out-Null
+        try {
+            New-ItemProperty -Path $path -Name $propertyName -PropertyType DWord -Value $newData -Force -ErrorAction Stop | Out-Null
+        } catch {
+            Write-Warning "Error: $propertyName - $_"
+            throw
+        }
     }
 }
 
@@ -36,7 +41,12 @@ function Install-RegistryStringValue($stage, [string] $path, $propertyName, [str
     {
         $stage.OnChange()
         if ($null -eq $propertyName) { $propertyName = "(Default)" }
-        New-ItemProperty -Path $path -Name $propertyName -PropertyType String -Value $newData -Force | Out-Null
+        try {
+            New-ItemProperty -Path $path -Name $propertyName -PropertyType String -Value $newData -Force -ErrorAction Stop | Out-Null
+        } catch {
+            Write-Warning "Error: $propertyName - $_"
+            throw
+        }
     }
 }
 
@@ -53,7 +63,12 @@ function Install-RegistryBinaryValue($stage, [string] $path, [string] $propertyN
         (-not (areByteArraysEqual $property $newData)))
     {
         $stage.OnChange()
-        New-ItemProperty -Path $path -Name $propertyName -PropertyType Binary -Value $newData -Force | Out-Null
+        try {
+            New-ItemProperty -Path $path -Name $propertyName -PropertyType Binary -Value $newData -Force -ErrorAction Stop | Out-Null
+        } catch {
+            Write-Warning "Error: $propertyName - $_"
+            throw
+        }
     }
 }
 
