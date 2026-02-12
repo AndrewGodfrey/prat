@@ -214,6 +214,8 @@ $pratPackages = @{
         install = {
             # Use winget, not npm, to avoid claude depending on the version of node installed on the machine.
             installPratWingetPackage "Anthropic.ClaudeCode" 
+
+            fixupPath ($env:localappdata + "\Microsoft\WinGet\Packages\Anthropic.ClaudeCode_Microsoft.Winget.Source_8wekyb3d8bbwe")
         }
     }
     df = @{
