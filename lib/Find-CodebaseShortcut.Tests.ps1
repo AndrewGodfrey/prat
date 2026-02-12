@@ -22,12 +22,18 @@ BeforeAll {
 Describe "Main" {
     BeforeEach {
         function Get-globalCodebases {}
-        Mock Get-GlobalCodebases { 
+        Mock Get-GlobalCodebases {
             $testRoots
         }
 
-        function Get-CodebaseTable($Location) {} 
-        Mock Get-CodebaseTable { $index[$Location] }
+        function Get-CodebaseTables($Location) {}
+        Mock Get-CodebaseTables {
+            $item = $index[$Location]
+            if ($null -eq $item) { return $null }
+            $result = @{}
+            $result[$item.id] = $item
+            return $result
+        }
     }
 
     It "Finds a shortcut" {

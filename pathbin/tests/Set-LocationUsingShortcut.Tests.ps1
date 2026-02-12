@@ -89,12 +89,15 @@ Describe "FindShortcut" {
         function Get-GlobalCodebases {}
         Mock Get-GlobalCodebases { return @('foo') }
 
-        function Get-CodebaseTable($codebase) {}
-        Mock Get-CodebaseTable {
-            if ($codebase -eq 'foo') {
-                return @{ root = '/a'; shortcuts = @{ c = 'b/c' } }
+        function Get-CodebaseTables($Location) {}
+        Mock Get-CodebaseTables {
+            if ($Location -eq 'foo') {
+                $item = @{ id = 'foo'; root = '/a'; shortcuts = @{ c = 'b/c' } }
+                $result = @{}
+                $result['foo'] = $item
+                return $result
             }
-            throw "Unexpected codebase: $codebase"
+            throw "Unexpected location: $Location"
         }
  
         $result = FindShortcut "c"

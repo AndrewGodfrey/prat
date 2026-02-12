@@ -9,10 +9,9 @@ Describe "getUsedPercentage" {
 
 Describe "Get-DiskFreeSpace" {
     BeforeAll {
-        Mock -ModuleName PratBase Get-CimInstance { 
-            if ($ClassName -ne 'win32_logicaldisk') { throw "Unexpected class name: $ClassName" }  
-            return 
-            @(
+        Mock Get-CimInstance {
+            if ($ClassName -ne 'win32_logicaldisk') { throw "Unexpected class name: $ClassName" }
+            return @(
                 [PSCustomObject]@{
                     'DeviceID'     = 'C:'
                     'FreeSpace'    = 312136237056
@@ -31,11 +30,13 @@ Describe "Get-DiskFreeSpace" {
         }
     }
     It "returns disk space information" {
-        $result = Get-DiskFreeSpace
-        $result | Should -Not -BeNullOrEmpty
-        $result.Count | Should -Be 7
-        ($result | ForEach-Object { $_.GetType().Name }) -join ", " | Should -Be "FormatStartData, GroupStartData, FormatEntryData, FormatEntryData, FormatEntryData, GroupEndData, FormatEndData"
-        
-        # I'm not sure how to test Format-Table output. It bypasses stdout, and FormatEntryData doesn't like to be questioned.
+        $text = Get-DiskFreeSpace | Out-String
+
+        $text | Should -Match 'C:'
+        $text | Should -Match 'Y:'
+        $text | Should -Match 'OS'
+        $text | Should -Match 'Share1'
+        $text | Should -Match '\\\\server\\share1'
+        $text | Should -Match '37\.3%'   # used percentage for C:
     }
 }
