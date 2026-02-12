@@ -11,5 +11,5 @@ function Install-ClaudeUserConfig($stage, [string[]] $fragmentPaths) {
         $content += Import-TextFile $path
     }
 
-    Install-TextToFile $stage $destFile $content
+    Install-TextToFile $stage $destFile $content -SetReadOnly
 }

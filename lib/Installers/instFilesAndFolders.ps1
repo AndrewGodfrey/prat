@@ -111,7 +111,7 @@ function Install-DeleteFiles($stage, $destDir, $listOfFilenames) {
 }
 
 # Install a file from an in-memory text string
-function Install-TextToFile($stage, $file, $newText, [switch] $ShowUpdateDetails, [switch] $PreserveAcls=$false, [switch] $BackupFile=$false, [switch] $SudoOnWrite=$false) {
+function Install-TextToFile($stage, $file, $newText, [switch] $ShowUpdateDetails, [switch] $PreserveAcls=$false, [switch] $BackupFile=$false, [switch] $SudoOnWrite=$false, [switch] $SetReadOnly=$false) {
     $needUpdate = $False
     $acl = $null
 
@@ -120,6 +120,8 @@ function Install-TextToFile($stage, $file, $newText, [switch] $ShowUpdateDetails
 
         if ($currentText -ne $newText) {
             writeUpdateDetailIf "Not identical: $file" $ShowUpdateDetails
+            $needUpdate = $True
+        } elseif ($SetReadOnly -and -not (isFileReadOnly $file)) {
             $needUpdate = $True
         }
     } else {
@@ -136,7 +138,7 @@ function Install-TextToFile($stage, $file, $newText, [switch] $ShowUpdateDetails
         }
         if ($BackupFile) {
             if ($SudoOnWrite) {
-                Invoke-Gsudo { 
+                Invoke-Gsudo {
                     $file = $using:file
                     copy $file ($file + ".backup")
                 }
@@ -147,12 +149,18 @@ function Install-TextToFile($stage, $file, $newText, [switch] $ShowUpdateDetails
 
         $stage.OnChange()
         writeUpdateDetailIf "Updating (Install-TextToFile): $file" $ShowUpdateDetails
+        if ($SetReadOnly -and (Test-Path -PathType Leaf $file)) {
+            Set-ItemProperty -Path $file -Name IsReadOnly -Value $false
+        }
         if ($SudoOnWrite) {
-            $newText | Invoke-Gsudo { Out-File -Encoding ASCII $using:file } 
+            $newText | Invoke-Gsudo { Out-File -Encoding ASCII $using:file }
             if ($acl) { $acl | Invoke-Gsudo { Set-Acl $using:file } }
         } else {
             $newText | Out-File -Encoding ASCII $file   # Seems equivalent: Set-Content $newText -LiteralPath $file
             if ($acl) { $acl | Set-Acl $file }
+        }
+        if ($SetReadOnly) {
+            Set-ItemProperty -Path $file -Name IsReadOnly -Value $true
         }
     }
 }
