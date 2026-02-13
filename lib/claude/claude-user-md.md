@@ -1,7 +1,7 @@
 # Shell preferences
 
-- Always use `pwsh` (PowerShell) for Bash tool commands, not bash/sh. This applies on all OSes.
-- Never redirect to `/dev/null` or `nul`. Use `Out-Null` or `$null` in pwsh instead.
+- For Bash() commands, always use Base(pwsh ...). (This is to sidestep syntax confusion on Windows, and standardize behavior other OSes. I'll ensure pwsh is available.)
+- Never redirect to `/dev/null` or `nul`. Use `Out-Null` or similar instead.
 
 # Claude settings
 
