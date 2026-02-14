@@ -5,8 +5,9 @@ This is for making your own custom dev environment, using Prat as a base.
 Mechanisms are provided so that you can 'override' various things in Prat:
 
 - You can put things in $env:Path earlier than Prat's binpaths. See Install-PratBinPathOverride.ps1.
-- Using that, you can override Prat scripts like 'Get-DevEnvironments.ps1'. And maybe others like 'Get-CodebaseScript.ps1' (but I'm thinking maybe I should standardize on using Get-DevEnvironments). 
-- Using Resolve-PratLibFile.ps1, you can override Powershell startup ('profile') behavior. See add your own powershell profile" can mix custom things with Prat's profile.
+- Using that, you can override Prat scripts like 'Get-DevEnvironments.ps1'. And maybe others like
+  'Get-CodebaseScript.ps1' (but I'm thinking maybe I should standardize on using Get-DevEnvironments). 
+- Using Resolve-PratLibFile.ps1, you can override Powershell startup ('profile') behavior.
 
 
 ## Shouldn't this be more flexible?
@@ -20,19 +21,23 @@ e.g. My 'personal' environment installs an "Install-MyPrat.ps1" script somewhere
 
 
 ### Multiple dev envs on a single machine
-I could imagine someone wanting to have more than one overridden devenv on one machine, but that would be more complicated
-and I think it's confusing too.
+I could imagine someone wanting to have more than one overridden devenv on one machine, but that would be
+more complicated and I think it's confusing too.
 
 The design philosophy I'm following here is:
 
-One human should use "one" dev environment. It might be specific to them, or they might share parts of it with others, but they shouldn't have more than one.
-This is a "human-computer interface", and all codebases should be subservient to that. So if you have to work with some codebase that thinks of itself
-as being 'your' interface, don't let it. Isolate it. e.g. see Invoke-CommandWithEnvDelta. (I could imagine needing even more isolation for some codebases - if they
-install something really obnoxious, they might need to be sandboxed.)
+One human should use "one" dev environment. It might be specific to them, or they might share parts of it with others,
+but they shouldn't have more than one.
 
-So then (returning to the previous section) if you do have different dev envs on different machines - they should still try to use
-the same human-computer interface as much as possible. e.g. I arrange for "b" to build on all of them (as much as possible - 
-yes I still live with some edge cases, but the cognitive load is still much lower).
+This is a "human-computer interface", and all codebases should be subservient to that. So if you have to work with some
+codebase that thinks of itself as being 'your' interface, don't let it. Isolate it. e.g. see Invoke-CommandWithEnvDelta.
+(I could imagine needing even more isolation for some codebases - if they install something really obnoxious, they might
+need to be sandboxed.)
+
+So then (returning to the previous section) if you do have different dev envs on different machines - 
+they should still try to use the same human-computer interface as much as possible.
+e.g. I arrange for "b" to build on all of them (as much as possible - yes I still live with some edge cases,
+but the cognitive load is still much lower).
 
 
 ### Nested dev envs
