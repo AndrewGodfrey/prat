@@ -1,41 +1,58 @@
 # Prat: PRogrammers Automation Tools
 
-This is a Powershell-based toolkit for a programmer's development environment.
-Specifically mine, but I want to make it available to others. It has these features:
+Prat (PRogrammers Automation Tools) is a PowerShell-based toolkit for managing a programmer's dev environment on Windows. Core philosophy: "one environment for many projects" — instead of separate enlistment windows, Prat captures and manages each project's environment for use when needed.
 
-- One environment for many projects. Ideally, we don't allow projects to modify global environment variables, and we don't accept having to create
-  a separate "enlistment window". Instead, we capture each project's environment for use when interacting with it.
-- Dev loop: Standardize your dev loop for any project you work on, using a 'build/unit-test/deploy' loop (aliases `b`, `t`, `d`).
-  See `Start-CodebaseDevloop` (alias `x`). 
-- The `Installers` module for doing 'deploy' work. The goal is for deployment to be very quick (and quiet) when most/all steps have no work to do.
-  This is achieved by every step having a quick test of some kind, and using an `OnChange` notifier.
-- The `TextFileEditor` module: This is used to automate deployment of edits/updates to configuration files.
+Features:
+- **One environment for many projects.** Instead of separate "enlistment windows", Prat captures each project's environment for use when interacting with it.
+- **Standardized dev loop** for any project, using build/unit-test/deploy (aliases `b`, `t`, `d`). See `Start-CodebaseDevLoop` (alias `x`).
+- **Idempotent deployment** via the `Installers` module — deploy is very quick (and quiet) when most/all steps have no work to do, using quick-checks and `OnChange` notifications.
+- **Automated config file editing** via the `TextFileEditor` module.
 
+See [INSTALLATION.md](INSTALLATION.md) for installation and customization instructions.
 
-## Installation
+## Dev Loop Commands
 
-You shouldn't blindly trust scripts from the internet! First consider:
-
-1. if you trust this repo
-2. if your workflow will be disrupted by the customizations it makes. This script will:
-   - install various things (e.g. git, a sudo implementation, Pester)
-   - invoke its build/test/deploy loop, unless you add the `-SkipDeployStep` switch. See `Deploy-Prat.ps1`for the things that can install.
-   - in particular, it will install a Powershell `profile.ps1`. If you already have one, it will back it up to "profile.original.prat.ps1",
-     but you'll need to integrate manually with however you install/maintain your profile. See 'Customization' below for more.
-
-### When ready to install
-From a regular (non-elevated) Powershell window:
 ```powershell
-  curl.exe -L -o $env:temp\Install-Prat.ps1 https://github.com/AndrewGodfrey/prat/raw/main/lib/Install-Prat.ps1; Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force; . $env:temp\Install-Prat.ps1
-  ```
+Build-Prat          # alias: b — unloads modules so they can be reimported fresh
+Test-Prat            # alias: t — runs Pester tests; -CodeCoverage for coverage
+Deploy-Prat -Force   # alias: d — installs profile, scheduled tasks, Pester
+Start-CodebaseDevLoop # alias: x — runs prebuild → build → test → deploy
+```
 
+Coverage target is **70%** (defined in `lib\Get-CoveragePercentTarget_prat.ps1`). Coverage report goes to `auto\coverage.xml` in CoverageGutters format. View with `Get-CoverageReport` (alias: `gcr`).
 
-## Customization
-- You can override the profile, see `lib/profile/profilePicker.ps1`. You can either control when to invoke `interactiveProfile_prat.ps1`, or skip
-  it entirely to pick-and-choose things from Prat.
-- I haven't (yet) made it easy to avoid updating profile.ps1 (aside from the `-SkipDeployStep` option on `Install-Prat.ps1`). The reason is, 
-  the "one environment for many projects" goal means that Prat needs to defend against projects like 'conda' which edit your `profile.ps1` to
-  change your global environment.
-- See `Installers.psd1` for other tools you may find useful. e.g. `Install-CustomBrowserHomePage` generates a home-page with search boxes and links;
-  there are example input files in `lib\installers\example`.
+Run a focused subset of tests: `Set-TestFocus` then `t`.
 
+## Architecture
+
+### Three Core Modules (`lib/`)
+
+- **PratBase** — Foundation: environment delta management, git forkpoints, path utilities, disk monitoring, process management. Always loaded.
+- **TextFileEditor** — In-memory line-oriented text file editing: LineArray class, XML sections, PowerShell hashtable editing. Preserves line endings.
+- **Installers** — Idempotent deployment framework: `InstallationTracker` class, installation database (`auto/instDb`), staged installs with change tracking.
+
+### Key Patterns
+
+**Codebase Table (`cbTable.*.ps1`):** Each codebase declares its metadata — root dir, build/test/deploy scripts, navigation shortcuts, workspace definitions, cached env delta path. `Invoke-CodebaseCommand` dispatches actions (prebuild/build/test/deploy) by looking up codebase-specific scripts via `Get-CodebaseScript`.
+
+**Environment Delta (`lib/PratBase/envDelta.ps1`):** Captures env var changes from batch scripts, caches them, and replays them fast — avoiding slow enlistment-window startup. Key functions: `Export-EnvDeltaFromInvokedBatchScript`, `Invoke-CommandWithCachedEnvDelta`, `Install-CachedEnvDelta`.
+
+**Override Mechanism:** `Get-DevEnvironments` returns layered dev environment descriptors. `Resolve-PratLibFile` finds overridden files (e.g., `interactiveProfile_<devenv>.ps1`). PATH-based override for scripts in `pathbin/`.
+
+**Installation Pattern:** All installers use `Start-Installation` / `StartStage` / `EndStage` / `StopInstallation` with try/catch/finally and `ReportErrorContext`. Idempotent with quick-check support.
+
+### Profile Startup Chain
+
+`installedProfile.ps1` → `profilePicker.ps1` → `scriptProfile.ps1` (aliases, PATH, formatting) → `interactiveProfile_prat.ps1` (prompt, slow-command tracking, location detection).
+
+### Other Components
+
+- **`pathbin/`** — ~46 utility scripts placed on PATH (navigation, git helpers, testing, dev env management).
+- **`lib/autoHotKey/`** — AutoHotKey v2 scripts for Windows automation (editor integration, web search, text manipulation).
+- **`lib/claude/`** — Fragments assembled into the user-level `~/.claude/CLAUDE.md` by `Install-ClaudeUserConfig`.
+- **`lib/schtasks/`** — Scheduled tasks (daily cleanup, on-logon scripts).
+- **`auto/`** — Generated artifacts (gitignored): instDb, logs, coverage, cached completions, profile state.
+
+## Testing
+
+Tests are Pester `.Tests.ps1` files colocated with the code they test (e.g., `pathbin/tests/`, within module dirs). Coverage exclusion comment: `# OmitFromCoverageReport:`. `Invoke-PesterAsJob` runs tests in an isolated process.
