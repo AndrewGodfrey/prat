@@ -193,7 +193,7 @@ $pratPackages = @{
         }
     }
     df = @{
-        install = { installPratScriptAlias $stage 'df' 'Get-DiskFreeSpace' }
+        install = { Install-InteractiveAlias $stage 'df' 'Get-DiskFreeSpace' }
     }
     ditto = @{
         install = { internal_installDitto $stage }
