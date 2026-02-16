@@ -1,7 +1,7 @@
 # .SYNOPSIS
 # Given a path to a directory:
 #   If the directory doesn't exist: Exits without an error.
-#   Otherwise: Applies the given file retention policy recursively - deleting
+#   Otherwise: Applies the given deletion policy recursively - deleting
 #      all files older than the given number of days. (By CreationTime, not LastWriteTime).
 # 
 # On error, continues to delete other files, but doesn't do much about the error. It's assumed the cause is temporary.
@@ -11,12 +11,7 @@ param(
     [int] $retentionDays = $(throw ("retentionDays parameter is required")),
     [string] $optionalFilenameMatch = "")
 
-
-# TODO: Rename the script and functions referring to "retention".
-#       This design is focused on deleting old files, not retaining them.
-#       By "UnderRetention" I really meant "considered for automatic deletion".
-function FilenameIsUnderRetention([string] $filename, [string] $reportFilename, [string] $optionalFilenameMatch) {
-    #    Write-Host $filename
+function FilenameIsDeletionCandidate([string] $filename, [string] $reportFilename, [string] $optionalFilenameMatch) {
     if ($filename -Match "^$reportFilename$") {
         return $false
     }
@@ -28,7 +23,7 @@ function FilenameIsUnderRetention([string] $filename, [string] $reportFilename, 
     return $true
 }
 
-function GetReport($retentionDays, $optionalFilenameMatch, $date = (Get-Date)) {
+function GetDeletionReport($retentionDays, $optionalFilenameMatch, $date = (Get-Date)) {
     "$retentionDays days"
     if ($optionalFilenameMatch -ne "") {
         "Only filenames matching Powershell regex: $optionalFilenameMatch"
@@ -38,7 +33,6 @@ function GetReport($retentionDays, $optionalFilenameMatch, $date = (Get-Date)) {
 }
 
 function RemoveDirectory($item) {
-    # get-smbshare | Where-Object { $_.Path -eq "X:\sharedWith\test" } | Remove-SmbShare -Force
     $item | Remove-Item -Force -Recurse
 }
 
@@ -52,20 +46,19 @@ if ($MyInvocation.InvocationName -ne ".") {
 
     $ErrorActionPreference = "stop"
 
-    $reportFilename = "retentionpolicy.txt"
+    $reportFilename = "deletion_report.txt"
 
     $threshold = (Get-Date).AddDays(-$retentionDays)
-    #    Write-Host $threshold
 
     $ErrorActionPreference = "continue"
 
     # Delete old files (by CreationTime, not LastWriteTime)
-    Get-ChildItem -Path $path -Recurse -Force | Where-Object { !$_.PSIsContainer -and $_.CreationTime -lt $threshold -and (FilenameIsUnderRetention $_.Name $reportFilename $optionalFilenameMatch) } | Remove-Item -Force
+    Get-ChildItem -Path $path -Recurse -Force | Where-Object { !$_.PSIsContainer -and $_.CreationTime -lt $threshold -and (FilenameIsDeletionCandidate $_.Name $reportFilename $optionalFilenameMatch) } | Remove-Item -Force
 
     # Now, delete any old empty directories left behind
     Get-ChildItem -Path $path -Recurse -Force | Where-Object { $_.PSIsContainer -and $_.CreationTime -lt $threshold -and ($null -eq (Get-ChildItem -Path $_.FullName -Recurse -Force | Where-Object { !$_.PSIsContainer })) } | ForEach-Object { RemoveDirectory $_ }
 
     # Write report file
-    $report = GetReport $retentionDays $optionalFilenameMatch
+    $report = GetDeletionReport $retentionDays $optionalFilenameMatch
     Write-Output $report > "$path\$reportFilename"
 }

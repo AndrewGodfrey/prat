@@ -3,23 +3,23 @@ BeforeAll {
     . $scriptToTest "dummyPath" 7
 }
 
-Describe "FilenameIsUnderRetention" {
+Describe "FilenameIsDeletionCandidate" {
     It "Retains the report file" {
         $reportFile = "report.txt"
-        FilenameIsUnderRetention "report.txt" $reportFile | Should -Be $false
-        FilenameIsUnderRetention "foo" $reportFile | Should -Be $true
-        FilenameIsUnderRetention "myReport.txt" $reportFile | Should -Be $true
+        FilenameIsDeletionCandidate "report.txt" $reportFile | Should -Be $false
+        FilenameIsDeletionCandidate "foo" $reportFile | Should -Be $true
+        FilenameIsDeletionCandidate "myReport.txt" $reportFile | Should -Be $true
     }
     It "Optionally matches a set of files" {
         $reportFile = "report.txt"
-        FilenameIsUnderRetention "foo.ps1" $reportFile '\.gif$' | Should -Be $false
-        FilenameIsUnderRetention "foo.gif" $reportFile '\.gif$' | Should -Be $true
+        FilenameIsDeletionCandidate "foo.ps1" $reportFile '\.gif$' | Should -Be $false
+        FilenameIsDeletionCandidate "foo.gif" $reportFile '\.gif$' | Should -Be $true
     }
 }
 
-Describe "GetReport" {
+Describe "GetDeletionReport" {
     It "Summarizes what it last did" {
-        GetReport 5 '\.png$' "2023-10-01" | Should -Be @(
+        GetDeletionReport 5 '\.png$' "2023-10-01" | Should -Be @(
             "5 days",
             "Only filenames matching Powershell regex: \.png$",
             "",
@@ -28,7 +28,7 @@ Describe "GetReport" {
     }
 }
 
-Describe "Delete-FilesByRetentionPolicy" {
+Describe "Delete-OldFiles" {
     Context "Early errors" {
         It "Throws various errors" {
             { &$scriptToTest -RetentionDays 7 } 
@@ -39,7 +39,7 @@ Describe "Delete-FilesByRetentionPolicy" {
     }
     Context "Need test root" {
         BeforeEach {
-            $testRoot = "TestDrive:\Delete-FilesByRetentionPolicy.Tests"
+            $testRoot = "TestDrive:\\Delete-OldFiles.Tests"
             $now = Get-Date
             $past = $now.AddDays(-8)
             Mock Get-Date { $now }
@@ -78,7 +78,7 @@ Describe "Delete-FilesByRetentionPolicy" {
             Test-Path "p2\d.txt" | Should -Be $true
             Test-Path "p3\c\b.txt" | Should -Be $false
             Test-Path "p3\c" | Should -Be $true
-            Test-Path "$testRoot\retentionpolicy.txt" | Should -Be $true
+            Test-Path "$testRoot\deletion_report.txt" | Should -Be $true
         }
         It "Ignores non-container paths" {
             $subRoot = "$testRoot\foo"
@@ -101,4 +101,3 @@ Describe "Delete-FilesByRetentionPolicy" {
         }
     }
 }   
-
