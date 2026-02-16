@@ -279,12 +279,16 @@ $pratPackages = @{
     }
 }
 
-function internal_installPratPackage($stage, [string] $packageId, [array] $packageArgs) {
+function internal_installPratPackage($stage, [string] $packageId, [array] $packageArgs, [array] $processingStack = @()) {
     $packageEntry = $pratPackages[$packageId]
 
     # Get dependencies
     if ($null -eq $packageEntry) {
         throw "Unrecognized Prat package id: $packageId" 
+    }
+
+    if ($packageId -in $processingStack) {
+        throw "Circular dependency detected: $($processingStack -join ' -> ') -> $packageId"
     }
 
     $deps = $packageEntry.dependencies
@@ -293,8 +297,8 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
     }
 
     # Install dependencies
-    # TODO: Prevent infinite recursion
-    foreach ($dep in $deps) { internal_installPratPackage $stage $dep }
+    $newStack = $processingStack + @($packageId)
+    foreach ($dep in $deps) { internal_installPratPackage $stage $dep @() $newStack }
 
     # The package itself
     if (!($stage.GetIsStepComplete("pkg\$packageId"))) { 
