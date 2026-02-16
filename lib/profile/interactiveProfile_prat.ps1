@@ -10,6 +10,10 @@ pratProfile_trace start "interactiveProfile_prat.ps1"
 # - install tools like 'ditto'
 # - set prompt
 
+$interactiveAliasFile = "$_pratroot\auto\profile\interactiveAliases.ps1"
+if (Test-Path $interactiveAliasFile) { Import-PratAliases $interactiveAliasFile }
+pratProfile_trace done "Installed interactive aliases"
+
 New-Alias stack "$PSScriptRoot\..\Get-StackTraceForLastException.ps1" -Description "Get the PS stack trace of the last exception"
 
 function pratSetWindowTitle($extraContext) {
@@ -107,30 +111,5 @@ if (Test-Path alias:ls) { del alias:ls }
 # Customize 'dir' output - better output format for 'length' column:
 Update-FormatData -PrependPath $PSScriptRoot\FileSystem.format.ps1xml
 pratProfile_trace done "Update-FormatData"
-
-# If any of these aliases prove objectionable, they can be made opt-in using pratPackages.
-# For an example see the package "df", which aliases to Get-DiskFreeSpace.
-New-Alias -Name pb -Value Prebuild-Codebase -Scope Global
-New-Alias -Name b -Value Build-Codebase -Scope Global
-New-Alias -Name t -Value Test-Codebase -Scope Global
-New-Alias -Name d -Value Deploy-Codebase -Scope Global
-New-Alias -Name x -Value Start-CodebaseDevLoop -Scope Global
-New-Alias -Name c -Value Set-LocationUsingShortcut -Scope Global
-New-Alias -Name ow -Value Open-CodebaseWorkspace -Scope Global
-New-Alias -Name gtfe -Value Get-TextFileEncoding -Scope Global
-New-Alias -Name gll -Value GitLog-Local -Scope Global
-New-Alias -Name glp -Value GitLog-Pretty -Scope Global
-New-Alias -Name e -Value Open-FileInEditor -Scope Global
-New-Alias -Name lsl -Value Get-LatestFiles -Scope Global
-New-Alias -Name ude -Value Update-DevEnvironment -Scope Global
-New-Alias -Name ch -Value Compare-Hash -Scope Global
-New-Alias -Name aext -Value Analyze-FileExtensions -Scope Global
-New-Alias -Name filever -Value Get-FileVersionInfo -Scope Global
-New-Alias -Name hex -Value Format-NumberAsHex -Scope Global
-New-Alias -Name ec -Value Enter-Codebase -Scope Global
-New-Alias -Name pt -Value Push-UnitTestDirectory -Scope Global
-New-Alias -Name on -Value Invoke-InlineCommandOnHost -Scope Global
-New-Alias -Name stf -Value Set-TestFocus -Scope Global
-New-Alias -Name gcr -Value Get-CoverageReport -Scope Global
 
 pratProfile_trace end "interactiveProfile_prat.ps1"

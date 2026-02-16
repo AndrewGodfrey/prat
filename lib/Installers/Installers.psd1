@@ -76,6 +76,7 @@ FunctionsToExport = @(
     'Install-SoftLinkToFile',
 	'Install-RegistryKey', 'Install-RegistryDwordValue', 'Install-RegistryStringValue', 'Install-RegistryBinaryValue',
     'Install-DailyScheduledTask', 'Install-AtLogonScheduledTask',
+	'Install-InteractiveAlias',
 	'Install-PratPackage',
 	'Install-WingetPackage', 'Install-PackageDnspy', 'Install-PackageNuget', 'Install-PackageWindbg', 'Install-PackageWinmerge', 'Install-PackageAutoHotKey',
 	'Install-NugetPackage', 'Add-NugetPackageType',

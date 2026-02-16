@@ -3,9 +3,28 @@ using module ..\lib\Installers\Installers.psd1
 
 param ([switch] $Force)
 
-$ErrorActionPreference = "stop"
+function main($Force) {
+    $ErrorActionPreference = "stop"
 
-$it = $null
+    $it = $null
+
+    try {
+        $it = Start-Installation "Deploy-Prat" -InstallationDatabaseLocation "$home\prat\auto\instDb" -Force:$Force
+
+        Install-PsProfile $it
+        instInteractiveAliases $it
+        
+        instSchTasks $it
+
+        # This is already done in Install-PratPhase3.ps1. Just putting it here for ease of Prat development.
+        Install-PratPackage $it "pester"
+    } catch {
+        if ($null -ne $it) { $it.ReportErrorContext($error[0]) }
+        throw
+    } finally {
+        if ($null -ne $it) { $it.StopInstallation() }
+    }
+}
 
 function instSchTasks($it) {
     $stage = $it.StartStage('schTasks')
@@ -20,20 +39,34 @@ function instSchTasks($it) {
     $it.EndStage($stage)
 }
 
-try {
-    $it = Start-Installation "Deploy-Prat" -InstallationDatabaseLocation "$home\prat\auto\instDb" -Force:$Force
-
-    Install-PsProfile $it
+function instInteractiveAliases($it) {
+    # If any of these aliases prove objectionable, they can be made opt-in using pratPackages.
+    # For an example see the package "df", which aliases to Get-DiskFreeSpace.
     
-    instSchTasks $it
-
-    # This is already done in Install-PratPhase3.ps1. Just putting it here for ease of Prat development.
-    Install-PratPackage $it "pester"
-} catch {
-    if ($null -ne $it) { $it.ReportErrorContext($error[0]) }
-    throw
-} finally {
-    if ($null -ne $it) { $it.StopInstallation() }
+    $stage = $it.StartStage("interactive aliases")
+    Install-InteractiveAlias $stage 'pb' 'Prebuild-Codebase'
+    Install-InteractiveAlias $stage 'b' 'Build-Codebase'
+    Install-InteractiveAlias $stage 't' 'Test-Codebase'
+    Install-InteractiveAlias $stage 'd' 'Deploy-Codebase'
+    Install-InteractiveAlias $stage 'x' 'Start-CodebaseDevLoop'
+    Install-InteractiveAlias $stage 'c' 'Set-LocationUsingShortcut'
+    Install-InteractiveAlias $stage 'ow' 'Open-CodebaseWorkspace'
+    Install-InteractiveAlias $stage 'gtfe' 'Get-TextFileEncoding'
+    Install-InteractiveAlias $stage 'gll' 'GitLog-Local'
+    Install-InteractiveAlias $stage 'glp' 'GitLog-Pretty'
+    Install-InteractiveAlias $stage 'e' 'Open-FileInEditor'
+    Install-InteractiveAlias $stage 'lsl' 'Get-LatestFiles'
+    Install-InteractiveAlias $stage 'ude' 'Update-DevEnvironment'
+    Install-InteractiveAlias $stage 'ch' 'Compare-Hash'
+    Install-InteractiveAlias $stage 'aext' 'Analyze-FileExtensions'
+    Install-InteractiveAlias $stage 'filever' 'Get-FileVersionInfo'
+    Install-InteractiveAlias $stage 'hex' 'Format-NumberAsHex'
+    Install-InteractiveAlias $stage 'ec' 'Enter-Codebase'
+    Install-InteractiveAlias $stage 'pt' 'Push-UnitTestDirectory'
+    Install-InteractiveAlias $stage 'on' 'Invoke-InlineCommandOnHost'
+    Install-InteractiveAlias $stage 'stf' 'Set-TestFocus'
+    Install-InteractiveAlias $stage 'gcr' 'Get-CoverageReport'
+    $it.EndStage($stage)
 }
 
-
+main $Force

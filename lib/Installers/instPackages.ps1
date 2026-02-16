@@ -1,6 +1,7 @@
 using module ..\PratBase\PratBase.psd1
 using module ..\TextFileEditor\TextFileEditor.psd1
 
+. $PSScriptRoot\instPwshAliases.ps1
 
 # There are so many package managers. Let's make another one!
 #
@@ -75,33 +76,6 @@ function installPratWingetPackage([string] $wingetPackageId, [switch] $MachineSc
     }
     if ($errorName -ne "") { $errorName = " ($errorName)" }
     throw "winget failed. error code: $lastExitCode$errorName" # https://github.com/microsoft/winget-cli/blob/master/doc/windows/package-manager/winget/returnCodes.md
-}
-
-function installOrGetInstalledAliasesFile($stage) {
-    $autoProfilePath = (Resolve-Path "$PSScriptRoot\..\..").Path + "\auto\profile"
-    $filename = "scriptAliases.ps1"
-    $installedAliasesFile = "$autoProfilePath\$filename"
-
-    if (!(Test-Path $installedAliasesFile)) {
-        Install-File $stage $PSScriptRoot $autoProfilePath $filename
-    }
-
-    return $installedAliasesFile
-}
-
-# Packages that set up aliases can be annoying. e.g. gerardog.gsudo thinks it does so and yet I can't find any evidence of it. (Maybe it just adds a cmd.exe alias)
-#
-# Anyway, I do want to specifically opt in to aliases for use in scripts, and do it reliably. i.e. both add it in the current execution environment ('spackle')
-# and add it somewhere that's included in PowerShell profile. (This still leaves a gap - in other already-open windows - and I'll just try to avoid that case.)
-function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
-    $installedAliasesFile = installOrGetInstalledAliasesFile $stage
-
-    $lineArray = [LineArray]::new((Import-TextFile $installedAliasesFile))
-    Add-HashTableItemInPowershellScript $lineArray 'installedAliases' $Name (ConvertTo-Expression $Value)
-    Install-TextToFile $stage $installedAliasesFile $lineArray.ToString()
-
-    # Add/update it in the current execution environment.
-    New-Alias -Name $Name -Value $Value -Scope Global -Force
 }
 
 function internal_installDitto($stage) {
