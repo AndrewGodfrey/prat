@@ -1,6 +1,7 @@
-# Shell preferences
-
-- For Bash() commands, always use Base(pwsh ...). (This is to sidestep syntax confusion on Windows, and standardize behavior other OSes. I'll ensure pwsh is available.)
+# Bash tool
+- For Bash() commands, always use Bash(pwsh ...). (This is to sidestep filename syntax confusion on Windows, and standardize behavior other OSes. I'll ensure pwsh is available.)
+- Must escape `$` in pwsh commands run via Bash tool, e.g. `pwsh -c "& \$env:USERPROFILE\de\pathbin\Deploy-DevEnvironment.ps1"`
+- Bash interpolates `$` before pwsh sees it; escaping with `\$` prevents this
 - Never redirect to `/dev/null` or `nul`. Use `Out-Null` or similar instead.
 
 # Claude settings
