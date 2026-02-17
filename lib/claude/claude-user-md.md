@@ -7,3 +7,4 @@
 
 - My dev environment is managed by the `de` and `prat` repos.
 - That includes claude user-level configuration, since I use multiple machines and work on multiple projects.
+- When making a plan, if claude won't be doing all the steps, label each step with "[USER]" or "[CLAUDE]" as appropriate.
