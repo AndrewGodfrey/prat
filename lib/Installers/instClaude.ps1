@@ -14,6 +14,52 @@ function Install-ClaudeUserConfig($stage, [string[]] $fragmentPaths) {
     Install-TextToFile $stage $destFile $content -SetReadOnly
 }
 
+# Sync selected .claude subdirectories to a sync folder (OneDrive, Dropbox, etc.)
+# using directory junctions.
+#
+# This lets conversation history, plans, memory, etc. be backed up and shared across machines,
+# while keeping credentials, machine-specific data, and ephemeral data local.
+#
+# $syncRoot: The sync folder root for claude data, e.g. "$home\OneDrive\.claude-sync"
+# $claudeDir: Override for testing. Defaults to "$home\.claude".
+function Install-ClaudeSyncFolders($stage, [string] $syncRoot, [string] $claudeDir = "$home\.claude") {
+    if (-not (Test-Path -PathType Container $syncRoot)) {
+        mkdir $syncRoot -Force | Out-Null
+    }
+
+    # Directories to junction into the sync folder
+    $syncDirs = @("projects", "file-history", "tasks", "todos", "plans")
+
+    foreach ($dir in $syncDirs) {
+        Install-DirectoryJunction $stage "$syncRoot\$dir" "$claudeDir\$dir"
+    }
+
+    # Warn about unknown entries in .claude - Claude Code may have added new directories or files
+    # that we should decide how to handle.
+    $knownDirs = $syncDirs + @("cache", "debug", "paste-cache", "shell-snapshots", "plugins")
+
+    # Why not sync files like CLAUDE.md and settings.json? Because Prat manages those.
+    # settings.local.json deliberately not listed — it's not supported at the user level,
+    # so we warn if it appears, to help people discover the mistake.
+    $knownFiles = @(".credentials.json", "CLAUDE.md", "settings.json", "stats-cache.json", "history.jsonl")
+
+    if (Test-Path -PathType Container $claudeDir) {
+        $entries = Get-ChildItem $claudeDir -Force
+        foreach ($entry in $entries) {
+            $name = $entry.Name
+            if ($entry.PSIsContainer) {
+                if ($name -notin $knownDirs) {
+                    Write-Warning "Unknown directory in .claude: '$name' - consider adding to sync or known-local list"
+                }
+            } else {
+                if ($name -notin $knownFiles) {
+                    Write-Warning "Unknown file in .claude: '$name' - consider adding to known list"
+                }
+            }
+        }
+    }
+}
+
 # Installs Claude Code user-level settings.json. For now just a copy, may need merging later.
 function Install-ClaudeUserSettings($stage, [string] $sourceFile) {
     $destFile = "$home\.claude\settings.json"

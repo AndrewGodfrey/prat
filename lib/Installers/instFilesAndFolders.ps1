@@ -308,10 +308,128 @@ function Format-ReplacePlaceholdersInTemplateString([string] $template, $substit
 }
 
 
+# Recursively merge the contents of $sourceDir into $destDir.
+# Two-phase: first validate (no mutations), then execute.
+# Files in $sourceDir that don't exist in $destDir are moved.
+# Files that exist in both with identical content are silently removed from source.
+# Files that exist in both with different content get the source copy saved as .local-conflict.
+# Subdirectories are merged recursively.
+function Merge-DirectoryInto([string] $sourceDir, [string] $destDir) {
+    # Phase 1: Validate - check for blockers before mutating anything
+    Assert-MergeIsSafe $sourceDir $destDir
+
+    # Phase 2: Execute
+    Invoke-MergeDirectoryInto $sourceDir $destDir
+}
+
+# Phase 1: Recursively check that the merge can proceed without issues.
+# Throws if there are unresolvable conflicts (e.g. existing .local-conflict files,
+# or type mismatches between source and dest).
+function Assert-MergeIsSafe([string] $sourceDir, [string] $destDir) {
+    $children = Get-ChildItem $sourceDir -Force
+    foreach ($child in $children) {
+        $destPath = Join-Path $destDir $child.Name
+        if ($child.PSIsContainer) {
+            if (Test-Path -PathType Container $destPath) {
+                Assert-MergeIsSafe $child.FullName $destPath
+            } elseif (Test-Path $destPath) {
+                throw "Cannot merge directory '$($child.FullName)': a file exists at '$destPath'"
+            }
+        } else {
+            if (Test-Path $destPath) {
+                if (Test-Path -PathType Container $destPath) {
+                    throw "Cannot merge file '$($child.FullName)': a directory exists at '$destPath'"
+                }
+                # Check if this would be a real conflict needing .local-conflict
+                if ((Get-FileHash $child.FullName).Hash -ne (Get-FileHash $destPath).Hash) {
+                    $conflictPath = Join-Path $destDir ($child.Name + ".local-conflict")
+                    if (Test-Path $conflictPath) {
+                        throw "Conflict file already exists: '$conflictPath'. Resolve existing conflicts before re-running."
+                    }
+                }
+            }
+        }
+    }
+}
+
+# Phase 2: Perform the actual merge. Caller must run Assert-MergeIsSafe first.
+function Invoke-MergeDirectoryInto([string] $sourceDir, [string] $destDir) {
+    $children = Get-ChildItem $sourceDir -Force
+    foreach ($child in $children) {
+        $destPath = Join-Path $destDir $child.Name
+        if ($child.PSIsContainer) {
+            if (Test-Path -PathType Container $destPath) {
+                Invoke-MergeDirectoryInto $child.FullName $destPath
+                # Source subdirectory should now be empty
+                Remove-Item $child.FullName
+            } else {
+                Move-Item $child.FullName $destPath
+            }
+        } else {
+            if (-not (Test-Path $destPath)) {
+                Move-Item $child.FullName $destPath
+            } else {
+                if ((Get-FileHash $child.FullName).Hash -eq (Get-FileHash $destPath).Hash) {
+                    # Same content - just remove the source copy
+                    Remove-Item $child.FullName -Force
+                } else {
+                    # Different content - keep both, rename the local copy
+                    $conflictName = $child.Name + ".local-conflict"
+                    $conflictPath = Join-Path $destDir $conflictName
+                    Move-Item $child.FullName $conflictPath
+                    Write-Warning "File conflict: '$($child.Name)' exists in both local and sync target. Local copy saved as '$conflictName' in '$destDir'"
+                }
+            }
+        }
+    }
+}
+
+# Install a directory junction.
+# $targetDir is the real location of the data. $linkDir is the junction that points to it.
+# If $linkDir already exists as a regular directory, its contents are moved to $targetDir first.
+# Junctions don't require elevation on Windows.
+function Install-DirectoryJunction($stage, [string] $targetDir, [string] $linkDir) {
+    # Ensure the target directory exists
+    if (-not (Test-Path -PathType Container $targetDir)) {
+        if (Test-Path $targetDir) {
+            throw "Expected directory at '$targetDir', found a file"
+        }
+        $stage.OnChange()
+        mkdir $targetDir -Force | Out-Null
+    }
+
+    if (Test-Path $linkDir) {
+        $item = Get-Item $linkDir -Force
+        if ($item.LinkType -eq "Junction") {
+            # Already a junction - check it points to the right place
+            if ($item.Target -contains $targetDir) { return }
+            # Wrong target - remove and recreate
+            $stage.OnChange()
+            $item.Delete()
+        } elseif ($item.PSIsContainer) {
+            # Regular directory - move contents to target, then replace with junction
+            $stage.OnChange()
+            Merge-DirectoryInto $linkDir $targetDir
+            Remove-Item $linkDir
+        } else {
+            throw "Expected directory or junction at '$linkDir', found file"
+        }
+    }
+
+    # Ensure parent directory exists
+    $parentDir = Split-Path $linkDir -Parent
+    if (-not (Test-Path -PathType Container $parentDir)) {
+        mkdir $parentDir -Force | Out-Null
+    }
+
+    $stage.OnChange()
+    New-Item -ItemType Junction -Path $linkDir -Target $targetDir | Out-Null
+}
+
 # Install a soft link to a file.
 # Here 'dest' is where the link is created, and it points back to 'src', i.e. 'src' is the target of the link.
 #
-# Note: In Windows, a soft link is known as a 'symbolic link' in Windows. And apparently Windows means something else by 'soft link' - a 'junction' - but that's its business.
+# Note: In Windows, a soft link is known as a 'symbolic link'. And apparently Windows means something else by 'soft link' - a 'junction' - but that's its business.
 function Install-SoftLinkToFile($stage, $srcDir, $destDir, $srcFilename, $destFilename) {
     if ($null -eq $destFilename) {
         $destFilename = $srcFilename
