@@ -40,12 +40,13 @@ function Install-ClaudeSyncFolders($stage, [string] $syncRoot, [string] $claudeD
     # Warn about unknown entries in .claude - Claude Code may have added new directories or files
     # that we should decide how to handle.
     # file-history: undo/rewind snapshots - local file contents, not portable across machines
-    $knownDirs = $syncDirs + @("file-history", "cache", "debug", "paste-cache", "shell-snapshots", "plugins")
+    $knownDirs = $syncDirs + @("file-history", "cache", "debug", "paste-cache", "shell-snapshots", "plugins", "ide", "session-env", "statsig")
 
     # Why not sync files like CLAUDE.md and settings.json? Because Prat manages those.
+    
     # settings.local.json deliberately not listed — it's not supported at the user level,
     # so we warn if it appears, to help people discover the mistake.
-    $knownFiles = @(".credentials.json", "CLAUDE.md", "settings.json", "stats-cache.json", "history.jsonl")
+    $knownFiles = @(".credentials.json", "CLAUDE.md", "settings.json", "stats-cache.json", "history.jsonl", "config.json", "mcp-config.json", "policy-limits.json")
 
     if (Test-Path -PathType Container $claudeDir) {
         $entries = Get-ChildItem $claudeDir -Force
