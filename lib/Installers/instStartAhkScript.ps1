@@ -1,5 +1,6 @@
 # Launch an AutoHotKey script if not already running
-function Install-StartAutoHotKeyScript($stage, [string] $scriptFile) {
+function Install-StartAutoHotKeyScript($stage, [string] $scriptFileIn) {
+    $scriptFile = Resolve-Path $scriptFileIn
     $stage.SetSubstage("Install-StartAutoHotKeyScript($scriptFile)")
 
     if (-not (Test-Path $scriptFile)) { throw "Script file not found: $scriptFile" }
