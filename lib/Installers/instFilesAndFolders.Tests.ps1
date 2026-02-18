@@ -101,13 +101,20 @@ Describe "Install-DirectoryJunction" {
         $stage.changeCount | Should -Be 0
     }
 
-    It "Moves contents from existing directory to target" {
+    It "Throws when link path is an existing directory without -MigrateExisting" {
+        mkdir $linkDir | Out-Null
+        "file content" | Out-File "$linkDir\existing.txt"
+
+        { Install-DirectoryJunction $stage $targetDir $linkDir } | Should -Throw "*MigrateExisting*"
+    }
+
+    It "Moves contents from existing directory to target with -MigrateExisting" {
         mkdir $linkDir | Out-Null
         "file content" | Out-File "$linkDir\existing.txt"
         mkdir "$linkDir\subdir" | Out-Null
         "nested" | Out-File "$linkDir\subdir\nested.txt"
 
-        Install-DirectoryJunction $stage $targetDir $linkDir
+        Install-DirectoryJunction $stage $targetDir $linkDir -MigrateExisting
 
         (Get-Item $linkDir).LinkType | Should -Be "Junction"
         Test-Path "$targetDir\existing.txt" | Should -BeTrue

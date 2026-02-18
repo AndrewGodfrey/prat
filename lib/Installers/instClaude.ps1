@@ -31,7 +31,7 @@ function Install-ClaudeSyncFolders($stage, [string] $syncRoot, [string] $claudeD
     $syncDirs = @("projects", "file-history", "tasks", "todos", "plans")
 
     foreach ($dir in $syncDirs) {
-        Install-DirectoryJunction $stage "$syncRoot\$dir" "$claudeDir\$dir"
+        Install-DirectoryJunction $stage "$syncRoot\$dir" "$claudeDir\$dir" -MigrateExisting
     }
 
     # Warn about unknown entries in .claude - Claude Code may have added new directories or files

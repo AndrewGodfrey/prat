@@ -386,9 +386,10 @@ function Invoke-MergeDirectoryInto([string] $sourceDir, [string] $destDir) {
 
 # Install a directory junction.
 # $targetDir is the real location of the data. $linkDir is the junction that points to it.
-# If $linkDir already exists as a regular directory, its contents are moved to $targetDir first.
+# If $linkDir already exists as a regular directory, fails unless -MigrateExisting is specified,
+# in which case its contents are merged into $targetDir first.
 # Junctions don't require elevation on Windows.
-function Install-DirectoryJunction($stage, [string] $targetDir, [string] $linkDir) {
+function Install-DirectoryJunction($stage, [string] $targetDir, [string] $linkDir, [switch] $MigrateExisting) {
     # Ensure the target directory exists
     if (-not (Test-Path -PathType Container $targetDir)) {
         if (Test-Path $targetDir) {
@@ -407,6 +408,9 @@ function Install-DirectoryJunction($stage, [string] $targetDir, [string] $linkDi
             $stage.OnChange()
             $item.Delete()
         } elseif ($item.PSIsContainer) {
+            if (-not $MigrateExisting) {
+                throw "Directory already exists at '$linkDir'. Use -MigrateExisting to merge contents into target."
+            }
             # Regular directory - move contents to target, then replace with junction
             $stage.OnChange()
             Merge-DirectoryInto $linkDir $targetDir
