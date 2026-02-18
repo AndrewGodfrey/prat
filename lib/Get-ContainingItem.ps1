@@ -13,7 +13,11 @@ do {
     
     $parentDir = (Split-Path -Parent $searchDir)
     if ($parentDir.Length -eq 0) {
-        return $null
+        if ($Multiple) {
+            return ,@()
+        } else {
+            return $null
+        }
     }
     $searchDir = $parentDir
     Write-Verbose "Next searchDir: $searchDir"
