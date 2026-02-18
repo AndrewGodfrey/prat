@@ -9,3 +9,12 @@
 - My dev environment is managed by the `de` and `prat` repos.
 - That includes claude user-level configuration, since I use multiple machines and work on multiple projects.
 - When making a plan, if claude won't be doing all the steps, label each step with "[USER]" or "[CLAUDE]" as appropriate.
+
+# Tools
+```powershell
+# Locate the `prat` repo, and the 'de' repo if present
+Get-DevEnvironments.ps1
+
+# List codebases on this machine
+Get-GlobalCodebases.ps1
+```
