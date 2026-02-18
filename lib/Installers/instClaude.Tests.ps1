@@ -31,7 +31,7 @@ Describe "Install-ClaudeSyncFolders" {
         Install-ClaudeSyncFolders $stage $syncRoot $claudeDir
 
         Test-Path $syncRoot -PathType Container | Should -BeTrue
-        foreach ($dir in @("projects", "file-history", "tasks", "todos", "plans")) {
+        foreach ($dir in @("projects", "tasks", "todos", "plans")) {
             (Get-Item "$claudeDir\$dir").LinkType | Should -Be "Junction"
         }
     }

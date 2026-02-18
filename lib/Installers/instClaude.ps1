@@ -27,8 +27,11 @@ function Install-ClaudeSyncFolders($stage, [string] $syncRoot, [string] $claudeD
         mkdir $syncRoot -Force | Out-Null
     }
 
-    # Directories to junction into the sync folder
-    $syncDirs = @("projects", "file-history", "tasks", "todos", "plans")
+    # Directories to junction into the sync folder.
+    # Note: session transcripts in projects/ contain references to file-history/ (for undo/rewind),
+    # which is local-only. This is benign — rewind won't work for sessions from another machine,
+    # but conversation history, memory, and context are unaffected.
+    $syncDirs = @("projects", "tasks", "todos", "plans")
 
     foreach ($dir in $syncDirs) {
         Install-DirectoryJunction $stage "$syncRoot\$dir" "$claudeDir\$dir" -MigrateExisting
@@ -36,7 +39,8 @@ function Install-ClaudeSyncFolders($stage, [string] $syncRoot, [string] $claudeD
 
     # Warn about unknown entries in .claude - Claude Code may have added new directories or files
     # that we should decide how to handle.
-    $knownDirs = $syncDirs + @("cache", "debug", "paste-cache", "shell-snapshots", "plugins")
+    # file-history: undo/rewind snapshots - local file contents, not portable across machines
+    $knownDirs = $syncDirs + @("file-history", "cache", "debug", "paste-cache", "shell-snapshots", "plugins")
 
     # Why not sync files like CLAUDE.md and settings.json? Because Prat manages those.
     # settings.local.json deliberately not listed — it's not supported at the user level,
