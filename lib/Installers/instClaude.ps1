@@ -23,35 +23,15 @@ function Install-ClaudeUserConfig($stage, [string[]] $fragmentPaths) {
 # $syncRoot: The sync folder root for claude data, e.g. "$home\OneDrive\.claude-sync"
 # $claudeDir: Override for testing. Defaults to "$home\.claude".
 function Install-ClaudeSyncFolders($stage, [string] $syncRoot, [string] $claudeDir = "$home\.claude") {
-    if (-not (Test-Path -PathType Container $syncRoot)) {
-        mkdir $syncRoot -Force | Out-Null
-    }
-
-    # Directories to junction into the sync folder.
     # Note: session transcripts in projects/ contain references to file-history/ (for undo/rewind),
     # which is local-only. This is benign — rewind won't work for sessions from another machine,
     # but conversation history, memory, and context are unaffected.
     $syncDirs = @("projects", "tasks", "todos", "plans")
 
-    foreach ($dir in $syncDirs) {
-        Install-DirectoryJunction $stage "$syncRoot\$dir" "$claudeDir\$dir" -MigrateExisting
-    }
-
-    # Warn about unknown directories in .claude - Claude Code may have added new directories
-    # that we should decide how to handle. Files are left alone - Prat manages the important
-    # ones (CLAUDE.md, settings.json), and tracking the rest adds maintenance burden for no benefit.
     # file-history: undo/rewind snapshots - local file contents, not portable across machines
-    $knownDirs = $syncDirs + @("file-history", "cache", "debug", "paste-cache", "shell-snapshots", "plugins", "ide", "session-env", "statsig")
+    $knownLocalDirs = @("file-history", "cache", "debug", "paste-cache", "shell-snapshots", "plugins", "ide", "session-env", "statsig")
 
-    if (Test-Path -PathType Container $claudeDir) {
-        $entries = Get-ChildItem $claudeDir -Force -Directory
-        foreach ($entry in $entries) {
-            $name = $entry.Name
-            if ($name -notin $knownDirs) {
-                Write-Warning "Unknown directory in .claude: '$name' - consider adding to sync or known-local list"
-            }
-        }
-    }
+    Install-SyncFolders $stage ".claude" $claudeDir $syncRoot $syncDirs $knownLocalDirs
 }
 
 # Installs Claude Code user-level settings.json. For now just a copy, may need merging later.
