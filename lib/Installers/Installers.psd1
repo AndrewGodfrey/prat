@@ -86,6 +86,7 @@ FunctionsToExport = @(
 	'New-WindowsConsoleShortcut', 'Install-WindowsConsoleShortcut', 'Install-WindowsTaskbarCleanup',
 	'Install-CustomBrowserHomePage', 'Install-PsProfile',
 	'Install-ClaudeUserConfig', 'Install-ClaudeUserSettings', 'Install-ClaudeSyncFolders',
+	'Install-CopilotSyncFolders',
     'Get-AgentsForCodebase', 'Select-AgentForCodebase'
 )
 
