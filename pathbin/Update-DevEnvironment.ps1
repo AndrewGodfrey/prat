@@ -22,7 +22,8 @@ function updateEnvironment($environmentShortcut, [switch] $EnvironmentMayNotExis
         say "$($environmentShortcut): pull: $(Get-Location)"
         git pull --ff-only
         say "$($environmentShortcut): deploy"
-        Deploy-Codebase
+        # Run this in a separate pwsh, for the case when modules have been updated
+        pwsh -NoLogo -Command "Deploy-Codebase"
     } finally {
         Pop-Location
     }
