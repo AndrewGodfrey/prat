@@ -37,29 +37,18 @@ function Install-ClaudeSyncFolders($stage, [string] $syncRoot, [string] $claudeD
         Install-DirectoryJunction $stage "$syncRoot\$dir" "$claudeDir\$dir" -MigrateExisting
     }
 
-    # Warn about unknown entries in .claude - Claude Code may have added new directories or files
-    # that we should decide how to handle.
+    # Warn about unknown directories in .claude - Claude Code may have added new directories
+    # that we should decide how to handle. Files are left alone - Prat manages the important
+    # ones (CLAUDE.md, settings.json), and tracking the rest adds maintenance burden for no benefit.
     # file-history: undo/rewind snapshots - local file contents, not portable across machines
     $knownDirs = $syncDirs + @("file-history", "cache", "debug", "paste-cache", "shell-snapshots", "plugins", "ide", "session-env", "statsig")
 
-    # Why not sync files like CLAUDE.md and settings.json? Because Prat manages those.
-
-    # settings.local.json deliberately not listed — it's not supported at the user level,
-    # so we warn if it appears, to help people discover the mistake.
-    $knownFiles = @(".credentials.json", "CLAUDE.md", "settings.json", "stats-cache.json", "history.jsonl", "config.json", "mcp-config.json", "policy-limits.json")
-
     if (Test-Path -PathType Container $claudeDir) {
-        $entries = Get-ChildItem $claudeDir -Force
+        $entries = Get-ChildItem $claudeDir -Force -Directory
         foreach ($entry in $entries) {
             $name = $entry.Name
-            if ($entry.PSIsContainer) {
-                if ($name -notin $knownDirs) {
-                    Write-Warning "Unknown directory in .claude: '$name' - consider adding to sync or known-local list"
-                }
-            } else {
-                if ($name -notin $knownFiles) {
-                    Write-Warning "Unknown file in .claude: '$name' - consider adding to known list"
-                }
+            if ($name -notin $knownDirs) {
+                Write-Warning "Unknown directory in .claude: '$name' - consider adding to sync or known-local list"
             }
         }
     }

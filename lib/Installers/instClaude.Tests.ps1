@@ -69,17 +69,6 @@ Describe "Install-ClaudeSyncFolders" {
         ($warnings | Where-Object { $_.Message -match "some-new-feature" }) | Should -Not -BeNullOrEmpty
     }
 
-    It "Warns about unknown files" {
-        mkdir $claudeDir | Out-Null
-        "data" | Out-File "$claudeDir\new-feature.json"
-
-        $warnings = Install-ClaudeSyncFolders $stage $syncRoot $claudeDir 3>&1 |
-            Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
-
-        $warnings | Should -Not -BeNullOrEmpty
-        ($warnings | Where-Object { $_.Message -match "new-feature.json" }) | Should -Not -BeNullOrEmpty
-    }
-
     It "Does not warn about known local directories" {
         mkdir $claudeDir | Out-Null
         foreach ($dir in @("cache", "debug", "paste-cache", "shell-snapshots", "plugins")) {
@@ -92,25 +81,14 @@ Describe "Install-ClaudeSyncFolders" {
         $warnings | Should -BeNullOrEmpty
     }
 
-    It "Does not warn about known local files" {
+    It "Does not warn about files" {
         mkdir $claudeDir | Out-Null
-        foreach ($file in @(".credentials.json", "CLAUDE.md", "settings.json", "stats-cache.json", "history.jsonl")) {
-            "data" | Out-File "$claudeDir\$file"
-        }
+        "data" | Out-File "$claudeDir\config.json"
+        "data" | Out-File "$claudeDir\unknown-file.json"
 
         $warnings = Install-ClaudeSyncFolders $stage $syncRoot $claudeDir 3>&1 |
             Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
 
         $warnings | Should -BeNullOrEmpty
-    }
-
-    It "Warns about settings.local.json" {
-        mkdir $claudeDir | Out-Null
-        "data" | Out-File "$claudeDir\settings.local.json"
-
-        $warnings = Install-ClaudeSyncFolders $stage $syncRoot $claudeDir 3>&1 |
-            Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
-
-        ($warnings | Where-Object { $_.Message -match "settings.local.json" }) | Should -Not -BeNullOrEmpty
     }
 }
