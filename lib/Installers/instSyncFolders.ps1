@@ -1,5 +1,5 @@
-# Sync selected subdirectories of an app's config folder to a sync folder (OneDrive, Dropbox, etc.)
-# using directory junctions.
+# Move selected subdirectories of an app's config folder to a sync folder (OneDrive, Dropbox, etc.),
+# using directory junctions. Any existing contents are migrated to $syncRoot first.
 #
 # $appName: Display name for warnings, e.g. ".claude"
 # $appDir: The app's config directory, e.g. "$home\.claude"
