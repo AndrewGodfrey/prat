@@ -9,7 +9,7 @@ function Install-CopilotSyncFolders($stage, [string] $syncRoot, [string] $copilo
     # ide: IDE integration data
     # marketplace-cache: extension marketplace cache
     # pkg: package data
-    $knownLocalDirs = @("ide", "marketplace-cache", "pkg")
+    $knownLocalDirs = @("ide", "marketplace-cache", "pkg", "backups", "telemetry")
 
     Install-SyncFolders $stage ".copilot" $copilotDir $syncRoot $syncDirs $knownLocalDirs
 }
