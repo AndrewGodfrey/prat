@@ -1,3 +1,5 @@
+#Requires -PSEdition Core
+
 function writeUpdateDetailIf([string] $message, [bool] $doIt) {
     if ($doIt) { Write-Host $message -F Yellow }
 }
@@ -153,10 +155,10 @@ function Install-TextToFile($stage, $file, $newText, [switch] $ShowUpdateDetails
             Set-ItemProperty -Path $file -Name IsReadOnly -Value $false
         }
         if ($SudoOnWrite) {
-            $newText | Invoke-Gsudo { Out-File -Encoding ASCII $using:file }
+            $newText | Invoke-Gsudo { Out-File -Encoding utf8NoBOM $using:file }
             if ($acl) { $acl | Invoke-Gsudo { Set-Acl $using:file } }
         } else {
-            $newText | Out-File -Encoding ASCII $file   # Seems equivalent: Set-Content $newText -LiteralPath $file
+            $newText | Out-File -Encoding utf8NoBOM $file   # Seems equivalent: Set-Content $newText -LiteralPath $file
             if ($acl) { $acl | Set-Acl $file }
         }
         if ($SetReadOnly) {
@@ -280,7 +282,7 @@ function Install-ZipFileFromFolder($stage, $srcDir, $destPathname, $manifestFile
 
     if ($updateManifest) {
         writeUpdateDetailIf "Updating manifest: $manifestFilename" $ShowUpdateDetails
-        $newManifest | Out-File -Encoding ASCII $manifestFilename
+        $newManifest | Out-File -Encoding utf8NoBOM $manifestFilename
     }
 }
 
