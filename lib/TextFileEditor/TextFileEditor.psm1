@@ -8,6 +8,10 @@
 # 'range': @{idxFirst=<int>, idxLast=<int>}, e.g. as returned by Find-XmlSection. Line numbers are 0-based. (i.e. for user output, add 1).
 #    
 
+function ConvertTo-UnixLineEndings([string] $text) {
+    return $text -replace "`r`n|`r|`n", "`n"
+}
+
 # Load a text file as a string.
 function Import-TextFile($file) {
 
@@ -15,7 +19,8 @@ function Import-TextFile($file) {
 
     # Weird, "Get-Content -Raw" always appends an extra newline - I see this whether or not the file ends in a newline.
     $contents = $contents -replace '\r?\n$', ''
-    return $contents
+
+    return (ConvertTo-UnixLineEndings $contents)
 }
 
 function Format-IndentLine(
@@ -41,7 +46,7 @@ class LineArray {
             $this.nl = "`n"
         }
 
-        $this.lines = ($data -replace "`r`n|`r|`n", "`n").Split("`n")
+        $this.lines = (ConvertTo-UnixLineEndings $data).Split("`n")
     }
 
     [int] GetLineCount() {

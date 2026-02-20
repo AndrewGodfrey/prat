@@ -70,7 +70,7 @@ Description = 'Tools for in-memory editing of a text file, in a line-oriented wa
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @(
-	'Import-TextFile', 'Format-IndentLine', 'Format-ReplaceLines', 'Read-Lines', 'Add-Lines',
+	'Import-TextFile', 'Format-IndentLine', 'Format-ReplaceLines', 'Read-Lines', 'Add-Lines', 'ConvertTo-UnixLineEndings'
 	'Find-XmlSection', 'Update-XmlSection',
 	'Get-IndentLevel', 'Find-MatchingLine', 'Find-CorrespondingIndent', 'Get-SubIndent', 'Format-ReplaceMatchingLines',
 	'Test-IsSingleLinePowershellBlock', 'Find-MatchingPowershellBlock', 'Add-HashTableItemInPowershellScript', 'Test-HashTableItemInPowershellScript', 'Edit-HashOfArraysItemInPowershellScript'
