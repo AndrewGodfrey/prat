@@ -121,7 +121,17 @@ function Install-TextToFile($stage, $file, $newText, [switch] $ShowUpdateDetails
         $currentText = Import-TextFile $file
 
         if ($currentText -ne $newText) {
-            writeUpdateDetailIf "Not identical: $file" $ShowUpdateDetails
+            if ($ShowUpdateDetails) {
+                writeUpdateDetailIf "Not identical: $file" $true
+                writeUpdateDetailIf "Lengths: current=$($currentText.Length) new=$($newText.Length)" $true
+                # Find first difference
+                for ($i = 0; $i -lt [Math]::Min($currentText.Length, $newText.Length); $i++) {
+                    if ($currentText[$i] -ne $newText[$i]) {
+                        writeUpdateDetailIf "First diff at index $($i): current=[$(([int]$currentText[$i]))] new=[$(([int]$newText[$i]))]" $true
+                        break
+                    }
+                }
+            }
             $needUpdate = $True
         } elseif ($SetReadOnly -and -not (isFileReadOnly $file)) {
             $needUpdate = $True
