@@ -1,8 +1,7 @@
 # Bash tool
-- For Bash() commands, always use Bash(pwsh ...). (This is to sidestep filename syntax confusion on Windows, and standardize behavior other OSes. I'll ensure pwsh is available.)
-- Must escape `$` in pwsh commands run via Bash tool, e.g. `pwsh -c "& \$env:USERPROFILE\de\pathbin\Deploy-DevEnvironment.ps1"`
-- Bash interpolates `$` before pwsh sees it; escaping with `\$` prevents this
-- Never redirect to `/dev/null` or `nul`. Use `Out-Null` or similar instead.
+- Always use forward slashes in paths, e.g. `C:/Users/foo` not `C:\Users\foo`. Backslashes will be misinterpreted.
+- When running PowerShell commands via Bash, use `pwsh -c "..."`. Must escape `$`, e.g. `pwsh -c "& \$env:USERPROFILE/de/pathbin/Deploy-DevEnvironment.ps1"` — otherwise Bash interpolates `$` before pwsh sees it.
+- To discard output: in bash use `> /dev/null`, in pwsh use `| Out-Null` or `> \$null`. Never use `> nul` in bash (it creates a literal file).
 
 # Claude settings
 
