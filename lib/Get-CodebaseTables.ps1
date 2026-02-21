@@ -2,8 +2,6 @@
 # Given a location/pwd, loads & normalizes the relevant 'cbTable.*.ps1' file.
 # Compare with Get-CodebaseTable.ps1 (which needs to be renamed for clarity).
 
-using module PratBase\PratBase.psd1
-
 [CmdletBinding()]
 param ([string] $Location = $pwd)
 
@@ -17,7 +15,7 @@ function normalizeTableItem($item, $key, $cbFile) {
     # Remove trailing \ from subdirectories, but leave cases like "F:\" alone.
     if ($item.root.EndsWith([IO.Path]::DirectorySeparatorChar)) {
         if ((Split-Path -parent $item.root) -ne "") {
-            $item.root = $item.root.SubString(0, $item.root - 1)
+            $item.root = $item.root.SubString(0, $item.root.Length - 1)
         }
     }
     return $item
