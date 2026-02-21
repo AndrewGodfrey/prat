@@ -204,7 +204,7 @@ Describe "Invoke-PesterAsJob" {
         $dummyJob = Start-Job -ScriptBlock { }
     }
     AfterEach {
-        Receive-Job -Job $dummyJob -Wait -AutoRemoveJob
+        Remove-Job -Job $dummyJob -Force -ErrorAction SilentlyContinue
     }
     It "starts a job" {
         Mock -ModuleName PratBase Start-Job -Verifiable { return $dummyJob }
