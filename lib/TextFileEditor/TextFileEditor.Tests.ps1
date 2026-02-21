@@ -4,7 +4,7 @@ Describe "Import-TextFile" {
     It "imports" {
 
         $data = "Testing`n1 2 `r`n3"
-        $expected = $data  # Verbatim, including weird newlines.
+        $expected = "Testing`n1 2 `n3"  # CRLF normalized to LF.
 
         $tempFile = "$TestDrive\test_Import-TextFile" + ".tmp"
         $data | Out-File -Encoding ASCII $tempFile

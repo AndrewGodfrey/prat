@@ -6,8 +6,8 @@ Describe "Update-DevEnvironment" {
             if ($command -ne "pull") { throw "Unexpected git command: $command" }
         }
 
-        function Deploy-Codebase {}
-        Mock Deploy-Codebase -Verifiable {}
+        function Invoke-DeployCodebase($location) {}
+        Mock Invoke-DeployCodebase -Verifiable {}
 
         $simulateDeDoesNotExist = $false
         function Set-LocationUsingShortcut($shortcut) {}
@@ -22,7 +22,7 @@ Describe "Update-DevEnvironment" {
 
         Should -Invoke -Command Set-LocationUsingShortcut -Exactly 2
         Should -Invoke -Command git -Exactly 2
-        Should -Invoke -Command Deploy-Codebase -Exactly 2
+        Should -Invoke -Command Invoke-DeployCodebase -Exactly 2
     }
     It "Works if de doesn't exist" {
         $simulateDeDoesNotExist = $true
@@ -31,6 +31,6 @@ Describe "Update-DevEnvironment" {
 
         Should -Invoke -Command Set-LocationUsingShortcut -Exactly 2
         Should -Invoke -Command git -Exactly 1
-        Should -Invoke -Command Deploy-Codebase -Exactly 1
+        Should -Invoke -Command Invoke-DeployCodebase -Exactly 1
     }
 }

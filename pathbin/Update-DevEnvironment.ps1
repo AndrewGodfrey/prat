@@ -10,6 +10,10 @@
 
 function say($msg) { Write-Host -ForegroundColor Green $msg }
 
+function Invoke-DeployCodebase($location) {
+    pwsh -NoLogo -Command "Set-Location '$location'; Deploy-Codebase"
+}
+
 function updateEnvironment($environmentShortcut, [switch] $EnvironmentMayNotExist = $false) {
     Push-Location
     try {
@@ -23,7 +27,7 @@ function updateEnvironment($environmentShortcut, [switch] $EnvironmentMayNotExis
         git pull --ff-only
         say "$($environmentShortcut): deploy"
         # Run this in a separate pwsh, for the case when modules have been updated
-        pwsh -NoLogo -Command "Set-Location '$PWD'; Deploy-Codebase"
+        Invoke-DeployCodebase $PWD
     } finally {
         Pop-Location
     }
