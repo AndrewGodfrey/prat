@@ -34,8 +34,6 @@
 # Other properties added to the $cbt object:
 #   subdir:                    A path for the given $Location, relative to $root
 
-using module PratBase\PratBase.psd1
-
 #TODO: Resolve confusion between "cbtable" in filename, and this script which only returns one entry.
 #      And reconcile with Get-CodebaseSubTable.
 
