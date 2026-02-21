@@ -257,6 +257,7 @@ class InstallationStage {
     }
 
     [Void] ClearManualStep($stepId) {
+        $this.OnChange()
         $this.parent.ClearStep($stepId)
     }
 
