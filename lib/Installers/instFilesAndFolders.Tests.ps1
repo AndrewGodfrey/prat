@@ -66,6 +66,31 @@ Describe "Install-TextToFile" {
         Import-TextFile $testFile | Should -Be "hello"
         (Get-ItemProperty $testFile).IsReadOnly | Should -BeFalse
     }
+
+    It "Is idempotent when newText has CRLF but existing file content matches" {
+        "line1`r`nline2`r`nline3" | Out-File -Encoding utf8NoBOM $testFile
+
+        Install-TextToFile $stage $testFile "line1`r`nline2`r`nline3"
+
+        $stage.changeCount | Should -Be 0
+    }
+
+    It "Is idempotent when existing file has CRLF but newText has LF" {
+        "line1`r`nline2`r`nline3" | Out-File -Encoding utf8NoBOM $testFile
+
+        Install-TextToFile $stage $testFile "line1`nline2`nline3"
+
+        $stage.changeCount | Should -Be 0
+    }
+
+    It "Still detects actual content difference when both sides have CRLF" {
+        "old`ncontent" | Out-File -Encoding utf8NoBOM $testFile
+
+        Install-TextToFile $stage $testFile "new`r`ncontent"
+
+        $stage.changeCount | Should -Be 1
+        Import-TextFile $testFile | Should -Be "new`ncontent"
+    }
 }
 
 Describe "Install-DirectoryJunction" {
