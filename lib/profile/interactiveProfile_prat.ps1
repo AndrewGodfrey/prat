@@ -46,9 +46,6 @@ pratProfile_trace start "Set window title"
 pratSetWindowTitle
 pratProfile_trace end "Set window title"
 
-cd $env:userprofile
-
-
 # For 'prompt' function: Call a hook script if the current location has changed
 function pratDetectLocationChange {
     $location = (Get-Location).Path
