@@ -54,6 +54,11 @@ Invoke-PesterAsJob -Configuration $Configuration
 
 if ($CoverageType -ne "None") {
     if (Test-Path $tempFile) {
+        # TODO: Extract this into a function which create the 'auto' directory and also checks if .gitignore is set up to ignore it.
+        $dir = Split-Path $coverageDest
+        if (!(Test-Path $dir)) {
+            New-Item $dir -ItemType Directory | Out-Null
+        }
         Move-Item $tempFile $coverageDest
     }
 }
