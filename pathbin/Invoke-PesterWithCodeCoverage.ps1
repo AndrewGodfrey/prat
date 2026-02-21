@@ -8,7 +8,8 @@
 param (
     [ValidateSet("None", "Standard", "Subset")] [string] $CoverageType = "Standard",
     $PathToTest = ".",
-    $RepoRoot = (Resolve-Path "$PSScriptRoot\..")
+    $RepoRoot = (Resolve-Path "$PSScriptRoot\.."),
+    [ValidateSet("CoverageGutters", "JaCoCo")] [string] $CoverageFormat = "CoverageGutters"
 )
 
 Import-Module Pester
@@ -30,7 +31,7 @@ if ($CoverageType -ne "None") {
     $tempFile = [IO.Path]::GetTempFileName()
     $Configuration.CodeCoverage.OutputPath = $tempFile
     $Configuration.CodeCoverage.Enabled = [bool] $true
-    $Configuration.CodeCoverage.OutputFormat = "CoverageGutters"
+    $Configuration.CodeCoverage.OutputFormat = $CoverageFormat
     if ($CoverageType -eq "Subset") {
         if (!(Test-Path -PathType Container $PathToTest)) {
             # Pester coverage makes an empty xml if given a single file here.
