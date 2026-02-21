@@ -11,6 +11,7 @@ if ($AddRecommendedDirectories) {
 
     @{ path = "$env:userprofile\Downloads\"; days = 14 }
     @{ path = "C:\tmp"; days = 60 }
+    @{ path = $env:temp; days = 60 }
 }
 
 
