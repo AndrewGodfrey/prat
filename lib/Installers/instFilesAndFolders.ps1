@@ -116,6 +116,7 @@ function Install-DeleteFiles($stage, $destDir, $listOfFilenames) {
 function Install-TextToFile($stage, $file, $newText, [switch] $ShowUpdateDetails, [switch] $PreserveAcls=$false, [switch] $BackupFile=$false, [switch] $SudoOnWrite=$false, [switch] $SetReadOnly=$false) {
     $needUpdate = $False
     $acl = $null
+    $newText = ConvertTo-UnixLineEndings $newText
 
     if (Test-Path -PathType Leaf $file) {
         $currentText = Import-TextFile $file
