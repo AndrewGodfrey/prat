@@ -2,20 +2,21 @@
 # Runs tests on Prat
 param (
     [ValidateSet("None", "Standard", "Subset")] [string] $CoverageType = "None",
-    [switch] $CodeCoverage)
+    [switch] $CodeCoverage,
+    [string] $TestFocus)
 
 
-$testFocus = Get-TestFocus
-if ($null -eq $testFocus) {
+$resolvedFocus = if ($TestFocus) { $TestFocus } else { Get-TestFocus }
+if ($null -eq $resolvedFocus) {
     # Note: Using 'current directory' - as in how most build tools work. 
-    $pathToTest = "." 
+    $pathToTest = "."
     if ($CodeCoverage) {
         # ... but code coverage (if enabled) will be calculated against the whole repo.
         # Which will give incomplete data, but lets you evaluate coverage of other parts of the repo.
         $CoverageType = "Standard"
     }
 } else {
-    $pathToTest = $testFocus
+    $pathToTest = $resolvedFocus
     if ($CodeCoverage) {
         $CoverageType = "Subset"
     }

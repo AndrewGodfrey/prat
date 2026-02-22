@@ -1,7 +1,7 @@
 Describe "Test-Prat" {
     BeforeAll {
         $expectedCoverageType = "None"
-        function Invoke-PesterWithCodeCoverage($CoverageType) {}
+        function Invoke-PesterWithCodeCoverage($CoverageType, $PathToTest) {}
         Mock Invoke-PesterWithCodeCoverage { $CoverageType | Should -Be $expectedCoverageType }
 
         $simualtedTestFocus = $null
@@ -34,5 +34,25 @@ Describe "Test-Prat" {
         $simualtedTestFocus = "somePath"
 
         Test-Prat -CodeCoverage
+    }
+    It "Uses explicit -TestFocus as path" {
+        $simualtedTestFocus = $null
+
+        Test-Prat -TestFocus "explicitFocus"
+
+        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "explicitFocus" }
+    }
+    It "Explicit -TestFocus overrides Get-TestFocus state" {
+        $simualtedTestFocus = "focusFromState"
+
+        Test-Prat -TestFocus "explicitFocus"
+
+        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "explicitFocus" }
+    }
+    It "Explicit -TestFocus with -CodeCoverage uses Subset" {
+        $expectedCoverageType = "Subset"
+        $simualtedTestFocus = $null
+
+        Test-Prat -TestFocus "explicitFocus" -CodeCoverage
     }
 }
