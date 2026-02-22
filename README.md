@@ -30,7 +30,9 @@ Coverage target is **70%** (defined in
 `lib\Get-CoveragePercentTarget_prat.ps1`). Coverage report goes to `auto\coverage.xml` in CoverageGutters format. 
 View with `Get-CoverageReport` (alias: `gcr`).
 
-Run a focused subset of tests: `Set-TestFocus` then `t`.
+Run a focused subset of tests: `Set-TestFocus` then `t`. `Set-TestFocus` accepts a file or directory;
+call with no args to clear focus. `t -CodeCoverage` with a focus set automatically uses `Subset`
+coverage mode — coverage is measured against the focused path and written to `auto/coverage.xml`.
 
 ## Architecture
 
