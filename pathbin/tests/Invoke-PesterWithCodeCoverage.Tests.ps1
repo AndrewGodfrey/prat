@@ -38,7 +38,7 @@ Describe "Invoke-PesterWithCodeCoverage" {
         $outConf.CodeCoverage.Path.Value | Should -Be @("someRepo")
     }
 
-    It "supports Standard coverage type with a subset" {
+    It "supports coverage with a subset" {
         & $coverageScript -CoverageType "Standard" -PathToTest "someRepo/subdir" -RepoRoot "someRepo"
 
         $outConf.Run.Path.Value | Should -Be @("someRepo/subdir")
@@ -46,20 +46,10 @@ Describe "Invoke-PesterWithCodeCoverage" {
         $outConf.CodeCoverage.Path.Value | Should -Be @("someRepo")
     }
 
-    It "supports Subset coverage type with a subset" {
-        $repoRoot = (Resolve-Path "$PSScriptRoot/../../pathbin/tests/testCb").Path
-
-        & $coverageScript -CoverageType "Subset" -PathToTest "$repoRoot/subdir" -RepoRoot $repoRoot
-
-        $outConf.Run.Path.Value | Should -Be @("$repoRoot/subdir")
-        $outConf.CodeCoverage.Enabled.Value | Should -Be $true
-        $outConf.CodeCoverage.Path.Value | Should -Be @((Resolve-Path "$repoRoot/subdir").Path)
-    }
-
     It "scopes coverage to inferred production file when PathToTest is a test file" {
         $repoRoot = (Resolve-Path "$PSScriptRoot/../../pathbin/tests/testCb").Path
 
-        & $coverageScript -CoverageType "Subset" -PathToTest "$repoRoot/testCb_fileWithTests.Tests.ps1" -RepoRoot $repoRoot
+        & $coverageScript -CoverageType "Standard" -PathToTest "$repoRoot/testCb_fileWithTests.Tests.ps1" -RepoRoot $repoRoot
 
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
         $outConf.CodeCoverage.Path.Value[0] | Should -BeLike "*testCb_fileWithTests.ps1*"
@@ -69,7 +59,7 @@ Describe "Invoke-PesterWithCodeCoverage" {
     It "defaults to Standard if inferred production file is not found" {
         $repoRoot = (Resolve-Path "$PSScriptRoot/../../pathbin/tests/testCb").Path
 
-        & $coverageScript -CoverageType "Subset" -PathToTest "$repoRoot/testCb_noMatchingProfFile.tests.ps1" -RepoRoot $repoRoot
+        & $coverageScript -CoverageType "Standard" -PathToTest "$repoRoot/testCb_noMatchingProfFile.tests.ps1" -RepoRoot $repoRoot
 
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
         $outConf.CodeCoverage.Path.Value | Should -Be @($repoRoot)
