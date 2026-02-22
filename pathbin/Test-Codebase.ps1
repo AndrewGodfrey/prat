@@ -11,4 +11,4 @@
 [CmdletBinding()]
 param([switch] $CodeCoverage)
 
-&$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "test" -CommandSwitches:@{'CodeCoverage' = $CodeCoverage}
+&$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "test" -CommandSwitches:$PSBoundParameters
