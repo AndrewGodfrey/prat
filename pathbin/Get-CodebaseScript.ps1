@@ -29,7 +29,12 @@ switch ($codebase) {
         }
     }
     "testCb" {
-        if ("prebuild", "build", "test", "deploy" -contains $action) { return {echo "testCb: $($action): $($env:testEnvvar)"} }
+        if ($action -eq "test") { return {
+            param([hashtable] $CommandSwitches = @{})
+            $suffix = if ($CommandSwitches['CodeCoverage']) { " cc" } else { "" }
+            "testCb: test: $($env:testEnvvar)$suffix"
+        }}
+        if ("prebuild", "build", "deploy" -contains $action) { return {echo "testCb: $($action): $($env:testEnvvar)"} }
         throw "Unrecognized action: $action"
     }
 }
