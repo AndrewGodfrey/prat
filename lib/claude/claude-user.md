@@ -9,6 +9,10 @@ of each test run (not yet run / verified red / verified green) must be recorded 
 changes. "Tests written but not yet run" and "tests written and verified failing" are distinct
 states with different implications for what to do next.
 
+# TDD and missing coverage
+Before making changes (including refactoring) in code whose unit that has no unit-test coverage, propose to add test coverage first.
+
+
 # Claude settings
 
 - My dev environment is managed by the `de` and `prat` repos.
