@@ -3,10 +3,11 @@
 param (
     [ValidateSet("None", "Standard", "Subset")] [string] $CoverageType = "None",
     [switch] $CodeCoverage,
-    [string] $TestFocus)
+    [string] $TestFocus,
+    [switch] $NoFocus)
 
 
-$resolvedFocus = if ($TestFocus) { $TestFocus } else { Get-TestFocus }
+$resolvedFocus = if ($NoFocus) { $null } elseif ($TestFocus) { $TestFocus } else { Get-TestFocus }
 if ($null -eq $resolvedFocus) {
     # Note: Using 'current directory' - as in how most build tools work. 
     $pathToTest = "."

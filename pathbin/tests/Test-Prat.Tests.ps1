@@ -55,4 +55,11 @@ Describe "Test-Prat" {
 
         Test-Prat -TestFocus "explicitFocus" -CodeCoverage
     }
+    It "-NoFocus ignores Get-TestFocus state" {
+        $simualtedTestFocus = "focusFromState"
+
+        Test-Prat -NoFocus
+
+        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "." }
+    }
 }
