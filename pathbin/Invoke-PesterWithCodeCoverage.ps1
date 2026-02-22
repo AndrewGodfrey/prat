@@ -47,24 +47,7 @@ if ($CoverageType -ne "None") {
     $Configuration.CodeCoverage.OutputPath = $tempFile
     $Configuration.CodeCoverage.Enabled = [bool] $true
     $Configuration.CodeCoverage.OutputFormat = $CoverageFormat
-    if ($CoverageType -eq "Subset") {
-        if (!(Test-Path -PathType Container $PathToTest)) {
-            if (!(Test-Path -PathType Leaf $PathToTest)) { throw "PathToTest '$PathToTest' does not exist" }
-            
-            # Pester coverage makes an empty xml if given a single file here.
-            $guess = $PathToTest -replace ".tests.ps1", ".ps1"
-            $codeFile = &$PSScriptRoot/../lib/Get-ContainingItem (Split-Path -Leaf $guess) (Split-Path -Parent $guess)
-            if ($null -ne $codeFile) {
-                $Configuration.CodeCoverage.Path = $codeFile.FullName
-            } else {
-                $Configuration.CodeCoverage.Path = $RepoRoot
-            }
-        } else {
-            $Configuration.CodeCoverage.Path = $PathToTest
-        }
-    } else {
-        $Configuration.CodeCoverage.Path = $RepoRoot
-    }
+    $Configuration.CodeCoverage.Path = & "$PSScriptRoot/../lib/Get-CoverageScope" -PathToTest $PathToTest -RepoRoot $RepoRoot
     $Configuration.CodeCoverage.CoveragePercentTarget = & (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1")
 }
 

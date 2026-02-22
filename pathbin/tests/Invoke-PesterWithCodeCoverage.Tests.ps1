@@ -53,7 +53,7 @@ Describe "Invoke-PesterWithCodeCoverage" {
 
         $outConf.Run.Path.Value | Should -Be @("$repoRoot/subdir")
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
-        $outConf.CodeCoverage.Path.Value | Should -Be @("$repoRoot/subdir")
+        $outConf.CodeCoverage.Path.Value | Should -Be @((Resolve-Path "$repoRoot/subdir").Path)
     }
 
     It "scopes coverage to inferred production file when PathToTest is a test file" {
