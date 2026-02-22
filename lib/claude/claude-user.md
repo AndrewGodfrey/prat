@@ -3,6 +3,12 @@
 - When running PowerShell commands via Bash, use `pwsh -c "..."`. Must escape `$`, e.g. `pwsh -c "& \$env:USERPROFILE/de/pathbin/Deploy-DevEnvironment.ps1"` — otherwise Bash interpolates `$` before pwsh sees it.
 - To discard output: in bash use `> /dev/null`, in pwsh use `| Out-Null` or `> \$null`. Never use `> nul` in bash (it creates a literal file).
 
+# TDD and /compact
+Verified test results are first-class artifacts. When /compact summarizes a session, the state
+of each test run (not yet run / verified red / verified green) must be recorded alongside file
+changes. "Tests written but not yet run" and "tests written and verified failing" are distinct
+states with different implications for what to do next.
+
 # Claude settings
 
 - My dev environment is managed by the `de` and `prat` repos.
