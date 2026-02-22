@@ -17,9 +17,6 @@ function moveCoverageFile($tempFile, $coverageDest = "$RepoRoot/auto/coverage.xm
     # We send the coverage data to a temp file and then move it.
     # Why: Otherwise, Pester 5.5.0 puts relative path names in coverage.xml for any .ps1 files it finds under auto/.
     #      Which causes trouble e.g. in Get-CoverageReport.ps1.
-    if (Test-Path $coverageDest) {
-        Remove-Item $coverageDest | Out-Null
-    }
 
     # TODO: Extract this into a function which create the 'auto' directory and also checks if .gitignore is set up to ignore it.
     $dir = Split-Path $coverageDest
@@ -27,7 +24,7 @@ function moveCoverageFile($tempFile, $coverageDest = "$RepoRoot/auto/coverage.xm
         New-Item $dir -ItemType Directory | Out-Null
     }
     try {
-        Move-Item $tempFile $coverageDest -ErrorAction Stop
+        Move-Item $tempFile $coverageDest -ErrorAction Stop -Force
     } catch {
         Write-Warning "Failed to move coverage file '$tempFile' to destination '$coverageDest': $_"
     }
