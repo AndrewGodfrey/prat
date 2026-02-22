@@ -1,25 +1,16 @@
 # .SYNOPSIS
-# Runs tests on Prat
+# Runs tests in Prat
 param (
-    [ValidateSet("None", "Standard", "Subset")] [string] $CoverageType = "None",
-    [switch] $CodeCoverage,
+    [switch] $Coverage,
     [string] $TestFocus,
     [switch] $NoFocus)
-
 
 $resolvedFocus = if ($NoFocus) { $null } elseif ($TestFocus) { $TestFocus } else { Get-TestFocus }
 if ($null -eq $resolvedFocus) {
     # Note: Using 'current directory' - as in how most build tools work. 
     $pathToTest = "."
-    if ($CodeCoverage) {
-        # ... but code coverage (if enabled) will be calculated against the whole repo.
-        # Which will give incomplete data, but lets you evaluate coverage of other parts of the repo.
-        $CoverageType = "Standard"
-    }
 } else {
     $pathToTest = $resolvedFocus
-    if ($CodeCoverage) {
-        $CoverageType = "Subset"
-    }
 }
-Invoke-PesterWithCodeCoverage -CoverageType $CoverageType -PathToTest $pathToTest -RepoRoot (Resolve-Path "$PSScriptRoot\..")
+
+Invoke-PesterWithCodeCoverage -Coverage:$Coverage -PathToTest $pathToTest -RepoRoot (Resolve-Path "$PSScriptRoot\..")

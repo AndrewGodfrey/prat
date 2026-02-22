@@ -1,62 +1,56 @@
 Describe "Test-Prat" {
     BeforeAll {
-        $expectedCoverageType = "None"
-        function Invoke-PesterWithCodeCoverage($CoverageType, $PathToTest) {}
-        Mock Invoke-PesterWithCodeCoverage { $CoverageType | Should -Be $expectedCoverageType }
+        $expectedCoverageSetting = $null
+        function Invoke-PesterWithCodeCoverage($Coverage, $PathToTest) {}
+        Mock Invoke-PesterWithCodeCoverage { $Coverage | Should -Be $expectedCoverageSetting }
 
-        $simualtedTestFocus = $null
-        function Get-TestFocus { return $simualtedTestFocus }
+        $simulatedTestFocus = $null
+        function Get-TestFocus { return $simulatedTestFocus }
+    }
+    BeforeEach {
+        $expectedCoverageSetting = $false
     }
     It "Chooses no coverage by default" {
+        $expectedCoverageSetting = $false
+
         Test-Prat
     }
-    It "Can be overridden using the first parameter" {
-        foreach ($type in @("None", "Standard", "Subset")) {
-            $expectedCoverageType = $type
+    It "supports -Coverage" {
+        foreach ($setting in @($false, $true)) {
+            $expectedCoverageSetting = $setting
 
-            Test-Prat $type
-        }
-    }
-    It "Gives preference to the -CodeCoverage switch" {
-        foreach ($type in @("None", "Standard", "Subset")) {
-            $expectedCoverageType = "Standard"
-
-            Test-Prat $type -CodeCoverage
+            Test-Prat -Coverage:$setting
         }
     }
     It "Supports test focus" {
-        $simualtedTestFocus = "somePath"
+        $expectedCoverageSetting = $false
+        $simulatedTestFocus = "somePath"
 
         Test-Prat
-    }
-    It "Changes the -CodeCoverage switch behavior when test focus is set" {
-        $expectedCoverageType = "Subset"
-        $simualtedTestFocus = "somePath"
-
-        Test-Prat -CodeCoverage
+        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "somePath" }
     }
     It "Uses explicit -TestFocus as path" {
-        $simualtedTestFocus = $null
+        $simulatedTestFocus = $null
 
         Test-Prat -TestFocus "explicitFocus"
 
         Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "explicitFocus" }
     }
     It "Explicit -TestFocus overrides Get-TestFocus state" {
-        $simualtedTestFocus = "focusFromState"
+        $simulatedTestFocus = "focusFromState"
 
         Test-Prat -TestFocus "explicitFocus"
 
         Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "explicitFocus" }
     }
-    It "Explicit -TestFocus with -CodeCoverage uses Subset" {
-        $expectedCoverageType = "Subset"
-        $simualtedTestFocus = $null
+    It "Explicit -TestFocus with -Coverage uses Subset" {
+        $expectedCoverageSetting = $true
+        $simulatedTestFocus = $null
 
-        Test-Prat -TestFocus "explicitFocus" -CodeCoverage
+        Test-Prat -TestFocus "explicitFocus" -Coverage
     }
     It "-NoFocus ignores Get-TestFocus state" {
-        $simualtedTestFocus = "focusFromState"
+        $simulatedTestFocus = "focusFromState"
 
         Test-Prat -NoFocus
 

@@ -23,7 +23,7 @@ switch ($codebase) {
             "build"  { return {Build-Prat} }
             "test"   { return { 
                 param([hashtable] $CommandSwitches = @{})
-                Test-Prat -CodeCoverage:$CommandSwitches['CodeCoverage']} 
+                Test-Prat -Coverage:$CommandSwitches['CodeCoverage']} 
             }
             "deploy" { return {Deploy-Prat -Force:$Force} }
         }

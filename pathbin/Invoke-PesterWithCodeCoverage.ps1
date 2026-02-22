@@ -7,7 +7,7 @@
 # Subset:    Like Standard, but coverage percentage is measured against the code under the current directory only.
 [CmdletBinding()]
 param (
-    [ValidateSet("None", "Standard", "Subset")] [string] $CoverageType = "Standard",
+    [switch] $Coverage = $true,
     $PathToTest = ".",
     $RepoRoot = (Resolve-Path "$PSScriptRoot\.."),
     [ValidateSet("CoverageGutters", "JaCoCo")] [string] $CoverageFormat = "CoverageGutters"
@@ -42,7 +42,7 @@ if ($VerbosePreference -ne "SilentlyContinue") {
     $Configuration.Output.Verbosity = "Detailed"
 }
 
-if ($CoverageType -ne "None") {
+if ($Coverage) {
     $tempFile = [IO.Path]::GetTempFileName()
     $Configuration.CodeCoverage.OutputPath = $tempFile
     $Configuration.CodeCoverage.Enabled = [bool] $true
@@ -53,7 +53,7 @@ if ($CoverageType -ne "None") {
 
 Invoke-PesterAsJob -Configuration $Configuration
 
-if ($CoverageType -ne "None") {
+if ($Coverage) {
     if (Test-Path $tempFile) {
         moveCoverageFile $tempFile
     }
