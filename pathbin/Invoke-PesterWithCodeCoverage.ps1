@@ -21,13 +21,6 @@ if ($VerbosePreference -ne "SilentlyContinue") {
 }
 
 if ($CoverageType -ne "None") {
-    # We send the coverage data to a temp file and then move it.
-    # Why: Otherwise, Pester 5.5.0 puts relative path names in coverage.xml for any .ps1 files it finds under auto/.
-    #      Which causes trouble e.g. in Get-CoverageReport.ps1.
-    $coverageDest = "$RepoRoot/auto/coverage.xml"
-    if (Test-Path $coverageDest) {
-        Remove-Item $coverageDest | Out-Null
-    }
     $tempFile = [IO.Path]::GetTempFileName()
     $Configuration.CodeCoverage.OutputPath = $tempFile
     $Configuration.CodeCoverage.Enabled = [bool] $true
@@ -55,11 +48,23 @@ Invoke-PesterAsJob -Configuration $Configuration
 
 if ($CoverageType -ne "None") {
     if (Test-Path $tempFile) {
+        # We send the coverage data to a temp file and then move it.
+        # Why: Otherwise, Pester 5.5.0 puts relative path names in coverage.xml for any .ps1 files it finds under auto/.
+        #      Which causes trouble e.g. in Get-CoverageReport.ps1.
+        $coverageDest = "$RepoRoot/auto/coverage.xml"
+        if (Test-Path $coverageDest) {
+            Remove-Item $coverageDest | Out-Null
+        }
+        
         # TODO: Extract this into a function which create the 'auto' directory and also checks if .gitignore is set up to ignore it.
         $dir = Split-Path $coverageDest
         if (!(Test-Path $dir)) {
             New-Item $dir -ItemType Directory | Out-Null
         }
-        Move-Item $tempFile $coverageDest
+        try {
+            Move-Item $tempFile $coverageDest -ErrorAction Stop
+        } catch {
+            Write-Warning "Failed to move coverage file '$tempFile' to destination '$coverageDest': $_"
+        }
     }
 }
