@@ -5,25 +5,20 @@ BeforeAll {
 }
 
 Describe "Test-Codebase" {
-    It "passes -CodeCoverage to the test script" {
+    It "includes coverage suffix by default" {
         $prev = pushTestEnvironment
         try {
-            $result = Test-Codebase -Coverage
+            $result = Test-Codebase
             $result | Should -Be "testCb: test: bar cc"
         } finally {
             popTestEnvironment $prev
         }
     }
 
-    It "runs the 'test' script for the 'testCb' codebase" {
+    It "skips coverage suffix with -NoCoverage" {
         $prev = pushTestEnvironment
         try {
-            $env:testenvvar = 'foo'
-            
-            # Act
-            $result = Test-Codebase
-
-            # Assert
+            $result = Test-Codebase -NoCoverage
             $result | Should -Be "testCb: test: bar"
         } finally {
             popTestEnvironment $prev

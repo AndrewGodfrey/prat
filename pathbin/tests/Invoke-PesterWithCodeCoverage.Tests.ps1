@@ -20,7 +20,7 @@ Describe "Invoke-PesterWithCodeCoverage" {
     }
 
     It "calls Invoke-PesterAsJob" {
-        & $coverageScript -Coverage:$false -PathToTest $repoRoot -RepoRoot $repoRoot
+        & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot
 
         Should -Invoke Invoke-PesterAsJob -Times 1
         $outConf.Run.Path.Value | Should -Be @($repoRoot)
@@ -30,13 +30,13 @@ Describe "Invoke-PesterWithCodeCoverage" {
     }
 
     It "supports -Verbose" {
-        & $coverageScript -Coverage:$false -PathToTest $repoRoot -RepoRoot $repoRoot -Verbose
+        & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -Verbose
 
         $outConf.Output.Verbosity.Value | Should -Be "Detailed"
     }
 
-    It "supports code coverage" {
-        & $coverageScript -Coverage:$true -PathToTest $repoRoot -RepoRoot $repoRoot
+    It "supports code coverage by default" {
+        & $coverageScript -PathToTest $repoRoot -RepoRoot $repoRoot
 
         $outConf.Run.Path.Value | Should -Be @($repoRoot)
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
@@ -45,7 +45,7 @@ Describe "Invoke-PesterWithCodeCoverage" {
     }
 
     It "supports coverage with a subset" {
-        & $coverageScript -Coverage:$true -PathToTest "$repoRoot/subdir" -RepoRoot $repoRoot
+        & $coverageScript -PathToTest "$repoRoot/subdir" -RepoRoot $repoRoot
 
         $outConf.Run.Path.Value | Should -Be @("$repoRoot/subdir")
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
@@ -53,15 +53,15 @@ Describe "Invoke-PesterWithCodeCoverage" {
     }
 
     It "scopes coverage to inferred production file when PathToTest is a test file" {
-        & $coverageScript -Coverage:$true -PathToTest "$repoRoot/testCb_fileWithTests.Tests.ps1" -RepoRoot $repoRoot
+        & $coverageScript -PathToTest "$repoRoot/testCb_fileWithTests.Tests.ps1" -RepoRoot $repoRoot
 
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
         $outConf.CodeCoverage.Path.Value[0] | Should -BeLike "*testCb_fileWithTests.ps1*"
         $outConf.Run.Path.Value[0] | Should -BeLike "*testCb_fileWithTests.Tests.ps1*"
     }
 
-    It "defaults to Standard if inferred production file is not found" {
-        & $coverageScript -Coverage:$true -PathToTest "$repoRoot/testCb_noMatchingProfFile.tests.ps1" -RepoRoot $repoRoot
+    It "defaults coverage scope to repo, if inferred production file is not found" {
+        & $coverageScript -PathToTest "$repoRoot/testCb_noMatchingProfFile.tests.ps1" -RepoRoot $repoRoot
 
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
         $outConf.CodeCoverage.Path.Value | Should -Be @($repoRoot)
@@ -89,7 +89,7 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
 </report>
 '@ | Set-Content "$testRoot/auto/coverage.xml"
 
-        & $coverageScript -Coverage:$true -PathToTest "somePath" -RepoRoot $testRoot
+        & $coverageScript -PathToTest "somePath" -RepoRoot $testRoot
 
         $summaryPath = "$testRoot/auto/test-run-summary.txt"
         $summaryPath | Should -Exist
@@ -102,7 +102,7 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
     It "writes test-run-summary.txt when coverage is disabled" {
         $testRoot = "$TestDrive/disabled-test"
 
-        & $coverageScript -Coverage:$false -PathToTest "somePath" -RepoRoot $testRoot
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
 
         $summaryPath = "$testRoot/auto/test-run-summary.txt"
         $summaryPath | Should -Exist

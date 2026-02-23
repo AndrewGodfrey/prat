@@ -4,7 +4,7 @@
 # single test files cover their corresponding production file (or fall back to RepoRoot).
 [CmdletBinding()]
 param (
-    [switch] $Coverage = $true,
+    [switch] $NoCoverage,
     $PathToTest = ".",
     $RepoRoot = (Resolve-Path "$PSScriptRoot\.."),
     [ValidateSet("CoverageGutters", "JaCoCo")] [string] $CoverageFormat = "CoverageGutters"
@@ -82,7 +82,7 @@ if ($VerbosePreference -ne "SilentlyContinue") {
 }
 $Configuration.Run.PassThru = [bool] $true
 
-if ($Coverage) {
+if (!$NoCoverage) {
     $tempFile = [IO.Path]::GetTempFileName()
     $Configuration.CodeCoverage.OutputPath = $tempFile
     $Configuration.CodeCoverage.Enabled = [bool] $true
@@ -96,7 +96,7 @@ $result = Invoke-PesterAsJob -Configuration $Configuration
 $autoDir = getAutoDir $RepoRoot
 $coverageDest = $null
 
-if ($Coverage) {
+if (!$NoCoverage) {
     if (Test-Path $tempFile) {
         $coverageDest = "$autoDir/coverage.xml"
         moveCoverageFile $tempFile $coverageDest

@@ -1,29 +1,29 @@
 Describe "Test-Prat" {
     BeforeAll {
-        $expectedCoverageSetting = $null
-        function Invoke-PesterWithCodeCoverage($Coverage, $PathToTest, $RepoRoot) {}
-        Mock Invoke-PesterWithCodeCoverage { $Coverage | Should -Be $expectedCoverageSetting }
+        $expectedNoCoverage = $null
+        function Invoke-PesterWithCodeCoverage($NoCoverage, $PathToTest, $RepoRoot) {}
+        Mock Invoke-PesterWithCodeCoverage { $NoCoverage | Should -Be $expectedNoCoverage }
 
         $simulatedTestFocus = $null
         function Get-TestFocus { return $simulatedTestFocus }
     }
     BeforeEach {
-        $expectedCoverageSetting = $false
+        $expectedNoCoverage = $false
     }
-    It "Chooses no coverage by default" {
-        $expectedCoverageSetting = $false
+    It "runs coverage by default" {
+        $expectedNoCoverage = $false
 
         Test-Prat
     }
-    It "supports -Coverage" {
+    It "supports -NoCoverage" {
         foreach ($setting in @($false, $true)) {
-            $expectedCoverageSetting = $setting
+            $expectedNoCoverage = $setting
 
-            Test-Prat -Coverage:$setting
+            Test-Prat -NoCoverage:$setting
         }
     }
     It "Supports test focus" {
-        $expectedCoverageSetting = $false
+        $expectedNoCoverage = $false
         $simulatedTestFocus = "somePath"
 
         Test-Prat
@@ -43,11 +43,11 @@ Describe "Test-Prat" {
 
         Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "explicitFocus" }
     }
-    It "Explicit -Focus with -Coverage enables coverage" {
-        $expectedCoverageSetting = $true
+    It "skips coverage with -NoCoverage even when using -Focus" {
+        $expectedNoCoverage = $true
         $simulatedTestFocus = $null
 
-        Test-Prat -Focus "explicitFocus" -Coverage
+        Test-Prat -Focus "explicitFocus" -NoCoverage
     }
     It "-Focus and -NoFocus cannot be used together" {
         { Test-Prat -Focus "somePath" -NoFocus } | Should -Throw

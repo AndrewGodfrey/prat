@@ -14,7 +14,7 @@ Describe "Invoke-CodebaseCommand" {
 
     It "Runs the codebase action script with its env delta applied" {
         Push-Location $testCbDir
-        $result = &$scriptToTest "test"
+        $result = &$scriptToTest "test" -CommandSwitches @{NoCoverage=$true}
         $result | Should -Be "testCb: test: bar"
     }
 
