@@ -1,7 +1,7 @@
 Describe "Test-Prat" {
     BeforeAll {
         $expectedNoCoverage = $null
-        function Invoke-PesterWithCodeCoverage($NoCoverage, $PathToTest, $RepoRoot) {}
+        function Invoke-PesterWithCodeCoverage($NoCoverage, $PathToTest, $RepoRoot, $Verbosity) {}
         Mock Invoke-PesterWithCodeCoverage { $NoCoverage | Should -Be $expectedNoCoverage }
 
         $simulatedTestFocus = $null
@@ -57,6 +57,18 @@ Describe "Test-Prat" {
 
         Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $RepoRoot -eq "customRoot" }
     }
+    It "defaults to Normal verbosity" {
+        Test-Prat
+
+        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $Verbosity -eq "Normal" }
+    }
+
+    It "forwards -Verbosity to Invoke-PesterWithCodeCoverage" {
+        Test-Prat -Verbosity "Failures"
+
+        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $Verbosity -eq "Failures" }
+    }
+
     It "-NoFocus ignores Get-TestFocus state" {
         $simulatedTestFocus = "focusFromState"
 

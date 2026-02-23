@@ -60,6 +60,24 @@ Describe "Invoke-PesterWithCodeCoverage" {
         $outConf.Run.Path.Value[0] | Should -BeLike "*testCb_fileWithTests.Tests.ps1*"
     }
 
+    It "maps Summary verbosity to Pester None" {
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $repoRoot -Verbosity "Summary"
+
+        $outConf.Output.Verbosity.Value | Should -Be "None"
+    }
+
+    It "maps Failures verbosity to Pester Detailed" {
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $repoRoot -Verbosity "Failures"
+
+        $outConf.Output.Verbosity.Value | Should -Be "Detailed"
+    }
+
+    It "maps Debugging verbosity to Pester Diagnostic" {
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $repoRoot -Verbosity "Debugging"
+
+        $outConf.Output.Verbosity.Value | Should -Be "Diagnostic"
+    }
+
     It "defaults coverage scope to repo, if inferred production file is not found" {
         & $coverageScript -PathToTest "$repoRoot/testCb_noMatchingProfFile.tests.ps1" -RepoRoot $repoRoot
 

@@ -7,7 +7,8 @@ param (
     [switch] $NoCoverage,
     $PathToTest = ".",
     $RepoRoot = (Resolve-Path "$PSScriptRoot\.."),
-    [ValidateSet("CoverageGutters", "JaCoCo")] [string] $CoverageFormat = "CoverageGutters"
+    [ValidateSet("CoverageGutters", "JaCoCo")] [string] $CoverageFormat = "CoverageGutters",
+    [ValidateSet("Summary", "Normal", "Failures", "Debugging")] [string] $Verbosity = "Normal"
 )
 
 function getCoverageSummary($coverageSrc) {
@@ -74,13 +75,21 @@ if ($VerbosePreference -ne "SilentlyContinue") { $VerbosePreference = "SilentlyC
     Import-Module Pester
 $VerbosePreference = $savedVerbosePreference
 
-$Configuration = [PesterConfiguration]::Default
-$Configuration.Run.Path = $PathToTest
-if ($VerbosePreference -ne "SilentlyContinue") {
-    # This is handy for pinpointing some unwanted output - e.g. an uncaught Write-Warning.
-    $Configuration.Output.Verbosity = "Detailed"
+$pesterVerbosity = switch ($Verbosity) {
+    "Summary"   { "None" }
+    "Normal"    { "Normal" }
+    "Failures"  { "Detailed" }
+    "Debugging" { "Diagnostic" }
 }
+if ($VerbosePreference -ne "SilentlyContinue") {
+    # -Verbose flag overrides intent-level verbosity for pinpointing unwanted output.
+    $pesterVerbosity = "Detailed"
+}
+
+$Configuration = [PesterConfiguration]::Default
 $Configuration.Run.PassThru = [bool] $true
+$Configuration.Run.Path = $PathToTest
+$Configuration.Output.Verbosity = $pesterVerbosity
 
 if (!$NoCoverage) {
     $tempFile = [IO.Path]::GetTempFileName()

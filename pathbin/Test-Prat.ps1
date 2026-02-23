@@ -7,6 +7,7 @@ param (
     [Parameter(ParameterSetName="Unfocused")]
     [switch] $NoFocus,
     [switch] $NoCoverage,
+    [ValidateSet("Summary", "Normal", "Failures", "Debugging")] [string] $Verbosity = "Normal",
     $RepoRoot = (Resolve-Path "$PSScriptRoot\..")
 )
 
@@ -18,4 +19,4 @@ if ($null -eq $resolvedFocus) {
     $pathToTest = $resolvedFocus
 }
 
-Invoke-PesterWithCodeCoverage -NoCoverage:$NoCoverage -PathToTest $pathToTest -RepoRoot $RepoRoot
+Invoke-PesterWithCodeCoverage -NoCoverage:$NoCoverage -PathToTest $pathToTest -RepoRoot $RepoRoot -Verbosity $Verbosity
