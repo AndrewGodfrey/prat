@@ -9,46 +9,50 @@ Describe "Invoke-PesterWithCodeCoverage" {
         function moveCoverageFile($tempFile, $coverageDest) {}
         Mock moveCoverageFile {}
 
+        function writeTestRunSummary($result, $coverageSrc, $summaryDest) {}
+        Mock writeTestRunSummary {}
+
         $script:outConf = $null
         $refOutConf = [ref] $script:outConf
         Mock Invoke-PesterAsJob { $refOutConf.Value = $Configuration }
+
+        $repoRoot = (Resolve-Path "$PSScriptRoot/../../pathbin/tests/testCb").Path
     }
 
     It "calls Invoke-PesterAsJob" {
-        & $coverageScript -Coverage:$false -PathToTest "somePath" -RepoRoot "somePath"
+        & $coverageScript -Coverage:$false -PathToTest $repoRoot -RepoRoot $repoRoot
 
         Should -Invoke Invoke-PesterAsJob -Times 1
-        $outConf.Run.Path.Value | Should -Be @("somePath")
+        $outConf.Run.Path.Value | Should -Be @($repoRoot)
+        $outConf.Run.PassThru.Value | Should -Be $true
         $outConf.CodeCoverage.Enabled.Value | Should -Be $false
         $outConf.Output.Verbosity.Value | Should -Not -Be "Detailed"
     }
 
     It "supports -Verbose" {
-        & $coverageScript -Coverage:$false -PathToTest "somePath" -RepoRoot "somePath" -Verbose
+        & $coverageScript -Coverage:$false -PathToTest $repoRoot -RepoRoot $repoRoot -Verbose
 
         $outConf.Output.Verbosity.Value | Should -Be "Detailed"
     }
 
     It "supports code coverage" {
-        & $coverageScript -Coverage:$true -PathToTest "somePath" -RepoRoot "someRepo"
+        & $coverageScript -Coverage:$true -PathToTest $repoRoot -RepoRoot $repoRoot
 
-        $outConf.Run.Path.Value | Should -Be @("somePath")
+        $outConf.Run.Path.Value | Should -Be @($repoRoot)
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
         $outConf.CodeCoverage.OutputFormat.Value | Should -Be "CoverageGutters"  # For integration with vscode "Coverage Gutters" extension.
-        $outConf.CodeCoverage.Path.Value | Should -Be @("someRepo")
+        $outConf.CodeCoverage.Path.Value | Should -Be @($repoRoot)
     }
 
     It "supports coverage with a subset" {
-        & $coverageScript -Coverage:$true -PathToTest "someRepo/subdir" -RepoRoot "someRepo"
+        & $coverageScript -Coverage:$true -PathToTest "$repoRoot/subdir" -RepoRoot $repoRoot
 
-        $outConf.Run.Path.Value | Should -Be @("someRepo/subdir")
+        $outConf.Run.Path.Value | Should -Be @("$repoRoot/subdir")
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
-        $outConf.CodeCoverage.Path.Value | Should -Be @("someRepo")
+        $outConf.CodeCoverage.Path.Value | Should -Be @("$repoRoot\subdir") # The backslash is a quirk of Get-CoverageScope.
     }
 
     It "scopes coverage to inferred production file when PathToTest is a test file" {
-        $repoRoot = (Resolve-Path "$PSScriptRoot/../../pathbin/tests/testCb").Path
-
         & $coverageScript -Coverage:$true -PathToTest "$repoRoot/testCb_fileWithTests.Tests.ps1" -RepoRoot $repoRoot
 
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
@@ -57,11 +61,54 @@ Describe "Invoke-PesterWithCodeCoverage" {
     }
 
     It "defaults to Standard if inferred production file is not found" {
-        $repoRoot = (Resolve-Path "$PSScriptRoot/../../pathbin/tests/testCb").Path
-
         & $coverageScript -Coverage:$true -PathToTest "$repoRoot/testCb_noMatchingProfFile.tests.ps1" -RepoRoot $repoRoot
 
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
         $outConf.CodeCoverage.Path.Value | Should -Be @($repoRoot)
+    }
+}
+
+Describe "Invoke-PesterWithCodeCoverage summary file" {
+    BeforeAll {
+        function moveCoverageFile($tempFile, $coverageDest) {}
+        Mock moveCoverageFile {}
+
+        $fakeResult = [PSCustomObject]@{ PassedCount = 5; FailedCount = 2 }
+
+        Mock Invoke-PesterAsJob { return $fakeResult }
+    }
+
+    It "writes test-run-summary.txt when coverage is enabled" {
+        $testRoot = "$TestDrive/enabled-test"
+        New-Item "$testRoot/auto" -ItemType Directory -Force
+        @'
+<?xml version="1.0"?>
+<report name="test">
+  <counter type="INSTRUCTION" missed="10" covered="90" />
+  <counter type="CLASS" missed="2" covered="8" />
+</report>
+'@ | Set-Content "$testRoot/auto/coverage.xml"
+
+        & $coverageScript -Coverage:$true -PathToTest "somePath" -RepoRoot $testRoot
+
+        $summaryPath = "$testRoot/auto/test-run-summary.txt"
+        $summaryPath | Should -Exist
+        $summary = Get-Content $summaryPath
+        $summary | Should -Match "90%"
+        $summary | Should -Match "Passed: 5"
+        $summary | Should -Match "Failed: 2"
+    }
+
+    It "writes test-run-summary.txt when coverage is disabled" {
+        $testRoot = "$TestDrive/disabled-test"
+
+        & $coverageScript -Coverage:$false -PathToTest "somePath" -RepoRoot $testRoot
+
+        $summaryPath = "$testRoot/auto/test-run-summary.txt"
+        $summaryPath | Should -Exist
+        $summary = Get-Content $summaryPath
+        $summary | Should -Match "Passed: 5"
+        $summary | Should -Match "Failed: 2"
+        $summary | Should -Not -Match "90%"
     }
 }
