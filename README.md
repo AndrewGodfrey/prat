@@ -21,7 +21,7 @@ See [INSTALLATION.md](INSTALLATION.md) for installation and customization instru
 
 ```powershell
 Build-Prat           # alias: b — unloads modules so they can be reimported fresh
-Test-Prat            # alias: t — runs Pester tests; -CodeCoverage for coverage
+Test-Prat            # alias: t — runs Pester tests; -Coverage for coverage
 Deploy-Prat -Force   # alias: d — installs profile, scheduled tasks, Pester
 Start-CodebaseDevLoop # alias: x — runs prebuild → build → test → deploy
 ```
@@ -31,8 +31,8 @@ Coverage target is **70%** (defined in
 View with `Get-CoverageReport` (alias: `gcr`).
 
 Run a focused subset of tests: `Set-TestFocus` then `t`. `Set-TestFocus` accepts a file or directory;
-call with no args to clear focus. `t -CodeCoverage` with a focus set automatically uses `Subset`
-coverage mode — coverage is measured against the focused path and written to `auto/coverage.xml`.
+call with no args to clear focus. `t -Coverage` with a focus set measures coverage against the
+focused path and writes it to `auto/coverage.xml`.
 
 ## Architecture
 

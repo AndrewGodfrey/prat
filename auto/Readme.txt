@@ -5,7 +5,7 @@ cachedCompletionLists\
 	Cached tab-completion data (e.g. shortcut names for Set-LocationUsingShortcut)
 
 coverage.xml
-	Code coverage report in CoverageGutters format, written by 't -CodeCoverage'
+	Code coverage report in CoverageGutters format, written by 't -Coverage'
 
 instDb\
 	Installation database

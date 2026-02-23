@@ -1,10 +1,7 @@
 # .SYNOPSIS
-# Runs Pester with various code-coverage options
-#
-# .PARAMETER CoverageType
-# None:      No code coverage (runs faster)
-# Standard:  Produces CoverageGutter output. Coverage percentage is measured against the entire repo.
-# Subset:    Like Standard, but coverage percentage is measured against the code under the current directory only.
+# Runs Pester with optional code coverage.
+# Coverage scope is inferred from PathToTest: directories cover themselves,
+# single test files cover their corresponding production file (or fall back to RepoRoot).
 [CmdletBinding()]
 param (
     [switch] $Coverage = $true,

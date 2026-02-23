@@ -8,7 +8,7 @@ Describe "Test-Codebase" {
     It "passes -CodeCoverage to the test script" {
         $prev = pushTestEnvironment
         try {
-            $result = Test-Codebase -CodeCoverage
+            $result = Test-Codebase -Coverage
             $result | Should -Be "testCb: test: bar cc"
         } finally {
             popTestEnvironment $prev

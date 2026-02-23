@@ -23,7 +23,7 @@ switch ($codebase) {
             "build"  { return {Build-Prat} }
             "test"   { return { 
                 param([hashtable] $CommandSwitches = @{})
-                Test-Prat -Coverage:$CommandSwitches['CodeCoverage']} 
+                Test-Prat -Coverage:$CommandSwitches['Coverage']} 
             }
             "deploy" { return {Deploy-Prat -Force:$Force} }
         }
@@ -31,7 +31,7 @@ switch ($codebase) {
     "testCb" {
         if ($action -eq "test") { return {
             param([hashtable] $CommandSwitches = @{})
-            $suffix = if ($CommandSwitches['CodeCoverage']) { " cc" } else { "" }
+            $suffix = if ($CommandSwitches['Coverage']) { " cc" } else { "" }
             "testCb: test: $($env:testEnvvar)$suffix"
         }}
         if ("prebuild", "build", "deploy" -contains $action) { return {echo "testCb: $($action): $($env:testEnvvar)"} }
