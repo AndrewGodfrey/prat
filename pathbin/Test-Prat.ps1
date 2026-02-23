@@ -6,7 +6,9 @@ param (
     [string] $Focus,
     [Parameter(ParameterSetName="Unfocused")]
     [switch] $NoFocus,
-    [switch] $Coverage)
+    [switch] $Coverage,
+    $RepoRoot = (Resolve-Path "$PSScriptRoot\..")
+)
 
 $resolvedFocus = if ($NoFocus) { $null } elseif ($Focus) { $Focus } else { Get-TestFocus }
 if ($null -eq $resolvedFocus) {
@@ -16,4 +18,4 @@ if ($null -eq $resolvedFocus) {
     $pathToTest = $resolvedFocus
 }
 
-Invoke-PesterWithCodeCoverage -Coverage:$Coverage -PathToTest $pathToTest -RepoRoot (Resolve-Path "$PSScriptRoot\..")
+Invoke-PesterWithCodeCoverage -Coverage:$Coverage -PathToTest $pathToTest -RepoRoot $RepoRoot

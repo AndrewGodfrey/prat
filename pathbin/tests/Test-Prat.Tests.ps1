@@ -1,7 +1,7 @@
 Describe "Test-Prat" {
     BeforeAll {
         $expectedCoverageSetting = $null
-        function Invoke-PesterWithCodeCoverage($Coverage, $PathToTest) {}
+        function Invoke-PesterWithCodeCoverage($Coverage, $PathToTest, $RepoRoot) {}
         Mock Invoke-PesterWithCodeCoverage { $Coverage | Should -Be $expectedCoverageSetting }
 
         $simulatedTestFocus = $null
@@ -51,6 +51,11 @@ Describe "Test-Prat" {
     }
     It "-Focus and -NoFocus cannot be used together" {
         { Test-Prat -Focus "somePath" -NoFocus } | Should -Throw
+    }
+    It "forwards an explicit -RepoRoot to Invoke-PesterWithCodeCoverage" {
+        Test-Prat -RepoRoot "customRoot"
+
+        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $RepoRoot -eq "customRoot" }
     }
     It "-NoFocus ignores Get-TestFocus state" {
         $simulatedTestFocus = "focusFromState"
