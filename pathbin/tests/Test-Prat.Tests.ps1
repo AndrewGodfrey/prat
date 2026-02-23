@@ -29,25 +29,28 @@ Describe "Test-Prat" {
         Test-Prat
         Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "somePath" }
     }
-    It "Uses explicit -TestFocus as path" {
+    It "Uses explicit -Focus as path" {
         $simulatedTestFocus = $null
 
-        Test-Prat -TestFocus "explicitFocus"
+        Test-Prat -Focus "explicitFocus"
 
         Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "explicitFocus" }
     }
-    It "Explicit -TestFocus overrides Get-TestFocus state" {
+    It "Explicit -Focus overrides Get-TestFocus state" {
         $simulatedTestFocus = "focusFromState"
 
-        Test-Prat -TestFocus "explicitFocus"
+        Test-Prat -Focus "explicitFocus"
 
         Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "explicitFocus" }
     }
-    It "Explicit -TestFocus with -Coverage uses Subset" {
+    It "Explicit -Focus with -Coverage enables coverage" {
         $expectedCoverageSetting = $true
         $simulatedTestFocus = $null
 
-        Test-Prat -TestFocus "explicitFocus" -Coverage
+        Test-Prat -Focus "explicitFocus" -Coverage
+    }
+    It "-Focus and -NoFocus cannot be used together" {
+        { Test-Prat -Focus "somePath" -NoFocus } | Should -Throw
     }
     It "-NoFocus ignores Get-TestFocus state" {
         $simulatedTestFocus = "focusFromState"

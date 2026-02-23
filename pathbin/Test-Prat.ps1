@@ -1,11 +1,14 @@
 # .SYNOPSIS
 # Runs tests in Prat
+[CmdletBinding(DefaultParameterSetName="Unfocused")]
 param (
-    [switch] $Coverage,
-    [string] $TestFocus,
-    [switch] $NoFocus)
+    [Parameter(ParameterSetName="Focused")]
+    [string] $Focus,
+    [Parameter(ParameterSetName="Unfocused")]
+    [switch] $NoFocus,
+    [switch] $Coverage)
 
-$resolvedFocus = if ($NoFocus) { $null } elseif ($TestFocus) { $TestFocus } else { Get-TestFocus }
+$resolvedFocus = if ($NoFocus) { $null } elseif ($Focus) { $Focus } else { Get-TestFocus }
 if ($null -eq $resolvedFocus) {
     # Note: Using 'current directory' - as in how most build tools work. 
     $pathToTest = "."
