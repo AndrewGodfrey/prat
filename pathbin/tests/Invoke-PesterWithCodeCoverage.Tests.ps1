@@ -123,4 +123,13 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
         $summary | Should -Match "Failed: 2"
         $summary | Should -Not -Match "90%"
     }
+
+    It "echoes test-run-summary.txt to output when Verbosity is Summary" {
+        $testRoot = "$TestDrive/summary-verbosity-test"
+
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -Verbosity "Summary"
+
+        $output | Should -Match "Passed: 5"
+        $output | Should -Match "Failed: 2"
+    }
 }

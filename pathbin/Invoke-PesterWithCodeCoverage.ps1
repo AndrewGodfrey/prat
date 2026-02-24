@@ -111,4 +111,11 @@ if (!$NoCoverage) {
     }
 }
 
- writeTestRunSummary $result $coverageDest "$autoDir/test-run-summary.txt"
+writeTestRunSummary $result $coverageDest "$autoDir/test-run-summary.txt"
+
+if ($Verbosity -eq "Summary") {
+    $summaryPath = "$autoDir/test-run-summary.txt"
+    if (Test-Path $summaryPath) {
+        Get-Content $summaryPath
+    }
+}
