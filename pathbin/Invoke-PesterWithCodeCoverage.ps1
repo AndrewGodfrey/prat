@@ -2,6 +2,21 @@
 # Runs Pester with optional code coverage.
 # Coverage scope is inferred from PathToTest: directories cover themselves,
 # single test files cover their corresponding production file (or fall back to RepoRoot).
+#
+# .PARAMETER CoverageFormat
+# Controls the XML format written to auto/coverage.xml.
+#
+# CoverageGutters (default): package and class names are absolute paths; sourcefilename is leaf-only.
+#   The VS Code Coverage Gutters extension detects format by content (DOCTYPE contains "JACOCO"), then
+#   resolves source files by joining the absolute package path with the leaf sourcefilename. This is
+#   why absolute paths are required — relative paths (as in JaCoCo format) cannot be anchored to disk.
+#
+# JaCoCo: package and class names are relative (e.g. "prat/lib/Foo"); sourcefilename is a relative
+#   path (e.g. "lib/Foo.ps1"). This makes the sourcefile directly searchable by relative path, which
+#   is easier for agents. However, Coverage Gutters cannot resolve files from these relative paths and
+#   reports no coverage — so JaCoCo is only useful when the output is consumed by agents, not the IDE.
+#
+
 [CmdletBinding()]
 param (
     [switch] $NoCoverage,

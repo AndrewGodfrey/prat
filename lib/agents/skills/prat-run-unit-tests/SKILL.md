@@ -51,6 +51,23 @@ Run fresh after any code change.
   its corresponding production file
 - Skip with `-NoCoverage` during rapid iteration; run a final full-coverage pass when done
 
+### Querying coverage.xml
+
+CoverageGutters format uses **absolute paths** for package names and **leaf-only** sourcefile names.
+To find uncovered lines for e.g. `lib/Installers/instClaude.ps1`:
+
+```
+<package name="C:/Users/andrew/prat/lib/Installers">   ← absolute path of directory
+  <sourcefile name="instClaude.ps1">                   ← leaf filename only
+    <line nr="5" mi="1" ci="0" .../>                   ← mi=missed, ci=covered instructions
+```
+
+XPath: `//package[@name='C:/Users/andrew/prat/lib/Installers']/sourcefile[@name='instClaude.ps1']/line[@mi!='0']`
+
+Or in two steps: find the `<package>` whose `name` ends with your directory, then find the
+`<sourcefile>` by leaf name within it. Don't search by leaf name alone — different directories
+could share a filename.
+
 **Avoid invoking `Invoke-Pester` or `pwsh -c` directly** — reasons:
 - Pester 5 parameter sets are tricky
 - `pwsh -c "..."` requires escaping every `$` which agents consistently get wrong.
