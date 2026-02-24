@@ -18,5 +18,5 @@ if ($null -ne $Months) {
     if ($null -eq $n) { $n = 7 }
     $optArgs += "--max-count=$n"
 }
-GitLog-Pretty @optArgs $Path
+GitLog-Pretty @optArgs $Path @args
 
