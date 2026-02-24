@@ -8,7 +8,7 @@ param (
     $PathToTest = ".",
     $RepoRoot = (Resolve-Path "$PSScriptRoot\.."),
     [ValidateSet("CoverageGutters", "JaCoCo")] [string] $CoverageFormat = "CoverageGutters",
-    [ValidateSet("Summary", "Normal", "Failures", "Debugging")] [string] $Verbosity = "Normal"
+    [ValidateSet("Summary", "Normal", "Debugging")] [string] $Verbosity = "Normal"
 )
 
 function getCoverageSummary($coverageSrc) {
@@ -78,7 +78,6 @@ $VerbosePreference = $savedVerbosePreference
 $pesterVerbosity = switch ($Verbosity) {
     "Summary"   { "None" }
     "Normal"    { "Normal" }
-    "Failures"  { "Detailed" }
     "Debugging" { "Diagnostic" }
 }
 if ($VerbosePreference -ne "SilentlyContinue") {

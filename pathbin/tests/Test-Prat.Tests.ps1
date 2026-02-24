@@ -64,9 +64,9 @@ Describe "Test-Prat" {
     }
 
     It "forwards -Verbosity to Invoke-PesterWithCodeCoverage" {
-        Test-Prat -Verbosity "Failures"
+        Test-Prat -Verbosity "Debugging"
 
-        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $Verbosity -eq "Failures" }
+        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $Verbosity -eq "Debugging" }
     }
 
     It "-NoFocus ignores Get-TestFocus state" {

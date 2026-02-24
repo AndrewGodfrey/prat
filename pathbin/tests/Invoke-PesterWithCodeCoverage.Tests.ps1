@@ -66,12 +66,6 @@ Describe "Invoke-PesterWithCodeCoverage" {
         $outConf.Output.Verbosity.Value | Should -Be "None"
     }
 
-    It "maps Failures verbosity to Pester Detailed" {
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $repoRoot -Verbosity "Failures"
-
-        $outConf.Output.Verbosity.Value | Should -Be "Detailed"
-    }
-
     It "maps Debugging verbosity to Pester Diagnostic" {
         & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $repoRoot -Verbosity "Debugging"
 

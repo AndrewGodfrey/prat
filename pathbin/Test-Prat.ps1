@@ -7,7 +7,7 @@ param (
     [Parameter(ParameterSetName="Unfocused")]
     [switch] $NoFocus,
     [switch] $NoCoverage,
-    [ValidateSet("Summary", "Normal", "Failures", "Debugging")] [string] $Verbosity = "Normal",
+    [ValidateSet("Summary", "Normal", "Debugging")] [string] $Verbosity = "Normal",
     $RepoRoot = (Resolve-Path "$PSScriptRoot\..")
 )
 
