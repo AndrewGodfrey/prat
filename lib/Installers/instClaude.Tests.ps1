@@ -4,10 +4,47 @@ BeforeAll {
     . $PSScriptRoot\instFilesAndFolders.ps1
 
     Import-Module "$PSScriptRoot\..\TextFileEditor\TextFileEditor.psd1"
+    Import-Module "$PSScriptRoot\..\PratBase\PratBase.psd1"
 
     class MockStage {
         [int] $changeCount = 0
         [void] OnChange() { $this.changeCount++ }
+    }
+}
+
+Describe "Install-ClaudeSkills" {
+    BeforeEach {
+        $script:testDir = (Resolve-Path "TestDrive:\").ProviderPath + "instClaude.Tests"
+        mkdir $testDir | Out-Null
+        $script:srcDir = "$testDir\skills-src"
+        $script:destDir = "$testDir\skills-dest"
+        $script:stage = [MockStage]::new()
+    }
+    AfterEach {
+        Remove-Item $testDir -Recurse -Force
+    }
+
+    It "deploys each skill subdirectory to the destination" {
+        mkdir "$srcDir\my-skill" | Out-Null
+        "skill content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
+        mkdir $destDir | Out-Null  # pre-create so Install-Folder skips the mkdir+ACL path
+
+        Install-ClaudeSkills $stage $srcDir $destDir
+
+        "$destDir\my-skill\SKILL.md" | Should -Exist
+    }
+
+    It "deploys multiple skills" {
+        mkdir "$srcDir\skill-a" | Out-Null
+        "a" | Out-File "$srcDir\skill-a\SKILL.md" -Encoding utf8NoBOM
+        mkdir "$srcDir\skill-b" | Out-Null
+        "b" | Out-File "$srcDir\skill-b\SKILL.md" -Encoding utf8NoBOM
+        mkdir $destDir | Out-Null  # pre-create so Install-Folder skips the mkdir+ACL path
+
+        Install-ClaudeSkills $stage $srcDir $destDir
+
+        "$destDir\skill-a\SKILL.md" | Should -Exist
+        "$destDir\skill-b\SKILL.md" | Should -Exist
     }
 }
 

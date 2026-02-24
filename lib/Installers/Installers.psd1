@@ -85,7 +85,7 @@ FunctionsToExport = @(
 	'Install-WindowsStartMenuLocalOnly', 'Install-WindowsSecondaryClockUTC', 'Install-WindowsFileAssociation', 'Install-WindowsAppVerbAssociation',
 	'New-WindowsConsoleShortcut', 'Install-WindowsConsoleShortcut', 'Install-WindowsTaskbarCleanup',
 	'Install-CustomBrowserHomePage', 'Install-PsProfile',
-	'Install-ClaudeUserConfig', 'Install-ClaudeUserSettings', 'Install-ClaudeSyncFolders',
+	'Install-ClaudeUserConfig', 'Install-ClaudeUserSettings', 'Install-ClaudeSyncFolders', 'Install-ClaudeSkills',
 	'Install-CopilotSyncFolders',
     'Get-AgentsForCodebase', 'Select-AgentForCodebase'
 )
