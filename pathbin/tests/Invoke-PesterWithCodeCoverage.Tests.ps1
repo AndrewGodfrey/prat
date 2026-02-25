@@ -124,6 +124,14 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
         $summary | Should -Not -Match "90%"
     }
 
+    It "writes output files to custom -OutputDir" {
+        $customOutputDir = "$TestDrive/custom-outputdir"
+
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot "$TestDrive/repo" -OutputDir $customOutputDir
+
+        "$customOutputDir/test-run-summary.txt" | Should -Exist
+    }
+
     It "echoes test-run-summary.txt to output when Verbosity is Summary" {
         $testRoot = "$TestDrive/summary-verbosity-test"
 

@@ -22,6 +22,7 @@ param (
     [switch] $NoCoverage,
     $PathToTest = ".",
     $RepoRoot = (Resolve-Path "$PSScriptRoot\.."),
+    $OutputDir = $null,
     [ValidateSet("CoverageGutters", "JaCoCo")] [string] $CoverageFormat = "CoverageGutters",
     [ValidateSet("Summary", "Normal", "Debugging")] [string] $Verbosity = "Normal"
 )
@@ -116,20 +117,21 @@ if (!$NoCoverage) {
 
 $result = Invoke-PesterAsJob -Configuration $Configuration
 
-$autoDir = getAutoDir $RepoRoot
+$resolvedOutputDir = if ($OutputDir) { $OutputDir } else { getAutoDir $RepoRoot }
+if ($OutputDir -and !(Test-Path $resolvedOutputDir)) { New-Item $resolvedOutputDir -ItemType Directory | Out-Null }
 $coverageDest = $null
 
 if (!$NoCoverage) {
     if (Test-Path $tempFile) {
-        $coverageDest = "$autoDir/coverage.xml"
+        $coverageDest = "$resolvedOutputDir/coverage.xml"
         moveCoverageFile $tempFile $coverageDest
     }
 }
 
-writeTestRunSummary $result $coverageDest "$autoDir/test-run-summary.txt"
+writeTestRunSummary $result $coverageDest "$resolvedOutputDir/test-run-summary.txt"
 
 if ($Verbosity -eq "Summary") {
-    $summaryPath = "$autoDir/test-run-summary.txt"
+    $summaryPath = "$resolvedOutputDir/test-run-summary.txt"
     if (Test-Path $summaryPath) {
         Get-Content $summaryPath
     }

@@ -27,6 +27,7 @@ Test-Prat.sh -Focus lib/Foo.Tests.ps1 -NoCoverage -Verbosity Debugging    # debu
 | `-NoFocus` | Ignore saved focus state, run full suite |
 | `-NoCoverage` | Skip coverage (faster for rapid iteration) |
 | `-Verbosity <level>` | `Summary` / `Normal` (default) / `Debugging` |
+| `-OutputDir <path>` | Where to write `coverage.xml` and `test-run-summary.txt` (default: `auto/`) |
 
 ## Verbosity
 
