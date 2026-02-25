@@ -12,7 +12,7 @@ BeforeAll {
 }
 
 Describe "Get-CoverageReport" {
-    It "Creates a repoort" {
+    It "Creates a report" {
         $coverageFile = @"
             <?xml version="1.0" encoding="UTF-8" standalone="no"?>
             <!DOCTYPE report PUBLIC "-//JACOCO//DTD Report 1.1//EN" "report.dtd"[]>

@@ -3,11 +3,12 @@
 # Gets a simple code-coverage report from the result of Invoke-PesterWithCodeCoverage.ps1
 # This is useful to find files that need more coverage.
 #
-# Expects a Pester-generated coverage XML file in CoverageGutters format.
+# Expects a Pester-generated coverage XML file in JaCoCo or Coverage Gutters formats.
 
 using namespace System.Diagnostics.CodeAnalysis
 
 param ($coverageFile = "$PSScriptRoot/../auto/coverage.xml",
+    $repoRoot = (Resolve-Path "$PSScriptRoot\.."),
     [switch] $ShowAll, 
     [switch] $FullPaths,
     [switch] $Unformatted,
@@ -17,56 +18,12 @@ param ($coverageFile = "$PSScriptRoot/../auto/coverage.xml",
 
 $exclusionFilter = & (Resolve-PratLibFile "lib/Get-CoverageExclusionFilter.ps1")
 
-function LoadCoverageReport($coverageFile) {
-    function appendCounterData($filename, $counters) {
-        if ($null -eq $report[$filename]) {
-            $report[$filename] = @{
-                INSTRUCTION = @{ missed = 0; covered = 0 }
-                LINE = @{ missed = 0; covered = 0 } 
-                METHOD = @{ missed = 0; covered = 0 }
-            }
-        }
-        $r = $report[$filename]
-        foreach ($counter in $counters) {
-            if ($null -eq $r[$counter.type]) { throw "Internal error: unexpected counter type: $($counter.type)" }
-            $r[$counter.type].missed += [int] $counter.missed
-            $r[$counter.type].covered += [int] $counter.covered
-            $totals[$counter.type].missed += [int] $counter.missed
-            $totals[$counter.type].covered += [int] $counter.covered
-        }
-    }
-
-    function calculateFullFilename($className, $sourceFileName) {
-        # For some reason, className ends in the filename of the .ps1 file, without the extension. So remove that to avoid repeating it.
-        $path = Split-Path -parent $className
-        return Join-Path $path $sourcefilename
-    }
-
+function LoadCoverageReport($coverageFile, $reporoot) {
     if (!(Test-Path $coverageFile)) {
         Write-Error "Coverage file not found: $coverageFile"
         exit 1
     }
-    [xml]$xml = Get-Content $coverageFile
-    $report = @{}
-    $totals = @{
-        INSTRUCTION = @{ missed = 0; covered = 0 }
-        LINE = @{ missed = 0; covered = 0 } 
-        METHOD = @{ missed = 0; covered = 0 }
-    }
-
-    if ($null -eq $xml.report) { throw "Invalid coverage file: $coverageFile - missing <report> element" }
-
-    foreach ($package in $xml.report.package) { # This glosses over $xml.report.Count being 2. The first one is empty. I guess the doctype element?
-        foreach ($class in $package.class) {
-            $filename = calculateFullFilename $class.name $class.sourcefilename
-
-            foreach ($method in $class.method) {
-                appendCounterData $filename $method.counter
-            }
-        }
-    }
-
-    return @{totals = $totals; perFileReport = $report}
+    return & "$PSScriptRoot/../lib/Get-CoverageData.ps1" -CoverageFile $coverageFile -RepoRoot $reporoot
 }
 
 function CalculateCoverage($counter, [switch] $AsDouble) {
@@ -136,7 +93,7 @@ function IsFileOmitted($filename) {
     return $false
 }
 
-$report = LoadCoverageReport $coverageFile
+$report = LoadCoverageReport $coverageFile $repoRoot
 # return $report.GetEnumerator() | Sort-Object Name
 $filesMeetingGoal = 0
 

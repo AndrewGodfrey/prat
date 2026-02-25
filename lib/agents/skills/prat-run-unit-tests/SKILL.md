@@ -69,6 +69,24 @@ Or in two steps: find the `<package>` whose `name` ends with your directory, the
 `<sourcefile>` by leaf name within it. Don't search by leaf name alone — different directories
 could share a filename.
 
+## Per-Function Coverage
+
+After a test run, use `Get-FileCoverage` to see which functions in a file need attention:
+
+```powershell
+Get-FileCoverage -FilePath "C:\path\to\File.ps1"               # uses auto/coverage.xml
+Get-FileCoverage -FilePath "C:\path\to\File.ps1" -CoverageFile "path/to/coverage.xml"
+```
+
+Output — one row per function:
+
+```
+Function       Line  Covered  Missed
+<script>          1       10       0
+Get-Something    20        2       8   ← needs attention
+Set-Something    35        0       6   ← uncovered
+```
+
 **Avoid invoking `Invoke-Pester` or `pwsh -c` directly** — reasons:
 - Pester 5 parameter sets are tricky
 - `pwsh -c "..."` requires escaping every `$` which agents consistently get wrong.
