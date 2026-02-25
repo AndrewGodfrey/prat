@@ -7,7 +7,7 @@
 
 using namespace System.Diagnostics.CodeAnalysis
 
-param ($coverageFile = "$PSScriptRoot/../auto/coverage.xml",
+param ($coverageFile = "$PSScriptRoot/../auto/testRuns/last/coverage.xml",
     $repoRoot = (Resolve-Path "$PSScriptRoot\.."),
     [switch] $ShowAll, 
     [switch] $FullPaths,

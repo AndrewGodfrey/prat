@@ -10,7 +10,7 @@
 
 param (
     [Parameter(Mandatory)] $FilePath,
-    $CoverageFile = "$PSScriptRoot/../auto/coverage.xml"
+    $CoverageFile = "$PSScriptRoot/../auto/testRuns/last/coverage.xml"
 )
 
 $data = & "$PSScriptRoot/../lib/Get-CoverageData.ps1" -CoverageFile $CoverageFile

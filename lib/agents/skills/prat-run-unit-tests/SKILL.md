@@ -27,27 +27,40 @@ Test-Prat.sh -Focus lib/Foo.Tests.ps1 -NoCoverage -Verbosity Debugging    # debu
 | `-NoFocus` | Ignore saved focus state, run full suite |
 | `-NoCoverage` | Skip coverage (faster for rapid iteration) |
 | `-Verbosity <level>` | `Summary` / `Normal` (default) / `Debugging` |
-| `-OutputDir <path>` | Where to write `coverage.xml` and `test-run-summary.txt` (default: `auto/`) |
+| `-OutputDir <path>` | Where to write output files (default: `auto/`); files go under `testRuns/last/` |
 
 ## Verbosity
 
 | Level | Use when |
 |-------|----------|
-| `Summary` | Quick pass/fail check — outputs one line from `auto/test-run-summary.txt` |
+| `Summary` | Quick pass/fail check — outputs one line from `auto/testRuns/last/test-run-summary.txt` |
 | `Normal` | Default — file names, failure details, counts |
 | `Debugging` | Diagnosing a failure — always pair with a tight `-Focus` |
 
 ## Cached Summary vs. Fresh Run
 
-Read `auto/test-run-summary.txt` instead of re-running when:
+Read `auto/testRuns/last/test-run-summary.txt` instead of re-running when:
 - No code has changed since the last run
 - You only need the pass/fail count or coverage %
 
 Run fresh after any code change.
 
+## Output Files
+
+Every run writes to `auto/testRuns/last/`:
+
+| File | Contents |
+|------|----------|
+| `test-run.txt` | A copy of the console output |
+| `test-run-summary.txt` | One-line summary: coverage % and pass/fail counts |
+| `coverage.xml` | Coverage data in CoverageGutters format (omitted when using -NoCoverage) |
+
+Previous runs are rotated to `auto/testRuns/<timestamp>/` and pruned to 1 kept by default
+(configurable via `lib/Get-TestRunRetention_prat.ps1`).
+
 ## Coverage
 
-- Runs by default; written to `auto/coverage.xml` (CoverageGutters format)
+- Runs by default; written to `auto/testRuns/last/coverage.xml` (CoverageGutters format)
 - Coverage scope is inferred: a directory covers itself; a single `.Tests.ps1` file covers
   its corresponding production file
 - Skip with `-NoCoverage` during rapid iteration; run a final full-coverage pass when done
@@ -55,6 +68,7 @@ Run fresh after any code change.
 ### Querying coverage.xml
 
 CoverageGutters format uses **absolute paths** for package names and **leaf-only** sourcefile names.
+Coverage file is at `auto/testRuns/last/coverage.xml` by default.
 To find uncovered lines for e.g. `lib/Installers/instClaude.ps1`:
 
 ```

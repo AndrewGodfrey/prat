@@ -233,8 +233,11 @@ function Invoke-PesterAsJob {
 
     $params = $PSBoundParameters
 
-    Start-Job -ScriptBlock { Set-Location $using:pwd; Invoke-Pester @using:params } |
-    Receive-Job -Wait -AutoRemoveJob
+    Start-Job -ScriptBlock {
+        $PSStyle.OutputRendering = 'Ansi'
+        Set-Location $using:pwd
+        Invoke-Pester @using:params
+    } | Receive-Job -Wait -AutoRemoveJob
 }
 
 . $PSScriptRoot\envDelta.ps1

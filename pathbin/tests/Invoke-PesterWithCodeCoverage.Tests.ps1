@@ -12,6 +12,12 @@ Describe "Invoke-PesterWithCodeCoverage" {
         function writeTestRunSummary($result, $coverageSrc, $summaryDest) {}
         Mock writeTestRunSummary {}
 
+        function getAutoDir($repoRoot) {}
+        Mock getAutoDir { "$TestDrive" }
+
+        function prepareRunDir($outputDir) {}
+        Mock prepareRunDir { New-Item "$TestDrive/run" -ItemType Directory -Force | Out-Null; "$TestDrive/run" }
+
         $script:outConf = $null
         $refOutConf = [ref] $script:outConf
         Mock Invoke-PesterAsJob { $refOutConf.Value = $Configuration }
@@ -90,20 +96,24 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
         Mock Invoke-PesterAsJob { return $fakeResult }
     }
 
-    It "writes test-run-summary.txt when coverage is enabled" {
+    It "writes test-run-summary.txt to testRuns/last when coverage is enabled" {
         $testRoot = "$TestDrive/enabled-test"
-        New-Item "$testRoot/auto" -ItemType Directory -Force
-        @'
+
+        Mock moveCoverageFile {
+            param($tempFile, $coverageDest)
+            New-Item (Split-Path $coverageDest) -ItemType Directory -Force | Out-Null
+            @'
 <?xml version="1.0"?>
 <report name="test">
   <counter type="INSTRUCTION" missed="10" covered="90" />
   <counter type="CLASS" missed="2" covered="8" />
 </report>
-'@ | Set-Content "$testRoot/auto/coverage.xml"
+'@ | Set-Content $coverageDest
+        }
 
         & $coverageScript -PathToTest "somePath" -RepoRoot $testRoot
 
-        $summaryPath = "$testRoot/auto/test-run-summary.txt"
+        $summaryPath = "$testRoot/auto/testRuns/last/test-run-summary.txt"
         $summaryPath | Should -Exist
         $summary = Get-Content $summaryPath
         $summary | Should -Match "90%"
@@ -111,12 +121,12 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
         $summary | Should -Match "Failed: 2"
     }
 
-    It "writes test-run-summary.txt when coverage is disabled" {
+    It "writes test-run-summary.txt to testRuns/last when coverage is disabled" {
         $testRoot = "$TestDrive/disabled-test"
 
         & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
 
-        $summaryPath = "$testRoot/auto/test-run-summary.txt"
+        $summaryPath = "$testRoot/auto/testRuns/last/test-run-summary.txt"
         $summaryPath | Should -Exist
         $summary = Get-Content $summaryPath
         $summary | Should -Match "Passed: 5"
@@ -124,12 +134,12 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
         $summary | Should -Not -Match "90%"
     }
 
-    It "writes output files to custom -OutputDir" {
+    It "writes output files to testRuns/last under custom -OutputDir" {
         $customOutputDir = "$TestDrive/custom-outputdir"
 
         & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot "$TestDrive/repo" -OutputDir $customOutputDir
 
-        "$customOutputDir/test-run-summary.txt" | Should -Exist
+        "$customOutputDir/testRuns/last/test-run-summary.txt" | Should -Exist
     }
 
     It "echoes test-run-summary.txt to output when Verbosity is Summary" {
@@ -139,5 +149,63 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
 
         $output | Should -Match "Passed: 5"
         $output | Should -Match "Failed: 2"
+    }
+}
+
+Describe "Invoke-PesterWithCodeCoverage test run directory management" {
+    BeforeAll {
+        function moveCoverageFile($tempFile, $coverageDest) {}
+        Mock moveCoverageFile {}
+
+        function getRetention() {}
+        Mock getRetention { 2 }
+
+        function getTimestamp() {}
+        Mock getTimestamp { "2000-01-01T00-00-00-000" }
+
+        $fakeResult = [PSCustomObject]@{ PassedCount = 3; FailedCount = 0 }
+        Mock Invoke-PesterAsJob { return $fakeResult }
+    }
+
+    It "creates test-run.txt log file in testRuns/last" {
+        $testRoot = "$TestDrive/log-test"
+
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+
+        "$testRoot/auto/testRuns/last/test-run.txt" | Should -Exist
+    }
+
+    It "rotates previous testRuns/last to a timestamped directory on second run" {
+        $testRoot = "$TestDrive/rotate-test"
+
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+
+        $timestampDirs = Get-ChildItem "$testRoot/auto/testRuns" -Directory |
+            Where-Object { $_.Name -ne 'last' }
+        $timestampDirs | Should -HaveCount 1
+        "$testRoot/auto/testRuns/last/test-run-summary.txt" | Should -Exist
+    }
+
+    It "applies retention: removes oldest timestamp dirs beyond N=2" {
+        $testRoot = "$TestDrive/retention-test"
+
+        # Use a [ref] counter so the closure captures a mutable object (not a scope-sensitive $script: var)
+        $counter = [ref] 0
+        Mock getTimestamp {
+            $counter.Value++
+            "2000-01-01T00-00-00-{0:D3}" -f $counter.Value
+        }
+
+        # Run 4 times: run 1 creates 'last'; runs 2-4 rotate it to 001, 002, 003.
+        # With N=2: after run 4 there are 3 timestamp dirs, so 001 (oldest) is deleted.
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+
+        "$testRoot/auto/testRuns/2000-01-01T00-00-00-001" | Should -Not -Exist
+        "$testRoot/auto/testRuns/2000-01-01T00-00-00-002" | Should -Exist
+        "$testRoot/auto/testRuns/2000-01-01T00-00-00-003" | Should -Exist
     }
 }

@@ -4,8 +4,8 @@ This includes generated files, inputs e.g. settings, installation database, and 
 cachedCompletionLists\
 	Cached tab-completion data (e.g. shortcut names for Set-LocationUsingShortcut)
 
-coverage.xml
-	Code coverage report in CoverageGutters format, written by 't'
+testRuns\
+	Output from unit test runs - code coverage, summary, verbose logs
 
 instDb\
 	Installation database
