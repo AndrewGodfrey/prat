@@ -53,6 +53,66 @@ Describe "Get-FileCoverage" {
         $result | Should -HaveCount 0
     }
 
+    Context "-Detail" {
+        BeforeAll {
+            $detailXml = @'
+<report name="test">
+<package name="C:/repo/pathbin">
+  <class name="C:/repo/pathbin/Foo" sourcefilename="Foo.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="1" covered="3" />
+      <counter type="LINE" missed="1" covered="2" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+    <method name="Get-Foo" desc="()" line="10">
+      <counter type="INSTRUCTION" missed="4" covered="0" />
+      <counter type="LINE" missed="2" covered="0" />
+      <counter type="METHOD" missed="1" covered="0" />
+    </method>
+  </class>
+  <sourcefile name="Foo.ps1">
+    <line nr="1" mi="0" ci="1" mb="0" cb="0" />
+    <line nr="3" mi="0" ci="1" mb="0" cb="0" />
+    <line nr="5" mi="1" ci="0" mb="0" cb="0" />
+    <line nr="10" mi="2" ci="0" mb="0" cb="0" />
+    <line nr="11" mi="2" ci="0" mb="0" cb="0" />
+  </sourcefile>
+</package>
+</report>
+'@
+            $detailFile = "$TestDrive/detail-coverage.xml"
+            $detailXml | Set-Content $detailFile
+        }
+
+        It "returns one row per covered/missed range per function" {
+            $result = & $script -FilePath "C:/repo/pathbin/Foo.ps1" -CoverageFile $detailFile -Detail
+
+            $result | Should -HaveCount 3
+            $result[0].Function  | Should -Be "<script>"
+            $result[0].StartLine | Should -Be 1
+            $result[0].EndLine   | Should -Be 3
+            $result[0].Status    | Should -Be "covered"
+            $result[1].Function  | Should -Be "<script>"
+            $result[1].StartLine | Should -Be 5
+            $result[1].EndLine   | Should -Be 5
+            $result[1].Status    | Should -Be "missed"
+            $result[2].Function  | Should -Be "Get-Foo"
+            $result[2].StartLine | Should -Be 10
+            $result[2].EndLine   | Should -Be 11
+            $result[2].Status    | Should -Be "missed"
+        }
+
+        It "with -Function filters to that function only" {
+            $result = & $script -FilePath "C:/repo/pathbin/Foo.ps1" -CoverageFile $detailFile -Detail -Function "Get-Foo"
+
+            $result | Should -HaveCount 1
+            $result[0].Function  | Should -Be "Get-Foo"
+            $result[0].StartLine | Should -Be 10
+            $result[0].EndLine   | Should -Be 11
+            $result[0].Status    | Should -Be "missed"
+        }
+    }
+
     It "accepts a relative file path by resolving against current directory" {
         "content" | Set-Content "$TestDrive/RelFile.ps1"
         $xml = @"

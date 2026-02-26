@@ -101,6 +101,25 @@ Get-Something    20        2       8   ← needs attention
 Set-Something    35        0       6   ← uncovered
 ```
 
+For line-range coverage:
+
+```powershell
+Get-FileCoverage -FilePath "C:\path\to\File.ps1" -Detail  
+```
+
+Output:
+```
+Function                 StartLine EndLine Status
+--------                 --------- ------- ------
+<script>                        26      27 missed
+TryAdd                          35      36 missed
+FindShortcut                    62      71 covered
+ReverseSearchForShortcut        75      86 missed
+ReverseSearchForShortcut        89      94 covered
+ReverseSearchForShortcut        95      95 missed
+ReverseSearchForShortcut        98      98 covered
+```
+
 **Avoid invoking `Invoke-Pester` or `pwsh -c` directly** — reasons:
 - Pester 5 parameter sets are tricky
 - `pwsh -c "..."` requires escaping every `$` which agents consistently get wrong.

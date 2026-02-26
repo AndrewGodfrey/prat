@@ -118,6 +118,90 @@ Describe "Get-CoverageData" {
         $result.perFileReport[$filePath].INSTRUCTION.covered | Should -Be 2
     }
 
+    It "parses line-level data from sourcefile elements into perFileLineData" {
+        $xml = @'
+<report name="test">
+<package name="C:/repo/pathbin">
+  <class name="C:/repo/pathbin/Foo" sourcefilename="Foo.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="1" covered="3" />
+      <counter type="LINE" missed="1" covered="2" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+    <method name="Get-Foo" desc="()" line="10">
+      <counter type="INSTRUCTION" missed="4" covered="0" />
+      <counter type="LINE" missed="2" covered="0" />
+      <counter type="METHOD" missed="1" covered="0" />
+    </method>
+  </class>
+  <sourcefile name="Foo.ps1">
+    <line nr="1" mi="0" ci="1" mb="0" cb="0" />
+    <line nr="3" mi="0" ci="1" mb="0" cb="0" />
+    <line nr="5" mi="1" ci="0" mb="0" cb="0" />
+    <line nr="10" mi="2" ci="0" mb="0" cb="0" />
+    <line nr="11" mi="2" ci="0" mb="0" cb="0" />
+  </sourcefile>
+</package>
+</report>
+'@
+        $f = "$TestDrive/lines.xml"
+        $xml | Set-Content $f
+
+        $result = & $script -CoverageFile $f
+
+        $filePath = (Join-Path "C:/repo/pathbin" "Foo.ps1").Replace('\', '/')
+        $lines = $result.perFileLineData[$filePath]
+        $lines | Should -HaveCount 5
+        $lines[0].nr      | Should -Be 1
+        $lines[0].covered | Should -Be $true
+        $lines[1].nr      | Should -Be 3
+        $lines[1].covered | Should -Be $true
+        $lines[2].nr      | Should -Be 5
+        $lines[2].covered | Should -Be $false
+        $lines[3].nr      | Should -Be 10
+        $lines[3].covered | Should -Be $false
+    }
+
+    It "throws when RepoRoot is supplied, format is CoverageGutters, and a path is outside RepoRoot" {
+        $xml = @'
+<report name="test">
+<package name="C:/some/other/tree">
+  <class name="C:/some/other/tree/Foo" sourcefilename="Foo.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="0" covered="1" />
+      <counter type="LINE" missed="0" covered="1" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+'@
+        $f = "$TestDrive/mismatch.xml"
+        $xml | Set-Content $f
+
+        { & $script -CoverageFile $f -RepoRoot "C:/repo" -ValidateRepoRoot } | Should -Throw "*outside RepoRoot*"
+    }
+
+    It "does not throw when RepoRoot is supplied, format is CoverageGutters, and all paths are under RepoRoot" {
+        $xml = @'
+<report name="test">
+<package name="C:/repo/pathbin">
+  <class name="C:/repo/pathbin/Foo" sourcefilename="Foo.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="0" covered="1" />
+      <counter type="LINE" missed="0" covered="1" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+'@
+        $f = "$TestDrive/valid.xml"
+        $xml | Set-Content $f
+
+        { & $script -CoverageFile $f -RepoRoot "C:/repo" -ValidateRepoRoot } | Should -Not -Throw
+    }
+
     It "accumulates totals across all methods and files" {
         $xml = @'
 <report name="test">

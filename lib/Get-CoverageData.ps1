@@ -16,7 +16,8 @@
 
 param (
     $CoverageFile,
-    $RepoRoot = $null
+    $RepoRoot = $null,
+    [switch] $ValidateRepoRoot
 )
 
 if (!(Test-Path $CoverageFile)) { throw "Coverage file not found: $CoverageFile" }
@@ -43,14 +44,28 @@ function resolveFilePath($package, $class) {
         # JaCoCo: sourcefilename is relative from RepoRoot
         $path = Join-Path $RepoRoot $class.sourcefilename
     }
-    return $path.Replace('\', '/')
+    $normalized = $path.Replace('\', '/')
+    if ($ValidateRepoRoot -and $RepoRoot -and (Split-Path -IsAbsolute $package.name)) {
+        $normalizedRoot = ([string]$RepoRoot).Replace('\', '/').TrimEnd('/')
+        if (-not $normalized.StartsWith("$normalizedRoot/")) {
+            throw "Coverage file path '$normalized' is outside RepoRoot '$normalizedRoot'"
+        }
+    }
+    return $normalized
 }
 
 $totals        = newCounters
 $perFileReport = @{}
 $perFileMethodData = @{}
+$perFileLineData   = @{}
 
 foreach ($package in $xml.report.package) {
+    # Build leaf→absolutePath map from class elements for use when resolving sourcefiles
+    $leafToAbsPath = @{}
+    foreach ($class in $package.class) {
+        $leafToAbsPath[$class.sourcefilename] = resolveFilePath $package $class
+    }
+
     foreach ($class in $package.class) {
         $filePath = resolveFilePath $package $class
 
@@ -73,10 +88,19 @@ foreach ($package in $xml.report.package) {
             })
         }
     }
+
+    foreach ($sourcefile in $package.sourcefile) {
+        $absPath = $leafToAbsPath[$sourcefile.name]
+        if ($null -eq $absPath) { continue }
+        $perFileLineData[$absPath] = @(
+            $sourcefile.line | ForEach-Object { @{ nr = [int]$_.nr; covered = [int]$_.ci -gt 0 } }
+        )
+    }
 }
 
 @{
     totals            = $totals
     perFileReport     = $perFileReport
     perFileMethodData = $perFileMethodData
+    perFileLineData   = $perFileLineData
 }
