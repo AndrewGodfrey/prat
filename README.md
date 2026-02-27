@@ -20,19 +20,17 @@ See [INSTALLATION.md](INSTALLATION.md) for installation and customization instru
 ## Dev Loop Commands
 
 ```powershell
-Build-Prat           # alias: b — unloads modules so they can be reimported fresh
-Test-Prat            # alias: t — runs Pester tests; -NoCoverage to skip coverage
-Deploy-Prat -Force   # alias: d — installs profile, scheduled tasks, Pester
+Build-Prat            # alias: b — unloads modules so they can be reimported fresh
+Test-Prat             # alias: t — runs Pester tests; -NoCoverage to skip coverage; -IncludeIntegrationTests to include integration tests
+Deploy-Prat -Force    # alias: d — installs profile, scheduled tasks, Pester
 Start-CodebaseDevLoop # alias: x — runs prebuild → build → test → deploy
 ```
 
 Coverage target is **70%** (defined in
-`lib\Get-CoveragePercentTarget_prat.ps1`). Coverage report goes to `auto\coverage.xml` in CoverageGutters format. 
+`lib\Get-CoveragePercentTarget_prat.ps1`). Coverage report goes to `auto/testRuns/last/coverage.xml` in CoverageGutters format.
 View with `Get-CoverageReport` (alias: `gcr`).
 
-Run a focused subset of tests: `Set-TestFocus` then `t`. `Set-TestFocus` accepts a file or directory;
-call with no args to clear focus. `t` with a focus set measures coverage against the
-focused path and writes it to `auto/coverage.xml`.
+Run a focused subset of tests, add: `-Focus <focus>`, where focus can be a file or directory.
 
 ## Architecture
 

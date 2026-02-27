@@ -233,6 +233,61 @@ Describe "Invoke-PesterWithCodeCoverage smart filter" {
         $output | Should -Not -Contain "`e[92mOK`e[0m"
     }
 
+    It "emits suppression hint and log file path when failures exceed threshold" {
+        $testRoot = "$TestDrive/filter-suppress-hint"
+        Mock Invoke-PesterAsJob {
+            for ($i = 1; $i -le 7; $i++) { "[-] failing test $i 10ms" }
+            [PSCustomObject]@{ PassedCount = 0; FailedCount = 7 }
+        }
+
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+
+        $output | Where-Object { $_ -match 'suppressed' }    | Should -Not -BeNullOrEmpty
+        $output | Where-Object { $_ -match 'test-run\.txt' } | Should -Not -BeNullOrEmpty
+    }
+
+    It "mentions log file when failures are within threshold" {
+        $testRoot = "$TestDrive/filter-log-hint"
+        Mock Invoke-PesterAsJob {
+            "[-] one failing test 10ms"
+            [PSCustomObject]@{ PassedCount = 0; FailedCount = 1 }
+        }
+
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+
+        $output | Where-Object { $_ -match 'test-run\.txt' } | Should -Not -BeNullOrEmpty
+        $output | Where-Object { $_ -match 'suppressed' }    | Should -BeNullOrEmpty
+    }
+
+    It "does not mention log file when all tests pass" {
+        $testRoot = "$TestDrive/filter-no-hint"
+        Mock Invoke-PesterAsJob {
+            "[+] some/test.Tests.ps1 1.23s"
+            [PSCustomObject]@{ PassedCount = 3; FailedCount = 0 }
+        }
+
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+
+        $output | Where-Object { $_ -match 'test-run\.txt' } | Should -BeNullOrEmpty
+    }
+
+    It "propagates exception when Invoke-PesterAsJob throws" {
+        $testRoot = "$TestDrive/exception-propagate"
+        Mock Invoke-PesterAsJob { throw "Pester crashed" }
+
+        { & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot } |
+            Should -Throw "Pester crashed"
+    }
+
+    It "creates log file even when Invoke-PesterAsJob throws" {
+        $testRoot = "$TestDrive/exception-log"
+        Mock Invoke-PesterAsJob { throw "Pester crashed" }
+
+        try { & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot } catch {}
+
+        "$testRoot/auto/testRuns/last/test-run.txt" | Should -Exist
+    }
+
     It "buffers noNewLine start record and combines with timing to emit one line" {
         $testRoot = "$TestDrive/filter-buffer"
         Mock Invoke-PesterAsJob {

@@ -11,12 +11,11 @@ Grant permission as `Bash(Test-Prat.sh *)`.
 ## Common Invocations
 
 ```bash
-Test-Prat.sh                                                              # full suite, with coverage
-Test-Prat.sh -NoCoverage                                                  # full suite, skip coverage
-Test-Prat.sh -Focus lib/Something                                         # focus on a directory
-Test-Prat.sh -Focus lib/Foo.Tests.ps1                                     # focus on a test file
-Test-Prat.sh -Verbosity Summary                                           # pass/fail + coverage % only
-Test-Prat.sh -Focus lib/Foo.Tests.ps1 -NoCoverage -Verbosity Debugging    # debug a failing test
+Test-Prat.sh                                                   # full suite, with coverage
+Test-Prat.sh -NoCoverage                                       # full suite, skip coverage
+Test-Prat.sh -Focus lib/Something                              # focus on a directory
+Test-Prat.sh -Focus lib/Foo.Tests.ps1                          # focus on a test file
+Test-Prat.sh -Focus lib/Foo.Tests.ps1 -NoCoverage -Debugging   # debug a failing test
 ```
 
 ## Parameters
@@ -24,18 +23,17 @@ Test-Prat.sh -Focus lib/Foo.Tests.ps1 -NoCoverage -Verbosity Debugging    # debu
 | Parameter | Description |
 |-----------|-------------|
 | `-Focus <path>` | Test scope: file or directory; coverage scope derived automatically |
-| `-NoFocus` | Ignore saved focus state, run full suite |
 | `-NoCoverage` | Skip coverage (faster for rapid iteration) |
-| `-Verbosity <level>` | `Summary` / `Normal` (default) / `Debugging` |
+| `-Debugging` | Full Pester diagnostic output, no filtering — always pair with a tight `-Focus` |
 | `-OutputDir <path>` | Where to write output files (default: `auto/`); files go under `testRuns/last/` |
 
-## Verbosity
+## Output modes
 
-| Level | Use when |
-|-------|----------|
-| `Summary` | Quick pass/fail check — outputs one line from `auto/testRuns/last/test-run-summary.txt` |
-| `Normal` | Default — file names, failure details, counts |
-| `Debugging` | Diagnosing a failure — always pair with a tight `-Focus` |
+Default (no switches): smart filter — `[+]` file lines shown live; failure blocks and summary shown
+after the run. Quick to scan; full details in `auto/testRuns/last/test-run.txt` if needed.
+
+`-Debugging`: unfiltered Pester Diagnostic output. Use when diagnosing a tricky failure; always
+pair with `-Focus` to avoid overwhelming output.
 
 ## Cached Summary vs. Fresh Run
 
@@ -57,6 +55,9 @@ Every run writes to `auto/testRuns/last/`:
 
 Previous runs are rotated to `auto/testRuns/<timestamp>/` and pruned to 1 kept by default
 (configurable via `lib/Get-TestRunRetention_prat.ps1`).
+
+When there are test failures, the summary output includes a hint with the path to `test-run.txt`.
+If failures exceed the display threshold (5), the suppressed count is shown alongside the hint.
 
 ## Coverage
 
@@ -88,7 +89,7 @@ could share a filename.
 After a test run, use `Get-FileCoverage` to see which functions in a file need attention:
 
 ```powershell
-Get-FileCoverage -FilePath "C:\path\to\File.ps1"               # uses auto/coverage.xml
+Get-FileCoverage -FilePath "C:\path\to\File.ps1"               # uses auto/testRuns/last/coverage.xml
 Get-FileCoverage -FilePath "C:\path\to\File.ps1" -CoverageFile "path/to/coverage.xml"
 ```
 
@@ -104,7 +105,7 @@ Set-Something    35        0       6   ← uncovered
 For line-range coverage:
 
 ```powershell
-Get-FileCoverage -FilePath "C:\path\to\File.ps1" -Detail  
+Get-FileCoverage -FilePath "C:\path\to\File.ps1" -Detail
 ```
 
 Output:

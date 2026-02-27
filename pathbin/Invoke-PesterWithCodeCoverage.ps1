@@ -145,6 +145,8 @@ function ansiColor($text, $colorCode) {
     return "`e[$($colorCode)m$text`e[0m"
 }    
 
+$failureThreshold = 5
+
 if ($Debugging) {
     # Bypass filter: stream everything directly to the host (full Pester diagnostic output).
     $result = Invoke-PesterAsJob -Configuration $Configuration -InformationVariable capturedInfo
@@ -152,7 +154,6 @@ if ($Debugging) {
 } else {
     # Smart filter: stream [+] lines live; emit first n failures; suppress the rest.
     $filterScript = "$PSScriptRoot/../lib/Invoke-WithOutputFilter.ps1"
-    $failureThreshold = 5
     $runState = @{
         result       = $null
         failuresSeen = 0
@@ -253,8 +254,19 @@ if (!$NoCoverage) {
 $testRunSummary = getTestRunSummary $result $coverageDest 
 $testRunSummary | Out-File "$runDir/test-run-summary.txt" -Encoding utf8NoBOM
 
-$colorCode = if ($result.FailedCount -gt 0) { 
+$colorCode = if ($result.FailedCount -gt 0) {
     if ($result.FailedCount -ge $failureThreshold) { 91 } else { 93 }
 } else { 92 }
 ansiColor $testRunSummary $colorCode
+
+if (!$Debugging -and $null -ne $result -and $result.FailedCount -gt 0) {
+    $suppressed = $result.FailedCount - $runState.failuresSeen
+    $logFile = $logFile -replace '\\', '/'
+    $hint = if ($suppressed -gt 0) {
+        "$suppressed failure$(if ($suppressed -ne 1) {'s'}) suppressed — see $logFile"
+    } else {
+        "See $logFile"
+    }
+    ansiColor $hint 93
+}
 
