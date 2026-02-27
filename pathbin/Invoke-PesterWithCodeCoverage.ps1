@@ -91,6 +91,7 @@ function getRetention() { & (Resolve-PratLibFile "lib/Get-TestRunRetention.ps1")
 function getTimestamp() { Get-Date -Format "yyyy-MM-ddTHH-mm-ss-fff" }
 
 function prepareRunDir($outputDir) {
+    $ProgressPreference = 'SilentlyContinue'  # suppress Remove-Item -Recurse internal progress bars
     $testRunsDir = "$outputDir/testRuns"
     $lastDir = "$testRunsDir/last"
 
