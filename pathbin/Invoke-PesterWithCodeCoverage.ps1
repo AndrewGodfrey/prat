@@ -24,7 +24,8 @@ param (
     $RepoRoot = (Resolve-Path "$PSScriptRoot\.."),
     $OutputDir = $null,
     [ValidateSet("CoverageGutters", "JaCoCo")] [string] $CoverageFormat = "CoverageGutters",
-    [ValidateSet("Summary", "Normal", "Debugging")] [string] $Verbosity = "Normal"
+    [switch] $Debugging,
+    [switch] $IncludeIntegrationTests
 )
 
 function getCoverageSummary($coverageSrc) {
@@ -49,14 +50,14 @@ function getTestSummary($result) {
     "Passed: $passedCount, Failed: $failedCount."
 }
 
-function writeTestRunSummary($result, $coverageSrc, $summaryDest) {
+function getTestRunSummary($result, $coverageSrc, $summaryDest) {
     $components = @()
 
     $coverageSummary = getCoverageSummary $coverageSrc
     if ($null -ne $coverageSummary) { $components += $coverageSummary }
     $components += getTestSummary $result
 
-    ($components -join " ") | Out-File $summaryDest -Encoding utf8NoBOM
+    return ($components -join " ")
 }
 
 function getAutoDir($repoRoot) {
@@ -118,20 +119,13 @@ if ($VerbosePreference -ne "SilentlyContinue") { $VerbosePreference = "SilentlyC
     Import-Module Pester
 $VerbosePreference = $savedVerbosePreference
 
-$pesterVerbosity = switch ($Verbosity) {
-    "Summary"   { "None" }
-    "Normal"    { "Normal" }
-    "Debugging" { "Diagnostic" }
-}
-if ($VerbosePreference -ne "SilentlyContinue") {
-    # -Verbose flag overrides intent-level verbosity for pinpointing unwanted output.
-    $pesterVerbosity = "Detailed"
-}
+$pesterVerbosity = if ($Debugging) { "Diagnostic" } elseif ($VerbosePreference -ne "SilentlyContinue") { "Detailed" } else { "Normal" }
 
 $Configuration = [PesterConfiguration]::Default
 $Configuration.Run.PassThru = [bool] $true
 $Configuration.Run.Path = $PathToTest
 $Configuration.Output.Verbosity = $pesterVerbosity
+if (!$IncludeIntegrationTests) { $Configuration.Filter.ExcludeTag = @('Integration') }
 
 if (!$NoCoverage) {
     $tempFile = [IO.Path]::GetTempFileName()
@@ -147,13 +141,105 @@ if ($OutputDir -and !(Test-Path $resolvedOutputDir)) { New-Item $resolvedOutputD
 $runDir = prepareRunDir $resolvedOutputDir
 $logFile = "$runDir/test-run.txt"
 
-# Run Pester: let the information stream flow naturally to the console so that Pester's
-# terminal rendering (carriage-return line overwrites, ANSI colors) works correctly.
-# -InformationVariable captures the records for the log file without intercepting them.
-$result = Invoke-PesterAsJob -Configuration $Configuration -InformationVariable capturedInfo
+function ansiColor($text, $colorCode) {
+    return "`e[$($colorCode)m$text`e[0m"
+}    
 
-# Write log file. Records contain ANSI codes (PSStyle.OutputRendering='Ansi' in child job).
-$capturedInfo | ForEach-Object { "$_" } | Out-File $logFile -Encoding utf8NoBOM
+if ($Debugging) {
+    # Bypass filter: stream everything directly to the host (full Pester diagnostic output).
+    $result = Invoke-PesterAsJob -Configuration $Configuration -InformationVariable capturedInfo
+    $capturedInfo | ForEach-Object { "$_" } | Out-File $logFile -Encoding utf8NoBOM
+} else {
+    # Smart filter: stream [+] lines live; emit first n failures; suppress the rest.
+    $filterScript = "$PSScriptRoot/../lib/Invoke-WithOutputFilter.ps1"
+    $failureThreshold = 5
+    $runState = @{
+        result       = $null
+        failuresSeen = 0
+        inFailure    = $false
+        pendingLine  = $null
+    }
+
+    # Pre-create the log file so it exists even if the run produces no loggable output.
+    $null | Out-File $logFile -Encoding utf8NoBOM
+
+    $PSStyle.OutputRendering = 'Ansi'
+    & $filterScript `
+        -InitialState $runState `
+        -Command {
+            $InformationPreference = 'SilentlyContinue'
+            # Extract the Pester.Run result here before it reaches the filter.
+            Invoke-PesterAsJob -Configuration $Configuration 6>&1 | Where-Object {
+                if ($null -ne $_.PSObject.Properties['PassedCount'] -and
+                    $null -ne $_.PSObject.Properties['FailedCount']) {
+                    $runState.result = $_
+                    $false  # exclude from stream
+                } else {
+                    $true
+                }
+            }
+        } `
+        -ProcessLine {
+            param($line, $state)
+
+            if ($line.noNewLine) {
+                # Buffer partial line — Pester's start record (Write-Host -NoNewLine).
+                # The next record (timing) will complete it.
+                $state.pendingLine = if ($null -ne $state.pendingLine) {
+                    $state.pendingLine + $line.line
+                } else {
+                    $line.line
+                }
+                return $null
+            }
+
+            # Combine with any buffered partial line.
+            $text = if ($null -ne $state.pendingLine) {
+                $combined = $state.pendingLine + $line.line
+                $state.pendingLine = $null
+                $combined
+            } else {
+                $line.line
+            }
+
+            # Write to log progressively so the file survives a mid-run crash or kill.
+            $text | Add-Content $logFile -Encoding utf8NoBOM
+
+            if ($text -match '^\s*\[-\]') {
+                if ($state.failuresSeen -lt $failureThreshold) {
+                    $state.failuresSeen++
+                    $state.inFailure = $true
+                    return ansiColor $text 91
+                } else {
+                    $state.inFailure = $false
+                }
+                return $null
+            }
+            if ($state.inFailure) {
+                if ($text -match '^(\s*\[\+\]|Tests completed)') {
+                    $state.inFailure = $false
+                    # Fall through
+                } else {
+                    return ansiColor $text 91
+                }
+            }
+            if ($text -match '^\s*\[\+\].*[\\/]([^\\/]+\.ps1) .*$') {
+                Write-Progress "Ran tests" $matches[1]
+                return $null
+            }
+            return $null
+        } `
+        -RenderResult {
+            param($state)
+            # Flush any incomplete buffered line (edge case: run ended mid-line).
+            if ($null -ne $state.pendingLine) {
+                $state.pendingLine | Add-Content $logFile -Encoding utf8NoBOM
+                $state.pendingLine = $null
+            }
+        }
+
+    $result = $runState.result
+}
 
 $coverageDest = $null
 
@@ -164,11 +250,11 @@ if (!$NoCoverage) {
     }
 }
 
-writeTestRunSummary $result $coverageDest "$runDir/test-run-summary.txt"
+$testRunSummary = getTestRunSummary $result $coverageDest 
+$testRunSummary | Out-File "$runDir/test-run-summary.txt" -Encoding utf8NoBOM
 
-if ($Verbosity -eq "Summary") {
-    $summaryPath = "$runDir/test-run-summary.txt"
-    if (Test-Path $summaryPath) {
-        Get-Content $summaryPath
-    }
-}
+$colorCode = if ($result.FailedCount -gt 0) { 
+    if ($result.FailedCount -ge $failureThreshold) { 91 } else { 93 }
+} else { 92 }
+ansiColor $testRunSummary $colorCode
+

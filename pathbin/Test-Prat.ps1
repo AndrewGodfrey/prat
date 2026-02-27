@@ -7,17 +7,18 @@ param (
     [Parameter(ParameterSetName="Unfocused")]
     [switch] $NoFocus,
     [switch] $NoCoverage,
-    [ValidateSet("Summary", "Normal", "Debugging")] [string] $Verbosity = "Normal",
+    [switch] $Debugging,
+    [switch] $IncludeIntegrationTests,
     $RepoRoot = (Resolve-Path "$PSScriptRoot\.."),
     $OutputDir = $null
 )
 
 $resolvedFocus = if ($NoFocus) { $null } elseif ($Focus) { $Focus } else { Get-TestFocus }
 if ($null -eq $resolvedFocus) {
-    # Note: Using 'current directory' - as in how most build tools work. 
+    # Note: Using 'current directory' - as in how most build tools work.
     $pathToTest = "."
 } else {
     $pathToTest = $resolvedFocus
 }
 
-Invoke-PesterWithCodeCoverage -NoCoverage:$NoCoverage -PathToTest $pathToTest -RepoRoot $RepoRoot -Verbosity $Verbosity -OutputDir $OutputDir
+Invoke-PesterWithCodeCoverage -NoCoverage:$NoCoverage -PathToTest $pathToTest -RepoRoot $RepoRoot -Debugging:$Debugging -OutputDir $OutputDir -IncludeIntegrationTests:$IncludeIntegrationTests

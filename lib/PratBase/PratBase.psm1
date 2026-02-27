@@ -214,8 +214,12 @@ if ($PSVersiontable.PSEdition -eq "Core") {
 
 # Invoke-PesterAsJob: Like Invoke-Pester, but from a separate job, which allows it to test newly-changed class definitions.
 #
-# Source: https://pester.dev/docs/usage/mocking (named "Invoke-PesterJob" there)
-# Updated example based on https://github.com/pester/Pester/issues/797#issuecomment-314495326
+# Uses ChildJobs[0].*.ReadAll() polling rather than Receive-Job -Wait, for two reasons:
+#   1. Receive-Job -Wait writes InformationRecords directly to $Host.UI, bypassing $InformationPreference
+#      and any stream redirection — causing direct console writes that duplicate the smart filter's output.
+#   2. Receive-Job -Wait also emits InformationRecords as RemotingInformationRecord on stream 6; with 6>&1
+#      at the call site these flow through the filter as a second copy, compounding the duplication.
+# ReadAll() returns objects on the pipeline only, with no host side-effects.
 function Invoke-PesterAsJob {
     [CmdletBinding()]
     param(
@@ -233,11 +237,22 @@ function Invoke-PesterAsJob {
 
     $params = $PSBoundParameters
 
-    Start-Job -ScriptBlock {
+    $job = Start-Job -ScriptBlock {
         $PSStyle.OutputRendering = 'Ansi'
         Set-Location $using:pwd
         Invoke-Pester @using:params
-    } | Receive-Job -Wait -AutoRemoveJob
+    }
+    try {
+        while (-not $job.Finished.WaitOne(200)) {
+            $job.ChildJobs[0].Output.ReadAll()
+            $job.ChildJobs[0].Information.ReadAll()
+        }
+        # Drain remaining output after completion
+        $job.ChildJobs[0].Output.ReadAll()
+        $job.ChildJobs[0].Information.ReadAll()
+    } finally {
+        Remove-Job $job -Force
+    }
 }
 
 . $PSScriptRoot\envDelta.ps1

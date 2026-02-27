@@ -1,7 +1,7 @@
 Describe "Test-Prat" {
     BeforeAll {
         $expectedNoCoverage = $null
-        function Invoke-PesterWithCodeCoverage($NoCoverage, $PathToTest, $RepoRoot, $Verbosity, $OutputDir) {}
+        function Invoke-PesterWithCodeCoverage($NoCoverage, $PathToTest, $RepoRoot, $Debugging, $OutputDir, $IncludeIntegrationTests) {}
         Mock Invoke-PesterWithCodeCoverage { $NoCoverage | Should -Be $expectedNoCoverage }
 
         $simulatedTestFocus = $null
@@ -57,22 +57,28 @@ Describe "Test-Prat" {
 
         Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $RepoRoot -eq "customRoot" }
     }
-    It "defaults to Normal verbosity" {
+    It "does not pass -Debugging by default" {
         Test-Prat
 
-        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $Verbosity -eq "Normal" }
+        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { !$Debugging }
     }
 
-    It "forwards -Verbosity to Invoke-PesterWithCodeCoverage" {
-        Test-Prat -Verbosity "Debugging"
+    It "forwards -Debugging to Invoke-PesterWithCodeCoverage" {
+        Test-Prat -Debugging
 
-        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $Verbosity -eq "Debugging" }
+        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $Debugging }
     }
 
     It "forwards -Output to Invoke-PesterWithCodeCoverage" {
         Test-Prat -OutputDir "customOutputDir"
 
         Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $OutputDir -eq "customOutputDir" }
+    }
+
+    It "forwards -IncludeIntegrationTests to Invoke-PesterWithCodeCoverage" {
+        Test-Prat -IncludeIntegrationTests
+
+        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $IncludeIntegrationTests }
     }
 
     It "-NoFocus ignores Get-TestFocus state" {

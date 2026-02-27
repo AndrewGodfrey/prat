@@ -10,12 +10,13 @@ ARGS=()
 while [[ $# -gt 0 ]]; do
     param="${1,,}"  # lowercase for case-insensitive matching
     case "$param" in
-        -focus)      ARGS+=("-Focus" "$2");      shift 2 ;;
-        -nofocus)    ARGS+=("-NoFocus");          shift   ;;
-        -nocoverage) ARGS+=("-NoCoverage");       shift   ;;
-        -verbosity)  ARGS+=("-Verbosity" "$2");   shift 2 ;;
-        -reporoot)   ARGS+=("-RepoRoot" "$2");    shift 2 ;;
-        -outputdir)  ARGS+=("-OutputDir" "$2");   shift 2 ;;
+        -focus)                     ARGS+=("-Focus" "$2");                    shift 2 ;;
+        -nofocus)                   ARGS+=("-NoFocus");                       shift   ;;
+        -nocoverage)                ARGS+=("-NoCoverage");                    shift   ;;
+        -debugging)                 ARGS+=("-Debugging");                     shift   ;;
+        -includeintegrationtests)   ARGS+=("-IncludeIntegrationTests");       shift   ;;
+        -reporoot)                  ARGS+=("-RepoRoot" "$2");                 shift 2 ;;
+        -outputdir)                 ARGS+=("-OutputDir" "$2");                shift 2 ;;
         *) echo "Unknown parameter: $1" >&2; exit 1 ;;
     esac
 done

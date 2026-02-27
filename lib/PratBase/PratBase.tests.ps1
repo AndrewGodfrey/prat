@@ -206,15 +206,38 @@ Describe "Invoke-PesterAsJob" {
     AfterEach {
         Remove-Job -Job $dummyJob -Force -ErrorAction SilentlyContinue
     }
-    It "starts a job" {
+
+    It "starts a job and polls until complete" {
+        Wait-Job $dummyJob | Out-Null  # ensure completed so while loop exits quickly
         Mock -ModuleName PratBase Start-Job -Verifiable { return $dummyJob }
-        Mock -ModuleName PratBase Receive-Job -Verifiable -ParameterFilter {($job -eq $dummyJob) -and $Wait -and $AutoRemoveJob} {}
-        
+
         # Act
         Invoke-PesterAsJob
 
         # Assert
         Should -Invoke -ModuleName PratBase Start-Job -Times 1
-        Should -Invoke -ModuleName PratBase Receive-Job -Times 1
+    }
+
+    It "does not write InformationRecords from the job directly to the host" {
+        # Receive-Job -Wait has two side-effects that cause doubled output when used with a smart filter:
+        #   1. It writes InformationRecords directly to $Host.UI (bypassing $InformationPreference).
+        #   2. It emits InformationRecords as RemotingInformationRecord on stream 6; with 6>&1 at the
+        #      call site these flow through the filter as well, so each [+] line appears twice.
+        # The ChildJobs[0].*.ReadAll() approach avoids both: items go to the pipeline only.
+        Mock -ModuleName PratBase Start-Job { Start-Job { Write-Host "leak-marker" } }
+
+        $transcriptPath = "$TestDrive/host-write-test.txt"
+        Start-Transcript -Path $transcriptPath -Force | Out-Null
+        try {
+
+            # Act
+            Invoke-PesterAsJob | Out-Null  # consume pipeline so Out-Default doesn't display it
+
+        } finally {
+            Stop-Transcript | Out-Null
+        }
+
+        # Assert
+        Get-Content $transcriptPath | Where-Object { $_ -match 'leak-marker' } | Should -BeNullOrEmpty
     }
 }

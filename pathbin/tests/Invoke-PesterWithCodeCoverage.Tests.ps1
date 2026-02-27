@@ -66,14 +66,14 @@ Describe "Invoke-PesterWithCodeCoverage" {
         $outConf.Run.Path.Value[0] | Should -BeLike "*testCb_fileWithTests.Tests.ps1*"
     }
 
-    It "maps Summary verbosity to Pester None" {
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $repoRoot -Verbosity "Summary"
+    It "default mode uses Pester Normal verbosity" {
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $repoRoot
 
-        $outConf.Output.Verbosity.Value | Should -Be "None"
+        $outConf.Output.Verbosity.Value | Should -Be "Normal"
     }
 
-    It "maps Debugging verbosity to Pester Diagnostic" {
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $repoRoot -Verbosity "Debugging"
+    It "-Debugging uses Pester Diagnostic verbosity" {
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $repoRoot -Debugging
 
         $outConf.Output.Verbosity.Value | Should -Be "Diagnostic"
     }
@@ -83,6 +83,18 @@ Describe "Invoke-PesterWithCodeCoverage" {
 
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
         $outConf.CodeCoverage.Path.Value | Should -Be @($repoRoot)
+    }
+
+    It "excludes Integration-tagged tests by default" {
+        & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot
+
+        $outConf.Filter.ExcludeTag.Value | Should -Contain "Integration"
+    }
+
+    It "includes Integration-tagged tests with -IncludeIntegrationTests" {
+        & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -IncludeIntegrationTests
+
+        $outConf.Filter.ExcludeTag.Value | Should -Not -Contain "Integration"
     }
 }
 
@@ -142,13 +154,137 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
         "$customOutputDir/testRuns/last/test-run-summary.txt" | Should -Exist
     }
 
-    It "echoes test-run-summary.txt to output when Verbosity is Summary" {
-        $testRoot = "$TestDrive/summary-verbosity-test"
+    It "echoes test-run-summary.txt after every run" {
+        $testRoot = "$TestDrive/summary-always-test"
 
-        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -Verbosity "Summary"
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
 
-        $output | Should -Match "Passed: 5"
-        $output | Should -Match "Failed: 2"
+        $output | Where-Object { $_ -match "Passed: 5" } | Should -Not -BeNullOrEmpty
+        $output | Where-Object { $_ -match "Failed: 2" } | Should -Not -BeNullOrEmpty
+    }
+}
+
+Describe "Invoke-PesterWithCodeCoverage smart filter" {
+    BeforeAll {
+        function moveCoverageFile($tempFile, $coverageDest) {}
+        Mock moveCoverageFile {}
+
+        Mock Invoke-PesterAsJob {
+            "[+] some/test.Tests.ps1 1.23s"
+            [PSCustomObject]@{ PassedCount = 1; FailedCount = 0 }
+        }
+
+        function New-PesterInfoRecord($message, $noNewLine) {
+            $him = [System.Management.Automation.HostInformationMessage]::new()
+            $him.Message = $message
+            $him.NoNewLine = $noNewLine
+            [System.Management.Automation.InformationRecord]::new($him, "Pester")
+        }
+    }
+
+    It "passes [+] lines as progress" {
+        Mock Write-Progress {} -Verifiable
+        $testRoot = "$TestDrive/filter-pass"
+
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+
+        $output | Where-Object { $_ -match '\[\+\]' } | Should -BeNullOrEmpty
+        Should -Invoke -CommandName Write-Progress -Times 1 -ParameterFilter {$Status -match 'test\.Tests\.ps1'}
+    }
+
+    It "suppresses lines that are not [+] or [-]" {
+        $testRoot = "$TestDrive/filter-suppress"
+        Mock Invoke-PesterAsJob {
+            "Starting test run..."
+            "Some verbose line"
+            "[+] test.Tests.ps1 1.23s"
+            [PSCustomObject]@{ PassedCount = 1; FailedCount = 0 }
+        }
+
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+
+        $output | Where-Object { $_ -match 'Starting test run' } | Should -BeNullOrEmpty
+        $output | Where-Object { $_ -match 'verbose line' } | Should -BeNullOrEmpty
+    }
+
+    It "accumulates and shows failure blocks" {
+        $testRoot = "$TestDrive/filter-fail"
+        Mock Invoke-PesterAsJob {
+            "[-] failing test name 45ms"
+            "   Expected 'foo' but got 'bar'"
+            [PSCustomObject]@{ PassedCount = 0; FailedCount = 1 }
+        }
+
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+
+        $output | Where-Object { $_ -match '\[-\]' } | Should -Not -BeNullOrEmpty
+        $output | Where-Object { $_ -match "Expected 'foo'" } | Should -Not -BeNullOrEmpty
+    }
+
+    It "does not show OK when tests fail" {
+        $testRoot = "$TestDrive/filter-fail-no-ok"
+        Mock Invoke-PesterAsJob {
+            "[-] a failing test 10ms"
+            [PSCustomObject]@{ PassedCount = 0; FailedCount = 1 }
+        }
+
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+
+        $output | Should -Not -Contain "`e[92mOK`e[0m"
+    }
+
+    It "buffers noNewLine start record and combines with timing to emit one line" {
+        $testRoot = "$TestDrive/filter-buffer"
+        Mock Invoke-PesterAsJob {
+            New-PesterInfoRecord "[+] some/test.Tests.ps1" $true   # noNewLine=true: buffer
+            New-PesterInfoRecord " 1.23s (0.5s|0.73s)"    $false  # noNewLine=false: flush combined
+            [PSCustomObject]@{ PassedCount = 1; FailedCount = 0 }
+        }
+        Mock Write-Progress {} -Verifiable
+
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+
+        # Combined line must not appear
+        $output | Where-Object { $_ -match '\[\+\] some/test\.Tests\.ps1 1\.23s' } | Should -BeNullOrEmpty
+        # Start line alone must not appear
+        $output | Where-Object { $_ -eq "`e[92m[+] some/test.Tests.ps1`e[0m" } | Should -BeNullOrEmpty
+
+        Should -Invoke -CommandName Write-Progress -Times 1 -ParameterFilter {$Status -match 'test\.Tests\.ps1'}
+    }
+}
+
+Describe "Invoke-PesterWithCodeCoverage integration" -Tag Integration {
+    # Requirements:
+    #   - wsl (Windows Subsystem for Linux)
+    #   - 'script' utility (present in Ubuntu by default)
+    #   - pwsh installed in WSL (non-trivial; see the PowerShell docs for Ubuntu)
+    #   - Pester installed in that WSL pwsh
+    #
+    # Caveat: paths with spaces will break $pwshCmd string interpolation below.
+
+    It "emits each [+] line exactly once (no direct-host write duplication)" {
+        Set-Content "$TestDrive\sample.Tests.ps1" `
+            'Describe "x" { It "passes" { $true | Should -Be $true } }'
+
+        $td         = $TestDrive.TrimEnd('\')
+        $wslTd      = (wsl wslpath ($td -replace '\\', '/')).Trim()
+        $tsWsl      = "$wslTd/typescript"
+        $scriptPath = (Resolve-Path "$PSScriptRoot\..\Invoke-PesterWithCodeCoverage.ps1").Path
+        $modulePath = (Resolve-Path "$PSScriptRoot\..\..\lib\PratBase\PratBase.psm1").Path
+
+        $pwshCmd = "Import-Module $modulePath; & $scriptPath -NoCoverage -PathToTest $td -RepoRoot $td"
+        wsl bash -lc "script -q -c 'pwsh.exe -NonInteractive -Command ""$pwshCmd""' $tsWsl"
+
+        $lines = @(
+            (Get-Content "$TestDrive\typescript" -Raw) `
+                -replace '\x1B\[[0-9;]*[mGKHFABCDJr]', '' `
+                -replace '\x1B\[[\?][0-9;]*[hl]', '' `
+                -split '\r?\n' |
+                Where-Object { $_ -match '\[\+\]' }
+        )
+
+        $lines | Should -HaveCount 1
+        $lines[0] | Should -Match '\[\+\].*\d+(\.\d+)?(ms|s)'
     }
 }
 
