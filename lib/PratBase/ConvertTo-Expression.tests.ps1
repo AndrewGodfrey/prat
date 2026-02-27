@@ -1,4 +1,6 @@
 BeforeAll {
+    Import-Module "$PSScriptRoot/PratBase.psd1" -Force
+
     function AssertEqual($a, $b) {
         if ($a -is [array]) {
             $a.Count | Should -Be $b.Count

@@ -1,4 +1,5 @@
 BeforeAll {
+    Import-Module "$PSScriptRoot/../../lib/PratBase/PratBase.psd1" -Force
     [int] $testFileNum = 0
     function createTestFile($data, $extension) {
         $testFileNum += 1

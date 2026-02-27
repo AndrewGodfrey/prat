@@ -1,4 +1,5 @@
 BeforeAll {
+    Import-Module "$PSScriptRoot/PratBase.psd1" -Force
     . $PSCommandPath.Replace('.Tests.ps1','.ps1')
     function AssertCommonGitArgs {
         if ($args[0] -ne '-C') { throw }

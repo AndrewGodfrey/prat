@@ -1,3 +1,7 @@
+BeforeAll {
+    Import-Module "$PSScriptRoot/../../lib/PratBase/PratBase.psd1" -Force
+}
+
 Describe "Write-DebugValue" {
     It "Does nothing if DebugPreference is SilentlyContinue" {
         $DebugPreference = 'SilentlyContinue'
