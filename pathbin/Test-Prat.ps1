@@ -1,11 +1,8 @@
 # .SYNOPSIS
 # Runs tests in Prat
-[CmdletBinding(DefaultParameterSetName="Unfocused")]
+[CmdletBinding()]
 param (
-    [Parameter(ParameterSetName="Focused")]
-    [string] $Focus,
-    [Parameter(ParameterSetName="Unfocused")]
-    [switch] $NoFocus,
+    [string] $Focus=$null,
     [switch] $NoCoverage,
     [switch] $Debugging,
     [switch] $IncludeIntegrationTests,
@@ -13,12 +10,11 @@ param (
     $OutputDir = $null
 )
 
-$resolvedFocus = if ($NoFocus) { $null } elseif ($Focus) { $Focus } else { Get-TestFocus }
-if ($null -eq $resolvedFocus) {
+if (!$Focus) {
     # Note: Using 'current directory' - as in how most build tools work.
     $pathToTest = "."
 } else {
-    $pathToTest = $resolvedFocus
+    $pathToTest = $Focus
 }
 
 Invoke-PesterWithCodeCoverage -NoCoverage:$NoCoverage -PathToTest $pathToTest -RepoRoot $RepoRoot -Debugging:$Debugging -OutputDir $OutputDir -IncludeIntegrationTests:$IncludeIntegrationTests

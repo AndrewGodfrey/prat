@@ -64,7 +64,6 @@ function instInteractiveAliases($it) {
     Install-InteractiveAlias $stage 'ec' 'Enter-Codebase'
     Install-InteractiveAlias $stage 'pt' 'Push-UnitTestDirectory'
     Install-InteractiveAlias $stage 'on' 'Invoke-InlineCommandOnHost'
-    Install-InteractiveAlias $stage 'stf' 'Set-TestFocus'
     Install-InteractiveAlias $stage 'gcr' 'Get-CoverageReport'
     $it.EndStage($stage)
 }

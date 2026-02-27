@@ -83,11 +83,6 @@ if ($env:TERM_PROGRAM -ne "vscode") {
 
             $historyInfo = Get-History -Count 1
             $duration = getLastCommandTime $historyInfo
-            $testFocus = Get-TestFocus
-            $testFocusNotifier = ""
-            if ($testFocus -ne $null) {
-                $testFocusNotifier = " [TestFocus: $testFocus]"
-            }
             displayLastCommandTime $duration
             reportOnSlowCommands $duration $historyInfo $lastCommandErrorStatus
 
@@ -96,7 +91,7 @@ if ($env:TERM_PROGRAM -ne "vscode") {
         } catch { Write-Warning ("Exception during prompt: " + $Error[0] + "`n" + (stack)) }
 
         # $global:__prat_currentLocation is maintained by On-PromptLocationChanged.ps1
-        return $global:__prat_notifications + (contextPath) + $ver + $global:__prat_currentLocation + "$testFocusNotifier`n> "
+        return $global:__prat_notifications + (contextPath) + $ver + $global:__prat_currentLocation + "`n> "
     }
 }
 

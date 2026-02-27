@@ -3,9 +3,6 @@ Describe "Test-Prat" {
         $expectedNoCoverage = $null
         function Invoke-PesterWithCodeCoverage($NoCoverage, $PathToTest, $RepoRoot, $Debugging, $OutputDir, $IncludeIntegrationTests) {}
         Mock Invoke-PesterWithCodeCoverage { $NoCoverage | Should -Be $expectedNoCoverage }
-
-        $simulatedTestFocus = $null
-        function Get-TestFocus { return $simulatedTestFocus }
     }
     BeforeEach {
         $expectedNoCoverage = $false
@@ -22,35 +19,17 @@ Describe "Test-Prat" {
             Test-Prat -NoCoverage:$setting
         }
     }
-    It "Supports test focus" {
+    It "Supports -Focus" {
         $expectedNoCoverage = $false
-        $simulatedTestFocus = "somePath"
 
-        Test-Prat
+        Test-Prat -Focus "somePath"
+
         Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "somePath" }
     }
-    It "Uses explicit -Focus as path" {
-        $simulatedTestFocus = $null
-
-        Test-Prat -Focus "explicitFocus"
-
-        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "explicitFocus" }
-    }
-    It "Explicit -Focus overrides Get-TestFocus state" {
-        $simulatedTestFocus = "focusFromState"
-
-        Test-Prat -Focus "explicitFocus"
-
-        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "explicitFocus" }
-    }
-    It "skips coverage with -NoCoverage even when using -Focus" {
+    It "Supports -Focus with -NoCoverage" {
         $expectedNoCoverage = $true
-        $simulatedTestFocus = $null
 
-        Test-Prat -Focus "explicitFocus" -NoCoverage
-    }
-    It "-Focus and -NoFocus cannot be used together" {
-        { Test-Prat -Focus "somePath" -NoFocus } | Should -Throw
+        Test-Prat -Focus "somePath" -NoCoverage
     }
     It "forwards an explicit -RepoRoot to Invoke-PesterWithCodeCoverage" {
         Test-Prat -RepoRoot "customRoot"
@@ -79,13 +58,5 @@ Describe "Test-Prat" {
         Test-Prat -IncludeIntegrationTests
 
         Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $IncludeIntegrationTests }
-    }
-
-    It "-NoFocus ignores Get-TestFocus state" {
-        $simulatedTestFocus = "focusFromState"
-
-        Test-Prat -NoFocus
-
-        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "." }
     }
 }
