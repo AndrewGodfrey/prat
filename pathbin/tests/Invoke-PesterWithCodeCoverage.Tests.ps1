@@ -378,6 +378,16 @@ Describe "Invoke-PesterWithCodeCoverage test run directory management" {
         "$testRoot/auto/testRuns/last/test-run-summary.txt" | Should -Exist
     }
 
+    It "records PathToTest and RepoRoot at the top of test-run.txt" {
+        $testRoot = "$TestDrive/params-header-test"
+
+        & $coverageScript -NoCoverage -PathToTest "focusedPath" -RepoRoot $testRoot
+
+        $logContent = Get-Content "$testRoot/auto/testRuns/last/test-run.txt"
+        $logContent[0] | Should -Match "RepoRoot:.*$([regex]::Escape($testRoot))"
+        $logContent[1] | Should -Be "PathToTest: focusedPath"
+    }
+
     It "applies retention: removes oldest timestamp dirs beyond N=2" {
         $testRoot = "$TestDrive/retention-test"
 

@@ -140,6 +140,7 @@ $resolvedOutputDir = if ($OutputDir) { $OutputDir } else { getAutoDir $RepoRoot 
 if ($OutputDir -and !(Test-Path $resolvedOutputDir)) { New-Item $resolvedOutputDir -ItemType Directory | Out-Null }
 $runDir = prepareRunDir $resolvedOutputDir
 $logFile = "$runDir/test-run.txt"
+@("RepoRoot: $RepoRoot", "PathToTest: $PathToTest", "") | Out-File $logFile -Encoding utf8NoBOM
 
 function ansiColor($text, $colorCode) {
     return "`e[$($colorCode)m$text`e[0m"
@@ -150,7 +151,7 @@ $failureThreshold = 5
 if ($Debugging) {
     # Bypass filter: stream everything directly to the host (full Pester diagnostic output).
     $result = Invoke-PesterAsJob -Configuration $Configuration -InformationVariable capturedInfo
-    $capturedInfo | ForEach-Object { "$_" } | Out-File $logFile -Encoding utf8NoBOM
+    $capturedInfo | ForEach-Object { "$_" } | Add-Content $logFile -Encoding utf8NoBOM
 } else {
     # Smart filter: stream [+] lines live; emit first n failures; suppress the rest.
     $filterScript = "$PSScriptRoot/../lib/Invoke-WithOutputFilter.ps1"
@@ -160,9 +161,6 @@ if ($Debugging) {
         inFailure    = $false
         pendingLine  = $null
     }
-
-    # Pre-create the log file so it exists even if the run produces no loggable output.
-    $null | Out-File $logFile -Encoding utf8NoBOM
 
     $PSStyle.OutputRendering = 'Ansi'
     & $filterScript `
