@@ -25,7 +25,10 @@ switch ($codebase) {
                 param([hashtable] $CommandSwitches = @{})
                 Test-Prat @CommandSwitches}
             }
-            "deploy" { return {Deploy-Prat -Force:$Force} }
+            "deploy" { return {
+                param([hashtable]$CommandSwitches = @{})
+                Deploy-Prat -Force:$CommandSwitches['Force']
+            } }
         }
     }
     "testCb" {
@@ -35,7 +38,11 @@ switch ($codebase) {
             $focusSuffix = if ($CommandSwitches['Focus']) { " focus=$($CommandSwitches['Focus'])" } else { "" }
             "testCb: test: $($env:testEnvvar)$suffix$focusSuffix"
         }}
-        if ("prebuild", "build", "deploy" -contains $action) { return {echo "testCb: $($action): $($env:testEnvvar)"} }
+        if ($action -eq "deploy") { return {
+            param([hashtable]$CommandSwitches = @{})
+            "testCb: deploy: $($env:testEnvvar)$(if($CommandSwitches['Force']){' force'})"
+        } }
+        if ("prebuild", "build" -contains $action) { return {echo "testCb: $($action): $($env:testEnvvar)"} }
         throw "Unrecognized action: $action"
     }
 }

@@ -14,4 +14,4 @@
 [CmdletBinding()]
 param([switch] $Force)
 
-&$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "prebuild" @("-Force", $Force)
+&$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "prebuild" -CommandSwitches @{Force=[bool]$Force}

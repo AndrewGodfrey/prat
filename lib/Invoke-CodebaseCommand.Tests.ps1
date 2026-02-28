@@ -26,6 +26,18 @@ Describe "Invoke-CodebaseCommand" {
         $result | Should -Be "testCb: test: bar"
     }
 
+    It "Runs the codebase deploy script" {
+        Push-Location $testCbDir
+        $result = &$scriptToTest "deploy"
+        $result | Should -Be "testCb: deploy: bar"
+    }
+
+    It "Passes -Force to the codebase deploy script" {
+        Push-Location $testCbDir
+        $result = &$scriptToTest "deploy" -CommandSwitches @{Force=$true}
+        $result | Should -Be "testCb: deploy: bar force"
+    }
+
     It "Does nothing when no script is defined for the action" {
         Push-Location $testCbDir
         # Temporarily shadow Get-CodebaseScript to return null for this test

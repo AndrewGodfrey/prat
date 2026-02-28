@@ -11,4 +11,4 @@
 [CmdletBinding()]
 param([switch] $Force)
 
-&$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "deploy" @("-Force", $Force)
+&$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "deploy" -CommandSwitches @{Force=[bool]$Force}
