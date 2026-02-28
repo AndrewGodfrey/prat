@@ -41,7 +41,11 @@ function Install-ClaudeSyncFolders($stage, [string] $syncRoot, [string] $claudeD
     $syncDirs = @("projects", "tasks", "todos", "plans")
 
     # file-history: undo/rewind snapshots - local file contents, not portable across machines
-    $knownLocalDirs = @("file-history", "cache", "debug", "paste-cache", "shell-snapshots", "plugins", "ide", "session-env", "statsig", "backups", "telemetry")
+    $knownLocalDirs = @(
+        "backups", "cache", "debug", "file-history", "ide", 
+        "image-cache", "paste-cache", "plugins", "session-env", "shell-snapshots", 
+        "statsig", "telemetry"
+    )
 
     Install-SyncFolders $stage ".claude" $claudeDir $syncRoot $syncDirs $knownLocalDirs
 }
