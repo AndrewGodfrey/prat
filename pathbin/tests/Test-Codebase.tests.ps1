@@ -24,4 +24,14 @@ Describe "Test-Codebase" {
             popTestEnvironment $prev
         }
     }
+
+    It "passes -Focus to the codebase script" {
+        $prev = pushTestEnvironment
+        try {
+            $result = Test-Codebase -Focus "lib/foo"
+            $result | Should -Be "testCb: test: bar cc focus=lib/foo"
+        } finally {
+            popTestEnvironment $prev
+        }
+    }
 }

@@ -21,9 +21,9 @@ switch ($codebase) {
     "prat" {
         switch ($action) {
             "build"  { return {Build-Prat} }
-            "test"   { return { 
+            "test"   { return {
                 param([hashtable] $CommandSwitches = @{})
-                Test-Prat -NoCoverage:$CommandSwitches['NoCoverage']}
+                Test-Prat @CommandSwitches}
             }
             "deploy" { return {Deploy-Prat -Force:$Force} }
         }
@@ -32,7 +32,8 @@ switch ($codebase) {
         if ($action -eq "test") { return {
             param([hashtable] $CommandSwitches = @{})
             $suffix = if ($CommandSwitches['NoCoverage']) { "" } else { " cc" }
-            "testCb: test: $($env:testEnvvar)$suffix"
+            $focusSuffix = if ($CommandSwitches['Focus']) { " focus=$($CommandSwitches['Focus'])" } else { "" }
+            "testCb: test: $($env:testEnvvar)$suffix$focusSuffix"
         }}
         if ("prebuild", "build", "deploy" -contains $action) { return {echo "testCb: $($action): $($env:testEnvvar)"} }
         throw "Unrecognized action: $action"
