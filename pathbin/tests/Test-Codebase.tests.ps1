@@ -38,8 +38,9 @@ Describe "Test-Codebase" {
     It "defaults -Focus to -RepoRoot when -Focus is not specified" {
         $prev = pushTestEnvironment
         try {
-            $result = Test-Codebase -RepoRoot "somePath"
-            $result | Should -Be "testCb: test: bar cc focus=somePath"
+            $testCbPath = (Get-Location).Path
+            $result = Test-Codebase -RepoRoot $testCbPath
+            $result | Should -Be "testCb: test: bar cc focus=$testCbPath"
         } finally {
             popTestEnvironment $prev
         }

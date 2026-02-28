@@ -7,7 +7,8 @@ param(
     [hashtable] $CommandSwitches = @{}
 )
 
-$cbt = &$home\prat\lib\Get-CodebaseTable (Get-Location)
+$location = if ($CommandSwitches['RepoRoot']) { $CommandSwitches['RepoRoot'] } else { Get-Location }
+$cbt = &$home\prat\lib\Get-CodebaseTable $location
 if ($null -eq $cbt) { 
     throw "Unknown codebase - can't $action"
 }

@@ -19,6 +19,13 @@ Describe "Invoke-CodebaseCommand" {
         $result | Should -Be "testCb: test: bar"
     }
 
+    It "uses -RepoRoot from CommandSwitches for codebase detection instead of pwd" {
+        New-Item -Type Directory "TestDrive:\someOtherDir" | Out-Null
+        Push-Location "TestDrive:\someOtherDir"
+        $result = &$scriptToTest "test" -CommandSwitches @{NoCoverage=$true; RepoRoot=$testCbDir}
+        $result | Should -Be "testCb: test: bar"
+    }
+
     It "Does nothing when no script is defined for the action" {
         Push-Location $testCbDir
         # Temporarily shadow Get-CodebaseScript to return null for this test
