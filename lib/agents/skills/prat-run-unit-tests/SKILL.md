@@ -5,24 +5,25 @@ description: Use when doing TDD, running tests after code changes, checking cove
 
 # Run Prat Unit Tests
 
-Use `Test-Prat.sh` — it handles the prat root automatically, no `cd` required.
-Grant permission as `Bash(Test-Prat.sh *)`.
+Use `t.sh` with `-RepoRoot` — no `cd` required.
+Grant permission as `Bash(t.sh *)`.
 
 ## Common Invocations
 
 ```bash
-Test-Prat.sh                                                   # full suite, with coverage
-Test-Prat.sh -NoCoverage                                       # full suite, skip coverage
-Test-Prat.sh -Focus lib/Something                              # focus on a directory
-Test-Prat.sh -Focus lib/Foo.Tests.ps1                          # focus on a test file
-Test-Prat.sh -Focus lib/Foo.Tests.ps1 -NoCoverage -Debugging   # debug a failing test
+t.sh -RepoRoot ~/prat                                                   # full suite, with coverage
+t.sh -RepoRoot ~/prat -NoCoverage                                       # full suite, skip coverage
+t.sh -RepoRoot ~/prat -Focus lib/Something                              # focus on a directory
+t.sh -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1                          # focus on a test file
+t.sh -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1 -NoCoverage -Debugging   # debug a failing test
 ```
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-Focus <path>` | Test scope: file or directory; coverage scope derived automatically |
+| `-RepoRoot <path>` | Codebase to test; also sets the default test scope when `-Focus` is omitted |
+| `-Focus <path>` | Test scope: file or directory relative to repo root; coverage scope derived automatically |
 | `-NoCoverage` | Skip coverage (faster for rapid iteration) |
 | `-Debugging` | Full Pester diagnostic output, no filtering — always pair with a tight `-Focus` |
 | `-OutputDir <path>` | Where to write output files (default: `auto/`); files go under `testRuns/last/` |
@@ -73,12 +74,12 @@ Coverage file is at `auto/testRuns/last/coverage.xml` by default.
 To find uncovered lines for e.g. `lib/Installers/instClaude.ps1`:
 
 ```
-<package name="C:/Users/andrew/prat/lib/Installers">   ← absolute path of directory
-  <sourcefile name="instClaude.ps1">                   ← leaf filename only
-    <line nr="5" mi="1" ci="0" .../>                   ← mi=missed, ci=covered instructions
+<package name="C:/Users/you/prat/lib/Installers">   ← absolute path of directory
+  <sourcefile name="instClaude.ps1">                 ← leaf filename only
+    <line nr="5" mi="1" ci="0" .../>                 ← mi=missed, ci=covered instructions
 ```
 
-XPath: `//package[@name='C:/Users/andrew/prat/lib/Installers']/sourcefile[@name='instClaude.ps1']/line[@mi!='0']`
+XPath: `//package[@name='C:/Users/you/prat/lib/Installers']/sourcefile[@name='instClaude.ps1']/line[@mi!='0']`
 
 Or in two steps: find the `<package>` whose `name` ends with your directory, then find the
 `<sourcefile>` by leaf name within it. Don't search by leaf name alone — different directories
@@ -124,4 +125,4 @@ ReverseSearchForShortcut        98      98 covered
 **Avoid invoking `Invoke-Pester` or `pwsh -c` directly** — reasons:
 - Pester 5 parameter sets are tricky
 - `pwsh -c "..."` requires escaping every `$` which agents consistently get wrong.
-- Using Test-Prat (when possible) is more user-friendly - the user can issue the same command easily.
+- Using `t.sh` is more user-friendly — the user can issue the same command easily.
