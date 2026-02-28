@@ -17,7 +17,7 @@ Describe "Deploy-Codebase" {
             $result = Deploy-Codebase
 
             # Assert
-            $result | Should -Be "testCb: deploy: bar"
+            $result | Should -Be "testCb: deploy: bar: Force=False"
         } finally {
             popTestEnvironment $prev
         }

@@ -9,7 +9,7 @@ Describe "Test-Codebase" {
         $prev = pushTestEnvironment
         try {
             $result = Test-Codebase
-            $result | Should -Be "testCb: test: bar cc"
+            $result | Should -Be "testCb: test: bar"
         } finally {
             popTestEnvironment $prev
         }
@@ -19,7 +19,7 @@ Describe "Test-Codebase" {
         $prev = pushTestEnvironment
         try {
             $result = Test-Codebase -NoCoverage
-            $result | Should -Be "testCb: test: bar"
+            $result | Should -Be "testCb: test: bar: NoCoverage=True"
         } finally {
             popTestEnvironment $prev
         }
@@ -29,7 +29,7 @@ Describe "Test-Codebase" {
         $prev = pushTestEnvironment
         try {
             $result = Test-Codebase -Focus "lib/foo"
-            $result | Should -Be "testCb: test: bar cc focus=lib/foo"
+            $result | Should -Be "testCb: test: bar: Focus=lib/foo"
         } finally {
             popTestEnvironment $prev
         }
@@ -40,7 +40,7 @@ Describe "Test-Codebase" {
         try {
             $testCbPath = (Get-Location).Path
             $result = Test-Codebase -RepoRoot $testCbPath
-            $result | Should -Be "testCb: test: bar cc focus=$testCbPath"
+            $result | Should -Be "testCb: test: bar: Focus=$testCbPath RepoRoot=$testCbPath"
         } finally {
             popTestEnvironment $prev
         }

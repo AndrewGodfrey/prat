@@ -32,19 +32,13 @@ switch ($codebase) {
         }
     }
     "testCb" {
-        if ($action -eq "test") { return {
-            param([hashtable] $CommandSwitches = @{})
-            $suffix = if ($CommandSwitches['NoCoverage']) { "" } else { " cc" }
-            $focusSuffix = if ($CommandSwitches['Focus']) { " focus=$($CommandSwitches['Focus'])" } else { "" }
-            "testCb: test: $($env:testEnvvar)$suffix$focusSuffix"
-        }}
-        if ($action -eq "deploy") { return {
+        return {
             param([hashtable]$CommandSwitches = @{})
-            "testCb: deploy: $($env:testEnvvar)$(if($CommandSwitches['Force']){' force'})"
-        } }
-        if ("prebuild", "build" -contains $action) { return {echo "testCb: $($action): $($env:testEnvvar)"} }
-        throw "Unrecognized action: $action"
-    }
+            $switchesString = ($CommandSwitches.GetEnumerator() | Sort-Object Key | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join " "
+            if ($switchesString) { $switchesString = ": $switchesString" }
+            "testCb: $($action): $($env:testEnvvar)$switchesString"
+        }.GetNewClosure()
+    }    
 }
 
 return $null

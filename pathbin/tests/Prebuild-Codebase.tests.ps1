@@ -12,7 +12,7 @@ Describe "Prebuild-Codebase" {
             $result = Prebuild-Codebase
 
             # Assert
-            $result | Should -Be "testCb: prebuild: foo"  # Note: We expect 'foo' not 'bar' - prebuild should not apply cachedEnvDelta.
+            $result | Should -Be "testCb: prebuild: foo: Force=False"  # Note: We expect 'foo' not 'bar' - prebuild should not apply cachedEnvDelta.
         } finally {
             popTestEnvironment $prev
         }
