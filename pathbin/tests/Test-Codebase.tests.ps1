@@ -34,4 +34,14 @@ Describe "Test-Codebase" {
             popTestEnvironment $prev
         }
     }
+
+    It "defaults -Focus to -RepoRoot when -Focus is not specified" {
+        $prev = pushTestEnvironment
+        try {
+            $result = Test-Codebase -RepoRoot "somePath"
+            $result | Should -Be "testCb: test: bar cc focus=somePath"
+        } finally {
+            popTestEnvironment $prev
+        }
+    }
 }

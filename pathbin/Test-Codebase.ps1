@@ -18,4 +18,7 @@ param(
     $OutputDir = $null
 )
 
+if (-not $PSBoundParameters.ContainsKey('Focus') -and $PSBoundParameters.ContainsKey('RepoRoot')) {
+    $PSBoundParameters['Focus'] = $RepoRoot
+}
 &$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "test" -CommandSwitches:$PSBoundParameters
