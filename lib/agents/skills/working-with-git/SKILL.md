@@ -32,6 +32,8 @@ Same default. But if the user asked you to do a series of changes / commits, the
 You can assume that if you find yourself in a development branch for the step we're working on, then committing changes
 is safe. Still: don't rebase, checkout, merge, or push without explicit instruction.
 
+When adding or modifying production code in a development branch, run tests before each commit (see prat-run-unit-tests).
+
 
 ## When you 'git commit'
 
@@ -60,6 +62,6 @@ bootstrap: add a 3rd phase, so we can avoid Windows PowerShell earlier
 ```
 
 If it seems hard to fit the change into a single line, consider whether the change should be broken into 
-smaller commits that are more focused. In a development branch, it's okay to do this after-the-fact without
-running unit tests on each commit - provided the unit tests are passing after the final commit and the decomposition
-is logical.
+smaller commits that are more focused. If you are retrospectively splitting already-written passing code into smaller
+commits, it's okay to do that without running tests on each individual commit — provided tests pass after the final 
+split.
