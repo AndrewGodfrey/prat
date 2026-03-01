@@ -5,7 +5,11 @@ param(
     [hashtable] $CommandParameters = @{}
 )
 
-$location = if ($CommandParameters['RepoRoot']) { $CommandParameters['RepoRoot'] } else { Get-Location }
+$location = if ($CommandParameters['RepoRoot']) {
+    $resolved = (Resolve-Path $CommandParameters['RepoRoot']).Path
+    $CommandParameters['RepoRoot'] = $resolved
+    $resolved
+} else { Get-Location }
 $cbt = &$home\prat\lib\Get-PratRepo $location
 if ($null -eq $cbt) { 
     throw "Unknown codebase - can't $CommandName"
