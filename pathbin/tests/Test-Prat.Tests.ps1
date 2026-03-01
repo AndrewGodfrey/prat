@@ -19,12 +19,17 @@ Describe "Test-Prat" {
             Test-Prat -NoCoverage:$setting
         }
     }
-    It "Supports -Focus" {
+    It "Supports -Focus with an absolute path" {
         $expectedNoCoverage = $false
 
-        Test-Prat -Focus "somePath"
+        Test-Prat -Focus "/absolute/somePath"
 
-        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "somePath" }
+        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq "/absolute/somePath" }
+    }
+    It "resolves a relative -Focus path against -RepoRoot" {
+        Test-Prat -RepoRoot "/my/repo" -Focus "lib/Foo.Tests.ps1"
+
+        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PathToTest -eq (Join-Path "/my/repo" "lib/Foo.Tests.ps1") }
     }
     It "Supports -Focus with -NoCoverage" {
         $expectedNoCoverage = $true

@@ -13,8 +13,10 @@ param (
 if (!$Focus) {
     # Note: Using 'current directory' - as in how most build tools work.
     $pathToTest = "."
-} else {
+} elseif ([System.IO.Path]::IsPathRooted($Focus)) {
     $pathToTest = $Focus
+} else {
+    $pathToTest = Join-Path $RepoRoot $Focus
 }
 
 Invoke-PesterWithCodeCoverage -NoCoverage:$NoCoverage -PathToTest $pathToTest -RepoRoot $RepoRoot -Debugging:$Debugging -OutputDir $OutputDir -IncludeIntegrationTests:$IncludeIntegrationTests
