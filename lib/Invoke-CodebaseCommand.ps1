@@ -2,8 +2,6 @@
 param(
     [Parameter(Position=0, Mandatory)]
     [ValidateSet("build", "test", "deploy", "prebuild")] [string] $action,
-    [Parameter(Position = 1, ValueFromRemainingArguments = $true)]
-    [object[]] $CommandParameters,
     [hashtable] $CommandSwitches = @{}
 )
 
@@ -36,10 +34,10 @@ if ($action -ne "prebuild") {
     $envDelta = $null
 }
 
-Write-Debug "calling $action script for $($cbt.id), with parameters: ($(ConvertTo-Expression $CommandParameters))"
+Write-Debug "calling $action script for $($cbt.id), with switches: ($(ConvertTo-Expression $CommandSwitches))"
 
 $wrapperScriptBlock = {
-    param($CommandParameters, $CommandSwitches)
-    & $script $cbt @CommandParameters -CommandSwitches:$CommandSwitches
+    param([hashtable]$CommandSwitches = @{})
+    & $script $cbt -CommandSwitches:$CommandSwitches
 }
-Invoke-CommandWithCachedEnvDelta $wrapperScriptBlock $envDelta -CommandParameters $CommandParameters -CommandSwitches $CommandSwitches
+Invoke-CommandWithCachedEnvDelta $wrapperScriptBlock $envDelta -CommandSwitches $CommandSwitches

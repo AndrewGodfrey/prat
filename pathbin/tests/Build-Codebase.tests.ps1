@@ -12,7 +12,7 @@ Describe "Build-Codebase" {
             $result = Build-Codebase -Quiet
 
             # Assert
-            $result | Should -Be "testCb: build: bar"
+            $result | Should -Be "testCb: build: bar: Command=build"
         } finally {
             popTestEnvironment $prev
         }
