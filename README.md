@@ -21,7 +21,7 @@ See [INSTALLATION.md](INSTALLATION.md) for installation and customization instru
 
 ```powershell
 Build-Prat            # alias: b — unloads modules so they can be reimported fresh
-Test-Prat             # alias: t — runs Pester tests; -NoCoverage to skip coverage; -IncludeIntegrationTests to include integration tests
+Test-Codebase         # alias: t — runs Pester tests; -NoCoverage to skip coverage; -IncludeIntegrationTests to include integration tests
 Deploy-Prat -Force    # alias: d — installs profile, scheduled tasks, Pester
 Start-CodebaseDevLoop # alias: x — runs prebuild → build → test → deploy
 ```

@@ -22,8 +22,16 @@ switch ($codebase) {
             "build"  { return {Build-Prat} }
             "test"   { return {
                 param([hashtable] $CommandParameters = @{})
-                Test-Prat @CommandParameters}
-            }
+                $repoRoot = if ($CommandParameters.ContainsKey('RepoRoot')) { $CommandParameters['RepoRoot'] } else { "$home/prat" }
+                $pathToTest = &"$home/prat/lib/Resolve-TestFocus" $CommandParameters['Focus'] $repoRoot
+                Invoke-PesterWithCodeCoverage `
+                    -NoCoverage:$CommandParameters['NoCoverage'] `
+                    -PathToTest $pathToTest `
+                    -RepoRoot $repoRoot `
+                    -Debugging:$CommandParameters['Debugging'] `
+                    -OutputDir $CommandParameters['OutputDir'] `
+                    -IncludeIntegrationTests:$CommandParameters['IncludeIntegrationTests']
+            } }
             "deploy" { return {
                 param([hashtable]$CommandParameters = @{})
                 Deploy-Prat -Force:$CommandParameters['Force']
