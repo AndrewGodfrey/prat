@@ -13,8 +13,7 @@
 # For other params, see the implementations of Build-Codebase, Test-Codebase and Deploy-Codebase.
 param(
     [ValidateSet("prebuild", "build", "test", "deploy")] [string] $CommandName,
-    [string] $codebase,
-    [switch] $Force
+    [string] $codebase
 )
 
 switch ($codebase) {    
