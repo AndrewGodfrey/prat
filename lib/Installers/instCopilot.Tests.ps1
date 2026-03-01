@@ -13,7 +13,7 @@ BeforeAll {
 
 Describe "Install-CopilotSyncFolders" {
     BeforeEach {
-        $script:testDir = (Resolve-Path "TestDrive:\").ProviderPath + "instCopilot.Tests"
+        $script:testDir = Join-Path (Resolve-Path "TestDrive:\").ProviderPath "instCopilot.Tests"
         mkdir $testDir | Out-Null
         $script:copilotDir = "$testDir\.copilot"
         $script:syncRoot = "$testDir\sync"

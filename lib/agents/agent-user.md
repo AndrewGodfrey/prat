@@ -15,7 +15,9 @@ Before making changes (including refactoring) in code whose unit that has no uni
 
 # Claude settings
 
-- My dev environment is managed by the `de` and `prat` repos.
+- My dev environment is managed by the `de` and `prat` repos. Each `de` repo is user-specific.
+  (Some users might not actually use a git repo, and/or might not call it `de`, but that's the umbrella term
+  we'll use here. If a user says "the" de repo they likely mean their own one).
 - That includes claude user-level configuration, since I use multiple machines and work on multiple projects.
 - When making a plan, if claude won't be doing all the steps, label each step with "[USER]" or "[CLAUDE]" as appropriate.
 

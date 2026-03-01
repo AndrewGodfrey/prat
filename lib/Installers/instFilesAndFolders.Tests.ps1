@@ -96,7 +96,7 @@ Describe "Install-TextToFile" {
 Describe "Install-DirectoryJunction" {
     BeforeEach {
         # Junctions require absolute filesystem paths, not PSDrive paths
-        $script:testDir = (Resolve-Path "TestDrive:\").ProviderPath + "directoryJunction.Tests"
+        $script:testDir = Join-Path (Resolve-Path "TestDrive:\").ProviderPath "directoryJunction.Tests"
         mkdir $testDir | Out-Null
         $script:stage = [MockStage]::new()
         $script:targetDir = "$testDir\target"
@@ -198,7 +198,7 @@ Describe "Install-DirectoryJunction" {
 Describe "Merge-DirectoryInto" {
     BeforeEach {
         # fc.exe requires real filesystem paths, not PSDrive paths
-        $script:testDir = (Resolve-Path "TestDrive:\").ProviderPath + "mergeDir.Tests"
+        $script:testDir = Join-Path (Resolve-Path "TestDrive:\").ProviderPath "mergeDir.Tests"
         mkdir $testDir | Out-Null
         $script:srcDir = "$testDir\src"
         $script:destDir = "$testDir\dest"

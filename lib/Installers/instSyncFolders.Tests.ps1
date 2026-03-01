@@ -13,7 +13,7 @@ BeforeAll {
 Describe "Install-SyncFolders" {
     BeforeEach {
         # Junctions require absolute filesystem paths
-        $script:testDir = (Resolve-Path "TestDrive:\").ProviderPath + "instSyncFolders.Tests"
+        $script:testDir = Join-Path (Resolve-Path "TestDrive:\").ProviderPath "instSyncFolders.Tests"
         mkdir $testDir | Out-Null
         $script:appDir = "$testDir\.testapp"
         $script:syncRoot = "$testDir\sync"
