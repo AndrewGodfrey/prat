@@ -1,10 +1,10 @@
 # .SYNOPSIS
-# Opens a workspace with the configured temporary environment for the codebase we're in ($pwd).
+# Opens a workspace with the configured temporary environment for the project we're in ($pwd).
 #
 # Alias: ow
 #
 # .NOTES
-# With no params, opens the default workspace for the codebase / sub-codebase.
+# With no params, opens the default workspace for the repo / project.
 # Given a script, runs it. 
 # Given a file, launches it.
 # 
@@ -17,25 +17,25 @@
 # .EXAMPLE
 #    ow {pwsh}
 [CmdletBinding()]
-param($fileOrScript = $null, $cbt = $null, [ScriptBlock] $DescriptionScript = $null)
+param($fileOrScript = $null, $project = $null, [ScriptBlock] $DescriptionScript = $null)
 
-if ($null -eq $cbt) {
-    $cbt = &$PSScriptRoot\..\lib\Get-CodebaseSubTable $pwd -Verbose:$VerbosePreference
+if ($null -eq $project) {
+    $project = &$PSScriptRoot\..\lib\Get-PratProject $pwd -Verbose:$VerbosePreference
 }
-Write-DebugValue $cbt
+Write-DebugValue $project
 
-if (($null -eq $cbt) -and ($null -eq $fileOrScript)) { 
-    Write-Error "Codebase not recognized"
+if (($null -eq $project) -and ($null -eq $fileOrScript)) { 
+    Write-Error "Project not recognized"
     return
 }
 
 if ($null -eq $fileOrScript) {
-    $workspace = $cbt.workspace
+    $workspace = $project.workspace
     if ($null -eq $workspace) {
-        throw "Don't know how to open workspace for '$($cbt.id)'"
+        throw "Don't know how to open workspace for '$($project.id)'"
     }
     if ($workspace -is [string]) {
-        $workspace = $workspace -replace "dev:", "$($cbt.root)/"
+        $workspace = $workspace -replace "dev:", "$($project.root)/"
         if ($workspace.Contains("test:")) { throw "NYI" }
     }
 } else {
@@ -55,17 +55,17 @@ function appendContextPath($cachedEnvDelta, $id) {
 }
 
 if ($null -eq $DescriptionScript) {
-    $Description = "Opening workspace for: $($cbt.id)"
+    $Description = "Opening workspace for: $($project.id)"
 } else {
-    $Description = (& $DescriptionScript $cbt.id)
+    $Description = (& $DescriptionScript $project.id)
 }
 
 if ($workspace -is [ScriptBlock]) {
     $savedContextPath = $env:__prat_contextPath
     try {
-        appendContextPath $cbt.cachedEnvDelta $cbt.id
+        appendContextPath $project.cachedEnvDelta $project.id
         Write-Host -ForegroundColor Green $Description
-        Invoke-CommandWithCachedEnvDelta $workspace $cbt.cachedEnvDelta
+        Invoke-CommandWithCachedEnvDelta $workspace $project.cachedEnvDelta
     } finally {
         $env:__prat_contextPath = $savedContextPath
     }
@@ -76,6 +76,6 @@ if ($workspace -is [ScriptBlock]) {
     # TODO: Further refactor so that *every* use of Invoke-CommandWithCachedEnvDelta will update $env:__prat_contextPath
     if (!(Test-Path $workspace)) { throw "Not found: $workspace" }
     Write-Host -ForegroundColor Green $Description
-    Invoke-CommandWithCachedEnvDelta {&$workspace} $cbt.cachedEnvDelta
+    Invoke-CommandWithCachedEnvDelta {&$workspace} $project.cachedEnvDelta
 }
 

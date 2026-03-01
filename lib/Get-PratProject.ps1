@@ -35,7 +35,7 @@ foreach ($key in $cbt.shortcuts.Keys) {
 
 if ($null -eq $longestMatch.key) {
     # TODO: Make an object more similar in type to the other cases - don't want 'subworkspaces' or 'shortcuts' properties
-    # TODO: Maybe we can hide Get-CodebaseTable completely behind Get-CodebaseSubTable? Change what we call a 'codebase' to refer to this object, unrelated to a repo.
+    # TODO: Maybe we can hide Get-CodebaseTable completely behind Get-PratProject? Change what we call a 'codebase' to refer to this object, unrelated to a repo.
     return $cbt
 }
 Write-Verbose "Found: $($longestMatch.key)"

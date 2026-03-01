@@ -31,12 +31,12 @@ Describe "Open-CodebaseWorkspace" {
                 'prev'  = [ordered] @{'testValue_set' = 'foo'}
             }
 "@
-            $cbt = @{
+            $project = @{
                 cachedEnvDelta = (createTestFile $cacheFile ".ps1")
             }
 
             # Act
-            $result = Open-CodebaseWorkspace {echo "hi: $($env:testValue_set)"} $cbt
+            $result = Open-CodebaseWorkspace {echo "hi: $($env:testValue_set)"} $project
 
             # Assert
             $result | Should -Be "hi: set_updated77"

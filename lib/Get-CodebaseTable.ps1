@@ -35,7 +35,7 @@
 #   subdir:                    A path for the given $Location, relative to $root
 
 #TODO: Resolve confusion between "cbtable" in filename, and this script which only returns one entry.
-#      And reconcile with Get-CodebaseSubTable.
+#      And reconcile with Get-PratProject.
 
 [CmdletBinding()]
 param ([string] $Location = $pwd)

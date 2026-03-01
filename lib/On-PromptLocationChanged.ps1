@@ -4,15 +4,16 @@ param($newLocation, $oldLocation)
 
 # Write-Warning "Testing: On-PromptLocationChanged.ps1 was called. oldLocation=$oldLocation"
 
-$cbt = &$PSScriptRoot\Get-CodebaseSubTable $newLocation
-if ($null -eq $cbt) {
+$project = &$PSScriptRoot\Get-PratProject $newLocation
+if ($null -eq $project) {
     $global:__prat_currentLocation = $newLocation
 } else {
-    $id = $cbt.id
-    $subdir = $cbt.subdir
+    $cbt = $project.cbt
+    $id = $project.id
+    $subdir = $project.subdir
     $buildKind = ""
-    if ($null -ne $cbt.buildKind) {
-        $buildKind = "(" + $cbt.buildKind + ")"
+    if ($null -ne $project.buildKind) {
+        $buildKind = "(" + $project.buildKind + ")"
     }
 
     if ($subdir -ne "") { $subdir = " $subdir/" -replace '\\', '/' }
