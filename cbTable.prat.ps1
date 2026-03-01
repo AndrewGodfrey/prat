@@ -7,6 +7,7 @@
             pbin      = "pathbin"
             plog      = "auto/log"
             plib      = "lib"
+            ptestrun  = "auto/testRuns/last"
         }
     }
 }
