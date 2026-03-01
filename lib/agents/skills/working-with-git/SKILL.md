@@ -1,7 +1,10 @@
 ---
-name: finishing-a-development-branch-supplement
-description: Supplements superpowers:finishing-a-development-branch. Use to decide how to integrate the work
+name: working-with-git
+description: Use before using git to make state changes, e.g. before using git to commit, checkout, rebase, merge, push, pull, stash.
 ---
+
+This takes precedence over conflicting instructions in `superpowers` skills like `finishing-a-development-branch`.
+
 
 # Figure out what the user expects
 
@@ -55,3 +58,8 @@ update docs and comments to reflect recent changes in test params
 `Install-SoftLinkToFile`: fix some missing `using:` in a sudo scriptblock
 bootstrap: add a 3rd phase, so we can avoid Windows PowerShell earlier
 ```
+
+If it seems hard to fit the change into a single line, consider whether the change should be broken into 
+smaller commits that are more focused. In a development branch, it's okay to do this after-the-fact without
+running unit tests on each commit - provided the unit tests are passing after the final commit and the decomposition
+is logical.
