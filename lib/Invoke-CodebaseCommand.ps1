@@ -6,7 +6,7 @@ param(
 )
 
 $location = if ($CommandParameters['RepoRoot']) { $CommandParameters['RepoRoot'] } else { Get-Location }
-$cbt = &$home\prat\lib\Get-CodebaseTable $location
+$cbt = &$home\prat\lib\Get-PratRepo $location
 if ($null -eq $cbt) { 
     throw "Unknown codebase - can't $CommandName"
 }

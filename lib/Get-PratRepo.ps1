@@ -48,15 +48,15 @@ if ($null -eq $cbTable) { return $null }
 $results = @()
 
 foreach ($item in $cbTable.Values) {
-    Write-Verbose "Get-CodebaseTable: Considering: $($item.id)"
+    Write-Verbose "Get-PratRepo: Considering: $($item.id)"
     [System.IO.DirectoryInfo] $rootDI = $item.root
-    Write-Verbose "Get-CodebaseTable: Compare: '$($rootDI.FullName)' vs '$($locationDI.FullName)'"
+    Write-Verbose "Get-PratRepo: Compare: '$($rootDI.FullName)' vs '$($locationDI.FullName)'"
     if ($locationDI.FullName.StartsWith($rootDI.FullName, 'InvariantCultureIgnoreCase')) {
-        Write-Verbose "Get-CodebaseTable: Found: $($item | Out-String)" # This doesn't show scriptblocks properly, but at least it doesn't hang like ConvertTo-Expression!
+        Write-Verbose "Get-PratRepo: Found: $($item | Out-String)" # This doesn't show scriptblocks properly, but at least it doesn't hang like ConvertTo-Expression!
         $results += $item
     }
 }
-Write-Verbose "Get-CodebaseTable: Found $($results.Length) matches"
+Write-Verbose "Get-PratRepo: Found $($results.Length) matches"
 
 if ($results.Length -eq 0) { return $null }
 if ($results.Length -gt 1) { throw "Found too many matches in $cbFile" }

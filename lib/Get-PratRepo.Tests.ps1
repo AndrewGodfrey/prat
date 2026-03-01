@@ -3,7 +3,7 @@ BeforeAll {
     $scriptToTest = $PSCommandPath.Replace('.Tests.ps1', '.ps1')
 }
 
-Describe "Get-CodebaseTable" {
+Describe "Get-PratRepo" {
     It "Returns null when no cbTable.ps1 exists for the location" {
         New-Item -ItemType Directory "TestDrive:\loc_noTable" | Out-Null
         $result = &$scriptToTest -Location (Get-Item "TestDrive:\loc_noTable").FullName

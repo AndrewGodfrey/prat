@@ -1,15 +1,15 @@
-# An extension of Get-CodebaseTable.
+# An extension of Get-PratRepo.
 # Useful for codebases that have sub-projects.
 #
 # Uses the 'shortcuts' list to decide which project we're in. (Only works for locations that have exactly one shortcut).
-# If no project is found, returns what Get-CodebaseTable returns.
+# If no project is found, returns what Get-PratRepo returns.
 using module PratBase\PratBase.psd1
 
 [CmdletBinding()]
 param ([string] $Location = $pwd)
 
 $Location = Resolve-Path $Location
-$cbt = &$PSScriptRoot/Get-CodebaseTable $Location
+$cbt = &$PSScriptRoot/Get-PratRepo $Location
 if ($null -eq $cbt) { return $null }
 
 Write-Verbose "Search shortcuts for $($cbt.id)"
@@ -35,7 +35,7 @@ foreach ($key in $cbt.shortcuts.Keys) {
 
 if ($null -eq $longestMatch.key) {
     # TODO: Make an object more similar in type to the other cases - don't want 'subworkspaces' or 'shortcuts' properties
-    # TODO: Maybe we can hide Get-CodebaseTable completely behind Get-PratProject? Change what we call a 'codebase' to refer to this object, unrelated to a repo.
+    # TODO: Maybe we can hide Get-PratRepo completely behind Get-PratProject? Change what we call a 'codebase' to refer to this object, unrelated to a repo.
     return $cbt
 }
 Write-Verbose "Found: $($longestMatch.key)"

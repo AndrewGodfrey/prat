@@ -1,6 +1,6 @@
 # .SYNOPSIS
 # Given a location/pwd, loads & normalizes the relevant 'cbTable.*.ps1' file.
-# Compare with Get-CodebaseTable.ps1 (which needs to be renamed for clarity).
+# Compare with Get-PratRepo.ps1 (which needs to be refactored for clarity).
 
 [CmdletBinding()]
 param ([string] $Location = $pwd)

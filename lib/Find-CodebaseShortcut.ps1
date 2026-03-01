@@ -5,7 +5,7 @@
 [CmdletBinding()]
 param($Shortcut, [switch] $ListAll)
 
-# This is the set of codebase locations to search. Can include $pwd (Get-CodebaseTable will find the codebase $pwd is in).
+# This is the set of codebase locations to search. Can include $pwd (Get-PratRepo will find the codebase $pwd is in).
 # Can be overridden by putting a different Get-GlobalCodebases.ps1 earlier in $env:path.
 #
 # Unrecognized locations will be silently ignored.

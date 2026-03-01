@@ -1,4 +1,4 @@
-# For consumption by Get-CodebaseTable
+# For consumption by Get-PratRepo
 @{
     prat = @{ 
         shortcuts = @{
