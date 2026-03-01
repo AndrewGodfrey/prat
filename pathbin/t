@@ -1,6 +1,6 @@
 #!/bin/bash
 # Wrapper for Test-Codebase.ps1 — exercises the full codebase test chain.
-# Enables a single Bash(t.sh *) permission grant rather than ad-hoc pwsh invocations.
+# Enables a single Bash(t *) permission grant rather than ad-hoc pwsh invocations.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 pwsh -File "$SCRIPT_DIR/Test-Codebase.ps1" "$@" 2>&1

@@ -5,17 +5,17 @@ description: Use when doing TDD, running tests after code changes, checking cove
 
 # Run Prat Unit Tests
 
-Use `t.sh` with `-RepoRoot` — no `cd` required.
-Grant permission as `Bash(t.sh *)`.
+Use the `t` bash script with `-RepoRoot` — no `cd` required.
+Permission is granted as `Bash(t *)`.
 
 ## Common Invocations
 
 ```bash
-t.sh -RepoRoot ~/prat                                                   # full suite, with coverage
-t.sh -RepoRoot ~/prat -NoCoverage                                       # full suite, skip coverage
-t.sh -RepoRoot ~/prat -Focus lib/Something                              # focus on a directory
-t.sh -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1                          # focus on a test file
-t.sh -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1 -NoCoverage -Debugging   # debug a failing test
+t -RepoRoot ~/prat                                                   # full suite, with coverage
+t -RepoRoot ~/prat -NoCoverage                                       # full suite, skip coverage
+t -RepoRoot ~/prat -Focus lib/Something                              # focus on a directory
+t -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1                          # focus on a test file
+t -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1 -NoCoverage -Debugging   # debug a failing test
 ```
 
 ## Parameters
@@ -125,4 +125,4 @@ ReverseSearchForShortcut        98      98 covered
 **Avoid invoking `Invoke-Pester` or `pwsh -c` directly** — reasons:
 - Pester 5 parameter sets are tricky
 - `pwsh -c "..."` requires escaping every `$` which agents consistently get wrong.
-- Using `t.sh` is more user-friendly — the user can issue the same command easily.
+- Using the `t` bash script is more user-friendly — the user can issue the same command easily (e.g. using the equivalent `t` Pwsh alias).
