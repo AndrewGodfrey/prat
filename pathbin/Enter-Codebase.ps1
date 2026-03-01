@@ -20,6 +20,6 @@
 #   [[ENV: %llamacpp%]] [llamacpp](CMake)
 #   >
 #
-Open-CodebaseWorkspace.ps1 {pwsh -NoExit -Command "cd $pwd"} -DescriptionScript {param($projectName); "Entering: $projectName" }
+Open-ProjectWorkspace.ps1 {pwsh -NoExit -Command "cd $pwd"} -DescriptionScript {param($projectName); "Entering: $projectName" }
 
 # OmitFromCoverageReport: a unit test would just restate it

@@ -50,7 +50,7 @@ function instInteractiveAliases($it) {
     Install-InteractiveAlias $stage 'd' 'Deploy-Codebase'
     Install-InteractiveAlias $stage 'x' 'Start-CodebaseDevLoop'
     Install-InteractiveAlias $stage 'c' 'Set-LocationUsingShortcut'
-    Install-InteractiveAlias $stage 'ow' 'Open-CodebaseWorkspace'
+    Install-InteractiveAlias $stage 'ow' 'Open-ProjectWorkspace'
     Install-InteractiveAlias $stage 'gtfe' 'Get-TextFileEncoding'
     Install-InteractiveAlias $stage 'gll' 'GitLog-Local'
     Install-InteractiveAlias $stage 'glp' 'GitLog-Pretty'
