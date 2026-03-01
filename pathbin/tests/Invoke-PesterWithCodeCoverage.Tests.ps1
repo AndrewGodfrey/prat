@@ -308,6 +308,33 @@ Describe "Invoke-PesterWithCodeCoverage smart filter" {
     }
 }
 
+Describe "Invoke-PesterWithCodeCoverage -Debugging" {
+    BeforeAll {
+        function moveCoverageFile($tempFile, $coverageDest) {}
+        Mock moveCoverageFile {}
+
+        function New-PesterInfoRecord($message, $noNewLine) {
+            $him = [System.Management.Automation.HostInformationMessage]::new()
+            $him.Message = $message
+            $him.NoNewLine = $noNewLine
+            [System.Management.Automation.InformationRecord]::new($him, "Pester")
+        }
+    }
+
+    It "writes InformationRecord content to host (not silently consumed via -InformationVariable)" {
+        $testRoot = "$TestDrive/debug-host"
+        Mock Write-Host {}
+        Mock Invoke-PesterAsJob {
+            New-PesterInfoRecord "[+] passes 1ms" $false
+            [PSCustomObject]@{ PassedCount = 1; FailedCount = 0 }
+        }
+
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -Debugging
+
+        Should -Invoke -CommandName Write-Host -ParameterFilter { "$Object" -match '\[\+\].*\d+' }
+    }
+}
+
 Describe "Invoke-PesterWithCodeCoverage integration" -Tag Integration {
     # Requirements:
     #   - wsl (Windows Subsystem for Linux)
@@ -327,7 +354,7 @@ Describe "Invoke-PesterWithCodeCoverage integration" -Tag Integration {
         $scriptPath = (Resolve-Path "$PSScriptRoot\..\Invoke-PesterWithCodeCoverage.ps1").Path
         $modulePath = (Resolve-Path "$PSScriptRoot\..\..\lib\PratBase\PratBase.psm1").Path
 
-        $pwshCmd = "Import-Module $modulePath; & $scriptPath -NoCoverage -PathToTest $td -RepoRoot $td"
+        $pwshCmd = "Import-Module $modulePath; & $scriptPath -Debugging -NoCoverage -PathToTest $td -RepoRoot $td"
         wsl bash -lc "script -q -c 'pwsh.exe -NonInteractive -Command ""$pwshCmd""' $tsWsl"
 
         $lines = @(

@@ -151,8 +151,26 @@ $failureThreshold = 5
 
 if ($Debugging) {
     # Bypass filter: stream everything directly to the host (full Pester diagnostic output).
-    $result = Invoke-PesterAsJob -Configuration $Configuration -InformationVariable capturedInfo
-    $capturedInfo | ForEach-Object { "$_" } | Add-Content $logFile -Encoding utf8NoBOM
+    # Note: Invoke-PesterAsJob emits InformationRecords on stream 1 (via ReadAll()), not stream 6,
+    # so -InformationVariable cannot capture them. Process each item explicitly instead.
+    Invoke-PesterAsJob -Configuration $Configuration | ForEach-Object {
+        if ($_ -is [System.Management.Automation.InformationRecord]) {
+            $msgData = $_.MessageData
+            $isHostInfo = $null -ne ($msgData.PSObject.Properties['Message']) -and
+                          $null -ne ($msgData.PSObject.Properties['NoNewLine'])
+            if ($isHostInfo) {
+                Write-Host $msgData.Message -NoNewline:$msgData.NoNewLine
+                $msgData.Message | Add-Content $logFile -Encoding utf8NoBOM
+            } else {
+                $text = "$($msgData)"
+                Write-Host $text
+                $text | Add-Content $logFile -Encoding utf8NoBOM
+            }
+        } elseif ($null -ne $_.PSObject.Properties['PassedCount'] -and
+                  $null -ne $_.PSObject.Properties['FailedCount']) {
+            $result = $_
+        }
+    }
 } else {
     # Smart filter: stream [+] lines live; emit first n failures; suppress the rest.
     $filterScript = "$PSScriptRoot/../lib/Invoke-WithOutputFilter.ps1"
