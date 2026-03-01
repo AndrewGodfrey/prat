@@ -312,6 +312,8 @@ function Start-Installation([Parameter(Position=0)] [string] $InstallerName, [Pa
 
 . $PSScriptRoot\instFilesAndFolders.ps1
 
+. $PSScriptRoot\instEnvironmentVariables.ps1
+
 . $PSScriptRoot\instRegistry.ps1
 
 . $PSScriptRoot\instPackages.ps1
