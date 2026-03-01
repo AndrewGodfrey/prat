@@ -34,3 +34,20 @@ Counter-example:
 
 - (unreliability): e.g. in a test which sorted directories by CreationTime, two directories created in rapid succession
   could receive identical timestamps (~15ms NTFS resolution). Could maybe have been fixed by some sort of complicated mocking. Was instead fixed by adding Name as a tie-breaker (Name being more under the test's control).
+
+
+# When writing tests: Consider the blind spot in measured test coverage
+
+Even 100%-instruction-covered code can still be missing validation of basic requirements.
+Some common examples:
+- Switch/boolean param tested only with one value (false/absent)
+- Parameter threaded to a downstream call, never verified at the destination
+- Container param tested only when empty
+- Collection-processing code tested only with one item (zero and two-plus unchecked)
+- Relative path with implicit $pwd dependency
+- Numeric edge cases (division by zero, overflow)
+
+The goal is not to test every parameter, but to test every distinct mechanism or assumption. Code review can confirm
+that several inputs are handled identically, making one representative test sufficient. The risk is when something
+appears structurally identical but has a subtle difference — a different code path, an implicit dependency, a silent
+failure mode — that isn't obvious from reading. Those are the cases worth a targeted test.
