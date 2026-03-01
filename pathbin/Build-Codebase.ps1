@@ -12,12 +12,12 @@ param(
         "build", 
         "clean", # TODO: Replace 'clean' with a $Force parameter that can be passed from Start-CodebaseDevLoop.
         "shell"  # Launches the appropriate build shell. For development of new automation, or for quick hacks.
-    )] [string] $command="build",
+    )] [string] $CommandName="build",
     [switch] $Force,
     [switch] $Quiet
 )
-if (!$Quiet) { Write-Host -ForegroundColor Green "command: $command" }
+if (!$Quiet) { Write-Host -ForegroundColor Green "command: $CommandName" }
 
-$switches = @{Command = $command}
+$switches = @{Command = $CommandName}
 if ($Force) { $switches['Force'] = $true }
-&$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "build" -CommandSwitches $switches
+&$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "build" -CommandParameters $switches

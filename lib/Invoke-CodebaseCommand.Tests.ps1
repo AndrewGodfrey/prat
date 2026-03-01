@@ -13,16 +13,16 @@ Describe "Invoke-CodebaseCommand" {
         { &$scriptToTest "build" } | Should -Throw "Unknown codebase*"
     }
 
-    It "Runs the codebase action script with its env delta applied" {
+    It "Runs the codebase command script with its env delta applied" {
         Push-Location $testCbDir
-        $result = &$scriptToTest "test" -CommandSwitches @{NoCoverage=$true}
+        $result = &$scriptToTest "test" -CommandParameters @{NoCoverage=$true}
         $result | Should -Be "testCb: test: bar: NoCoverage=True"
     }
 
-    It "uses -RepoRoot from CommandSwitches for codebase detection instead of pwd" {
+    It "uses -RepoRoot from CommandParameters for codebase detection instead of pwd" {
         New-Item -Type Directory "TestDrive:\someOtherDir" | Out-Null
         Push-Location "TestDrive:\someOtherDir"
-        $result = &$scriptToTest "test" -CommandSwitches @{NoCoverage=$true; RepoRoot=$testCbDir}
+        $result = &$scriptToTest "test" -CommandParameters @{NoCoverage=$true; RepoRoot=$testCbDir}
         $result | Should -Be "testCb: test: bar: NoCoverage=True RepoRoot=$testCbDir"
     }
 
@@ -34,11 +34,11 @@ Describe "Invoke-CodebaseCommand" {
 
     It "Passes -Force to the codebase deploy script" {
         Push-Location $testCbDir
-        $result = &$scriptToTest "deploy" -CommandSwitches @{Force=$true}
+        $result = &$scriptToTest "deploy" -CommandParameters @{Force=$true}
         $result | Should -Be "testCb: deploy: bar: Force=True"
     }
 
-    It "Does nothing when no script is defined for the action" {
+    It "Does nothing when no script is defined for the command" {
         Push-Location $testCbDir
         # Temporarily shadow Get-CodebaseScript to return null for this test
         function Get-CodebaseScript { return $null }

@@ -1,25 +1,25 @@
 [CmdletBinding()]
 param(
     [Parameter(Position=0, Mandatory)]
-    [ValidateSet("build", "test", "deploy", "prebuild")] [string] $action,
-    [hashtable] $CommandSwitches = @{}
+    [ValidateSet("build", "test", "deploy", "prebuild")] [string] $CommandName,
+    [hashtable] $CommandParameters = @{}
 )
 
-$location = if ($CommandSwitches['RepoRoot']) { $CommandSwitches['RepoRoot'] } else { Get-Location }
+$location = if ($CommandParameters['RepoRoot']) { $CommandParameters['RepoRoot'] } else { Get-Location }
 $cbt = &$home\prat\lib\Get-CodebaseTable $location
 if ($null -eq $cbt) { 
-    throw "Unknown codebase - can't $action"
+    throw "Unknown codebase - can't $CommandName"
 }
 
 # Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
-$script = Get-CodebaseScript $action $cbt.id
+$script = Get-CodebaseScript $CommandName $cbt.id
 
 if ($null -eq $script) {
-    Write-Verbose "$($action): NOP"
+    Write-Verbose "$($CommandName): NOP"
     return
 }
 
-if ($action -ne "prebuild") {
+if ($CommandName -ne "prebuild") {
     $envDelta = $cbt.cachedEnvDelta
     if (($null -ne $envDelta) -and (-not (Split-Path $envDelta -IsAbsolute))) {
         $envDelta = Join-Path $cbt.root $envDelta
@@ -34,10 +34,10 @@ if ($action -ne "prebuild") {
     $envDelta = $null
 }
 
-Write-Debug "calling $action script for $($cbt.id), with switches: ($(ConvertTo-Expression $CommandSwitches))"
+Write-Debug "calling $CommandName script for $($cbt.id), with switches: ($(ConvertTo-Expression $CommandParameters))"
 
 $wrapperScriptBlock = {
-    param([hashtable]$CommandSwitches = @{})
-    & $script $cbt -CommandSwitches:$CommandSwitches
+    param([hashtable]$CommandParameters = @{})
+    & $script $cbt -CommandParameters:$CommandParameters
 }
-Invoke-CommandWithCachedEnvDelta $wrapperScriptBlock $envDelta -CommandSwitches $CommandSwitches
+Invoke-CommandWithCachedEnvDelta $wrapperScriptBlock $envDelta -CommandParameters $CommandParameters
