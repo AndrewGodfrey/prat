@@ -38,36 +38,45 @@ Describe "Delete-OldFiles" {
         }
     }
     Context "Need test root" {
-        BeforeEach {
+        BeforeAll {
             $testRoot = "TestDrive:\\Delete-OldFiles.Tests"
+            New-Item -Path $testRoot -ItemType Directory | Out-Null
+
+            function CreateDir($path, $creationTime = $null) {
+                mkdir $path | Out-Null
+                if ($null -ne $creationTime) {
+                    Get-Item $path | Set-ItemProperty -Name CreationTime -Value $creationTime
+                }
+            }
+
+            function CreateFile($path, $creationTime = $null) {
+                New-Item -Path $path -ItemType File -Value "test" | Out-Null
+                if ($null -ne $creationTime) {
+                    Get-Item $path | Set-ItemProperty -Name CreationTime -Value $creationTime
+                }
+            }
+        }
+        BeforeEach {
             $now = Get-Date
             $past = $now.AddDays(-8)
-            Mock Get-Date { $now }
-
-            function CreateDir($path, $creationTime) {
-                mkdir $path | Out-Null
-                Get-Item $path | Set-ItemProperty -Name CreationTime -Value $creationTime
-            }
-
-            function CreateFile($path, $creationTime) {
-                New-Item -Path $path -ItemType File -Value "test" | Out-Null
-                Get-Item $path | Set-ItemProperty -Name CreationTime -Value $creationTime
-            }
-
-            CreateDir $testRoot $past
             Push-Location $testRoot
+            Mock Get-Date { $now }
         }
         AfterEach {
             Pop-Location
+            Get-ChildItem $testRoot | Remove-Item -Recurse -Force
+        }
+        AfterAll {
             Remove-Item $testRoot -Recurse -Force
         }
         It "Deletes files older than the retention period" {
-            @("p1", "p1\c", "p2", "p2\c") | ForEach-Object { CreateDir $_ $past }
-            @("p3", "p3\c") | ForEach-Object { CreateDir $_ $now }
+            @("p1", "p1\c", "p2") | ForEach-Object { CreateDir $_ }
+            CreateDir "p2\c" $past
+            @("p3", "p3\c") | ForEach-Object { CreateDir $_ }
             CreateFile "p1\c\a.txt" $past
             CreateFile "p1\c\a.bar" $past
             CreateFile "p2\c\b.txt" $past
-            CreateFile "p2\d.txt" $now
+            CreateFile "p2\d.txt"
             CreateFile "p3\c\b.txt" $past
 
             &$scriptToTest -Path $testRoot -RetentionDays 7  -OptionalFilenameMatch '\.txt$' 6>&1 | Out-Null
