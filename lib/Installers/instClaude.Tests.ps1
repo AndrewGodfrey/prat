@@ -34,6 +34,26 @@ Describe "Install-ClaudeSkills" {
         "$destDir\my-skill\SKILL.md" | Should -Exist
     }
 
+    It "prepends auto-generated header to SKILL.md" {
+        mkdir "$srcDir\my-skill" | Out-Null
+        "skill content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
+        mkdir $destDir | Out-Null
+
+        Install-ClaudeSkills $stage $srcDir $destDir
+
+        Get-Content "$destDir\my-skill\SKILL.md" -Raw | Should -BeLike "<!-- Auto-generated*"
+    }
+
+    It "sets SKILL.md read-only" {
+        mkdir "$srcDir\my-skill" | Out-Null
+        "skill content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
+        mkdir $destDir | Out-Null
+
+        Install-ClaudeSkills $stage $srcDir $destDir
+
+        (Get-ItemProperty "$destDir\my-skill\SKILL.md").IsReadOnly | Should -BeTrue
+    }
+
     It "deploys multiple skills" {
         mkdir "$srcDir\skill-a" | Out-Null
         "a" | Out-File "$srcDir\skill-a\SKILL.md" -Encoding utf8NoBOM
