@@ -93,6 +93,47 @@ Describe "Install-TextToFile" {
     }
 }
 
+Describe "Install-SetOfFiles" {
+    BeforeEach {
+        $script:testDir = Join-Path (Resolve-Path "TestDrive:\").ProviderPath "SetOfFiles.Tests"
+        mkdir $testDir | Out-Null
+        $script:srcDir  = "$testDir\src"
+        $script:destDir = "$testDir\dest"
+        mkdir $srcDir  | Out-Null
+        mkdir $destDir | Out-Null  # pre-create so Install-Folder skips the mkdir+ACL path
+        $script:stage = [MockStage]::new()
+    }
+    AfterEach {
+        Remove-Item $testDir -Recurse -Force
+    }
+
+    It "Prepends header to deployed file content" {
+        "file content" | Out-File "$srcDir\SKILL.md" -Encoding utf8NoBOM
+
+        Install-SetOfFiles $stage $srcDir $destDir -Header "<!-- header -->"
+
+        Get-Content "$destDir\SKILL.md" -Raw | Should -BeLike "<!-- header -->*file content*"
+    }
+
+    It "Is idempotent when called again with same source and header" {
+        "file content" | Out-File "$srcDir\SKILL.md" -Encoding utf8NoBOM
+        Install-SetOfFiles $stage $srcDir $destDir -Header "<!-- header -->"
+        $firstCount = $stage.changeCount
+
+        Install-SetOfFiles $stage $srcDir $destDir -Header "<!-- header -->"
+
+        $stage.changeCount | Should -Be $firstCount
+    }
+
+    It "Sets file read-only when -Header and -SetReadOnly" {
+        "file content" | Out-File "$srcDir\SKILL.md" -Encoding utf8NoBOM
+
+        Install-SetOfFiles $stage $srcDir $destDir -Header "<!-- header -->" -SetReadOnly
+
+        (Get-ItemProperty "$destDir\SKILL.md").IsReadOnly | Should -BeTrue
+    }
+}
+
 Describe "Install-DirectoryJunction" {
     BeforeEach {
         # Junctions require absolute filesystem paths, not PSDrive paths

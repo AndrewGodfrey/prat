@@ -59,37 +59,44 @@ function isFileReadOnly($path) {
 }
 
 # Install a directory full of files
-function Install-SetOfFiles($stage, $srcDir, $destDir, [switch] $SetReadOnly) {
+# When -Header is provided, it is prepended to each file's content (separated by a blank line),
+# and Install-TextToFile is used for content-based comparison instead of fc.exe.
+function Install-SetOfFiles($stage, $srcDir, $destDir, [switch] $SetReadOnly, [string] $Header = "") {
     Install-Folder $stage $destDir
 
-    # Now install/update file
     foreach ($file in Get-ChildItem $srcDir) {
         $filename = $file.Name
-        $copyThisFile = $false
-        $destFileExists = (Test-Path -PathType Leaf $destDir\$filename)
 
-        if (-not $destFileExists) {
-            $copyThisFile = $true
+        if ($Header) {
+            $newContent = $Header + "`n`n" + (Import-TextFile (Join-Path $srcDir $filename))
+            Install-TextToFile $stage (Join-Path $destDir $filename) $newContent -SetReadOnly:$SetReadOnly
         } else {
-            fc.exe /a $srcDir\$filename $destDir\$filename | Out-Null
-            if ($? -eq $false) {
+            $copyThisFile = $false
+            $destFileExists = (Test-Path -PathType Leaf $destDir\$filename)
+
+            if (-not $destFileExists) {
                 $copyThisFile = $true
             } else {
-                if ($SetReadOnly -and -not (isFileReadOnly $destDir\$filename)) {
+                fc.exe /a $srcDir\$filename $destDir\$filename | Out-Null
+                if ($? -eq $false) {
                     $copyThisFile = $true
+                } else {
+                    if ($SetReadOnly -and -not (isFileReadOnly $destDir\$filename)) {
+                        $copyThisFile = $true
+                    }
                 }
             }
-        }
 
-        if ($copyThisFile) {
-            $stage.OnChange()
-            if ($SetReadOnly -and $destFileExists) {
-                # Powershell doesn't allow updates if the read-only flag is set
-                Set-ItemProperty -Path $destDir\$filename -Name IsReadOnly -Value $false
-            }
-            copy $srcDir\$filename -Destination $destDir\$filename
-            if ($SetReadOnly) {
-                Set-ItemProperty -Path $destDir\$filename -Name IsReadOnly -Value $true
+            if ($copyThisFile) {
+                $stage.OnChange()
+                if ($SetReadOnly -and $destFileExists) {
+                    # Powershell doesn't allow updates if the read-only flag is set
+                    Set-ItemProperty -Path $destDir\$filename -Name IsReadOnly -Value $false
+                }
+                copy $srcDir\$filename -Destination $destDir\$filename
+                if ($SetReadOnly) {
+                    Set-ItemProperty -Path $destDir\$filename -Name IsReadOnly -Value $true
+                }
             }
         }
     }
