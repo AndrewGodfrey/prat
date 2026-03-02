@@ -122,6 +122,8 @@ ReverseSearchForShortcut        95      95 missed
 ReverseSearchForShortcut        98      98 covered
 ```
 
+**Do not append `2>&1`** to `t` invocations — the Bash tool already captures both stdout and stderr.
+
 **Avoid invoking `Invoke-Pester` or `pwsh -c` directly** — reasons:
 - Pester 5 parameter sets are tricky
 - `pwsh -c "..."` requires escaping every `$` which agents consistently get wrong.
