@@ -8,6 +8,7 @@ This file is read-only. Save memories by editing the correct source files:
 - Project-specific → edit the project repo's `CLAUDE.md`, e.g. `prat/CLAUDE.md`
   - If it doesn't already add one, tell the user you're creating a new one.
 - Context-specific pattern → create/update a skill in `prat/lib/agents/skills/`
+  - skills are deployed to `de/.claude/skills/` — always edit the source, never the deployed copy
   - skills are opt-in — the user's `de` deploys none/some/all of them
   - but even so - if they can be reliably triggered when needed, skills are preferred, for things that aren't
     relevant to most tasks in most projects.
