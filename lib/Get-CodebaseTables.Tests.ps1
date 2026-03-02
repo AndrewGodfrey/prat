@@ -3,40 +3,101 @@ BeforeAll {
 }
 
 Describe "Get-CodebaseTables" {
-    It "Returns null when no cbTable.ps1 exists in parent tree" {
-        New-Item -ItemType Directory "TestDrive:\loc" | Out-Null
-        $result = &$scriptToTest (Resolve-Path "TestDrive:\loc").Path
+
+    It "Returns null when directory has no cbTable files" {
+        New-Item -ItemType Directory "TestDrive:\empty" | Out-Null
+        $result = &$scriptToTest (Get-Item "TestDrive:\empty").FullName
         $result | Should -BeNull
     }
 
-    It "Sets id from the key name in the table" {
-        "@{ mykey = @{} }" | Out-File "TestDrive:\cbTable.test.ps1"
-        $result = &$scriptToTest (Resolve-Path "TestDrive:\").Path
-        $result["mykey"].id | Should -Be "mykey"
+    It "Returns null for a non-existent directory" {
+        $result = &$scriptToTest "TestDrive:\doesNotExist"
+        $result | Should -BeNull
     }
 
-    It "Sets root to the cbTable file directory when not specified in the entry" {
-        "@{ mykey = @{} }" | Out-File "TestDrive:\cbTable.test.ps1"
-        $expectedRoot = (Get-Item "TestDrive:\").FullName.TrimEnd('\')
-        $result = &$scriptToTest "TestDrive:\"
-        $result["mykey"].root | Should -Be $expectedRoot
+    It "Sets repo id from its key name" {
+        "@{ repos = @{ myrepo = @{} } }" | Out-File "TestDrive:\cbTable.test.ps1"
+        $result = &$scriptToTest (Resolve-Path "TestDrive:\").Path
+        $result.repos["myrepo"].id | Should -Be "myrepo"
     }
 
-    It "Uses the explicit root from the entry when specified" {
-        "@{ mykey = @{ root = 'C:\Foo' } }" | Out-File "TestDrive:\cbTable.test.ps1"
+    It "Repo root defaults to fileRoot/id when no file-level root" {
+        "@{ repos = @{ myrepo = @{} } }" | Out-File "TestDrive:\cbTable.test.ps1"
+        $dir = (Get-Item "TestDrive:\").FullName.TrimEnd('\')
         $result = &$scriptToTest (Resolve-Path "TestDrive:\").Path
-        $result["mykey"].root | Should -Be "C:\Foo"
+        $result.repos["myrepo"].root | Should -Be "$dir/myrepo"
     }
 
-    It "Strips trailing backslash from root when root is not a drive root" {
-        "@{ mykey = @{ root = 'C:\Foo\' } }" | Out-File "TestDrive:\cbTable.test.ps1"
+    It "Repo root defaults to fileRoot/id when file-level root is set" {
+        "@{ root = 'C:/base'; repos = @{ myrepo = @{} } }" | Out-File "TestDrive:\cbTable.test.ps1"
         $result = &$scriptToTest (Resolve-Path "TestDrive:\").Path
-        $result["mykey"].root | Should -Be "C:\Foo"
+        $result.repos["myrepo"].root | Should -Be "C:/base/myrepo"
     }
 
-    It "Preserves trailing backslash when root is a drive root" {
-        "@{ mykey = @{ root = 'C:\' } }" | Out-File "TestDrive:\cbTable.test.ps1"
+    It "Uses explicit per-repo root when specified" {
+        "@{ repos = @{ r = @{ root = 'C:/explicit' } } }" | Out-File "TestDrive:\cbTable.test.ps1"
         $result = &$scriptToTest (Resolve-Path "TestDrive:\").Path
-        $result["mykey"].root | Should -Be "C:\"
+        $result.repos["r"].root | Should -Be "C:/explicit"
+    }
+
+    It "Strips trailing path separator from root" {
+        "@{ repos = @{ r = @{ root = 'C:/myroot/' } } }" | Out-File "TestDrive:\cbTable.test.ps1"
+        $result = &$scriptToTest (Resolve-Path "TestDrive:\").Path
+        $result.repos["r"].root | Should -Be "C:/myroot"
+    }
+
+    It "Makes relative shortcut paths absolute relative to file root" {
+        "@{ repos = @{ r = @{} }; shortcuts = @{ sub = 'subdir' } }" | Out-File "TestDrive:\cbTable.test.ps1"
+        $dir = (Get-Item "TestDrive:\").FullName.TrimEnd('\')
+        $result = &$scriptToTest (Resolve-Path "TestDrive:\").Path
+        $result.shortcuts["sub"] | Should -Be "$dir/subdir"
+    }
+
+    It "Leaves already-absolute shortcut paths unchanged" {
+        "@{ repos = @{ r = @{} }; shortcuts = @{ s = 'C:/abs' } }" | Out-File "TestDrive:\cbTable.test.ps1"
+        $result = &$scriptToTest (Resolve-Path "TestDrive:\").Path
+        $result.shortcuts["s"] | Should -Be "C:/abs"
+    }
+
+    It "Adds implicit shortcut id->root for each repo" {
+        "@{ repos = @{ myrepo = @{} } }" | Out-File "TestDrive:\cbTable.test.ps1"
+        $dir = (Get-Item "TestDrive:\").FullName.TrimEnd('\')
+        $result = &$scriptToTest (Resolve-Path "TestDrive:\").Path
+        $result.shortcuts["myrepo"] | Should -Be "$dir/myrepo"
+    }
+
+    It "Explicit shortcut overrides implicit id->root shortcut" {
+        "@{ repos = @{ r = @{} }; shortcuts = @{ r = 'override' } }" | Out-File "TestDrive:\cbTable.test.ps1"
+        $dir = (Get-Item "TestDrive:\").FullName.TrimEnd('\')
+        $result = &$scriptToTest (Resolve-Path "TestDrive:\").Path
+        $result.shortcuts["r"] | Should -Be "$dir/override"
+    }
+
+    It "Each repo root defaults to fileRoot/id when no file-level root and no per-repo root" {
+        "@{ repos = @{ repoA = @{}; repoB = @{} } }" | Out-File "TestDrive:\cbTable.test.ps1"
+        $dir = (Get-Item "TestDrive:\").FullName.TrimEnd('\')
+        $result = &$scriptToTest (Resolve-Path "TestDrive:\").Path
+        $result.repos["repoA"].root | Should -Be "$dir/repoA"
+        $result.repos["repoB"].root | Should -Be "$dir/repoB"
+    }
+
+    It "Repo-level shortcuts are resolved relative to the repo root" {
+        "@{ repos = @{ r = @{ root = 'C:/myrepo'; shortcuts = @{ sub = 'lib' } } } }" | Out-File "TestDrive:\cbTable.test.ps1"
+        $result = &$scriptToTest (Resolve-Path "TestDrive:\").Path
+        $result.shortcuts["sub"] | Should -Be "C:/myrepo/lib"
+    }
+
+    It "Repo-level absolute shortcut paths are kept as-is" {
+        "@{ repos = @{ r = @{ root = 'C:/myrepo'; shortcuts = @{ abs = 'C:/other' } } } }" | Out-File "TestDrive:\cbTable.test.ps1"
+        $result = &$scriptToTest (Resolve-Path "TestDrive:\").Path
+        $result.shortcuts["abs"] | Should -Be "C:/other"
+    }
+
+    It "Loads multiple cbTable files from the same directory" {
+        "@{ repos = @{ repoA = @{} } }" | Out-File "TestDrive:\cbTable.a.ps1"
+        "@{ repos = @{ repoB = @{} } }" | Out-File "TestDrive:\cbTable.b.ps1"
+        $result = &$scriptToTest (Resolve-Path "TestDrive:\").Path
+        $result.repos.Keys | Should -Contain "repoA"
+        $result.repos.Keys | Should -Contain "repoB"
     }
 }

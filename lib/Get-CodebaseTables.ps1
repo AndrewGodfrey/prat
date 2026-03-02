@@ -1,42 +1,72 @@
 # .SYNOPSIS
-# Given a location/pwd, loads & normalizes the relevant 'cbTable.*.ps1' file.
-# Compare with Get-PratRepo.ps1 (which needs to be refactored for clarity).
+# Given a directory, loads all cbTable.*.ps1 files directly in that directory.
+# Returns @{ repos = @{...}; shortcuts = @{...} } or $null if no cbTable files were found.
+#
+# cbTable file schema:
+#   root      (optional) - file-level base path; defaults to the cbTable file's parent directory
+#   repos     - hashtable, id -> @{ root?, shortcuts?, cachedEnvDelta?, workspace?, buildKind?, subprojects?, testDirFromDevDir? }
+#   shortcuts - hashtable, name -> relative-or-absolute path
+#
+# Root resolution:
+#   - file-level root defaults to the cbTable file's parent directory
+#   - per-repo root defaults to fileRoot/id
+#   - each repo also gets an implicit shortcut <id> -> <repo.root> unless shortcuts already has that name
+#   - relative shortcut paths are resolved against the file-level root (or the repo root for repo-level shortcuts)
 
 [CmdletBinding()]
 param ([string] $Location = $pwd)
 
-function normalizeTableItem($item, $key, $cbFile) {
-    $item.id = $key
-    if ($null -eq $item.root) {
-        # In this case, we'd expect $cbFile to have just one entry in it, describing the codebase rooted at the same location as $cbFile
-        $item.root = Split-Path -parent $cbFile
-    }
+if (-not (Test-Path $Location -ErrorAction SilentlyContinue)) { return $null }
+$Location = (Resolve-Path $Location).Path
 
-    # Remove trailing \ from subdirectories, but leave cases like "F:\" alone.
-    if ($item.root.EndsWith([IO.Path]::DirectorySeparatorChar)) {
-        if ((Split-Path -parent $item.root) -ne "") {
-            $item.root = $item.root.SubString(0, $item.root.Length - 1)
+$cbFiles = @(Get-ChildItem (Join-Path $Location "cbTable.*.ps1") -ErrorAction SilentlyContinue)
+if ($cbFiles.Count -eq 0) { return $null }
+
+function Add-Shortcuts($shortcuts, $base, [ref] $dest) {
+    if ($null -eq $shortcuts) { return }
+    foreach ($name in $shortcuts.Keys) {
+        $path = $shortcuts[$name]
+        if (-not [System.IO.Path]::IsPathRooted($path)) { $path = "$base/$path" }
+        $dest.Value[$name] = $path.TrimEnd('\', '/')
+    }
+}
+
+$allRepos     = @{}
+$allShortcuts = @{}
+
+foreach ($cbFile in $cbFiles) {
+    Write-Verbose "Get-CodebaseTables: Load: $cbFile"
+    $cbData = . $cbFile.FullName
+    Write-Verbose "Get-CodebaseTables: Loaded: $cbFile"
+
+    $fileRoot = if ($null -ne $cbData.root) { $cbData.root } else { $cbFile.DirectoryName }
+
+    if ($null -ne $cbData.repos) {
+        foreach ($id in $cbData.repos.Keys) {
+            $repo    = $cbData.repos[$id]
+            $repo.id = $id
+
+            if ($null -eq $repo.root) { $repo.root = "$fileRoot/$id" }
+            $repo.root = ($repo.root).TrimEnd('\', '/')
+
+            Write-Verbose "Get-CodebaseTables: repo $id -> $($repo.root)"
+            $allRepos[$id] = $repo
+
+            Add-Shortcuts $repo.shortcuts $repo.root ([ref]$allShortcuts)
         }
     }
-    return $item
+
+    Add-Shortcuts $cbData.shortcuts $fileRoot ([ref]$allShortcuts)
 }
 
-$Location = Resolve-Path $Location
-$cbFile = &$PSScriptRoot\Get-ContainingItem "cbTable.*.ps1" $Location
-if ($null -eq $cbFile) { return $null }
-
-Write-Verbose "Get-CodebaseTables: Load: $cbFile"
-
-$cbTable = . $cbFile
-# TODO: Validate cbTable. For one thing, the keys should -match '^[a-z0-9_]+$'.
-
-$result = @{}
-
-foreach ($key in $cbTable.Keys) {
-    Write-Verbose "Get-CodebaseTables: Adding: $key"
-    $item = normalizeTableItem $cbTable[$key] $key $cbFile
-    $result[$key] = $item
+# Add implicit default shortcut per repo: <id> -> <repo.root>
+foreach ($id in $allRepos.Keys) {
+    if (-not $allShortcuts.ContainsKey($id)) {
+        $allShortcuts[$id] = $allRepos[$id].root
+    }
 }
 
-return $result
-
+return @{
+    repos     = $allRepos
+    shortcuts = $allShortcuts
+}

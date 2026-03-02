@@ -4,34 +4,55 @@ BeforeAll {
 }
 
 Describe "Get-PratRepo" {
-    It "Returns null when no cbTable.ps1 exists for the location" {
-        New-Item -ItemType Directory "TestDrive:\loc_noTable" | Out-Null
-        $result = &$scriptToTest -Location (Get-Item "TestDrive:\loc_noTable").FullName
-        $result | Should -BeNull
-    }
-
-    It "Returns the matching codebase entry for a location inside its root" {
-        $result = &$scriptToTest -Location $PSScriptRoot
-        $result | Should -Not -BeNull
-        $result.id | Should -Be "prat"
-    }
-
-    It "Sets subdir as the path relative to the codebase root" {
-        $result = &$scriptToTest -Location "$PSScriptRoot\Installers"
-        $result.subdir | Should -Be "lib\Installers"
-    }
-
-    It "Throws when multiple codebase entries match the location" {
+    BeforeEach {
         $root = (Get-Item "TestDrive:\").FullName.TrimEnd('\')
-        "@{ a = @{ root = '$root' }; b = @{ root = '$root' } }" | Out-File "TestDrive:\cbTable.test.ps1"
-        New-Item -ItemType Directory "TestDrive:\loc2" | Out-Null
-        { &$scriptToTest -Location (Get-Item "TestDrive:\loc2").FullName } | Should -Throw "Found too many matches*"
+        function Get-GlobalCodebases {}
+        function Get-CodebaseTables {}
+        Mock Get-GlobalCodebases { return @('loc') }
     }
 
-    It "Returns null when location is not inside any codebase root" {
-        "@{ mykey = @{ root = 'C:\Foo' } }" | Out-File "TestDrive:\cbTable.test.ps1"
-        New-Item -ItemType Directory "TestDrive:\loc" | Out-Null
-        $result = &$scriptToTest -Location (Get-Item "TestDrive:\loc").FullName
-        $result | Should -BeNull
+    It "Returns null when location is not inside any repo root" {
+        Mock Get-CodebaseTables { return @{ repos = @{ r = @{ id = 'r'; root = "$root\sub" } }; shortcuts = @{} } }
+        
+        &$scriptToTest -Location $root | Should -BeNull
+    }
+
+    It "Returns null when no cbTable files are found" {
+        Mock Get-CodebaseTables { return $null }
+
+        &$scriptToTest -Location $root| Should -BeNull
+    }
+
+    It "Returns the matching repo for the given location" {
+        Mock Get-CodebaseTables { return @{ repos = @{ myrepo = @{ id = 'myrepo'; root = $root } }; shortcuts = @{} } }
+
+        (&$scriptToTest -Location $root).id | Should -Be 'myrepo'
+    }
+
+    It "Sets subdir as path relative to repo root" {
+        New-Item -ItemType Directory "TestDrive:\sub" -Force | Out-Null
+        Mock Get-CodebaseTables { return @{ repos = @{ r = @{ id = 'r'; root = $root } }; shortcuts = @{} } }
+
+        (&$scriptToTest -Location (Get-Item "TestDrive:\sub").FullName).subdir | Should -Be "sub"
+    }
+
+    It "Throws when multiple repos match the location" {
+        Mock Get-CodebaseTables { return @{ repos = @{ a = @{ id = 'a'; root = $root }; b = @{ id = 'b'; root = $root } }; shortcuts = @{} } }
+
+        { &$scriptToTest -Location $root } | Should -Throw "Found too many matches"
+    }
+
+    It "Returns the most-specific (deepest) repo when nested repos both match" {
+        New-Item -ItemType Directory "TestDrive:\sub" -Force | Out-Null
+        Mock Get-CodebaseTables { return @{ repos = @{ parent = @{ id = 'parent'; root = $root }; child = @{ id = 'child'; root = "$root\sub" } }; shortcuts = @{} } }
+
+        (&$scriptToTest -Location (Get-Item "TestDrive:\sub").FullName).id | Should -Be 'child'
+    }
+
+    It "Deduplicates repos with the same root across multiple locations" {
+        Mock Get-GlobalCodebases { return @('loc1', 'loc2') }
+        Mock Get-CodebaseTables { return @{ repos = @{ r = @{ id = 'r'; root = $root } }; shortcuts = @{} } }
+
+        (&$scriptToTest -Location $root).id | Should -Be 'r'
     }
 }

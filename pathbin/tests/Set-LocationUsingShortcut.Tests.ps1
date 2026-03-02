@@ -3,14 +3,14 @@ BeforeAll {
 }
 
 Describe "Set-LocationUsingShortcut" {
-    BeforeEach { 
+    BeforeEach {
         pushd
-        Set-Location "\" 
+        Set-Location "\"
         $startingPath = $pwd.Path
 
-        Mock FindShortcut { 
+        Mock FindShortcut {
             if ($Shortcut -eq "hosts") {
-                return @{ target = "C:\WINDOWS\system32\drivers\etc" }
+                return "C:\WINDOWS\system32\drivers\etc"
             } else {
                 return $null
             }
@@ -51,7 +51,7 @@ Describe "Set-LocationUsingShortcut" {
         function Push-UnitTestDirectory { return $null }
 
         $warnings = Set-LocationUsingShortcut -Shortcut "hosts" -Test 3>&1
-        
+
         $warnings[0] | Should -Be "No test dir found, leaving you in dev"
         $pwd.Path | Should -Be "C:\WINDOWS\system32\drivers\etc"
     }
@@ -64,20 +64,17 @@ Describe "Set-LocationUsingShortcut" {
 
 
 Describe "FindShortcut" {
-    BeforeEach { 
+    BeforeEach {
         function Resolve-PratLibFile($file, [switch] $ListAll) {
             if ($file -ne "lib/Find-Shortcut.ps1") { throw }
-            if (!$ListAll) {
-                throw
-            }
+            if (!$ListAll) { throw }
             return @("$PSScriptRoot\mock_Find-Shortcut.ps1")
         }
-
     }
-    It "ReturnsTargetForKnownShortcut" {
+    It "ReturnsPathForKnownShortcut" {
         $result = FindShortcut "b"
 
-        $result.target | Should -Be "/a/b"
+        $result | Should -Be "/a/b"
     }
     It "ReturnsNullForUnknownShortcut" {
         Mock Get-GlobalCodebases { return @() }
@@ -92,16 +89,16 @@ Describe "FindShortcut" {
         function Get-CodebaseTables($Location) {}
         Mock Get-CodebaseTables {
             if ($Location -eq 'foo') {
-                $item = @{ id = 'foo'; root = '/a'; shortcuts = @{ c = 'b/c' } }
-                $result = @{}
-                $result['foo'] = $item
-                return $result
+                return @{
+                    repos     = @{ foo = @{ id = 'foo'; root = '/a' } }
+                    shortcuts = @{ foo = '/a'; c = '/a/b/c' }
+                }
             }
-            throw "Unexpected location: $Location"
+            return $null
         }
- 
+
         $result = FindShortcut "c"
 
-        $result.target | Should -Be "/a/b/c"
+        $result | Should -Be "/a/b/c"
     }
 }

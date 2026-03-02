@@ -1,40 +1,38 @@
-# Finds a shortcut definition from a list of shortcuts defined in various codebases
-# Actually returns the codebase table the shortcut is in, rather than the shortcut target itself. (More useful).
+# Searches all repos known to Get-GlobalCodebases, for navigation shortcuts.
 #
-# Test case: ~\prat\lib\Find-CodebaseShortcut.ps1 -ListAll | % { $root = $_.root; $_.shortcuts.Values | % {"$root/$_"} }
+# With -ListAll:  Returns an ordered dictionary of all shortcuts.
+# Otherwise:      Returns the absolute path for the given shortcut name, or $null if not found.
 [CmdletBinding()]
 param($Shortcut, [switch] $ListAll)
 
-# This is the set of codebase locations to search. Can include $pwd (Get-PratRepo will find the codebase $pwd is in).
-# Can be overridden by putting a different Get-GlobalCodebases.ps1 earlier in $env:path.
-#
-# Unrecognized locations will be silently ignored.
-$codebaseLocations = Get-GlobalCodebases
-
-$results = @()
-
-$rootsFound = @{}
-
 function Get-CodebaseTables { &$PSScriptRoot/Get-CodebaseTables @args }
 
-foreach ($codebaseLocation in $codebaseLocations) {
-    Write-Verbose "Find-CodebaseShortcut: $codebaseLocation"
-    $cbTables = Get-CodebaseTables $codebaseLocation
-    foreach ($cbt in $cbTables.Values) {
-        if ($rootsFound[$cbt.root]) { continue }
-        $rootsFound[$cbt.root] = $true
-        Write-Verbose "Find-CodebaseShortcut: Considering: $($cbt.root)"
-        if ($null -ne $cbt.shortcuts) {
-            if ($ListAll) { 
-                $results += $cbt 
-            } else {
-                if ($null -ne ($cbt.shortcuts[$Shortcut])) { return $cbt }
-            }
+$codebaseLocations = Get-GlobalCodebases
+$allShortcuts      = [ordered]@{}
+$seenRoots         = @{}
+
+foreach ($loc in $codebaseLocations) {
+    Write-Verbose "Find-CodebaseShortcut: $loc"
+    $tables = Get-CodebaseTables $loc
+    if ($null -eq $tables) { continue }
+
+    # Track repo roots so duplicate cbTable coverage from multiple locations doesn't double shortcuts
+    $anyNewRoot = $false
+    foreach ($repo in $tables.repos.Values) {
+        if (-not $seenRoots[$repo.root]) {
+            $seenRoots[$repo.root] = $true
+            $anyNewRoot = $true
+        }
+    }
+    if (-not $anyNewRoot -and $tables.repos.Count -gt 0) { continue }
+
+    foreach ($name in $tables.shortcuts.Keys) {
+        if (-not $allShortcuts.Contains($name)) {
+            $allShortcuts[$name] = $tables.shortcuts[$name]
         }
     }
 }
 
-if ($ListAll) { return $results }
-
+if ($ListAll) { return $allShortcuts }
+if ($allShortcuts.Contains($Shortcut)) { return $allShortcuts[$Shortcut] }
 return $null
-

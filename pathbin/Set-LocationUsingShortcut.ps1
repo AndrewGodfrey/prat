@@ -6,11 +6,11 @@
 # The shortcut "?" lists all shortcuts.
 #
 # .NOTES
-# Shortcuts are interpreted using: 
-#  1. Find-Shortcut_<devenv>  
+# Shortcuts are interpreted using:
+#  1. Find-Shortcut_<devenv>
 #     i.e. each dev environment can supply one. e.g. see: Find-Shortcut_prat.ps1
-#  2. Find-CodebaseShortcut 
-#     - its behavior can be extended/overridden by overriding Get-GlobalCodebases (which by default also includes $pwd)
+#  2. Find-CodebaseShortcut
+#     - returns a flat name->path dict from all codebases in Get-GlobalCodebases
 #
 # .EXAMPLE
 # c appdata
@@ -26,9 +26,9 @@ param(
             [array] $validValues = &$PSScriptRoot\..\lib\Get-CompletionList.ps1 "Set-LocationUsingShortcut-Shortcut"
             $validValues -like "$wordToComplete*"
         }
-        )]   
-    $Shortcut="", 
-    [switch] $Test, 
+        )]
+    $Shortcut="",
+    [switch] $Test,
     [switch] $ListAll)
 
 function TryAdd($dict, $key, $value) {
@@ -47,12 +47,9 @@ function GetAllShortcuts() {
         }
     }
 
-    # TODO: Fix an n^2 problem here - e.g. I have many codebases at C:\git, and c:\git\cbTable.C_git.ps1 gets loaded for each one.
-    $cbts = &$PSScriptRoot/../lib/Find-CodebaseShortcut -ListAll
-    foreach ($cbt in $cbts) {
-        foreach ($key in ($cbt.shortcuts.Keys | Sort-Object)) {
-            TryAdd $result $key ($cbt.root + "/" + $cbt.shortcuts[$key])
-        }
+    $cbShortcuts = &$PSScriptRoot/../lib/Find-CodebaseShortcut -ListAll
+    foreach ($key in ($cbShortcuts.Keys | Sort-Object)) {
+        TryAdd $result $key $cbShortcuts[$key]
     }
 
     return $result
@@ -61,14 +58,9 @@ function GetAllShortcuts() {
 function FindShortcut($Shortcut) {
     foreach ($globalShortcutFile in (Resolve-PratLibFile "lib/Find-Shortcut.ps1" -ListAll)) {
         $result = &$globalShortcutFile $Shortcut
-        if ($null -ne $result) { return @{target = $result; cbt = $null} }
+        if ($null -ne $result) { return $result }
     }
-
-    $cbt = &$PSScriptRoot/../lib/Find-CodebaseShortcut $Shortcut
-    if ($null -ne $cbt) { 
-        return @{target = $cbt.root + "/" + $cbt.shortcuts[$Shortcut]; cbt = $cbt}
-    }
-    return $null
+    return &$PSScriptRoot/../lib/Find-CodebaseShortcut $Shortcut
 }
 
 function ReverseSearchForShortcut($path) {
@@ -105,13 +97,11 @@ if ($MyInvocation.InvocationName -ne ".") {
         return
     }
 
-    $result = FindShortcut $Shortcut
-    if ($null -eq $result) { 
-        throw "Unrecognized: $Shortcut" 
+    $target = FindShortcut $Shortcut
+    if ($null -eq $target) {
+        throw "Unrecognized: $Shortcut"
     }
 
-    $target = $result.target
-    $cbt = $result.cbt
     $target = $target -replace '\\', '/'
 
     if ($Test) {

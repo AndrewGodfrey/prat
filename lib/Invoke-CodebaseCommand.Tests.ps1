@@ -5,6 +5,10 @@ BeforeAll {
 }
 
 Describe "Invoke-CodebaseCommand" {
+    BeforeEach {
+        function Get-GlobalCodebases {}
+        Mock Get-GlobalCodebases { return @($testCbDir) }
+    }
     AfterEach { Pop-Location }
 
     It "Throws when called from an unknown codebase" {

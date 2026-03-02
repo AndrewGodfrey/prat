@@ -1,56 +1,56 @@
 BeforeAll {
     $scriptToTest = $PSCommandPath.Replace('.Tests.ps1', '.ps1')
-
-    $testRoots = @(
-        "TestDrive:\foo_0",
-        "TestDrive:\foo_1"
-    )
-    $codebaseTables = 0..1 | ForEach-Object {
-        @{
-            'shortcuts' = @{
-                "abc$_"  = 'foo'
-                "abcd$_" = 'foo2'
-            }
-            'root'      = $testRoots[$_]
-            'id'        = "test$_"
-        }
-    }
-    $index = @{}
-    0..1 | ForEach-Object { $index[$testRoots[$_]] = $codebaseTables[$_] }
 }
 
-Describe "Main" {
+Describe "Find-CodebaseShortcut" {
     BeforeEach {
-        function Get-globalCodebases {}
-        Mock Get-GlobalCodebases {
-            $testRoots
-        }
+        function Get-GlobalCodebases {}
+        function Get-CodebaseTables($loc) {}
 
-        function Get-CodebaseTables($Location) {}
+        Mock Get-GlobalCodebases { return @('locA', 'locB') }
         Mock Get-CodebaseTables {
-            $item = $index[$Location]
-            if ($null -eq $item) { return $null }
-            $result = @{}
-            $result[$item.id] = $item
-            return $result
+            switch ($loc) {
+                'locA' {
+                    return @{
+                        repos     = @{ repoA = @{ id = 'repoA'; root = '/rootA' } }
+                        shortcuts = @{ repoA = '/rootA'; shortA = '/rootA/foo' }
+                    }
+                }
+                'locB' {
+                    return @{
+                        repos     = @{ repoB = @{ id = 'repoB'; root = '/rootB' } }
+                        shortcuts = @{ repoB = '/rootB'; shortB = '/rootB/bar' }
+                    }
+                }
+                default { return $null }
+            }
         }
     }
 
-    It "Finds a shortcut" {
-        $result = &$scriptToTest "abc0"
-
-        $result.id | Should -Be "test0"
+    It "Returns the path for a known shortcut" {
+        $result = &$scriptToTest "shortA"
+        $result | Should -Be '/rootA/foo'
     }
 
-    It "Returns null if no match found" {
-        &$scriptToTest "xyz" | Should -BeNull
+    It "Returns null when shortcut is not found" {
+        $result = &$scriptToTest "notexist"
+        $result | Should -BeNull
     }
 
-    It "Can list all codebases having shortcuts" {
-        $result = &$scriptToTest "abc" -ListAll
+    It "Returns all shortcuts as a dict with -ListAll" {
+        $result = &$scriptToTest -ListAll
+        $result['shortA'] | Should -Be '/rootA/foo'
+        $result['shortB'] | Should -Be '/rootB/bar'
+    }
 
-        $result.Count | Should -Be 2
-        $result[0].id | Should -Be "test0"
-        $result[1].id | Should -Be "test1"
+    It "First location wins when shortcut name appears in multiple locations" {
+        Mock Get-GlobalCodebases { return @('loc1', 'loc2') }
+        Mock Get-CodebaseTables {
+            if ($loc -eq 'loc1') { return @{ repos = @{ a = @{ id = 'a'; root = '/a' } }; shortcuts = @{ shared = '/from-loc1' } } }
+            if ($loc -eq 'loc2') { return @{ repos = @{ b = @{ id = 'b'; root = '/b' } }; shortcuts = @{ shared = '/from-loc2' } } }
+            return $null
+        }
+        $result = &$scriptToTest "shared"
+        $result | Should -Be '/from-loc1'
     }
 }

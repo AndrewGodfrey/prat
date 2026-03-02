@@ -1,10 +1,10 @@
-# For consumption by Get-PratRepo
+# For consumption by Get-PratRepo / Get-CodebaseTables
 @{
-    testCb = @{ 
-        shortcuts = @{
-            testCb = ""
+    repos = @{
+        testCb = @{
+            root           = $PSScriptRoot
+            cachedEnvDelta = "testCb_envDelta.ps1"
         }
-        cachedEnvDelta = "testCb_envDelta.ps1"
     }
+    # 'testCb' shortcut (-> repo root) is implicit
 }
-
