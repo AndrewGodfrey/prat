@@ -16,7 +16,7 @@ foreach ($loc in $codebaseLocations) {
     $tables = Get-CodebaseTables $loc
     if ($null -eq $tables) { continue }
 
-    # Track repo roots so duplicate cbTable coverage from multiple locations doesn't double shortcuts
+    # Track repo roots so duplicate repoProfile coverage from multiple locations doesn't double shortcuts
     $anyNewRoot = $false
     foreach ($repo in $tables.repos.Values) {
         if (-not $seenRoots[$repo.root]) {

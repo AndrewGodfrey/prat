@@ -1,4 +1,4 @@
-# For consumption by Get-PratRepo / Get-CodebaseTables
+# For consumption by Get-PratProject / Get-CodebaseTables
 @{
     repos = @{
         testCb = @{

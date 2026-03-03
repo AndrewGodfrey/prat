@@ -7,7 +7,7 @@
 # (For my own code, I prefer using the same directory, if the tooling allows it. But e.g. prat\pathbin has a 'tests' subdirectory because
 # tests shouldn't be in $env:Path).
 #
-# Individual codebases can hook into this by defining 'testDirFromDevDir' in their codebase table.
+# Individual codebases can hook into this by defining 'testDirFromDevDir' in their repo profile.
 #
 # Alias: pt
 #
@@ -35,9 +35,9 @@ function checkTestDirs($dir) {
 
 function findIt($CodeDir) {
     # First, see if there's codebase-specific logic
-    $cbt = &$PSScriptRoot/../lib/Get-PratRepo $CodeDir
-    if (($null -ne $cbt) -and ($null -ne $cbt.testDirFromDevDir)) {
-        $candidate = &$cbt.testDirFromDevDir $CodeDir $cbt.root
+    $repo = &$PSScriptRoot/../lib/Get-PratRepo $CodeDir
+    if (($null -ne $repo) -and ($null -ne $repo.testDirFromDevDir)) {
+        $candidate = &$repo.testDirFromDevDir $CodeDir $repo.root
         if ($null -ne $candidate) {
             # First check for 'test' subdirectories/alternate names
             $subdir = checkTestDirs $candidate

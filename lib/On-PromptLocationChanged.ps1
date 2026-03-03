@@ -8,7 +8,6 @@ $project = &$PSScriptRoot\Get-PratProject $newLocation
 if ($null -eq $project) {
     $global:__prat_currentLocation = $newLocation
 } else {
-    $cbt = $project.cbt
     $id = $project.id
     $subdir = $project.subdir
     $buildKind = ""

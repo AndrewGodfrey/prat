@@ -10,18 +10,18 @@ using module PratBase\PratBase.psd1
 param ([string] $Location = $pwd)
 
 $Location = Resolve-Path $Location
-$cbt = &$PSScriptRoot/Get-PratRepo $Location
-if ($null -eq $cbt) { return $null }
+$repo = &$PSScriptRoot/Get-PratRepo $Location
+if ($null -eq $repo) { return $null }
 
-Write-Verbose "Search subprojects for $($cbt.id)"
+Write-Verbose "Search subprojects for $($repo.id)"
 [System.IO.DirectoryInfo] $locationDI = $Location
 
 $longestMatch = @{ key = $null; dest = "" }
 
-if ($null -ne $cbt.subprojects) {
-    foreach ($key in $cbt.subprojects.Keys) {
-        $subproject = $cbt.subprojects[$key]
-        $dest = $cbt.root + "/" + $subproject.path
+if ($null -ne $repo.subprojects) {
+    foreach ($key in $repo.subprojects.Keys) {
+        $subproject = $repo.subprojects[$key]
+        $dest = $repo.root + "/" + $subproject.path
         Write-Verbose "Considering: $key"
         [System.IO.DirectoryInfo] $destDI = $dest
         Write-Verbose "Compare: '$($destDI.FullName)' vs '$($locationDI.FullName)'"
@@ -36,26 +36,26 @@ if ($null -ne $cbt.subprojects) {
 }
 
 if ($null -eq $longestMatch.key) {
-    return $cbt
+    return $repo
 }
 Write-Verbose "Found: $($longestMatch.key)"
-$matchedSubproject = $cbt.subprojects[$longestMatch.key]
+$matchedSubproject = $repo.subprojects[$longestMatch.key]
 $item = @{
-    cbt    = $cbt
-    id     = "$($cbt.id)/$($longestMatch.key)"
-    root   = $longestMatch.dest
-    subdir = $(Get-RelativePath $longestMatch.dest $Location)
+    parentId = $repo.id
+    id       = "$($repo.id)/$($longestMatch.key)"
+    root     = $longestMatch.dest
+    subdir   = $(Get-RelativePath $longestMatch.dest $Location)
 }
 
 if ($null -ne $matchedSubproject.workspace) {
     $item.workspace = $matchedSubproject.workspace
 }
 
-# Inherit any properties, that aren't already overridden, from $cbt.
+# Inherit any properties, that aren't already overridden, from $repo.
 #   e.g. it's useful for these properties: 'buildKind', 'workspace', 'cachedEnvDelta'
-foreach ($key in $cbt.Keys) {
+foreach ($key in $repo.Keys) {
     if (!$item.ContainsKey($key)) { # Using ContainsKey, so that subtables can override a non-null value with $null if they really want to.
-        $item[$key] = $cbt[$key]
+        $item[$key] = $repo[$key]
     }
 }
 

@@ -10,13 +10,17 @@ $location = if ($CommandParameters['RepoRoot']) {
     $CommandParameters['RepoRoot'] = $resolved
     $resolved
 } else { Get-Location }
-$cbt = &$home\prat\lib\Get-PratRepo $location
-if ($null -eq $cbt) { 
+$project = &$home\prat\lib\Get-PratProject $location
+if ($null -eq $project) {
     throw "Unknown codebase - can't $CommandName"
 }
 
 # Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
-$script = Get-CodebaseScript $CommandName $cbt.id
+$script = Get-CodebaseScript $CommandName $project.id
+
+if ($null -eq $script -and $null -ne $project.parentId) {
+    $script = Get-CodebaseScript $CommandName $project.parentId
+}
 
 if ($null -eq $script) {
     Write-Verbose "$($CommandName): NOP"
@@ -24,9 +28,9 @@ if ($null -eq $script) {
 }
 
 if ($CommandName -ne "prebuild") {
-    $envDelta = $cbt.cachedEnvDelta
+    $envDelta = $project.cachedEnvDelta
     if (($null -ne $envDelta) -and (-not (Split-Path $envDelta -IsAbsolute))) {
-        $envDelta = Join-Path $cbt.root $envDelta
+        $envDelta = Join-Path $project.root $envDelta
     }
 } else {
     # In the case of prebuild, cachedEnvDelta is not needed.
@@ -34,14 +38,14 @@ if ($CommandName -ne "prebuild") {
     # needs the unapplied state to accurately calculate/update cachedEnvDelta.
     #
     # TODO: Add detection for when prebuild is called with any envdelta applied.
-    #       Maybe Invoke-CommandWithEnvDelta could reserve some env-var name, and use it to maintain a 'nesting' counter.
+    #       Maybe Invoke-CommandWithEnvDelta could reserve some env-var name, and use it to maintain a 'nesting' counter.    
     $envDelta = $null
 }
 
-Write-Debug "calling $CommandName script for $($cbt.id), with switches: ($(ConvertTo-Expression $CommandParameters))"
+Write-Debug "calling $CommandName script for $($project.id), with switches: ($(ConvertTo-Expression $CommandParameters))"
 
 $wrapperScriptBlock = {
     param([hashtable]$CommandParameters = @{})
-    & $script $cbt -CommandParameters:$CommandParameters
+    & $script $project -CommandParameters:$CommandParameters
 }
 Invoke-CommandWithCachedEnvDelta $wrapperScriptBlock $envDelta -CommandParameters $CommandParameters

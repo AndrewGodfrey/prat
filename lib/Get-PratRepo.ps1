@@ -1,6 +1,6 @@
 # .SYNOPSIS
 # Given a location, finds which codebase it's in.
-# Searches repos registered in cbTable.*.ps1 files at locations returned by Get-GlobalCodebases.
+# Searches repos registered in repoProfile.*.ps1 files at locations returned by Get-GlobalCodebases.
 #
 # Other properties added to the returned object:
 #   subdir: path of $Location relative to the repo root

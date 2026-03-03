@@ -17,7 +17,7 @@ Describe "Get-PratRepo" {
         &$scriptToTest -Location $root | Should -BeNull
     }
 
-    It "Returns null when no cbTable files are found" {
+    It "Returns null when no repoProfile files are found" {
         Mock Get-CodebaseTables { return $null }
 
         &$scriptToTest -Location $root| Should -BeNull

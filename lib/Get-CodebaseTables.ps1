@@ -1,14 +1,14 @@
 # .SYNOPSIS
-# Given a directory, loads all cbTable.*.ps1 files directly in that directory.
-# Returns @{ repos = @{...}; shortcuts = @{...} } or $null if no cbTable files were found.
+# Given a directory, loads all repoProfile.*.ps1 files directly in that directory.
+# Returns @{ repos = @{...}; shortcuts = @{...} } or $null if no repoProfile files were found.
 #
-# cbTable file schema:
-#   root      (optional) - file-level base path; defaults to the cbTable file's parent directory
+# repoProfile file schema:
+#   root      (optional) - file-level base path; defaults to the repoProfile file's parent directory
 #   repos     - hashtable, id -> @{ root?, shortcuts?, cachedEnvDelta?, workspace?, buildKind?, subprojects?, testDirFromDevDir? }
 #   shortcuts - hashtable, name -> relative-or-absolute path
 #
 # Root resolution:
-#   - file-level root defaults to the cbTable file's parent directory
+#   - file-level root defaults to the repoProfile file's parent directory
 #   - per-repo root defaults to fileRoot/id
 #   - each repo also gets an implicit shortcut <id> -> <repo.root> unless shortcuts already has that name
 #   - relative shortcut paths are resolved against the file-level root (or the repo root for repo-level shortcuts)
@@ -19,8 +19,8 @@ param ([string] $Location = $pwd)
 if (-not (Test-Path $Location -ErrorAction SilentlyContinue)) { return $null }
 $Location = (Resolve-Path $Location).Path
 
-$cbFiles = @(Get-ChildItem (Join-Path $Location "cbTable.*.ps1") -ErrorAction SilentlyContinue)
-if ($cbFiles.Count -eq 0) { return $null }
+$profileFiles = @(Get-ChildItem (Join-Path $Location "repoProfile.*.ps1") -ErrorAction SilentlyContinue)
+if ($profileFiles.Count -eq 0) { return $null }
 
 function Add-Shortcuts($shortcuts, $base, [ref] $dest) {
     if ($null -eq $shortcuts) { return }
@@ -34,16 +34,16 @@ function Add-Shortcuts($shortcuts, $base, [ref] $dest) {
 $allRepos     = @{}
 $allShortcuts = @{}
 
-foreach ($cbFile in $cbFiles) {
-    Write-Verbose "Get-CodebaseTables: Load: $cbFile"
-    $cbData = . $cbFile.FullName
-    Write-Verbose "Get-CodebaseTables: Loaded: $cbFile"
+foreach ($profileFile in $profileFiles) {
+    Write-Verbose "Get-CodebaseTables: Load: $profileFile"
+    $profileData = . $profileFile.FullName
+    Write-Verbose "Get-CodebaseTables: Loaded: $profileFile"
 
-    $fileRoot = if ($null -ne $cbData.root) { $cbData.root } else { $cbFile.DirectoryName }
+    $fileRoot = if ($null -ne $profileData.root) { $profileData.root } else { $profileFile.DirectoryName }
 
-    if ($null -ne $cbData.repos) {
-        foreach ($id in $cbData.repos.Keys) {
-            $repo    = $cbData.repos[$id]
+    if ($null -ne $profileData.repos) {
+        foreach ($id in $profileData.repos.Keys) {
+            $repo    = $profileData.repos[$id]
             $repo.id = $id
 
             if ($null -eq $repo.root) { $repo.root = "$fileRoot/$id" }
@@ -56,7 +56,7 @@ foreach ($cbFile in $cbFiles) {
         }
     }
 
-    Add-Shortcuts $cbData.shortcuts $fileRoot ([ref]$allShortcuts)
+    Add-Shortcuts $profileData.shortcuts $fileRoot ([ref]$allShortcuts)
 }
 
 # Add implicit default shortcut per repo: <id> -> <repo.root>

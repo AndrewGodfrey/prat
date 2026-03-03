@@ -45,7 +45,7 @@ Run a focused subset of tests, add: `-Focus <focus>`, where focus can be a file 
 
 ### Key Patterns
 
-**Codebase Table (`cbTable.*.ps1`):** Each codebase declares its metadata — root dir, build/test/deploy scripts,
+**Repo Profile (`repoProfile.*.ps1`):** Each repo declares its metadata — root dir, build/test/deploy scripts,
 navigation shortcuts, workspace definitions, cached env delta path.
 `Invoke-CodebaseCommand` dispatches actions (prebuild/build/test/deploy) by looking up codebase-specific scripts
 via `Get-CodebaseScript`.

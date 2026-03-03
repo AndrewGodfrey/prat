@@ -9,7 +9,7 @@
 #   A scriptblock:  Code to execute
 #   A string:       a full-path filename to a script to run
 #
-# The first param passed to the scriptblock/script, is $cbt, the codebase table for this codebase.
+# The first param passed to the scriptblock/script, is $project, the repo profile entry for this codebase.
 # For other params, see the implementations of Build-Codebase, Test-Codebase and Deploy-Codebase.
 param(
     [ValidateSet("prebuild", "build", "test", "deploy")] [string] $CommandName,
