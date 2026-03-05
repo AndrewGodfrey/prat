@@ -1,3 +1,49 @@
+# Import-Scriptblock: dot-sources a .ps1 data file and returns the result with all
+# scriptblock module associations removed.
+#
+# WHY THIS IS NEEDED:
+#   To avoid infinite recursion.
+#
+#   PowerShell attaches a module to each scriptblock at compile time, based on the session
+#   state active during compilation. When . (dot-source) runs inside a module function, every
+#   scriptblock compiled from the dot-sourced file inherits that module's association.
+#
+#   So: Without this, our scriptblocks would have Module=PratBase. When one of those
+#       later calls 'using module PratBase', GetExportedTypeDefinitions() scans PratBase's scriptblock
+#       for type definitions, finds our scriptblock, re-enters, and recurses infinitely (stack overflow).
+#
+# HOW THE FIX WORKS:
+#   [scriptblock]::Create(str) is a .NET static method. It compiles PowerShell source text
+#   outside the session-state tree entirely, producing a scriptblock with Module=$null. The
+#   Module property is stored on the object and preserved on later invocation. Strip-Scriptblocks
+#   recursively walks the returned data to recompile every scriptblock it finds.
+#
+#   Other attempts that didn't work: 
+#   dot-sourcing via an external script or a [scriptblock]::Create() loader did not
+#   help. PowerShell propagates the calling module's session state to any code invoked from within that module's
+#   call stack. The only escape found so far is [scriptblock]::Create(), which sidesteps the
+#   session-state tree by going to the .NET layer.
+#
+# LIMITATIONS:
+#   - Closures: only source text is preserved. Variables captured via .GetNewClosure() are
+#     lost. Workaround: use [scriptblock]::Create() in the data file, baking variable values
+#     into source text via string concatenation instead of capturing them.
+#   - PSCustomObject values are not walked — only hashtables and arrays.
+function Import-Scriptblock([string]$File) {
+    return Strip-Scriptblocks (. $File)
+}
+
+function Strip-Scriptblocks($data) {
+    if ($data -is [scriptblock]) { return [scriptblock]::Create($data.ToString()) }
+    if ($data -is [hashtable]) {
+        $result = @{}
+        foreach ($key in $data.Keys) { $result[$key] = Strip-Scriptblocks $data[$key] }
+        return $result
+    }
+    if ($data -is [array]) { return @($data | ForEach-Object { Strip-Scriptblocks $_ }) }
+    return $data
+}
+
 # Private wrapper
 function Get-RepoProfileFiles {
     return @(Resolve-PratLibFile "repoProfile.ps1" -ListAll)
@@ -35,7 +81,7 @@ function Get-PratRepoIndex {
 
     foreach ($file in $Files) {
         $fileItem    = Get-Item $file
-        $profileData = . $file
+        $profileData = Import-Scriptblock $file
 
         foreach ($sectionKey in $profileData.Keys) {
             $sectionRoot = if ([System.IO.Path]::IsPathRooted($sectionKey)) {
@@ -59,11 +105,7 @@ function Get-PratRepoIndex {
                     $repo.root = ($repo.root).TrimEnd('\', '/')
 
                     # Resolve string command properties relative to the repoProfile file's directory.
-                    # Rebind scriptblock command properties to remove module association:
-                    # Scriptblocks created here would inherit PratBase as their module (since we're
-                    # inside a PratBase function). If those scriptblocks call scripts that use
-                    # 'using module PratBase', it creates a circular reference causing a stack overflow
-                    # in GetExportedTypeDefinitions. [scriptblock]::Create() breaks that association.
+                    # Scriptblock stripping is handled by Import-Scriptblock before we get here.
                     $fileDir = $fileItem.DirectoryName.Replace('\', '/')
                     foreach ($cmdName in @('build', 'test', 'deploy', 'prebuild')) {
                         if ($repo.ContainsKey($cmdName)) {
@@ -73,8 +115,6 @@ function Get-PratRepoIndex {
                                     $cmdPath = "$fileDir/$cmdPath"
                                 }
                                 $repo[$cmdName] = $cmdPath.Replace('\', '/')
-                            } elseif ($repo[$cmdName] -is [scriptblock]) {
-                                $repo[$cmdName] = [scriptblock]::Create($repo[$cmdName].ToString())
                             }
                         } else {
                             # Auto-discover: if no explicit command, look for lib/projects/<id>/<cmd>.ps1

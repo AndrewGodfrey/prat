@@ -1,4 +1,17 @@
 # For consumption by PratBase (Get-PratProject, Find-ProjectShortcut etc.)
+
+# makeTestCommand: Uses [scriptblock]::Create() to work
+# around Import-Scriptblock's closure limitation.
+function makeTestCommand([string]$cmd) {
+    [scriptblock]::Create(
+        'param($project, [hashtable]$CommandParameters = @{})
+        $paramsString = ($CommandParameters.GetEnumerator() | Sort-Object Key |
+            ForEach-Object { "$($_.Key)=$($_.Value)" }) -join " "
+        if ($paramsString) { $paramsString = ": $paramsString" }
+        "testCb: ' + $cmd + ': $($env:testEnvvar)$paramsString"'
+    )
+}
+
 @{
     "." = @{
         repos = @{
@@ -8,34 +21,10 @@
             testCb = @{
                 root           = "pathbin/tests/testCb"
                 cachedEnvDelta = "testCb_envDelta.ps1"
-                build    = {
-                    param($project, [hashtable]$CommandParameters = @{})
-                    $paramsString = ($CommandParameters.GetEnumerator() | Sort-Object Key |
-                        ForEach-Object { "$($_.Key)=$($_.Value)" }) -join " "
-                    if ($paramsString) { $paramsString = ": $paramsString" }
-                    "testCb: build: $($env:testEnvvar)$paramsString"
-                }
-                test     = {
-                    param($project, [hashtable]$CommandParameters = @{})
-                    $paramsString = ($CommandParameters.GetEnumerator() | Sort-Object Key |
-                        ForEach-Object { "$($_.Key)=$($_.Value)" }) -join " "
-                    if ($paramsString) { $paramsString = ": $paramsString" }
-                    "testCb: test: $($env:testEnvvar)$paramsString"
-                }
-                deploy   = {
-                    param($project, [hashtable]$CommandParameters = @{})
-                    $paramsString = ($CommandParameters.GetEnumerator() | Sort-Object Key |
-                        ForEach-Object { "$($_.Key)=$($_.Value)" }) -join " "
-                    if ($paramsString) { $paramsString = ": $paramsString" }
-                    "testCb: deploy: $($env:testEnvvar)$paramsString"
-                }
-                prebuild = {
-                    param($project, [hashtable]$CommandParameters = @{})
-                    $paramsString = ($CommandParameters.GetEnumerator() | Sort-Object Key |
-                        ForEach-Object { "$($_.Key)=$($_.Value)" }) -join " "
-                    if ($paramsString) { $paramsString = ": $paramsString" }
-                    "testCb: prebuild: $($env:testEnvvar)$paramsString"
-                }
+                build    = makeTestCommand 'build'
+                test     = makeTestCommand 'test'
+                deploy   = makeTestCommand 'deploy'
+                prebuild = makeTestCommand 'prebuild'
             }
         }
         shortcuts = @{
