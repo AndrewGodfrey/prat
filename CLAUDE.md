@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in the 'prat' repository.
 
+## Running tests
+
+Use the `prat-run-unit-tests` skill. Key invocations:
+
+```bash
+t -RepoRoot ~/prat -NoCoverage          # full suite, skip coverage
+t -RepoRoot ~/prat -Focus lib/Foo.ps1   # focused run
+```
+
 ## Style
 
 - Markdown files: wrap lines at 120 characters max. Break at natural phrase boundaries
