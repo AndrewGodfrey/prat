@@ -25,6 +25,21 @@ Describe "Get-PratRepo" {
     }
 }
 
+Describe "Find-ProjectShortcut" {
+    BeforeEach {
+        $dir = (Get-Item "TestDrive:\").FullName.TrimEnd('\').Replace('\', '/')
+    }
+
+    It "-ListAll returns shortcuts sorted alphabetically" {
+        "@{ '.' = @{ repos = @{ z = @{} }; shortcuts = @{ b = 'b'; a = 'a' } } }" | Out-File "TestDrive:\repoProfile_test.ps1"
+        Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$dir/repoProfile_test.ps1") }
+
+        $keys = @((Find-ProjectShortcut -ListAll).Keys)
+
+        $keys | Should -Be ($keys | Sort-Object)
+    }
+}
+
 Describe "Get-PratRepoIndex" {
     InModuleScope PratBase {
         BeforeEach {

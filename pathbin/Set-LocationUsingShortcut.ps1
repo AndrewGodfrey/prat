@@ -6,11 +6,7 @@
 # The shortcut "?" lists all shortcuts.
 #
 # .NOTES
-# Shortcuts are interpreted using:
-#  1. Find-Shortcut_<devenv>
-#     i.e. each dev environment can supply one. e.g. see: Find-Shortcut_prat.ps1
-#  2. Find-ProjectShortcut
-#     - returns a flat name->path dict from all codebases in Get-GlobalCodebases
+# Shortcuts are defined in repoProfile_<devenv>.ps1
 #
 # .EXAMPLE
 # c appdata
@@ -31,36 +27,8 @@ param(
     [switch] $Test,
     [switch] $ListAll)
 
-function TryAdd($dict, $key, $value) {
-    if (!$dict.Contains($key)) {
-        $dict.Add($key, $value)
-    }
-}
-
 function GetAllShortcuts() {
-    $result = [System.Collections.Specialized.OrderedDictionary]::new()
-
-    foreach ($globalShortcutFile in (Resolve-PratLibFile "lib/Find-Shortcut.ps1" -ListAll)) {
-        $globalShortcuts = &$globalShortcutFile -ListAll
-        foreach ($key in ($globalShortcuts.Keys | Sort-Object)) {
-            TryAdd $result $key $globalShortcuts[$key]
-        }
-    }
-
-    $cbShortcuts = Find-ProjectShortcut -ListAll
-    foreach ($key in ($cbShortcuts.Keys | Sort-Object)) {
-        TryAdd $result $key $cbShortcuts[$key]
-    }
-
-    return $result
-}
-
-function FindShortcut($Shortcut) {
-    foreach ($globalShortcutFile in (Resolve-PratLibFile "lib/Find-Shortcut.ps1" -ListAll)) {
-        $result = &$globalShortcutFile $Shortcut
-        if ($null -ne $result) { return $result }
-    }
-    return Find-ProjectShortcut $Shortcut
+    return Find-ProjectShortcut -ListAll
 }
 
 function ReverseSearchForShortcut($path) {
@@ -71,7 +39,7 @@ function ReverseSearchForShortcut($path) {
         if ($target.endswith('/')) {
             $target = $target.Substring(0, $target.Length - 1)
         }
-        if ($path -like "$target*") {
+        if ($path -eq $target -or $path -like "$target/*") {
             return $key
         }
     }
@@ -97,7 +65,7 @@ if ($MyInvocation.InvocationName -ne ".") {
         return
     }
 
-    $target = FindShortcut $Shortcut
+    $target = Find-ProjectShortcut $Shortcut
     if ($null -eq $target) {
         throw "Unrecognized: $Shortcut"
     }

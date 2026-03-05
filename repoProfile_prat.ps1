@@ -45,6 +45,13 @@
             plog     = "auto/log"
             plib     = "lib"
             ptestrun = "auto/testRuns/last"
+
+            # Global shortcuts
+            appdata   = $env:appdata
+            desktop   = "$home/desktop"
+            downloads = "$home/Downloads"
+            startup   = "$env:appdata/Microsoft/Windows/Start Menu/Programs/Startup"
+            hosts     = "$env:windir/system32/drivers/etc"
         }
     }
 }

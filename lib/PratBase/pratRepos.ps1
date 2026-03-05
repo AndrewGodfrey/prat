@@ -232,7 +232,7 @@ function Find-ProjectShortcut {
 
     if ($ListAll) {
         $result = [ordered]@{}
-        foreach ($key in $allShortcuts.Keys) { $result[$key] = $allShortcuts[$key] }
+        foreach ($key in ($allShortcuts.Keys | Sort-Object)) { $result[$key] = $allShortcuts[$key] }
         return $result
     }
     if ($allShortcuts.Contains($Shortcut)) { return $allShortcuts[$Shortcut] }

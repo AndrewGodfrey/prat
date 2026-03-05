@@ -9,7 +9,7 @@ Describe "Set-LocationUsingShortcut" {
         Set-Location "\"
         $startingPath = $pwd.Path
 
-        Mock FindShortcut {
+        Mock Find-ProjectShortcut {
             if ($Shortcut -eq "hosts") {
                 return "C:\WINDOWS\system32\drivers\etc"
             } else {
@@ -64,33 +64,27 @@ Describe "Set-LocationUsingShortcut" {
 }
 
 
-Describe "FindShortcut" {
-    BeforeEach {
-        function Resolve-PratLibFile($file, [switch] $ListAll) {
-            if ($file -ne "lib/Find-Shortcut.ps1") { throw }
-            if (!$ListAll) { throw }
-            return @("$PSScriptRoot\mock_Find-Shortcut.ps1")
-        }
-    }
-    It "ReturnsPathForKnownShortcut" {
-        $result = FindShortcut "b"
+Describe "ReverseSearchForShortcut" {
+    It "Does not match a sibling path that shares a name prefix" {
+        $dir = (Get-Item "TestDrive:\").FullName.TrimEnd('\').Replace('\', '/')
+        $testProfilePath = "$dir/repoProfile_test.ps1"
+        "@{ '.' = @{ repos = @{ myrepo = @{ root = '$dir/myrepo' } } } }" | Out-File $testProfilePath
+        Mock Get-RepoProfileFiles -ModuleName PratBase { return @($testProfilePath) }
 
-        $result | Should -Be "/a/b"
-    }
-    It "ReturnsNullForUnknownShortcut" {
-        Mock Get-RepoProfileFiles -ModuleName PratBase { return @() }
-        $result = FindShortcut "notExist"
+        $result = ReverseSearchForShortcut "$dir/myrepo-other"
 
         $result | Should -BeNull
     }
-    It "AlsoLooksAtRepoProfiles" {
+
+    It "Matches when exactly at the shortcut target" {
         $dir = (Get-Item "TestDrive:\").FullName.TrimEnd('\').Replace('\', '/')
         $testProfilePath = "$dir/repoProfile_test.ps1"
-        "@{ '.' = @{ repos = @{ foo = @{ root = 'a' } }; shortcuts = @{ c = 'a/b/c' } } }" | Out-File $testProfilePath
+        "@{ '.' = @{ repos = @{ myrepo = @{ root = '$dir/myrepo' } } } }" | Out-File $testProfilePath
         Mock Get-RepoProfileFiles -ModuleName PratBase { return @($testProfilePath) }
 
-        $result = FindShortcut "c"
+        $result = ReverseSearchForShortcut "$dir/myrepo"
 
-        $result | Should -Be "$dir/a/b/c"
+        $result | Should -Be "myrepo"
     }
 }
+
