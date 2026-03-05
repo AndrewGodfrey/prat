@@ -47,8 +47,8 @@ Run a focused subset of tests, add: `-Focus <focus>`, where focus can be a file 
 
 **Repo Profile (`repoProfile.*.ps1`):** Each repo declares its metadata — root dir, build/test/deploy scripts,
 navigation shortcuts, workspace definitions, cached env delta path.
-`Invoke-CodebaseCommand` dispatches actions (prebuild/build/test/deploy) by looking up codebase-specific scripts
-via `Get-CodebaseScript`.
+`Invoke-ProjectCommand` dispatches actions (prebuild/build/test/deploy) defined in `$project[$CommandName]`
+(scriptblock → executed; string → resolved to absolute path and called as script).
 
 **Environment Delta (`lib/PratBase/envDelta.ps1`):** Captures env var changes from batch scripts, 
 caches them, and replays them fast — avoiding slow enlistment-window startup. Key functions:

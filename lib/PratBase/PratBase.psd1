@@ -72,7 +72,8 @@ FunctionsToExport = @('Get-CurrentUserIsElevated', 'Get-RelativePath', 'Import-P
                       'Get-DiskFreeSpace', 'Get-UserIdleTimeInSeconds', 'Restart-Process', 'Test-PathIsUnder',
                       'Export-EnvDeltaFromInvokedBatchScript', 'Get-DefaultOnOutputBlock', 'Invoke-CommandWithEnvDelta', 'Install-CachedEnvDelta', 'Get-CachedEnvDelta', 'Invoke-CommandWithCachedEnvDelta',
                       'Get-CurrentGitForkpoint', 'Get-ForkpointCacheIsValid', 'Set-ForkpointCache', 'Get-ForkpointRelationship',
-                      'New-Subfolder', 'New-FolderAndParents', 'Get-HtmlFromClipboard', 'Invoke-PesterAsJob')
+                      'New-Subfolder', 'New-FolderAndParents', 'Get-HtmlFromClipboard', 'Invoke-PesterAsJob',
+                      'Get-PratRepo', 'Get-PratProject', 'Find-ProjectShortcut')
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()

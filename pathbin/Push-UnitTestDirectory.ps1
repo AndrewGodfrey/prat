@@ -35,7 +35,7 @@ function checkTestDirs($dir) {
 
 function findIt($CodeDir) {
     # First, see if there's codebase-specific logic
-    $repo = &$PSScriptRoot/../lib/Get-PratRepo $CodeDir
+    $repo = Get-PratRepo $CodeDir
     if (($null -ne $repo) -and ($null -ne $repo.testDirFromDevDir)) {
         $candidate = &$repo.testDirFromDevDir $CodeDir $repo.root
         if ($null -ne $candidate) {

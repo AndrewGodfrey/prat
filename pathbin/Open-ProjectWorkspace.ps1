@@ -20,7 +20,7 @@
 param($fileOrScript = $null, $project = $null, [ScriptBlock] $DescriptionScript = $null)
 
 if ($null -eq $project) {
-    $project = &$PSScriptRoot\..\lib\Get-PratProject $pwd -Verbose:$VerbosePreference
+    $project = Get-PratProject $pwd -Verbose:$VerbosePreference
 }
 Write-DebugValue $project
 

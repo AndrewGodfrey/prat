@@ -1,4 +1,5 @@
 BeforeAll {
+    Import-Module "$PSScriptRoot/../../lib/PratBase/PratBase.psd1" -Force
     . Set-LocationUsingShortcut.ps1
 }
 
@@ -77,28 +78,19 @@ Describe "FindShortcut" {
         $result | Should -Be "/a/b"
     }
     It "ReturnsNullForUnknownShortcut" {
-        Mock Get-GlobalCodebases { return @() }
+        Mock Get-RepoProfileFiles -ModuleName PratBase { return @() }
         $result = FindShortcut "notExist"
 
         $result | Should -BeNull
     }
-    It "AlsoLooksAtCodebases" {
-        function Get-GlobalCodebases {}
-        Mock Get-GlobalCodebases { return @('foo') }
-
-        function Get-CodebaseTables($Location) {}
-        Mock Get-CodebaseTables {
-            if ($Location -eq 'foo') {
-                return @{
-                    repos     = @{ foo = @{ id = 'foo'; root = '/a' } }
-                    shortcuts = @{ foo = '/a'; c = '/a/b/c' }
-                }
-            }
-            return $null
-        }
+    It "AlsoLooksAtRepoProfiles" {
+        $dir = (Get-Item "TestDrive:\").FullName.TrimEnd('\').Replace('\', '/')
+        $testProfilePath = "$dir/repoProfile_test.ps1"
+        "@{ '.' = @{ repos = @{ foo = @{ root = 'a' } }; shortcuts = @{ c = 'a/b/c' } } }" | Out-File $testProfilePath
+        Mock Get-RepoProfileFiles -ModuleName PratBase { return @($testProfilePath) }
 
         $result = FindShortcut "c"
 
-        $result | Should -Be "/a/b/c"
+        $result | Should -Be "$dir/a/b/c"
     }
 }

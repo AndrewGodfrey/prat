@@ -257,4 +257,5 @@ function Invoke-PesterAsJob {
 
 . $PSScriptRoot\envDelta.ps1
 . $PSScriptRoot\gitForkpoint.ps1
+. $PSScriptRoot\pratRepos.ps1
 

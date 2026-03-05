@@ -9,7 +9,7 @@
 # Shortcuts are interpreted using:
 #  1. Find-Shortcut_<devenv>
 #     i.e. each dev environment can supply one. e.g. see: Find-Shortcut_prat.ps1
-#  2. Find-CodebaseShortcut
+#  2. Find-ProjectShortcut
 #     - returns a flat name->path dict from all codebases in Get-GlobalCodebases
 #
 # .EXAMPLE
@@ -47,7 +47,7 @@ function GetAllShortcuts() {
         }
     }
 
-    $cbShortcuts = &$PSScriptRoot/../lib/Find-CodebaseShortcut -ListAll
+    $cbShortcuts = Find-ProjectShortcut -ListAll
     foreach ($key in ($cbShortcuts.Keys | Sort-Object)) {
         TryAdd $result $key $cbShortcuts[$key]
     }
@@ -60,7 +60,7 @@ function FindShortcut($Shortcut) {
         $result = &$globalShortcutFile $Shortcut
         if ($null -ne $result) { return $result }
     }
-    return &$PSScriptRoot/../lib/Find-CodebaseShortcut $Shortcut
+    return Find-ProjectShortcut $Shortcut
 }
 
 function ReverseSearchForShortcut($path) {

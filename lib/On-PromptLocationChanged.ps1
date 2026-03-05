@@ -4,7 +4,7 @@ param($newLocation, $oldLocation)
 
 # Write-Warning "Testing: On-PromptLocationChanged.ps1 was called. oldLocation=$oldLocation"
 
-$project = &$PSScriptRoot\Get-PratProject $newLocation
+$project = Get-PratProject $newLocation
 if ($null -eq $project) {
     $global:__prat_currentLocation = $newLocation
 } else {

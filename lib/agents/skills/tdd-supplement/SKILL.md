@@ -51,3 +51,9 @@ The goal is not to test every parameter, but to test every distinct mechanism or
 that several inputs are handled identically, making one representative test sufficient. The risk is when something
 appears structurally identical but has a subtle difference — a different code path, an implicit dependency, a silent
 failure mode — that isn't obvious from reading. Those are the cases worth a targeted test.
+
+
+# When writing tests: Maintaining isolation
+
+In tests, avoid referring to fake paths in a real filesystem (like C:\doesNotExist). e.g. in Pester, use TestDrive:
+instead. Reason: A failing test might do something unwanted, e.g. create a file there.

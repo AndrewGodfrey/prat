@@ -20,4 +20,4 @@ if (!$Quiet) { Write-Host -ForegroundColor Green "command: $CommandName" }
 
 $switches = @{Command = $CommandName}
 if ($Force) { $switches['Force'] = $true }
-&$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "build" -CommandParameters $switches
+&$PSScriptRoot\..\lib\Invoke-ProjectCommand.ps1 "build" -CommandParameters $switches

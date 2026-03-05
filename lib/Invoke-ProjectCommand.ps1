@@ -10,19 +10,13 @@ $location = if ($CommandParameters['RepoRoot']) {
     $CommandParameters['RepoRoot'] = $resolved
     $resolved
 } else { Get-Location }
-$project = &$home\prat\lib\Get-PratProject $location
+$project = Get-PratProject $location
 if ($null -eq $project) {
-    throw "Unknown codebase - can't $CommandName"
+    throw "Unknown project - can't $CommandName"
 }
 
-# Note we depend on PATH to find Get-CodebaseScript. This allows for it to be overridden.
-$script = Get-CodebaseScript $CommandName $project.id
-
-if ($null -eq $script -and $null -ne $project.parentId) {
-    $script = Get-CodebaseScript $CommandName $project.parentId
-}
-
-if ($null -eq $script) {
+$command = $project[$CommandName]
+if ($null -eq $command) {
     Write-Verbose "$($CommandName): NOP"
     return
 }
@@ -46,6 +40,6 @@ Write-Debug "calling $CommandName script for $($project.id), with switches: ($(C
 
 $wrapperScriptBlock = {
     param([hashtable]$CommandParameters = @{})
-    & $script $project -CommandParameters:$CommandParameters
+    & $command $project -CommandParameters:$CommandParameters
 }
 Invoke-CommandWithCachedEnvDelta $wrapperScriptBlock $envDelta -CommandParameters $CommandParameters
