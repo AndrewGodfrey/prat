@@ -130,7 +130,8 @@ function Get-PratRepo {
     foreach ($repo in $index.repos.Values) {
         [System.IO.DirectoryInfo] $rootDI = $repo.root
         Write-Verbose "Get-PratRepo: Considering: $($repo.root)"
-        if ($locationDI.FullName.StartsWith($rootDI.FullName, 'InvariantCultureIgnoreCase')) {
+        if ($locationDI.FullName.StartsWith($rootDI.FullName + '\', 'InvariantCultureIgnoreCase') -or
+            $locationDI.FullName.Equals($rootDI.FullName, 'InvariantCultureIgnoreCase')) {
             Write-Verbose "Get-PratRepo: Match: $($repo.id)"
             $results += $repo
         }
