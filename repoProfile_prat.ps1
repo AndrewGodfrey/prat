@@ -4,12 +4,6 @@
         repos = @{
             prat   = @{
                 root   = $PSScriptRoot
-                build  = { Build-Prat }
-                test   = "lib/projects/prat/test.ps1"
-                deploy = {
-                    param($project, [hashtable]$CommandParameters = @{})
-                    Deploy-Prat -Force:$CommandParameters['Force']
-                }
             }
             testCb = @{
                 root           = "pathbin/tests/testCb"

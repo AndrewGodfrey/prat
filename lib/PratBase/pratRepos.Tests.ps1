@@ -116,5 +116,24 @@ Describe "Get-PratRepoIndex" {
             $sb = (Get-PratRepoIndex @("$dir/repoProfile_test.ps1")).repos["r"].test
             $sb.Module | Should -BeNull
         }
+
+        It "Auto-discovers a command script from lib/projects/<id>/<cmd>.ps1" {
+            New-Item -ItemType Directory -Path "TestDrive:\lib\projects\r" -Force | Out-Null
+            "# auto" | Out-File "TestDrive:\lib\projects\r\test.ps1"
+            "@{ '.' = @{ repos = @{ r = @{} } } }" | Out-File "TestDrive:\repoProfile_test.ps1"
+            (Get-PratRepoIndex @("$dir/repoProfile_test.ps1")).repos["r"].test | Should -Be "$dir/lib/projects/r/test.ps1"
+        }
+
+        It "Explicit command entry takes precedence over auto-discovered file" {
+            New-Item -ItemType Directory -Path "TestDrive:\lib\projects\r" -Force | Out-Null
+            "# auto" | Out-File "TestDrive:\lib\projects\r\test.ps1"
+            "@{ '.' = @{ repos = @{ r = @{ test = 'explicit/test.ps1' } } } }" | Out-File "TestDrive:\repoProfile_test.ps1"
+            (Get-PratRepoIndex @("$dir/repoProfile_test.ps1")).repos["r"].test | Should -Be "$dir/explicit/test.ps1"
+        }
+
+        It "No command set and no auto-discover file means command is absent" {
+            "@{ '.' = @{ repos = @{ noauto = @{} } } }" | Out-File "TestDrive:\repoProfile_test.ps1"
+            (Get-PratRepoIndex @("$dir/repoProfile_test.ps1")).repos["noauto"].ContainsKey("test") | Should -BeFalse
+        }
     }
 }

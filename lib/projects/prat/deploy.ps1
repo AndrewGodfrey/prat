@@ -1,7 +1,7 @@
-using module ..\lib\TextFileEditor\TextFileEditor.psd1
-using module ..\lib\Installers\Installers.psd1
+using module ..\..\TextFileEditor\TextFileEditor.psd1
+using module ..\..\Installers\Installers.psd1
 
-param ([switch] $Force)
+param($project, [hashtable]$CommandParameters = @{})
 
 function main($Force) {
     $ErrorActionPreference = "stop"
@@ -9,7 +9,7 @@ function main($Force) {
     $it = $null
 
     try {
-        $it = Start-Installation "Deploy-Prat" -InstallationDatabaseLocation "$home\prat\auto\instDb" -Force:$Force
+        $it = Start-Installation "prat deploy" -InstallationDatabaseLocation "$home\prat\auto\instDb" -Force:$Force
 
         Install-PsProfile $it
         instInteractiveAliases $it
@@ -29,11 +29,11 @@ function main($Force) {
 function instSchTasks($it) {
     $stage = $it.StartStage('schTasks')
 
-    Install-DailyScheduledTask $stage "test" "Prat - test task" $PSScriptRoot\..\lib\schtasks\daily_test.ps1 "1:08AM"
-    Install-DailyScheduledTask $stage "cleanManagedDirectories" "Prat - Clean managed directories"  $PSScriptRoot\..\lib\schtasks\daily_cleanManagedDirectories.ps1 "1:30AM"
+    Install-DailyScheduledTask $stage "test" "Prat - test task" $PSScriptRoot\..\..\schtasks\daily_test.ps1 "1:08AM"
+    Install-DailyScheduledTask $stage "cleanManagedDirectories" "Prat - Clean managed directories"  $PSScriptRoot\..\..\schtasks\daily_cleanManagedDirectories.ps1 "1:30AM"
     $onLogonScripts = & (Resolve-PratLibFile "lib/schtasks/Get-OnLogonScripts.ps1")
     if ($onLogonScripts.Count -gt 0) {
-        Install-AtLogonScheduledTask $stage "onLogonScripts" "Prat - invoke on-logon scripts" $PSScriptRoot\..\lib\schtasks\onLogon_Invoke-OnLogonScripts.ps1
+        Install-AtLogonScheduledTask $stage "onLogonScripts" "Prat - invoke on-logon scripts" $PSScriptRoot\..\..\schtasks\onLogon_Invoke-OnLogonScripts.ps1
     }
 
     $it.EndStage($stage)
@@ -68,4 +68,4 @@ function instInteractiveAliases($it) {
     $it.EndStage($stage)
 }
 
-main $Force
+main $CommandParameters['Force']

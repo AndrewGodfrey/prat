@@ -8,7 +8,7 @@ consider:
    This script will:
    - install various things (e.g. git, a sudo implementation, Pester)
    - invoke its build/test/deploy loop, unless you add the
-     `-SkipDeployStep` switch. See `Deploy-Prat.ps1` for the things
+     `-SkipDeployStep` switch. See `lib/projects/prat/deploy.ps1` for the things
      that can install.
    - in particular, it will install a Powershell `profile.ps1`. If
      you already have one, it will back it up to

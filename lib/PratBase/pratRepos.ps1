@@ -76,6 +76,12 @@ function Get-PratRepoIndex {
                             } elseif ($repo[$cmdName] -is [scriptblock]) {
                                 $repo[$cmdName] = [scriptblock]::Create($repo[$cmdName].ToString())
                             }
+                        } else {
+                            # Auto-discover: if no explicit command, look for lib/projects/<id>/<cmd>.ps1
+                            $autoPath = "$fileDir/lib/projects/$id/$cmdName.ps1"
+                            if (Test-Path $autoPath) {
+                                $repo[$cmdName] = $autoPath
+                            }
                         }
                     }
 

@@ -4,7 +4,7 @@
 #
 # .NOTES
 # If the overridable script Get-OnLogonScripts.ps1 returns an empty list,
-# Deploy-Prat.ps1 won't install a scheduled task for this at all. But the empty case is still supported in case it was already installed from
+# prat's 'd' won't install a scheduled task for this at all. But the empty case is still supported in case it was already installed from
 # a previous non-empty state.
 
 $logFolder = "$home\prat\auto\log"

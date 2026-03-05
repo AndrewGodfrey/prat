@@ -20,9 +20,8 @@ See [INSTALLATION.md](INSTALLATION.md) for installation and customization instru
 ## Dev Loop Commands
 
 ```powershell
-Build-Prat            # alias: b — unloads modules so they can be reimported fresh
 Test-Codebase         # alias: t — runs Pester tests; -NoCoverage to skip coverage; -IncludeIntegrationTests to include integration tests
-Deploy-Prat -Force    # alias: d — installs profile, scheduled tasks, Pester
+Deploy-Codebase       # alias: d — installs profile, scheduled tasks, Pester
 Start-CodebaseDevLoop # alias: x — runs prebuild → build → test → deploy
 ```
 
