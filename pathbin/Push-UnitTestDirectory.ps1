@@ -34,7 +34,7 @@ function checkTestDirs($dir) {
 
 
 function findIt($CodeDir) {
-    # First, see if there's codebase-specific logic
+    # First, see if there's repo-specific logic
     $repo = Get-PratRepo $CodeDir
     if (($null -ne $repo) -and ($null -ne $repo.testDirFromDevDir)) {
         $candidate = &$repo.testDirFromDevDir $CodeDir $repo.root

@@ -58,15 +58,24 @@ function Get-PratRepoIndex {
                     }
                     $repo.root = ($repo.root).TrimEnd('\', '/')
 
-                    # Resolve string command properties relative to the repoProfile file's directory
+                    # Resolve string command properties relative to the repoProfile file's directory.
+                    # Rebind scriptblock command properties to remove module association:
+                    # Scriptblocks created here would inherit PratBase as their module (since we're
+                    # inside a PratBase function). If those scriptblocks call scripts that use
+                    # 'using module PratBase', it creates a circular reference causing a stack overflow
+                    # in GetExportedTypeDefinitions. [scriptblock]::Create() breaks that association.
                     $fileDir = $fileItem.DirectoryName.Replace('\', '/')
                     foreach ($cmdName in @('build', 'test', 'deploy', 'prebuild')) {
-                        if ($repo.ContainsKey($cmdName) -and ($repo[$cmdName] -is [string])) {
-                            $cmdPath = $repo[$cmdName]
-                            if (-not [System.IO.Path]::IsPathRooted($cmdPath)) {
-                                $cmdPath = "$fileDir/$cmdPath"
+                        if ($repo.ContainsKey($cmdName)) {
+                            if ($repo[$cmdName] -is [string]) {
+                                $cmdPath = $repo[$cmdName]
+                                if (-not [System.IO.Path]::IsPathRooted($cmdPath)) {
+                                    $cmdPath = "$fileDir/$cmdPath"
+                                }
+                                $repo[$cmdName] = $cmdPath.Replace('\', '/')
+                            } elseif ($repo[$cmdName] -is [scriptblock]) {
+                                $repo[$cmdName] = [scriptblock]::Create($repo[$cmdName].ToString())
                             }
-                            $repo[$cmdName] = $cmdPath.Replace('\', '/')
                         }
                     }
 

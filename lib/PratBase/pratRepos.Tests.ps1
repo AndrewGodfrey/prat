@@ -110,5 +110,11 @@ Describe "Get-PratRepoIndex" {
             "@{ '.' = @{ repos = @{ r = @{ test = { 'hello' } } } } }" | Out-File "TestDrive:\repoProfile_test.ps1"
             (Get-PratRepoIndex @("$dir/repoProfile_test.ps1")).repos["r"].test | Should -BeOfType [scriptblock]
         }
+
+        It "Scriptblock command properties are not bound to PratBase module" {
+            "@{ '.' = @{ repos = @{ r = @{ test = { 'hello' } } } } }" | Out-File "TestDrive:\repoProfile_test.ps1"
+            $sb = (Get-PratRepoIndex @("$dir/repoProfile_test.ps1")).repos["r"].test
+            $sb.Module | Should -BeNull
+        }
     }
 }
