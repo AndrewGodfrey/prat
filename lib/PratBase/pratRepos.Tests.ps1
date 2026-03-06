@@ -2,29 +2,6 @@ BeforeAll {
     Import-Module "$PSScriptRoot\PratBase.psd1" -Force
 }
 
-Describe "Get-PratRepo" {
-    BeforeAll {
-        $dir = (Get-Item "TestDrive:\").FullName.TrimEnd('\').Replace('\', '/')
-        New-Item -ItemType Directory -Path "TestDrive:\myrepo" | Out-Null
-        New-Item -ItemType Directory -Path "TestDrive:\myrepo\sub" | Out-Null
-        New-Item -ItemType Directory -Path "TestDrive:\myrepo-other" | Out-Null
-        "@{ '.' = @{ repos = @{ myrepo = @{} } } }" | Out-File "TestDrive:\repoProfile_test.ps1"
-        Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$dir/repoProfile_test.ps1") }
-    }
-
-    It "Matches a location inside the repo" {
-        (Get-PratRepo "$dir/myrepo/sub").id | Should -Be "myrepo"
-    }
-
-    It "Does not match a sibling directory that shares a name prefix" {
-        Get-PratRepo "$dir/myrepo-other" | Should -BeNull
-    }
-
-    It "Matches when exactly at the repo root" {
-        (Get-PratRepo "$dir/myrepo").id | Should -Be "myrepo"
-    }
-}
-
 Describe "Find-ProjectShortcut" {
     BeforeEach {
         $dir = (Get-Item "TestDrive:\").FullName.TrimEnd('\').Replace('\', '/')

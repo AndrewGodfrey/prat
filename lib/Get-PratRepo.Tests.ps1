@@ -49,4 +49,12 @@ Describe "Get-PratRepo" {
 
         (Get-PratRepo -Location "$root/sub").id | Should -Be 'child'
     }
+
+    It "Does not match a sibling directory that shares a name prefix" {
+        New-Item -ItemType Directory "TestDrive:\myrepo" -Force | Out-Null
+        New-Item -ItemType Directory "TestDrive:\myrepo-other" -Force | Out-Null
+        makeProfile "@{ myrepo = @{ root = '$root/myrepo' } }"
+
+        Get-PratRepo -Location "$root/myrepo-other" | Should -BeNull
+    }
 }
