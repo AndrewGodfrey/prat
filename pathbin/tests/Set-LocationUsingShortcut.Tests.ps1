@@ -86,5 +86,13 @@ Describe "ReverseSearchForShortcut" {
 
         $result | Should -Be "myrepo"
     }
+
+    It "Is invoked with the '.' param" {
+        Set-Location "$PSScriptRoot/../.."
+
+        $result = Set-LocationUsingShortcut -Shortcut "."
+
+        $result | Should -Be "prat"
+    }
 }
 

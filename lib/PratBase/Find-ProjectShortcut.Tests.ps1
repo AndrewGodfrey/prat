@@ -7,7 +7,7 @@ Describe "Find-ProjectShortcut" {
         $dir = (Get-Item "TestDrive:\").FullName.TrimEnd('\').Replace('\', '/')
         $testProfilePath = "$dir/repoProfile_test.ps1"
 
-        "@{ '.' = @{ repos = @{ repoA = @{ root = 'rootA' } }; shortcuts = @{ shortA = 'rootA/foo' } } }" | Out-File $testProfilePath
+        "@{ '.' = @{ repos = @{ repoA = @{ root = 'rootA'; subprojects = @{ subA = @{ path = 'subA' } } } }; shortcuts = @{ shortA = 'rootA/foo' } } }" | Out-File $testProfilePath
         Mock Get-RepoProfileFiles -ModuleName PratBase { return @($testProfilePath) }
     }
 
@@ -42,5 +42,15 @@ Describe "Find-ProjectShortcut" {
 
         $result = Find-ProjectShortcut "shared"
         $result | Should -Be "$dir/a/from-file1"
+    }
+
+    It "Finds subprojects using the full id" {
+        $result = Find-ProjectShortcut "repoA/subA"
+        $result | Should -Be "$dir/rootA/subA"
+    }
+
+    It "Finds subprojects using the last segment of the id" {
+        $result = Find-ProjectShortcut "subA"
+        $result | Should -Be "$dir/rootA/subA"
     }
 }

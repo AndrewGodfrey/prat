@@ -262,5 +262,12 @@ function Find-ProjectShortcut {
         return $result
     }
     if ($allShortcuts.Contains($Shortcut)) { return $allShortcuts[$Shortcut] }
+
+    foreach ($k in $allShortcuts.Keys) { 
+        if ($k.EndsWith("/$Shortcut", 'InvariantCultureIgnoreCase')) { 
+            return $allShortcuts[$k] 
+        } 
+    }
+    
     return $null
 }
