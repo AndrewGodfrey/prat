@@ -16,6 +16,35 @@ t -RepoRoot ~/prat -Focus lib/Foo.ps1   # focused run
 - Markdown files: wrap lines at 120 characters max. Break at natural phrase boundaries
   for readability (like this).
 
+## Unit test conventions
+
+### File organization
+- One test file per function, named `<FunctionName>.Tests.ps1`, co-located with the source file.
+- Internal (non-exported) functions go in `lib/PratBase/` and need `InModuleScope PratBase { ... }`.
+- Tests for exported functions (e.g. `Get-PratRepo`, `Get-PratProject`) go in `lib/PratBase/` too (since that
+  is where the source lives), but don't need `InModuleScope`.
+
+### Readability patterns (see `Get-PratProject.Tests.ps1` as a reference)
+- Extract a `makeTestProfile` / `makeIndex` helper in `BeforeAll` to eliminate repeated profile-writing boilerplate.
+- Group related tests into `Context` blocks (e.g. "root resolution", "shortcuts", "command properties").
+- Use `$root/subpath` string interpolation rather than `(Get-Item "TestDrive:\subpath").FullName`.
+- Blank line between the arrange/act setup and the assertion(s).
+- Multi-property assertions: align the `|` pipes and property names for readability.
+
+### `InModuleScope` + `-Focus` (Pester 5 gotcha)
+`InModuleScope` is evaluated at **discovery** time, but `BeforeAll` runs at **execution** time. When the
+focused file is the first to be discovered, the module isn't loaded yet and discovery fails. Fix: add a
+`BeforeDiscovery` block (in addition to `BeforeAll`) to load the module at discovery time:
+
+```powershell
+BeforeDiscovery {
+    Import-Module "$PSScriptRoot/PratBase.psd1" -Force
+}
+BeforeAll {
+    Import-Module "$PSScriptRoot/PratBase.psd1" -Force
+}
+```
+
 ## Prat module pattern
 
 When adding an exported function to a prat module (Installers, PratBase, TextFileEditor):
