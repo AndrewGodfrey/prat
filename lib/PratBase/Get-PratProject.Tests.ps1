@@ -1,5 +1,5 @@
 BeforeAll {
-    Import-Module "$PSScriptRoot/PratBase/PratBase.psd1" -Force
+    Import-Module "$PSScriptRoot/PratBase.psd1" -Force
     function makeTestProfile($testRepoDefinition) {
         "@{ '.' = @{ repos = @{ repo = $testRepoDefinition } } }" | Out-File $testProfilePath
     }

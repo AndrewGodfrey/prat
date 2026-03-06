@@ -1,5 +1,9 @@
 BeforeDiscovery {
-    Import-Module "$PSScriptRoot/PratBase/PratBase.psd1" -Force
+    Import-Module "$PSScriptRoot/PratBase.psd1" -Force
+}
+
+BeforeAll {
+    Import-Module "$PSScriptRoot/PratBase.psd1" -Force
 }
 
 Describe "Get-PratRepoIndex" {
