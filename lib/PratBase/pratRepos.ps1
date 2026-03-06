@@ -76,11 +76,61 @@ function Get-PratRepoIndex {
         }
     }
 
+    function Register-Node($nodeId, $nodeDef, $absoluteRoot, $fileDir, $parentNode, $repoNode) {
+        # Build the node, copying all non-structural properties from the definition.
+        $structuralKeys = @('root', 'path', 'subprojects', 'shortcuts')
+        $node = @{ id = $nodeId; root = $absoluteRoot }
+        foreach ($key in $nodeDef.Keys) {
+            if ($key -notin $structuralKeys) { $node[$key] = $nodeDef[$key] }
+        }
+
+        # Inherit properties from parent node
+        if ($null -ne $parentNode) {
+            $node['parentId'] = $parentNode.id
+            $node['repo']     = $repoNode
+            foreach ($key in $parentNode.Keys) {
+                if (($key -notin $structuralKeys) -and -not $node.ContainsKey($key)) {
+                    $node[$key] = $parentNode[$key]
+                }
+            }
+        }
+
+        # Resolve string command properties relative to the repoProfile file's directory.
+        # Scriptblock stripping is handled by Import-Scriptblock before we get here.
+        foreach ($cmdName in @('build', 'test', 'deploy', 'prebuild')) {
+            if ($node.ContainsKey($cmdName)) {
+                if ($node[$cmdName] -is [string]) {
+                    $cmdPath = $node[$cmdName]
+                    if (-not [System.IO.Path]::IsPathRooted($cmdPath)) { $cmdPath = "$fileDir/$cmdPath" }
+                    $node[$cmdName] = $cmdPath.Replace('\', '/')
+                }
+            } else {
+                # Auto-discover: lib/projects/<id>/<cmd>.ps1
+                $autoPath = "$fileDir/lib/projects/$nodeId/$cmdName.ps1"
+                if (Test-Path $autoPath) { $node[$cmdName] = $autoPath }
+            }
+        }
+
+        $allRepos[$nodeId] = $node
+        Add-Shortcuts $nodeDef.shortcuts $absoluteRoot ([ref]$allShortcuts)
+
+        # Recurse into subprojects.
+        $childRepoNode = if ($null -eq $repoNode) { $node } else { $repoNode }
+        if ($null -ne $nodeDef.subprojects) {
+            foreach ($subKey in $nodeDef.subprojects.Keys) {
+                $subDef  = $nodeDef.subprojects[$subKey]
+                $subRoot = "$absoluteRoot/$($subDef.path)".TrimEnd('/', '\')
+                Register-Node "$nodeId/$subKey" $subDef $subRoot $fileDir $node $childRepoNode
+            }
+        }
+    }
+
     $allRepos     = @{}
     $allShortcuts = @{}
 
     foreach ($file in $Files) {
         $fileItem    = Get-Item $file
+        $fileDir     = $fileItem.DirectoryName.Replace('\', '/')
         $profileData = Import-Scriptblock $file
 
         foreach ($sectionKey in $profileData.Keys) {
@@ -94,40 +144,16 @@ function Get-PratRepoIndex {
 
             if ($null -ne $section.repos) {
                 foreach ($id in $section.repos.Keys) {
-                    $repo    = $section.repos[$id]
-                    $repo.id = $id
-
-                    if ($null -eq $repo.root) {
-                        $repo.root = "$sectionRoot/$id"
-                    } elseif (-not [System.IO.Path]::IsPathRooted($repo.root)) {
-                        $repo.root = "$sectionRoot/$($repo.root)"
+                    $repoDef = $section.repos[$id]
+                    $root    = if ($null -eq $repoDef.root) {
+                        "$sectionRoot/$id"
+                    } elseif (-not [System.IO.Path]::IsPathRooted($repoDef.root)) {
+                        "$sectionRoot/$($repoDef.root)"
+                    } else {
+                        $repoDef.root
                     }
-                    $repo.root = ($repo.root).TrimEnd('\', '/')
-
-                    # Resolve string command properties relative to the repoProfile file's directory.
-                    # Scriptblock stripping is handled by Import-Scriptblock before we get here.
-                    $fileDir = $fileItem.DirectoryName.Replace('\', '/')
-                    foreach ($cmdName in @('build', 'test', 'deploy', 'prebuild')) {
-                        if ($repo.ContainsKey($cmdName)) {
-                            if ($repo[$cmdName] -is [string]) {
-                                $cmdPath = $repo[$cmdName]
-                                if (-not [System.IO.Path]::IsPathRooted($cmdPath)) {
-                                    $cmdPath = "$fileDir/$cmdPath"
-                                }
-                                $repo[$cmdName] = $cmdPath.Replace('\', '/')
-                            }
-                        } else {
-                            # Auto-discover: if no explicit command, look for lib/projects/<id>/<cmd>.ps1
-                            $autoPath = "$fileDir/lib/projects/$id/$cmdName.ps1"
-                            if (Test-Path $autoPath) {
-                                $repo[$cmdName] = $autoPath
-                            }
-                        }
-                    }
-
-                    $allRepos[$id] = $repo
-
-                    Add-Shortcuts $repo.shortcuts $repo.root ([ref]$allShortcuts)
+                    $root = $root.TrimEnd('\', '/')
+                    Register-Node $id $repoDef $root $fileDir $null $null
                 }
             }
 
@@ -135,7 +161,7 @@ function Get-PratRepoIndex {
         }
     }
 
-    # Add implicit default shortcut per repo: <id> -> <repo.root>
+    # Add implicit default shortcut per node: <id> -> <node.root>
     foreach ($id in $allRepos.Keys) {
         if (-not $allShortcuts.ContainsKey($id)) {
             $allShortcuts[$id] = $allRepos[$id].root
@@ -148,9 +174,32 @@ function Get-PratRepoIndex {
     }
 }
 
+# Private: finds the most-specific node in $nodes whose root is a prefix of $Location.
+# Returns $null if no match. Throws if two nodes tie at the same root length.
+function Find-BestMatch($nodes, [string] $Location) {
+    [System.IO.DirectoryInfo] $locationDI = $Location
+    $results = @()
+    foreach ($node in $nodes) {
+        [System.IO.DirectoryInfo] $rootDI = $node.root
+        if ($locationDI.FullName.StartsWith($rootDI.FullName + '\', 'InvariantCultureIgnoreCase') -or
+            $locationDI.FullName.Equals($rootDI.FullName, 'InvariantCultureIgnoreCase')) {
+            $results += $node
+        }
+    }
+    if ($results.Length -eq 0) { return $null }
+    if ($results.Length -gt 1) {
+        $results = @($results | Sort-Object { $_.root.Length } -Descending)
+        $topLen  = $results[0].root.Length
+        $results = @($results | Where-Object { $_.root.Length -eq $topLen })
+        if ($results.Length -gt 1) { throw "Found too many matches" }
+    }
+    return $results[0]
+}
+
 # .SYNOPSIS
-# Given a location, finds which repo it's in.
+# Given a location, finds which top-level repo it's in.
 # Searches repos registered in repoProfile_<devenv>.ps1 files from all registered dev environments.
+# Returns the top-level repo only — use Get-PratProject to match subprojects.
 #
 # Other properties added to the returned object:
 #   subdir: path of $Location relative to the repo root
@@ -160,100 +209,37 @@ function Get-PratRepo {
 
     $Location = (Resolve-Path $Location).ProviderPath
 
-    $files  = Get-RepoProfileFiles
-    $index = Get-PratRepoIndex $files
+    $index = Get-PratRepoIndex (Get-RepoProfileFiles)
     if ($null -eq $index) { return $null }
 
-    [System.IO.DirectoryInfo] $locationDI = $Location
-    $results = @()
+    $topLevel = @($index.repos.Values | Where-Object { -not $_.ContainsKey('parentId') })
+    $item = Find-BestMatch $topLevel $Location
+    if ($null -eq $item) { return $null }
 
-    foreach ($repo in $index.repos.Values) {
-        [System.IO.DirectoryInfo] $rootDI = $repo.root
-        Write-Verbose "Get-PratRepo: Considering: $($repo.root)"
-        if ($locationDI.FullName.StartsWith($rootDI.FullName + '\', 'InvariantCultureIgnoreCase') -or
-            $locationDI.FullName.Equals($rootDI.FullName, 'InvariantCultureIgnoreCase')) {
-            Write-Verbose "Get-PratRepo: Match: $($repo.id)"
-            $results += $repo
-        }
-    }
-
-    Write-Verbose "Get-PratRepo: Found $($results.Length) matches"
-    if ($results.Length -eq 0) { return $null }
-
-    # If multiple repos match (e.g. a nested repo inside another), pick the most-specific one (longest root).
-    # Throw if there's a tie.
-    if ($results.Length -gt 1) {
-        $results = @($results | Sort-Object { $_.root.Length } -Descending)
-        $topLen  = $results[0].root.Length
-        $results = @($results | Where-Object { $_.root.Length -eq $topLen })
-        if ($results.Length -gt 1) { throw "Found too many matches" }
-    }
-
-    $item = $results[0]
     $item.subdir = Get-RelativePath $item.root $Location
     return $item
 }
 
 # .SYNOPSIS
-# An extension of Get-PratRepo.
-# Useful for codebases that have sub-projects.
+# Given a location, finds the most-specific project (repo or subproject) it's in.
+# Subprojects are registered in the flat index by Get-PratRepoIndex, so this is a
+# simple longest-prefix match over all nodes at any depth.
 #
-# Uses the 'subprojects' property to decide which project we're in. (Picks the longest-prefix match).
-# If no project is found, returns what Get-PratRepo returns.
+# Other properties added to the returned object:
+#   subdir: path of $Location relative to the project root
 function Get-PratProject {
     [CmdletBinding()]
     param([string] $Location = $pwd)
 
     $Location = (Resolve-Path $Location).ProviderPath
-    $repo = Get-PratRepo $Location
-    if ($null -eq $repo) { return $null }
 
-    Write-Verbose "Search subprojects for $($repo.id)"
-    [System.IO.DirectoryInfo] $locationDI = $Location
+    $index = Get-PratRepoIndex (Get-RepoProfileFiles)
+    if ($null -eq $index) { return $null }
 
-    $longestMatch = @{ key = $null; dest = "" }
+    $item = Find-BestMatch $index.repos.Values $Location
+    if ($null -eq $item) { return $null }
 
-    if ($null -ne $repo.subprojects) {
-        foreach ($key in $repo.subprojects.Keys) {
-            $subproject = $repo.subprojects[$key]
-            $dest = $repo.root + "/" + $subproject.path
-            Write-Verbose "Considering: $key"
-            [System.IO.DirectoryInfo] $destDI = $dest
-            Write-Verbose "Compare: '$($destDI.FullName)' vs '$($locationDI.FullName)'"
-            if ($locationDI.FullName.StartsWith($destDI.FullName, 'InvariantCultureIgnoreCase')) {
-                Write-Verbose "Found: $key"
-                if ($dest.Length -gt ($longestMatch.dest.Length)) {
-                    $longestMatch.key  = $key
-                    $longestMatch.dest = $dest
-                }
-            }
-        }
-    }
-
-    if ($null -eq $longestMatch.key) {
-        return $repo
-    }
-    Write-Verbose "Found: $($longestMatch.key)"
-    $matchedSubproject = $repo.subprojects[$longestMatch.key]
-    $item = @{
-        parentId = $repo.id
-        id       = "$($repo.id)/$($longestMatch.key)"
-        root     = $longestMatch.dest
-        subdir   = $(Get-RelativePath $longestMatch.dest $Location)
-    }
-
-    if ($null -ne $matchedSubproject.workspace) {
-        $item.workspace = $matchedSubproject.workspace
-    }
-
-    # Inherit any properties, that aren't already overridden, from $repo.
-    #   e.g. it's useful for these properties: 'buildKind', 'workspace', 'cachedEnvDelta'
-    foreach ($key in $repo.Keys) {
-        if (!$item.ContainsKey($key)) {
-            $item[$key] = $repo[$key]
-        }
-    }
-
+    $item.subdir = Get-RelativePath $item.root $Location
     return $item
 }
 

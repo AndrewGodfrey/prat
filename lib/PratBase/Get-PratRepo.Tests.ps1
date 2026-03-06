@@ -57,4 +57,14 @@ Describe "Get-PratRepo" {
 
         Get-PratRepo -Location "$root/myrepo-other" | Should -BeNull
     }
+
+    It "Returns the top-level repo, not the subproject, when location is inside a subproject" {
+        New-Item -ItemType Directory "TestDrive:\r\lib\sub" -Force | Out-Null
+        makeProfile "@{ r = @{ root = '$root/r'; subprojects = @{ sub = @{ path = 'lib/sub' } } } }"
+
+        $result = Get-PratRepo -Location "$root/r/lib/sub"
+
+        $result.id   | Should -Be "r"
+        $result.root | Should -Be "$root/r"
+    }
 }

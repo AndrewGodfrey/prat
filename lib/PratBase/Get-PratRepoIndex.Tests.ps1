@@ -138,5 +138,58 @@ Describe "Get-PratRepoIndex" {
                 (makeIndex "@{ '.' = @{ repos = @{ noauto = @{} } } }").repos["noauto"].ContainsKey("test") | Should -BeFalse
             }
         }
+
+        Context "subprojects" {
+            It "Registers subproject as a flat entry in the index" {
+                (makeIndex "@{ '.' = @{ repos = @{ r = @{ subprojects = @{ sub = @{ path = 'lib/sub' } } } } } }").repos.ContainsKey("r/sub") | Should -BeTrue
+            }
+
+            It "Resolves subproject root by joining parent root and subproject path" {
+                (makeIndex "@{ '.' = @{ repos = @{ r = @{ subprojects = @{ sub = @{ path = 'lib/sub' } } } } } }").repos["r/sub"].root | Should -Be "$dir/r/lib/sub"
+            }
+
+            It "Sets parentId on subproject" {
+                (makeIndex "@{ '.' = @{ repos = @{ r = @{ subprojects = @{ sub = @{ path = 'lib/sub' } } } } } }").repos["r/sub"].parentId | Should -Be "r"
+            }
+
+            It "Adds implicit shortcut for subproject id -> root" {
+                (makeIndex "@{ '.' = @{ repos = @{ r = @{ subprojects = @{ sub = @{ path = 'lib/sub' } } } } } }").shortcuts["r/sub"] | Should -Be "$dir/r/lib/sub"
+            }
+
+            It "Inherits parent command property when subproject doesn't define it" {
+                (makeIndex "@{ '.' = @{ repos = @{ r = @{ test = 'run-tests.ps1'; subprojects = @{ sub = @{ path = 'lib/sub' } } } } } }").repos["r/sub"].test | Should -Be "$dir/run-tests.ps1"
+            }
+
+            It "Subproject command overrides inherited parent command" {
+                (makeIndex "@{ '.' = @{ repos = @{ r = @{ test = 'parent.ps1'; subprojects = @{ sub = @{ path = 'lib/sub'; test = 'sub.ps1' } } } } } }").repos["r/sub"].test | Should -Be "$dir/sub.ps1"
+            }
+
+            It "Registers nested subprojects at arbitrary depth" {
+                $profile = "@{ '.' = @{ repos = @{ r = @{ subprojects = @{ sub = @{ path = 'lib/sub'; subprojects = @{ deep = @{ path = 'src' } } } } } } } }"
+                (makeIndex $profile).repos.ContainsKey("r/sub/deep") | Should -BeTrue
+            }
+
+            It "Resolves nested subproject root relative to its parent's root" {
+                $profile = "@{ '.' = @{ repos = @{ r = @{ subprojects = @{ sub = @{ path = 'lib/sub'; subprojects = @{ deep = @{ path = 'src' } } } } } } } }"
+                (makeIndex $profile).repos["r/sub/deep"].root | Should -Be "$dir/r/lib/sub/src"
+            }
+
+            It "Sets repo property on subproject pointing to the top-level repo object" {
+                $index = makeIndex "@{ '.' = @{ repos = @{ r = @{ subprojects = @{ sub = @{ path = 'lib/sub' } } } } } }"
+
+                $index.repos["r/sub"].repo | Should -Be $index.repos["r"]
+            }
+
+            It "Top-level repos do not have a repo property" {
+                (makeIndex "@{ '.' = @{ repos = @{ r = @{ subprojects = @{ sub = @{ path = 'lib/sub' } } } } } }").repos["r"].ContainsKey("repo") | Should -BeFalse
+            }
+
+            It "Nested subproject repo property points to the top-level repo, not the immediate parent" {
+                $profile = "@{ '.' = @{ repos = @{ r = @{ subprojects = @{ sub = @{ path = 'lib/sub'; subprojects = @{ deep = @{ path = 'src' } } } } } } } }"
+                $index = makeIndex $profile
+
+                $index.repos["r/sub/deep"].repo | Should -Be $index.repos["r"]
+            }
+        }
     }
 }
