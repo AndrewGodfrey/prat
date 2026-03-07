@@ -9,11 +9,20 @@ param([string] $Focus, $RepoRoot)
 
 if (!$Focus) { return "." }
 
-$resolved = if ([System.IO.Path]::IsPathRooted($Focus)) { $Focus } else { Join-Path $RepoRoot $Focus }
+# Expand ~ to home directory before IsPathRooted (which doesn't understand ~)
+if ($Focus    -like '~*') { $Focus    = $home + $Focus.Substring(1) }
+if ($RepoRoot -like '~*') { $RepoRoot = $home + $RepoRoot.Substring(1) }
 
-if (Test-Path $resolved) { return $resolved }
+function findPath {
+    $resolved = if ([System.IO.Path]::IsPathRooted($Focus)) { $Focus } else { Join-Path $RepoRoot $Focus }
 
-$withSuffix = $resolved + ".Tests.ps1"
-if (Test-Path $withSuffix) { return $withSuffix }
+    if (Test-Path $resolved) { return $resolved }
 
-throw "Focus path not found: '$resolved'"
+    $withSuffix = $resolved + ".Tests.ps1"
+    if (Test-Path $withSuffix) { return $withSuffix }
+
+    throw "Focus path not found: '$resolved'"
+}
+
+$resolved = Resolve-Path (findPath)
+$resolved -replace '\\', '/'
