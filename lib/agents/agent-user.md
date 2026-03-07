@@ -4,6 +4,9 @@
 - To discard output: in bash use `> /dev/null`, in pwsh use `| Out-Null` or `> \$null`. Never use `> nul` in bash (it creates a literal file).
 
 # TDD and /compact
+After fixing test code or production code covered by tests, always run the relevant tests to verify, before
+considering the task done.
+
 Verified test results are first-class artifacts. When /compact summarizes a session, the state
 of each test run (not yet run / verified red / verified green) must be recorded alongside file
 changes. "Tests written but not yet run" and "tests written and verified failing" are distinct
@@ -12,6 +15,12 @@ states with different implications for what to do next.
 # TDD and missing coverage
 Before making changes (including refactoring) in code whose unit that has no unit-test coverage, propose to add test coverage first.
 
+
+# Pacing and initiative
+
+Don't prompt for commits or ask "ready to commit?" / "shall I commit?" after each response. The user
+will signal when they're ready for commit-prep. During iterative work, repeating that question creates a
+false impression of impatience.
 
 # Claude settings
 
