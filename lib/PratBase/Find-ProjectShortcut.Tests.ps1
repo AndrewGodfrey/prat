@@ -8,7 +8,7 @@ Describe "Find-ProjectShortcut" {
         $testProfilePath = "$dir/repoProfile_test.ps1"
         $simpleRepo = "repoA = @{ root = 'rootA'; subprojects = @{ subA = @{ path = 'subA' } } }"
 
-        function makeProfile($repoContent, $shortcutContent, $filename = $testProfilePath) {
+        function makeProfile($repoContent, $shortcutContent="", $filename = $testProfilePath) {
             "@{ '.' = @{ repos = @{ $repoContent }; shortcuts = @{ $shortcutContent } } }" | Out-File $filename
         }
     }
@@ -48,13 +48,37 @@ Describe "Find-ProjectShortcut" {
             $result['shortB'] | Should -Be "$dir/rootB/bar"
         }
 
-        It "First file wins when shortcut name appears in multiple files" {
+        It "picks the first file, when the same shortcut name appears in multiple files" {
             $pathB = "$dir/repoProfile_b.ps1"
             makeProfile "repoA = @{ root = 'a' }" "shared = 'a/from-file1'"
             makeProfile "repoB = @{ root = 'b' }" "shared = 'b/from-file2'" $pathB
             Mock Get-RepoProfileFiles -ModuleName PratBase { return @($testProfilePath, $pathB) }
 
             Find-ProjectShortcut "shared" | Should -Be "$dir/a/from-file1"
+        }
+    }
+
+    Context "multiple matches" {
+        It "throws, for identical shortcuts within the same profile file" {
+            Mock Get-RepoProfileFiles -ModuleName PratBase { return @($testProfilePath) }
+
+            $subA = "subA = @{ path = 'subA'; shortcuts = @{ foo = 'fooA' } }"
+            $subB = "subB = @{ path = 'subB'; shortcuts = @{ foo = 'fooB' } }"
+            $repo =  "repoA = @{ root = 'rootA'; subprojects = @{ $subA; $subB } }"
+            makeProfile $repo
+
+            { Find-ProjectShortcut "foo" } | Should -Throw "*Duplicate shortcut 'foo'*"
+        }
+
+        It "throws, for multiple partial matches of subprojects" {
+            Mock Get-RepoProfileFiles -ModuleName PratBase { return @($testProfilePath) }
+
+            $subA = "subA = @{ path = 'subA'; subprojects = @{ foo = @{ path = 'fooA' } } }"
+            $subB = "subB = @{ path = 'subB'; subprojects = @{ foo = @{ path = 'fooB' } } }"
+            $repo =  "repoA = @{ root = 'rootA'; subprojects = @{ $subA; $subB } }"
+            makeProfile $repo
+
+            {Find-ProjectShortcut "foo"} | Should -Throw "Found multiple partial matches for 'foo':*"
         }
     }
 }

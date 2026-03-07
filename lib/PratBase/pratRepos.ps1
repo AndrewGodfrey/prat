@@ -66,17 +66,23 @@ function Get-PratRepoIndex {
 
     if ($null -eq $Files -or $Files.Count -eq 0) { return $null }
 
-    function Add-Shortcuts($shortcuts, $base, [ref] $dest) {
+    function Add-Shortcuts($shortcuts, $base, [ref] $dest, $currentFile, [ref] $sources) {
         if ($null -eq $shortcuts) { return }
         foreach ($name in $shortcuts.Keys) {
-            if ($dest.Value.ContainsKey($name)) { continue }  # first-one-wins
+            if ($dest.Value.ContainsKey($name)) {
+                if ($sources.Value[$name] -eq $currentFile) {
+                    throw "Duplicate shortcut '$name' defined multiple times within the same repoProfile file '$currentFile'."
+                }
+                continue  # first-file-wins across files
+            }
             $path = $shortcuts[$name]
             if (-not [System.IO.Path]::IsPathRooted($path)) { $path = "$base/$path" }
             $dest.Value[$name] = $path.TrimEnd('\', '/')
+            $sources.Value[$name] = $currentFile
         }
     }
 
-    function Register-Node($nodeId, $nodeDef, $absoluteRoot, $fileDir, $parentNode, $repoNode) {
+    function Register-Node($nodeId, $nodeDef, $absoluteRoot, $fileDir, $parentNode, $repoNode, $currentFile) {
         # Build the node, copying all non-structural properties from the definition.
         $structuralKeys = @('root', 'path', 'subprojects', 'shortcuts')
         $node = @{ id = $nodeId; root = $absoluteRoot }
@@ -112,7 +118,7 @@ function Get-PratRepoIndex {
         }
 
         $allRepos[$nodeId] = $node
-        Add-Shortcuts $nodeDef.shortcuts $absoluteRoot ([ref]$allShortcuts)
+        Add-Shortcuts $nodeDef.shortcuts $absoluteRoot ([ref]$allShortcuts) $currentFile ([ref]$allShortcutSources)
 
         # Recurse into subprojects.
         $childRepoNode = if ($null -eq $repoNode) { $node } else { $repoNode }
@@ -120,13 +126,14 @@ function Get-PratRepoIndex {
             foreach ($subKey in $nodeDef.subprojects.Keys) {
                 $subDef  = $nodeDef.subprojects[$subKey]
                 $subRoot = "$absoluteRoot/$($subDef.path)".TrimEnd('/', '\')
-                Register-Node "$nodeId/$subKey" $subDef $subRoot $fileDir $node $childRepoNode
+                Register-Node "$nodeId/$subKey" $subDef $subRoot $fileDir $node $childRepoNode $currentFile
             }
         }
     }
 
-    $allRepos     = @{}
-    $allShortcuts = @{}
+    $allRepos          = @{}
+    $allShortcuts      = @{}
+    $allShortcutSources = @{}
 
     foreach ($file in $Files) {
         $fileItem    = Get-Item $file
@@ -153,11 +160,11 @@ function Get-PratRepoIndex {
                         $repoDef.root
                     }
                     $root = $root.TrimEnd('\', '/')
-                    Register-Node $id $repoDef $root $fileDir $null $null
+                    Register-Node $id $repoDef $root $fileDir $null $null $file
                 }
             }
 
-            Add-Shortcuts $section.shortcuts $sectionRoot ([ref]$allShortcuts)
+            Add-Shortcuts $section.shortcuts $sectionRoot ([ref]$allShortcuts) $file ([ref]$allShortcutSources)
         }
     }
 
@@ -263,10 +270,18 @@ function Find-ProjectShortcut {
     }
     if ($allShortcuts.Contains($Shortcut)) { return $allShortcuts[$Shortcut] }
 
-    foreach ($k in $allShortcuts.Keys) { 
+    $foundPartialMatches = @()
+    foreach ($k in $allShortcuts.Keys) {
         if ($k.EndsWith("/$Shortcut", 'InvariantCultureIgnoreCase')) { 
-            return $allShortcuts[$k] 
+            $foundPartialMatches += $k
         } 
+    }
+    if ($foundPartialMatches.Count -gt 0) {
+        if ($foundPartialMatches.Count -gt 1) {
+            # We can't use declaration order to tie-break these, because the data structure uses unordered hashtables.
+            throw "Found multiple partial matches for '$Shortcut': $($foundPartialMatches -join ', '))"
+        }
+        return $allShortcuts[$foundPartialMatches[0]]
     }
     
     return $null
