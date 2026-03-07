@@ -252,7 +252,7 @@ function Find-ProjectShortcut {
     [CmdletBinding()]
     param($Shortcut, [switch] $ListAll)
 
-    $files       = Get-RepoProfileFiles
+    $files      = Get-RepoProfileFiles
     $index      = Get-PratRepoIndex $files
     $allShortcuts = if ($null -ne $index) { $index.shortcuts } else { @{} }
 

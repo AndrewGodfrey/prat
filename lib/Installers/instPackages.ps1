@@ -183,14 +183,23 @@ function installForkGitClient($stage) {
     }
 }
 
-$pratPackages = @{
-    claude = @{
-        install = {
-            # Use winget, not npm, to avoid claude depending on the version of node installed on the machine.
-            installPratWingetPackage "Anthropic.ClaudeCode" 
+function installClaude($stage) {
+    # Use the native installer, because:
+    # - the winget installer lags behind the latest version
+    # - the npm installer depends on the system-installed node.js, causing conflicts when working 
+    #   on code that requires an old version).
+    irm https://claude.ai/install.ps1 | iex
 
-            fixupPath ($env:localappdata + "\Microsoft\WinGet\Packages\Anthropic.ClaudeCode_Microsoft.Winget.Source_8wekyb3d8bbwe")
-        }
+    $destFile = "$home/.local/bin/claude.exe"
+
+    if (-not (Test-Path $destFile)) {
+        throw "Claude installation failed / unexpected location"
+    }
+}
+
+$pratPackages = @{
+    "claude:1.1" = @{ # 1.0 used winget; now using the native installer
+        install = { installClaude $stage }
     }
     df = @{
         install = { Install-InteractiveAlias $stage 'df' 'Get-DiskFreeSpace' }
