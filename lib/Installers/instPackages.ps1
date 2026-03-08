@@ -204,6 +204,11 @@ function installClaude($stage) {
 }
 
 $pratPackages = @{
+    autohotkey = @{
+        install = {
+            Install-WingetPackage $stage "AutoHotkey.AutoHotkey" "$env:localAppData\programs\AutoHotKey"
+        }
+    }
     claude = @{
         installerVersion = "1.1"  # 1.0 used winget; now using the native installer
         install = { installClaude $stage }
@@ -214,8 +219,27 @@ $pratPackages = @{
     ditto = @{
         install = { internal_installDitto $stage }
     }
+    dnspy = @{
+        install = {
+            Install-WingetPackage $stage "dnSpyEx.dnSpy" "$env:localappdata\Microsoft\WinGet\Packages\dnSpyEx.dnSpy_Microsoft.Winget.Source_8wekyb3d8bbwe"
+            # This package does update PATH, BUT: for some reason that doesn't take effect until a machine reboot.
+            # Could hack around that if desired, but I don't use this often anyway.
+        }
+    }
     forkGitClient = @{
         install = { installForkGitClient $stage }
+    }
+    nuget = @{
+        install = {
+            $dest = "$env:localappdata\Microsoft\WinGet\Packages\Microsoft.NuGet_Microsoft.Winget.Source_8wekyb3d8bbwe"
+            Install-WingetPackage $stage "Microsoft.NuGet" $dest
+            # This package updates PATH but doesn't load it in current environment.
+            if ($dest -notin ($env:path -split ';')) { $env:path += ";$dest" }
+            # Apparently, the nuget winget package doesn't pre-configure "nuget.org" as a source anymore. So:
+            if ((nuget sources List | ? {$_.Contains("nuget.org [Enabled]")}).Count -eq 0) {
+                nuget sources Add -Name nuget.org -Source https://api.nuget.org/v3/index.json
+            }
+        }
     }
     pester = @{
         install = {
@@ -269,6 +293,14 @@ $pratPackages = @{
     }
     sysinternals = @{
         install = { installPratWingetPackage "9P7KNL5RWT25"}
+    }
+    windbg = @{
+        install = {
+            Install-WingetPackage $stage "Microsoft.WinDbg" "$env:localappdata\Microsoft\WindowsApps\WinDbgX.exe"
+        }
+    }
+    winmerge = @{
+        install = { internal_installWinmerge $stage }
     }
     wget = @{
         install = {

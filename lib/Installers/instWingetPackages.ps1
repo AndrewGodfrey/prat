@@ -54,68 +54,15 @@ function Install-WingetPackage($stage, [string] $packageId, [string] $installPat
     }
 }
 
-function Install-PackageDnspy($installationTracker) {
-    $stage = $installationTracker.StartStage("pkgDnspy")
-
-    Install-WingetPackage $stage "dnSpyEx.dnSpy" "$env:localappdata\Microsoft\WinGet\Packages\dnSpyEx.dnSpy_Microsoft.Winget.Source_8wekyb3d8bbwe"
-
-    # This package does update PATH, BUT: for some reason that doesn't take effect until a machine reboot.
-    # Could hack around that if desired, but I don't use this often anyway.
-
-    $installationTracker.EndStage($stage)
-}
-
-
-function Install-PackageNuget($installationTracker) {
-    $stage = $installationTracker.StartStage("pkgNuget")
-
-    $dest = "$env:localappdata\Microsoft\WinGet\Packages\Microsoft.NuGet_Microsoft.Winget.Source_8wekyb3d8bbwe"
-
-    Install-WingetPackage $stage "Microsoft.NuGet" $dest
-
-    # This package updates PATH but doesn't load it in current environment.
-    if ($dest -notin ($env:path -split ';')) { $env:path += ";$dest" }
-
-    # Apparently, the nuget winget package doesn't pre-configure "nuget.org" as a source anymore. So:
-    if ((nuget sources List | ? {$_.Contains("nuget.org [Enabled]")}).Count -eq 0) {
-        nuget sources Add -Name nuget.org -Source https://api.nuget.org/v3/index.json
-    }
-
-    $installationTracker.EndStage($stage)
-}
-
-
-function Install-PackageWindbg($installationTracker) {
-    $stage = $installationTracker.StartStage("windbg")
-
-    Install-WingetPackage $stage "Microsoft.WinDbg" "$env:localappdata\Microsoft\WindowsApps\WinDbgX.exe"
-
-    $installationTracker.EndStage($stage)
-}
-
-function Install-PackageWinmerge($installationTracker, $generatedBinDir) {
-    $stage = $installationTracker.StartStage("winMerge")
-
-    # Expected install path:
-    $installPath = "$env:localappdata\Programs\WinMerge" 
+function internal_installWinmerge($stage) {
+    $installPath = "$env:localappdata\Programs\WinMerge"
 
     Install-WingetPackage $stage "WinMerge.WinMerge" $installPath
 
     # Winmerge doesn't add itself to the path, so instead make a stub script:
-    $genbin = $generatedBinDir
+    $genbin = (Resolve-Path "$PSScriptRoot/../..").Path + "/auto/pathbin"
     Install-Folder $stage $genbin
 
     $stubScript = '. ' + $installPath + '\WinMergeU.exe $Args'
     Install-TextToFile $stage "$genbin\winmerge.ps1" $stubScript
-
-    $installationTracker.EndStage($stage)
-}
-
-function Install-PackageAutoHotKey($installationTracker) {
-    $stage = $installationTracker.StartStage("AutoHotKey")
-
-    $expectedInstallPath = "$env:localAppData\programs\AutoHotKey"
-    Install-WingetPackage $stage "AutoHotkey.AutoHotkey" $expectedInstallPath
-
-    $installationTracker.EndStage($stage)
 }

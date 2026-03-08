@@ -78,7 +78,7 @@ FunctionsToExport = @(
     'Install-DailyScheduledTask', 'Install-AtLogonScheduledTask',
 	'Install-InteractiveAlias',
 	'Install-PratPackage',
-	'Install-WingetPackage', 'Install-PackageDnspy', 'Install-PackageNuget', 'Install-PackageWindbg', 'Install-PackageWinmerge', 'Install-PackageAutoHotKey',
+	'Install-WingetPackage',
 	'Install-NugetPackage', 'Add-NugetPackageType',
     'Install-StartAutoHotKeyScript',
 	'Set-InstalledItemVersion', 'Get-InstalledItemVersion', 'Test-InstalledItemVersion', 'Remove-InstalledItem',
