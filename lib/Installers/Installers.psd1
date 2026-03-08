@@ -84,7 +84,7 @@ FunctionsToExport = @(
 	'Set-InstalledItemVersion', 'Get-InstalledItemVersion', 'Test-InstalledItemVersion', 'Remove-InstalledItem',
 	'Install-WindowsStartMenuLocalOnly', 'Install-WindowsSecondaryClockUTC', 'Install-WindowsFileAssociation', 'Install-WindowsAppVerbAssociation',
 	'New-WindowsConsoleShortcut', 'Install-WindowsConsoleShortcut', 'Install-WindowsTaskbarCleanup',
-    'Install-UserEnvironmentVariable',
+    'Install-UserEnvironmentVariable', 'Install-UserPathEntry',
 	'Install-CustomBrowserHomePage', 'Install-PsProfile',
 	'Install-ClaudeUserConfig', 'Install-ClaudeUserSettings', 'Install-ClaudeSyncFolders', 'Install-ClaudeProjectMemory', 'Install-ClaudeSkillSet', 'Install-ClaudeMarkdownFiles',
 	'Install-CopilotSyncFolders',

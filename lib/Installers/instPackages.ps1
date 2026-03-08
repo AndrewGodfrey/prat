@@ -46,11 +46,8 @@ using module ..\TextFileEditor\TextFileEditor.psd1
 # To avoid stopping the script at this point, we need to a) hope we can predict the new value, and b) add it to $env:path.
 # 
 # TODO: Could already-open windows apply the change via a check in prompt?
-function fixupPath($newPath) {
-    if (($env:path -split ';') -notcontains $newPath) {
-        if (!$env:path.EndsWith(";")) { $env:path += ";" }
-        $env:path += $newPath
-    }
+function fixupPath($stage, $newPath) {
+    Install-UserPathEntry $stage $newPath -CurrentProcessOnly
 }
 
 function installPratWingetPackage([string] $wingetPackageId, [switch] $MachineScope, [switch] $NoScope) {
@@ -186,15 +183,19 @@ function installForkGitClient($stage) {
 function installClaude($stage) {
     # Use the native installer, because:
     # - the winget installer lags behind the latest version
-    # - the npm installer depends on the system-installed node.js, causing conflicts when working 
+    # - the npm installer depends on the system-installed node.js, causing conflicts when working
     #   on code that requires an old version).
     irm https://claude.ai/install.ps1 | iex
 
-    $destFile = "$home/.local/bin/claude.exe"
+    $localBin = "$home/.local/bin"
+    $destFile = "$localBin/claude.exe"
 
     if (-not (Test-Path $destFile)) {
         throw "Claude installation failed / unexpected location"
     }
+
+    # The claude installer doesn't add ~/.local/bin to PATH; do it ourselves.
+    Install-UserPathEntry $stage ($localBin -replace '/', '\')
 }
 
 $pratPackages = @{
@@ -225,7 +226,7 @@ $pratPackages = @{
             # If I want the latest version, I have to use machine scope. As of May 2024, the last version that supported user scope was 7.2.6.0,
             # and the latest version was 7.4.2.0. https://github.com/microsoft/winget-cli/issues/4318
             installPratWingetPackage "Microsoft.PowerShell" -MachineScope
-            fixupPath "$env:programfiles\PowerShell\7"
+            fixupPath $stage "$env:programfiles\PowerShell\7"
         }
         dependencies = @("sudo")
     }
@@ -258,7 +259,7 @@ $pratPackages = @{
             param($stage)
             if ($null -eq $stage) { throw "Missing parameter: stage" }
             installPratWingetPackage "gerardog.gsudo"
-            fixupPath ($env:localappdata + "\Microsoft\WinGet\Packages\gerardog.gsudo_Microsoft.Winget.Source_8wekyb3d8bbwe\x64")
+            fixupPath $stage ($env:localappdata + "\Microsoft\WinGet\Packages\gerardog.gsudo_Microsoft.Winget.Source_8wekyb3d8bbwe\x64")
             installPratScriptAlias $stage 'sudo' 'gsudo'
         }
     }

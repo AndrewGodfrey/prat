@@ -12,3 +12,24 @@ function Install-UserEnvironmentVariable($stage, [string] $Name, [string] $Value
         [System.Environment]::SetEnvironmentVariable($Name, $Value, 'Process')
     }
 }
+
+# Adds $Path to the user's persistent PATH (registry) if not already present, and ensures it is
+# also in the current process PATH.
+#
+# Note: That still leaves a gap, in other already-open processes.
+function Install-UserPathEntry($stage, [string] $Path, [switch] $CurrentProcessOnly=$false) {
+    $Path = ($Path -replace '/', '\')
+    if (!$CurrentProcessOnly) {
+        $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+        if (($userPath -split ';') -notcontains $Path) {
+            $stage.OnChange()
+            [Environment]::SetEnvironmentVariable("PATH", ($userPath.TrimEnd(';') + ";$Path"), "User")
+        }
+    }
+
+    if (($env:PATH -split ';') -notcontains $Path) {
+        $stage.OnChange()
+        if (!$env:PATH.EndsWith(";")) { $env:PATH += ";" }
+        $env:PATH += $Path
+    }
+}
