@@ -3,7 +3,7 @@
 # Part 3 of Install-Prat.ps1
 #
 # This needs to install:
-# - Anything needed to run Build-Codebase or Test-Codebase for prat.
+# - Anything needed to run Build-Codebase or Test-Project for prat.
 using module ..\lib\TextFileEditor\TextFileEditor.psd1
 using module ..\lib\Installers\Installers.psd1
 

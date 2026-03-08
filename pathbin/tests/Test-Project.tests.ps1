@@ -4,11 +4,11 @@ BeforeAll {
     . $PSScriptRoot\cbTest.common.ps1
 }
 
-Describe "Test-Codebase" {
+Describe "Test-Project" {
     It "includes coverage suffix by default" {
         $prev = pushTestEnvironment
         try {
-            $result = Test-Codebase
+            $result = Test-Project
             $result | Should -Be "testCb: test: bar"
         } finally {
             popTestEnvironment $prev
@@ -18,7 +18,7 @@ Describe "Test-Codebase" {
     It "skips coverage suffix with -NoCoverage" {
         $prev = pushTestEnvironment
         try {
-            $result = Test-Codebase -NoCoverage
+            $result = Test-Project -NoCoverage
             $result | Should -Be "testCb: test: bar: NoCoverage=True"
         } finally {
             popTestEnvironment $prev
@@ -28,7 +28,7 @@ Describe "Test-Codebase" {
     It "passes -Focus to the codebase script" {
         $prev = pushTestEnvironment
         try {
-            $result = Test-Codebase -Focus "lib/foo"
+            $result = Test-Project -Focus "lib/foo"
             $result | Should -Be "testCb: test: bar: Focus=lib/foo"
         } finally {
             popTestEnvironment $prev
@@ -39,7 +39,7 @@ Describe "Test-Codebase" {
         $prev = pushTestEnvironment
         try {
             $testCbPath = (Get-Location).Path
-            $result = Test-Codebase -RepoRoot $testCbPath
+            $result = Test-Project -RepoRoot $testCbPath
             $result | Should -Be "testCb: test: bar: Focus=$testCbPath RepoRoot=$testCbPath"
         } finally {
             popTestEnvironment $prev
