@@ -31,19 +31,6 @@ t -RepoRoot ~/prat -Focus lib/Foo.ps1   # focused run
 - Blank line between the arrange/act setup and the assertion(s).
 - Multi-property assertions: align the `|` pipes and property names for readability.
 
-### `InModuleScope` + `-Focus` (Pester 5 gotcha)
-`InModuleScope` is evaluated at **discovery** time, but `BeforeAll` runs at **execution** time. When the
-focused file is the first to be discovered, the module isn't loaded yet and discovery fails. Fix: add a
-`BeforeDiscovery` block (in addition to `BeforeAll`) to load the module at discovery time:
-
-```powershell
-BeforeDiscovery {
-    Import-Module "$PSScriptRoot/PratBase.psd1" -Force
-}
-BeforeAll {
-    Import-Module "$PSScriptRoot/PratBase.psd1" -Force
-}
-```
 
 ## Prat module pattern
 

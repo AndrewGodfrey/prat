@@ -16,7 +16,7 @@ using module ..\TextFileEditor\TextFileEditor.psd1
 #      So the system should resist long-term pinning. (If a dependency has gone in a bad direction permanently, then it's time for a fork).
 #   5. Abstraction: Keep in one place the 'boring' package-specific information, e.g.:
 #     - Which package should we use? (e.g. I need 'sudo'; I can abstract away "which implementation I picked").
-#     - Which package manager should we use?
+#     - Which package manager should we use? (e.g. Claude provides npm, winget, and native installers. They vary in recency and isolation.)
 #     - Does it need additional parameters to make it automatic? (Things like accepting licenses, acknowledging an upgrade)
 #     - nuget (and many others) adds itself to PATH in the registry, but not in the currently-running environment. (Some other packages also
 #       update the currently-running environment, but many don't). This breaks scripts; we can work around this here.
@@ -199,7 +199,8 @@ function installClaude($stage) {
 }
 
 $pratPackages = @{
-    "claude:1.1" = @{ # 1.0 used winget; now using the native installer
+    claude = @{
+        installerVersion = "1.1"  # 1.0 used winget; now using the native installer
         install = { installClaude $stage }
     }
     df = @{
@@ -255,9 +256,7 @@ $pratPackages = @{
         dependencies = @("sudo")
     }
     sudo = @{
-        install = { 
-            param($stage)
-            if ($null -eq $stage) { throw "Missing parameter: stage" }
+        install = {
             installPratWingetPackage "gerardog.gsudo"
             fixupPath $stage ($env:localappdata + "\Microsoft\WinGet\Packages\gerardog.gsudo_Microsoft.Winget.Source_8wekyb3d8bbwe\x64")
             installPratScriptAlias $stage 'sudo' 'gsudo'
@@ -311,14 +310,16 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
     foreach ($dep in $deps) { internal_installPratPackage $stage $dep @() $newStack }
 
     # The package itself
-    if (!($stage.GetIsStepComplete("pkg\$packageId"))) { 
+    $installerVersion = if ($packageEntry.installerVersion) { $packageEntry.installerVersion } else { "1.0" }
+    $stepId = "pkg\$($packageId):$installerVersion"
+    if (!($stage.GetIsStepComplete($stepId))) {
         $stage.SetSubstage($packageId)
         $stage.OnChange()
 
         $ErrorActionPreference = "stop"
         &($packageEntry.install) $stage
 
-        $stage.SetStepComplete("pkg\$packageId")
+        $stage.SetStepComplete($stepId)
     }
 }
 

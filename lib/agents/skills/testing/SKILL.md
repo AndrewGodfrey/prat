@@ -66,6 +66,26 @@ cleanup and uniqueness, not deep isolation.
 Note: Pester's `TestDrive:` is a PS provider path. Anything that doesn't accept PS provider notation
 needs a resolved real path: `(Get-Item "TestDrive:\subpath").FullName` or `Resolve-Path`.
 
+### Pester 5 gotchas
+
+**`TestDrive:` is shared within a `Context` block** — it is NOT reset between `It` blocks. Use distinct
+subdirectory paths per test (e.g. `"TestDrive:\db-test1"`, `"TestDrive:\db-test2"`) to avoid
+cross-test contamination when multiple tests in the same `Context` write to the filesystem.
+
+**`InModuleScope` + `-Focus`**: `InModuleScope` is evaluated at discovery time, but `BeforeAll` runs
+at execution time. When the focused file is the first to be discovered, the module isn't loaded yet
+and discovery fails. Fix: add a `BeforeDiscovery` block (in addition to `BeforeAll`) to load the
+module at discovery time:
+
+```powershell
+BeforeDiscovery {
+    Import-Module "$PSScriptRoot/PratBase.psd1" -Force
+}
+BeforeAll {
+    Import-Module "$PSScriptRoot/PratBase.psd1" -Force
+}
+```
+
 ## Writing tests
 
 If a test is hard to write, that's feedback: the design may be too complex. Consider simplifying the
