@@ -123,7 +123,7 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
         Mock Invoke-PesterAsJob { return $fakeResult }
     }
 
-    It "writes test-run-summary.txt to testRuns/last when coverage is enabled" {
+    It "writes summary.txt to testRuns/last when coverage is enabled" {
         $testRoot = "$TestDrive/enabled-test"
 
         Mock moveCoverageFile {
@@ -140,7 +140,7 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
 
         & $coverageScript -PathToTest "somePath" -RepoRoot $testRoot
 
-        $summaryPath = "$testRoot/auto/testRuns/last/test-run-summary.txt"
+        $summaryPath = "$testRoot/auto/testRuns/last/summary.txt"
         $summaryPath | Should -Exist
         $summary = Get-Content $summaryPath
         $summary | Should -Match "90%"
@@ -148,12 +148,12 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
         $summary | Should -Match "Failed: 2"
     }
 
-    It "writes test-run-summary.txt to testRuns/last when coverage is disabled" {
+    It "writes summary.txt to testRuns/last when coverage is disabled" {
         $testRoot = "$TestDrive/disabled-test"
 
         & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
 
-        $summaryPath = "$testRoot/auto/testRuns/last/test-run-summary.txt"
+        $summaryPath = "$testRoot/auto/testRuns/last/summary.txt"
         $summaryPath | Should -Exist
         $summary = Get-Content $summaryPath
         $summary | Should -Match "Passed: 5"
@@ -166,10 +166,10 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
 
         & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot "$TestDrive/repo" -OutputDir $customOutputDir
 
-        "$customOutputDir/testRuns/last/test-run-summary.txt" | Should -Exist
+        "$customOutputDir/testRuns/last/summary.txt" | Should -Exist
     }
 
-    It "echoes test-run-summary.txt after every run" {
+    It "echoes summary.txt after every run" {
         $testRoot = "$TestDrive/summary-always-test"
 
         $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
@@ -417,7 +417,7 @@ Describe "Invoke-PesterWithCodeCoverage test run directory management" {
         $timestampDirs = Get-ChildItem "$testRoot/auto/testRuns" -Directory |
             Where-Object { $_.Name -ne 'last' }
         $timestampDirs | Should -HaveCount 1
-        "$testRoot/auto/testRuns/last/test-run-summary.txt" | Should -Exist
+        "$testRoot/auto/testRuns/last/summary.txt" | Should -Exist
     }
 
     It "records PathToTest and RepoRoot at the top of test-run.txt" {

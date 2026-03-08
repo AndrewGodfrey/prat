@@ -41,7 +41,7 @@ pair with `-Focus` to avoid overwhelming output.
 
 ## Cached Summary vs. Fresh Run
 
-Read `auto/testRuns/last/test-run-summary.txt` instead of re-running when:
+Read `auto/testRuns/last/summary.txt` instead of re-running when:
 - No code has changed since the last run
 - You only need the pass/fail count or coverage %
 
@@ -54,7 +54,7 @@ Every run writes to `auto/testRuns/last/`:
 | File | Contents |
 |------|----------|
 | `test-run.txt` | A copy of the console output |
-| `test-run-summary.txt` | One-line summary: coverage % and pass/fail counts |
+| `summary.txt` | One-line summary: coverage % and pass/fail counts |
 | `coverage.xml` | Coverage data in CoverageGutters format (omitted when using -NoCoverage) |
 
 Previous runs are rotated to `auto/testRuns/<timestamp>/` and pruned to 1 kept by default

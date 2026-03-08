@@ -277,7 +277,7 @@ if (!$NoCoverage) {
 }
 
 $testRunSummary = getTestRunSummary $result $coverageDest 
-$testRunSummary | Out-File "$runDir/test-run-summary.txt" -Encoding utf8NoBOM
+$testRunSummary | Out-File "$runDir/summary.txt" -Encoding utf8NoBOM
 
 $colorCode = if ($result.FailedCount -gt 0) {
     if ($result.FailedCount -ge $failureThreshold) { 91 } else { 93 }
