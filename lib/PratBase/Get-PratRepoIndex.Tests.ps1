@@ -120,16 +120,16 @@ Describe "Get-PratRepoIndex" {
                 $sb.Module | Should -BeNull
             }
 
-            It "Auto-discovers a command script from lib/projects/<id>/<cmd>.ps1" {
+            It "Auto-discovers a command script from lib/projects/<id>/<cmd>_<id>.ps1" {
                 New-Item -ItemType Directory -Path "TestDrive:\lib\projects\r" -Force | Out-Null
-                "# auto" | Out-File "TestDrive:\lib\projects\r\test.ps1"
+                "# auto" | Out-File "TestDrive:\lib\projects\r\test_r.ps1"
 
-                (makeIndex "@{ '.' = @{ repos = @{ r = @{} } } }").repos["r"].test | Should -Be "$dir/lib/projects/r/test.ps1"
+                (makeIndex "@{ '.' = @{ repos = @{ r = @{} } } }").repos["r"].test | Should -Be "$dir/lib/projects/r/test_r.ps1"
             }
 
             It "Explicit command entry takes precedence over auto-discovered file" {
                 New-Item -ItemType Directory -Path "TestDrive:\lib\projects\r" -Force | Out-Null
-                "# auto" | Out-File "TestDrive:\lib\projects\r\test.ps1"
+                "# auto" | Out-File "TestDrive:\lib\projects\r\test_r.ps1"
 
                 (makeIndex "@{ '.' = @{ repos = @{ r = @{ test = 'explicit/test.ps1' } } } }").repos["r"].test | Should -Be "$dir/explicit/test.ps1"
             }

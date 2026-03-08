@@ -111,8 +111,8 @@ function Get-PratRepoIndex {
                     $node[$cmdName] = $cmdPath.Replace('\', '/')
                 }
             } else {
-                # Auto-discover: lib/projects/<id>/<cmd>.ps1
-                $autoPath = "$fileDir/lib/projects/$nodeId/$cmdName.ps1"
+                # Auto-discover: lib/projects/<id>/<cmd>_<id>.ps1
+                $autoPath = "$fileDir/lib/projects/$nodeId/${cmdName}_$nodeId.ps1"
                 if (Test-Path $autoPath) { $node[$cmdName] = $autoPath }
             }
         }
