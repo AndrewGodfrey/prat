@@ -25,7 +25,7 @@ function Install-ClaudeSkillSet($stage, $set, [string] $srcDir, [string] $destDi
     foreach ($skillDir in Get-ChildItem -Directory $srcDir) {
         if ($set -contains $skillDir.Name) {
             $destSkillDir = Join-Path $destDir $skillDir.Name
-            Install-Folder $stage $skillDir.Name
+            Install-Folder $stage $destSkillDir
             Install-SetOfFiles $stage $skillDir.FullName $destSkillDir -SetReadOnly -Header $header
         }
     }

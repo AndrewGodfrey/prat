@@ -79,6 +79,16 @@ Describe "Install-ClaudeSkillSet" {
         "$destDir\skill-a\SKILL.md" | Should -Exist
         "$destDir\skill-b\SKILL.md" | Should -Exist
     }
+
+    It "creates the per-skill subdirectory when it does not exist" {
+        mkdir "$srcDir\my-skill" | Out-Null
+        "skill content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
+        # $destDir intentionally not pre-created
+
+        Install-ClaudeSkillSet $stage @("my-skill") $srcDir $destDir
+
+        "$destDir\my-skill" | Should -Exist
+    }
 }
 
 Describe "Install-ClaudeMarkdownFiles" {
