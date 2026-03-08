@@ -17,6 +17,11 @@ evidence rather than just your assurance.
 
 Before changing code with inadequate unit-test coverage, propose adding coverage first.
 
+When the user proposes skipping tests, push back — ask for justification. Accept if the reasons are
+sound (e.g. behavior will be tested manually, consequences of failure are small). "Design is likely
+to change" is not sufficient on its own — for high-stakes areas, the technique is: write pinning
+tests first, refactor, cover with unit tests, then remove the pinning tests.
+
 See the `testing` skill for more detail. Use the `test-and-fix` agent to delegate test-fixing to a
 subagent.
 

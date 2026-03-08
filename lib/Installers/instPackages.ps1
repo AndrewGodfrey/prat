@@ -185,6 +185,11 @@ function installClaude($stage) {
     # - the winget installer lags behind the latest version
     # - the npm installer depends on the system-installed node.js, causing conflicts when working
     #   on code that requires an old version).
+
+    if (Get-Process claude -ErrorAction SilentlyContinue) {
+        throw "Claude is running — close it and run 'd' again to apply the update."
+    }
+
     irm https://claude.ai/install.ps1 | iex
 
     $localBin = "$home/.local/bin"
