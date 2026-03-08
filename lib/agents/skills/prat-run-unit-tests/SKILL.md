@@ -16,6 +16,7 @@ t -RepoRoot ~/prat -NoCoverage                                       # full suit
 t -RepoRoot ~/prat -Focus lib/Something                              # focus on a directory
 t -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1                          # focus on a test file
 t -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1 -NoCoverage -Debugging   # debug a failing test
+t -RepoRoot ~/prat -Integration -NoCoverage                          # run only integration-tagged tests
 ```
 
 ## Parameters
@@ -25,6 +26,8 @@ t -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1 -NoCoverage -Debugging   # debug a f
 | `-RepoRoot <path>` | Codebase to test; also sets the default test scope when `-Focus` is omitted |
 | `-Focus <path>` | Test scope: file or directory relative to repo root; coverage scope derived automatically |
 | `-NoCoverage` | Skip coverage (faster for rapid iteration) |
+| `-Integration` | Run only `[Integration]`-tagged tests (mutually exclusive with `-IncludeIntegrationTests`) |
+| `-IncludeIntegrationTests` | Run all tests including integration tests (default excludes them) |
 | `-Debugging` | Full Pester diagnostic output, no filtering — always pair with a tight `-Focus` |
 | `-IncludeIntegrationTests` | Run unit tests AND integration tests |
 | `-Integration` | Run only integration-tagged tests (skips unit tests) |
