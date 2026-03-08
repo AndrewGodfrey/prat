@@ -25,7 +25,8 @@ param (
     $OutputDir = $null,
     [ValidateSet("CoverageGutters", "JaCoCo")] [string] $CoverageFormat = "CoverageGutters",
     [switch] $Debugging,
-    [switch] $IncludeIntegrationTests
+    [switch] $IncludeIntegrationTests,
+    [switch] $Integration
 )
 
 function getCoverageSummary($coverageSrc) {
@@ -126,7 +127,11 @@ $Configuration = [PesterConfiguration]::Default
 $Configuration.Run.PassThru = [bool] $true
 $Configuration.Run.Path = $PathToTest
 $Configuration.Output.Verbosity = $pesterVerbosity
-if (!$IncludeIntegrationTests) { $Configuration.Filter.ExcludeTag = @('Integration') }
+if ($Integration) {
+    $Configuration.Filter.Tag = @('Integration')
+} elseif (!$IncludeIntegrationTests) {
+    $Configuration.Filter.ExcludeTag = @('Integration')
+}
 
 if (!$NoCoverage) {
     $tempFile = [IO.Path]::GetTempFileName()

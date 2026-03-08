@@ -12,4 +12,5 @@ Invoke-PesterWithCodeCoverage `
     -RepoRoot $repoRoot `
     -Debugging:$CommandParameters['Debugging'] `
     -OutputDir $CommandParameters['OutputDir'] `
-    -IncludeIntegrationTests:$CommandParameters['IncludeIntegrationTests']
+    -IncludeIntegrationTests:$CommandParameters['IncludeIntegrationTests'] `
+    -Integration:$CommandParameters['Integration']

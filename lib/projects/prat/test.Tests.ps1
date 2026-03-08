@@ -1,7 +1,7 @@
 BeforeAll {
     $scriptToTest = "$PSScriptRoot/test.ps1"
     function Invoke-PesterWithCodeCoverage(
-        $NoCoverage, $PathToTest, $RepoRoot, $Debugging, $OutputDir, $IncludeIntegrationTests) {}
+        $NoCoverage, $PathToTest, $RepoRoot, $Debugging, $OutputDir, $IncludeIntegrationTests, $Integration) {}
 }
 
 Describe "prat test.ps1" {
@@ -23,6 +23,11 @@ Describe "prat test.ps1" {
     It "forwards -IncludeIntegrationTests" {
         & $scriptToTest $project -CommandParameters @{IncludeIntegrationTests = $true}
         Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $IncludeIntegrationTests }
+    }
+
+    It "forwards -Integration" {
+        & $scriptToTest $project -CommandParameters @{Integration = $true}
+        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $Integration }
     }
 
     It "forwards an explicit -RepoRoot" {

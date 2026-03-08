@@ -96,6 +96,13 @@ Describe "Invoke-PesterWithCodeCoverage" {
 
         $outConf.Filter.ExcludeTag.Value | Should -Not -Contain "Integration"
     }
+
+    It "-Integration runs only Integration-tagged tests" {
+        & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -Integration
+
+        $outConf.Filter.Tag.Value | Should -Contain "Integration"
+        $outConf.Filter.ExcludeTag.Value | Should -Not -Contain "Integration"
+    }
 }
 
 Describe "Invoke-PesterWithCodeCoverage summary file" {

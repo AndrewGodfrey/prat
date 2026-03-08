@@ -20,7 +20,7 @@ See [INSTALLATION.md](INSTALLATION.md) for installation and customization instru
 ## Dev Loop Commands
 
 ```powershell
-Test-Codebase         # alias: t — runs Pester tests; -NoCoverage to skip coverage; -IncludeIntegrationTests to include integration tests
+Test-Codebase         # alias: t — runs Pester tests; -NoCoverage to skip coverage; -IncludeIntegrationTests to include integration tests; -Integration to run only integration tests
 Deploy-Codebase       # alias: d — installs profile, scheduled tasks, Pester
 Start-CodebaseDevLoop # alias: x — runs prebuild → build → test → deploy
 ```

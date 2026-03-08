@@ -14,6 +14,7 @@ param(
     [switch] $NoCoverage,
     [switch] $Debugging,
     [switch] $IncludeIntegrationTests,
+    [switch] $Integration,
     $RepoRoot = $null,
     $OutputDir = $null
 )
