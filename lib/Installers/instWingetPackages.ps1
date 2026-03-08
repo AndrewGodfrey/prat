@@ -74,7 +74,7 @@ function Install-PackageNuget($installationTracker) {
     Install-WingetPackage $stage "Microsoft.NuGet" $dest
 
     # This package updates PATH but doesn't load it in current environment.
-    $env:path += ";$dest"
+    if ($dest -notin ($env:path -split ';')) { $env:path += ";$dest" }
 
     # Apparently, the nuget winget package doesn't pre-configure "nuget.org" as a source anymore. So:
     if ((nuget sources List | ? {$_.Contains("nuget.org [Enabled]")}).Count -eq 0) {
