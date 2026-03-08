@@ -1,8 +1,14 @@
 # Used by ArgumentCompleters. Gets a list of available options,
 # either by calculation, or from a cache
-param ($listId)
+param (
+    $listId,
+    $cacheDir = "$home\prat\auto\cachedCompletionLists",
+    $now = (Get-Date),
+    [scriptblock] $calculator = $null
+)
 
 function CalculateAnswer($listId) {
+    if ($calculator) { return & $calculator $listId }
     switch ($listId) {
         "Set-LocationUsingShortcut-Shortcut" {
             return (Set-LocationUsingShortcut -ListAll).Keys
@@ -14,7 +20,7 @@ function CalculateAnswer($listId) {
 }
 
 function GetCacheLocation($listId) {
-    $dir = "$home\prat\auto\cachedCompletionLists"
+    $dir = $cacheDir
     if (!(Test-Path $dir)) {
         New-Item -ItemType Directory -Path $dir | Out-Null
     }
@@ -23,7 +29,7 @@ function GetCacheLocation($listId) {
 
 function IsCurrent($file) {
     if (!(Test-Path $file)) { return $false }
-    $age = (Get-ChildItem $file).LastWriteTime - (Get-Date)
+    $age = $now - (Get-ChildItem $file).LastWriteTime
     if ($age.TotalDays -gt 1) { return $false }
     return $true
 }
