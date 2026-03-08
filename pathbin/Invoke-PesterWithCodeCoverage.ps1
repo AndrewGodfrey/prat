@@ -127,6 +127,9 @@ $Configuration = [PesterConfiguration]::Default
 $Configuration.Run.PassThru = [bool] $true
 $Configuration.Run.Path = $PathToTest
 $Configuration.Output.Verbosity = $pesterVerbosity
+if ($Integration -and $IncludeIntegrationTests) {
+    Write-Warning "-Integration takes precedence over -IncludeIntegrationTests; running only Integration-tagged tests."
+}
 if ($Integration) {
     $Configuration.Filter.Tag = @('Integration')
 } elseif (!$IncludeIntegrationTests) {

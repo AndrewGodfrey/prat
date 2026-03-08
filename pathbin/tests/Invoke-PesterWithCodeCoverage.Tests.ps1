@@ -103,6 +103,14 @@ Describe "Invoke-PesterWithCodeCoverage" {
         $outConf.Filter.Tag.Value | Should -Contain "Integration"
         $outConf.Filter.ExcludeTag.Value | Should -Not -Contain "Integration"
     }
+
+    It "-Integration and -IncludeIntegrationTests together warns and -Integration wins" {
+        $warnings = & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -Integration -IncludeIntegrationTests 3>&1 |
+            Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
+
+        $warnings | Should -Not -BeNullOrEmpty
+        $outConf.Filter.Tag.Value | Should -Contain "Integration"
+    }
 }
 
 Describe "Invoke-PesterWithCodeCoverage summary file" {
