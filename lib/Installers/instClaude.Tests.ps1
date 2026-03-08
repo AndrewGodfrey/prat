@@ -57,6 +57,19 @@ Describe "Install-ClaudeSkillSet" {
         Get-Content "$destDir\my-skill\SKILL.md" -Raw | Should -BeLike "<!-- Auto-generated*"
     }
 
+    It "places header after YAML frontmatter in SKILL.md" {
+        mkdir "$srcDir\my-skill" | Out-Null
+        $content = "---`nname: my-skill`ndescription: does things`n---`nbody content"
+        [System.IO.File]::WriteAllText("$srcDir\my-skill\SKILL.md", $content, [System.Text.Encoding]::UTF8)
+        mkdir $destDir | Out-Null
+
+        Install-ClaudeSkillSet $stage @("my-skill") $srcDir $destDir
+
+        $deployed = Get-Content "$destDir\my-skill\SKILL.md" -Raw
+        $deployed | Should -BeLike "---*"
+        $deployed.IndexOf("---") | Should -BeLessThan ($deployed.IndexOf("<!-- Auto-generated"))
+    }
+
     It "sets SKILL.md read-only" {
         mkdir "$srcDir\my-skill" | Out-Null
         "skill content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
@@ -111,6 +124,14 @@ Describe "Install-ClaudeMarkdownFiles" {
         Install-ClaudeMarkdownFiles $stage $srcDir $destDir
 
         "$destDir\agent.md" | Should -Exist
+    }
+
+    It "ignores subdirectories in the source" {
+        "body content" | Out-File "$srcDir\agent.md" -Encoding utf8NoBOM
+        mkdir "$srcDir\subdir" | Out-Null
+
+        { Install-ClaudeMarkdownFiles $stage $srcDir $destDir } | Should -Not -Throw
+        "$destDir\subdir" | Should -Not -Exist
     }
 
     It "sets file read-only" {

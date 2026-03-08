@@ -10,7 +10,7 @@
 
 ## Testing
 
-Write the test first, watch it fail (and how it fails), then implement.
+Write the test first, and run it to verify it fails in the expected way. Only implement after that.
 
 Run tests after any fix, even when confident. Reasons: catches unknown unknowns, and gives the user
 evidence rather than just your assurance.
