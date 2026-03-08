@@ -12,7 +12,7 @@ BeforeAll {
     }
 }
 
-Describe "Install-ClaudeSkills" {
+Describe "Install-ClaudeSkillSet" {
     BeforeEach {
         $script:testDir = Join-Path (Resolve-Path "TestDrive:\").ProviderPath "instClaude.Tests"
         mkdir $testDir | Out-Null
@@ -24,14 +24,27 @@ Describe "Install-ClaudeSkills" {
         Remove-Item $testDir -Recurse -Force
     }
 
-    It "deploys each skill subdirectory to the destination" {
+    It "deploys a skill in the set" {
         mkdir "$srcDir\my-skill" | Out-Null
         "skill content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
         mkdir $destDir | Out-Null  # pre-create so Install-Folder skips the mkdir+ACL path
 
-        Install-ClaudeSkills $stage $srcDir $destDir
+        Install-ClaudeSkillSet $stage @("my-skill") $srcDir $destDir
 
         "$destDir\my-skill\SKILL.md" | Should -Exist
+    }
+
+    It "does not deploy skills not in the set" {
+        mkdir "$srcDir\wanted" | Out-Null
+        "wanted" | Out-File "$srcDir\wanted\SKILL.md" -Encoding utf8NoBOM
+        mkdir "$srcDir\unwanted" | Out-Null
+        "unwanted" | Out-File "$srcDir\unwanted\SKILL.md" -Encoding utf8NoBOM
+        mkdir $destDir | Out-Null
+
+        Install-ClaudeSkillSet $stage @("wanted") $srcDir $destDir
+
+        "$destDir\wanted\SKILL.md"   | Should -Exist
+        "$destDir\unwanted\SKILL.md" | Should -Not -Exist
     }
 
     It "prepends auto-generated header to SKILL.md" {
@@ -39,7 +52,7 @@ Describe "Install-ClaudeSkills" {
         "skill content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
         mkdir $destDir | Out-Null
 
-        Install-ClaudeSkills $stage $srcDir $destDir
+        Install-ClaudeSkillSet $stage @("my-skill") $srcDir $destDir
 
         Get-Content "$destDir\my-skill\SKILL.md" -Raw | Should -BeLike "<!-- Auto-generated*"
     }
@@ -49,22 +62,73 @@ Describe "Install-ClaudeSkills" {
         "skill content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
         mkdir $destDir | Out-Null
 
-        Install-ClaudeSkills $stage $srcDir $destDir
+        Install-ClaudeSkillSet $stage @("my-skill") $srcDir $destDir
 
         (Get-ItemProperty "$destDir\my-skill\SKILL.md").IsReadOnly | Should -BeTrue
     }
 
-    It "deploys multiple skills" {
+    It "deploys multiple skills from the set" {
         mkdir "$srcDir\skill-a" | Out-Null
         "a" | Out-File "$srcDir\skill-a\SKILL.md" -Encoding utf8NoBOM
         mkdir "$srcDir\skill-b" | Out-Null
         "b" | Out-File "$srcDir\skill-b\SKILL.md" -Encoding utf8NoBOM
         mkdir $destDir | Out-Null  # pre-create so Install-Folder skips the mkdir+ACL path
 
-        Install-ClaudeSkills $stage $srcDir $destDir
+        Install-ClaudeSkillSet $stage @("skill-a", "skill-b") $srcDir $destDir
 
         "$destDir\skill-a\SKILL.md" | Should -Exist
         "$destDir\skill-b\SKILL.md" | Should -Exist
+    }
+}
+
+Describe "Install-ClaudeMarkdownFiles" {
+    BeforeEach {
+        $script:testDir = Join-Path (Resolve-Path "TestDrive:\").ProviderPath "instClaude.Tests"
+        mkdir $testDir | Out-Null
+        $script:srcDir = "$testDir\md-src"
+        $script:destDir = "$testDir\md-dest"
+        $script:stage = [MockStage]::new()
+        mkdir $srcDir | Out-Null
+        mkdir $destDir | Out-Null
+    }
+    AfterEach {
+        Remove-Item $testDir -Recurse -Force
+    }
+
+    It "deploys .md files to the destination" {
+        "body content" | Out-File "$srcDir\agent.md" -Encoding utf8NoBOM
+
+        Install-ClaudeMarkdownFiles $stage $srcDir $destDir
+
+        "$destDir\agent.md" | Should -Exist
+    }
+
+    It "sets file read-only" {
+        "body content" | Out-File "$srcDir\agent.md" -Encoding utf8NoBOM
+
+        Install-ClaudeMarkdownFiles $stage $srcDir $destDir
+
+        (Get-ItemProperty "$destDir\agent.md").IsReadOnly | Should -BeTrue
+    }
+
+    It "prepends header when no frontmatter" {
+        "body content" | Out-File "$srcDir\agent.md" -Encoding utf8NoBOM
+
+        Install-ClaudeMarkdownFiles $stage $srcDir $destDir
+
+        Get-Content "$destDir\agent.md" -Raw | Should -BeLike "<!-- Auto-generated*"
+    }
+
+    It "places header after YAML frontmatter so frontmatter remains first" {
+        $content = "---`nname: my-agent`ndescription: does things`n---`nbody content"
+        [System.IO.File]::WriteAllText("$srcDir\agent.md", $content, [System.Text.Encoding]::UTF8)
+
+        Install-ClaudeMarkdownFiles $stage $srcDir $destDir
+
+        $deployed = Get-Content "$destDir\agent.md" -Raw
+        $deployed | Should -BeLike "---*"
+        $deployed | Should -BeLike "*<!-- Auto-generated*"
+        $deployed.IndexOf("---") | Should -BeLessThan ($deployed.IndexOf("<!-- Auto-generated"))
     }
 }
 
@@ -92,7 +156,7 @@ Describe "Install-ClaudeSyncFolders" {
 
     It "Does not warn about known local directories" {
         mkdir $claudeDir | Out-Null
-        foreach ($dir in @("file-history", "cache", "debug", "paste-cache", "shell-snapshots", "plugins", "ide", "session-env", "statsig")) {
+        foreach ($dir in @("agents", "commands", "skills", "file-history", "cache", "debug", "paste-cache", "shell-snapshots", "plugins", "ide", "session-env", "statsig")) {
             mkdir "$claudeDir\$dir" | Out-Null
         }
 

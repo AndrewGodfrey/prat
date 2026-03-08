@@ -1,47 +1,43 @@
 ---
 name: working-with-git
-description: Use before using git to make state changes, e.g. before using git to commit, checkout, rebase, merge, push, pull, stash.
+description: Use before using git to make state changes, e.g. before using git to commit, checkout,
+  rebase, merge, push, pull, stash.
 ---
-
-This takes precedence over conflicting instructions in `superpowers` skills like `finishing-a-development-branch`.
-
 
 # Figure out what the user expects
 
-This user uses a git client, 'fork.dev', to monitor changes in the repo. This not only visualizes agent changes well,
-but also catches e.g. tests that created files in the wrong place. So:
-
+This user monitors changes via a git GUI client. This not only visualizes agent changes well, but also
+catches e.g. tests that created files in the wrong place.
 
 ## If we're not in a development branch
 
-i.e. we're currently on 'main' or 'master': by default, the user expects you to use git only for reading.
+i.e. we're currently on 'main' or 'master': by default, the user expects you to use git only for
+reading.
 
-You make the code changes; the user will review. They may then revert, hand-edit, commit, or stage some or all of the 
-changes. On their next prompt they expect you to detect the modified state. (Speak up if we should develop a tool to
-reliably & concisely pick that up).
+You make the code changes; the user will review. They may then revert, hand-edit, commit, or stage
+some or all of the changes. On their next prompt they expect you to detect the modified state.
 
 'use git only for reading' includes git status, git branch, git show, git log.
-'git add' for new files would be safe but this user doesn't need it (fork.dev handles it).
 Don't commit, rebase, checkout, merge, or push without explicit instruction.
-Also leave the staging area alone - the user often accumulates accepted changes there instead of committing at
-every step.
-  
+Leave the staging area alone — the user often accumulates accepted changes there instead of committing
+at every step.
 
 ## If we ARE in a development branch
-Same default. But if the user asked you to do a series of changes / commits, then by all means commit after each step.
-You can assume that if you find yourself in a development branch for the step we're working on, then committing changes
-is safe. Still: don't rebase, checkout, merge, or push without explicit instruction.
 
-When adding or modifying production code in a development branch, run tests before each commit (see prat-run-unit-tests).
+Same default. But if the user asked you to do a series of changes / commits, then commit after each
+step. You can assume that if you find yourself in a development branch for the step we're working on,
+then committing changes is safe. Still: don't rebase, checkout, merge, or push without explicit
+instruction.
 
+When adding or modifying production code in a development branch, run the project's tests before each
+commit.
 
 ## When you 'git commit'
 
-Prefer single-line commit messages. Depart only when it's important. The first/only should follow the pattern of
-"verb + what you changed", with an optional prefix where it's helpful context for 'where' the change was made.
+Prefer single-line commit messages. Depart only when it's important. Follow the pattern
+"verb + what you changed", with an optional prefix for context about where the change was made.
 
-Some examples (these are idealized edits of past commits):
-
+Examples:
 ```
 extract script `GetCoverageScope`
 simplify `t.sh`
@@ -50,18 +46,20 @@ tweak `instClaude.ps1`
 `prat-run-unit-tests` skill: update to use `t.sh`
 `t`/`b` etc: let `-RepoRoot` override the `Get-Location`
 `t`: don't require `-Focus` if you use `-RepoRoot`
-`t`: add the parameters that `Test-Prat` has
 update docs and comments to reflect recent changes in test params
-`gll`, `glp`: use `@args`
-`Test-Prat`: make it reusable from another repo
 `instPackages`: sort `$pratPackages`
-`claude-user-md`: note how to find prat and de
 `md` files: break lines before 120 chars
-`Install-SoftLinkToFile`: fix some missing `using:` in a sudo scriptblock
 bootstrap: add a 3rd phase, so we can avoid Windows PowerShell earlier
 ```
 
-If it seems hard to fit the change into a single line, consider whether the change should be broken into 
-smaller commits that are more focused. If you are retrospectively splitting already-written passing code into smaller
-commits, it's okay to do that without running tests on each individual commit — provided tests pass after the final 
+If it seems hard to fit the change into a single line, consider whether the change should be broken
+into smaller, more focused commits. If retrospectively splitting already-written passing code, it's
+okay to do that without running tests on each individual commit — provided tests pass after the final
 split.
+
+A commit in the same area as the previous one, should omit the prefix. Example sequence (from oldest to newest):
+```
+`instPackages`: Move `forkGitClient` to `$pratPackages` table
+Update notes
+`Get-CodebaseTable`: Update comments
+```
