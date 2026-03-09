@@ -64,15 +64,17 @@ function Install-LocalAgentSandbox {
     # Run elevated so icacls can traverse subdirectories owned by the agent account.
     foreach ($path in $rwPaths) {
         $normPath = $path -replace '/', '\'
+        $grant = "${agentUser}:(OI)(CI)M"
         Invoke-Gsudo {
-            icacls $using:normPath /grant:r "${using:agentUser}:(OI)(CI)M" /T | Out-Null
+            icacls $using:normPath /grant:r $using:grant /T | Out-Null
             if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:normPath (exit $LASTEXITCODE)" }
         }
     }
     foreach ($path in $roPaths) {
         $normPath = $path -replace '/', '\'
+        $grant = "${agentUser}:(OI)(CI)RX"
         Invoke-Gsudo {
-            icacls $using:normPath /grant:r "${using:agentUser}:(OI)(CI)RX" /T | Out-Null
+            icacls $using:normPath /grant:r $using:grant /T | Out-Null
             if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:normPath (exit $LASTEXITCODE)" }
         }
     }
@@ -91,10 +93,4 @@ function Install-LocalAgentSandbox {
     $agentGitconfig = Join-Path $agentHome ".gitconfig"
     Install-TextToFile $stage $agentGitconfig (Get-AgentGitconfigContent $safeDirectories) -SudoOnWrite
 
-    $stage.EnsureManualStep("localAgentSandbox/$agentUser/terminalProfile",
-        "Add Windows Terminal profile for '$agentUser':`n" +
-        "  Settings > Add new profile > New empty profile`n" +
-        "  Name: '$agentUser (sandboxed claude)'`n" +
-        "  Command line: runas /savecred /user:$agentUser pwsh`n" +
-        "  Note: opens a console window, not a WT tab.")
 }
