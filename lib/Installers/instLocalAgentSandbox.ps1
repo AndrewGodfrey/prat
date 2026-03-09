@@ -47,29 +47,34 @@ function Install-LocalAgentSandbox {
     # Create account — interactive: sudo prompts for password via 'net user *'
     if ($null -eq (Get-LocalUser $agentUser -ErrorAction SilentlyContinue)) {
         $stage.OnChange()
-        sudo { net user $using:agentUser /add | Out-Null }
-        sudo { net user $using:agentUser * }
+        sudo "net user $agentUser /add" | Out-Null 
+        sudo "net user $agentUser *"
     }
 
     # Store credential for password-free launching. Also creates $agentHome with correct ACLs.
     if (-not (Test-Path $agentHome)) {
         $stage.OnChange()
-        runas /savecred /user:$agentUser "pwsh -Command exit"
+        sudo "runas /savecred /user:$agentUser 'pwsh -Command exit'"
     }
     if (-not (Test-Path $agentHome)) {
         throw "Failed to create home directory for $agentUser at $agentHome"
     }
 
-    # NTFS grants — always re-apply; /grant:r avoids duplicate ACEs on re-runs
+    # NTFS grants — always re-apply; /grant:r avoids duplicate ACEs on re-runs.
+    # Run elevated so icacls can traverse subdirectories owned by the agent account.
     foreach ($path in $rwPaths) {
         $normPath = $path -replace '/', '\'
-        icacls $normPath /grant:r "${agentUser}:(OI)(CI)M" /T | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw "icacls failed for $normPath (exit $LASTEXITCODE)" }
+        Invoke-Gsudo {
+            icacls $using:normPath /grant:r "${using:agentUser}:(OI)(CI)M" /T | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:normPath (exit $LASTEXITCODE)" }
+        }
     }
     foreach ($path in $roPaths) {
         $normPath = $path -replace '/', '\'
-        icacls $normPath /grant:r "${agentUser}:(OI)(CI)RX" /T | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw "icacls failed for $normPath (exit $LASTEXITCODE)" }
+        Invoke-Gsudo {
+            icacls $using:normPath /grant:r "${using:agentUser}:(OI)(CI)RX" /T | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:normPath (exit $LASTEXITCODE)" }
+        }
     }
 
     # Directory junction for .claude — idempotent via Test-Path
@@ -78,7 +83,7 @@ function Install-LocalAgentSandbox {
         $jTarget = $claudeJunction.target -replace '/', '\'
         if (-not (Test-Path $jLink)) {
             $stage.OnChange()
-            sudo { New-Item -ItemType Junction -Path $using:jLink -Target $using:jTarget | Out-Null }
+            Invoke-Gsudo { New-Item -ItemType Junction -Path $using:jLink -Target $using:jTarget | Out-Null }
         }
     }
 
