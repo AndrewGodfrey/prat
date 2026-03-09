@@ -3,6 +3,7 @@ BeforeAll {
 
     # Import-TextFile is used by Install-TextToFile
     Import-Module "$PSScriptRoot\..\TextFileEditor\TextFileEditor.psd1"
+    Import-Module "$PSScriptRoot\..\PratBase\PratBase.psd1"
 
     # Mock for InstallationStage
     class MockStage {
@@ -90,6 +91,44 @@ Describe "Install-TextToFile" {
 
         $stage.changeCount | Should -Be 1
         Import-TextFile $testFile | Should -Be "new`ncontent"
+    }
+}
+
+Describe "Install-Folder" {
+    BeforeEach {
+        $script:testDir = Join-Path (Resolve-Path "TestDrive:\").ProviderPath "installFolder.Tests"
+        mkdir $testDir | Out-Null
+        $script:stage = [MockStage]::new()
+    }
+    AfterEach {
+        Remove-Item $testDir -Recurse -Force
+    }
+
+    It "Creates the directory when it does not exist" {
+        Install-Folder $stage "$testDir\newdir"
+
+        Test-Path "$testDir\newdir" -PathType Container | Should -BeTrue
+        $stage.changeCount                             | Should -Be 1
+    }
+
+    It "Is idempotent when directory already exists" {
+        mkdir "$testDir\existing" | Out-Null
+
+        Install-Folder $stage "$testDir\existing"
+
+        $stage.changeCount | Should -Be 0
+    }
+
+    It "Resolves a relative path to the correct absolute location" {
+        Push-Location $testDir
+        try {
+            Install-Folder $stage "reldir"
+
+            Test-Path "$testDir\reldir" -PathType Container | Should -BeTrue
+            (Get-Acl "$testDir\reldir").Access             | Should -Not -BeNullOrEmpty
+        } finally {
+            Pop-Location
+        }
     }
 }
 

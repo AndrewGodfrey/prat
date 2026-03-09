@@ -39,6 +39,7 @@ function Install-File($stage, $srcDir, $destDir, $srcFilename, $destFilename, [s
 
 # Install one user folder. If it's not under $home, also overwrite its permissions with those of $home\prat
 function Install-Folder($stage, $destDir) {
+    $destDir = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($destDir)
     if ((Test-Path -PathType Container $destDir) -ne $True) {
         $stage.OnChange()
         mkdir $destDir | Out-Null
@@ -48,7 +49,7 @@ function Install-Folder($stage, $destDir) {
 
         if (!(Test-PathIsUnder $destDir $home)) {
             $sourceACL = Get-Acl "$home\prat"
-            $sourceACL.SetAccessRuleProtection($true, $false)
+            $sourceACL.SetAccessRuleProtection($true, $true)
             Invoke-Gsudo { Set-Acl -Path $using:destDir -AclObject $using:sourceACL }
         }
     }
