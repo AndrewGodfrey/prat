@@ -60,6 +60,15 @@ function Install-LocalAgentSandbox {
         throw "Failed to create home directory for $agentUser at $agentHome"
     }
 
+    # Grant the managing user read access to agentHome so unelevated management operations
+    # (Test-Path, file reads for idempotency checks) work without elevation.
+    $agentHomeNorm = $agentHome -replace '/', '\'
+    $managerGrant  = "${env:USERNAME}:(OI)(CI)RX"
+    Invoke-Gsudo {
+        icacls $using:agentHomeNorm /grant:r $using:managerGrant | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:agentHomeNorm (exit $LASTEXITCODE)" }
+    }
+
     # NTFS grants — always re-apply; /grant:r avoids duplicate ACEs on re-runs.
     # Run elevated so icacls can traverse subdirectories owned by the agent account.
     foreach ($path in $rwPaths) {
