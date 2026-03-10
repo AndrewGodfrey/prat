@@ -160,7 +160,7 @@ function Get-PratRepoIndex {
                     } else {
                         $repoDef.root
                     }
-                    $root = $root.TrimEnd('\', '/')
+                    $root = Resolve-JunctionInPath $root.TrimEnd('\', '/')
                     Register-Node $id $repoDef $root $fileDir $null $null $file
                 }
             }

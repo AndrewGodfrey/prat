@@ -8,7 +8,7 @@
 # .EXAMPLE
 #   up app.config
 param ($pattern)
-$results = &$PSScriptRoot/../lib/Get-ContainingItem -Multiple $pattern $pwd
+$results = &$PSScriptRoot/../lib/Get-ContainingItem -Multiple $pattern (Resolve-JunctionInPath $pwd.Path)
 if ($null -ne $results) {
     Write-Output $results.FullName
 }

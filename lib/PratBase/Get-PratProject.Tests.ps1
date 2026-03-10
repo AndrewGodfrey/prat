@@ -110,6 +110,20 @@ Describe "Get-PratProject" {
             $result.subdir | Should -Be "src"
         }
 
+        It "finds the project when the repoProfile registers an absolute junction-based root" {
+            New-Item -ItemType Directory "$root/realrepo2" -Force | Out-Null
+            New-Item -ItemType Junction  "$root/jlink3" -Target "$root/realrepo2" | Out-Null
+
+            # Profile has an ABSOLUTE junction-based root (as when testCbDir is junction-based)
+            "@{ '.' = @{ repos = @{ myrepo2 = @{ root = '$root/jlink3' } } } }" | Out-File "$root/abs-root-profile.ps1"
+            Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$root/abs-root-profile.ps1") }
+
+            $result = Get-PratProject -Location "$root/realrepo2"
+
+            $result     | Should -Not -BeNullOrEmpty
+            $result.id  | Should -Be "myrepo2"
+        }
+
         It "finds the project when the repoProfile file is loaded via a junction path" {
             New-Item -ItemType Directory "$root/realsrc/myrepo" -Force | Out-Null
             New-Item -ItemType Junction  "$root/jlink" -Target "$root/realsrc" | Out-Null

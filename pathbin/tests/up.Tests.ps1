@@ -1,3 +1,7 @@
+BeforeAll {
+    Import-Module "$PSScriptRoot/../../lib/PratBase/PratBase.psd1" -Force
+}
+
 Describe "up" {
     It "traverses upwards to find a match" {
         pushd $PSScriptRoot\testCb
@@ -8,7 +12,7 @@ Describe "up" {
     It "supports wildcards" {
         pushd $PSScriptRoot\testCb
 
-        up "up.*.ps1" | Should -Be $PSCommandPath
+        up "up.*.ps1" | Should -Be (Resolve-JunctionInPath $PSCommandPath)
         popd
     }
     It "returns null when no match" {
@@ -16,6 +20,18 @@ Describe "up" {
 
         up "notexists.*.nosuchthing" | Should -Be $null
         popd
+    }
+    It "resolves junctions in the starting directory" {
+        $r = (Get-Item "TestDrive:\").FullName.TrimEnd('\')
+        New-Item -ItemType Directory "$r\up-real\subdir" -Force | Out-Null
+        New-Item -ItemType Junction  "$r\up-jlink" -Target "$r\up-real" | Out-Null
+        "x" | Out-File "$r\up-real\sentinel.txt"
+
+        pushd "$r\up-jlink\subdir"
+        $result = up "sentinel.txt"
+        popd
+
+        $result | Should -Be "$r\up-real\sentinel.txt"
     }
     It "can return multiple results" {
         pushd $PSScriptRoot
