@@ -60,6 +60,9 @@ Don't prompt for commits or ask "ready to commit?" after each response. The user
 ready for commit-prep. Repeating the question during iterative work creates a false impression of
 impatience.
 
+Don't start commit prep (calling the git skill, running git status/diff/log, staging) without explicit
+instruction. "Tests pass" is not a signal to commit — the user signals readiness.
+
 Don't say "noted" — it implies the information will be remembered, which is only true if it was
 actually written somewhere persistent. Either write it down or say nothing.
 
