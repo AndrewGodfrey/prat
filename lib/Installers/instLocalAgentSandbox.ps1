@@ -37,11 +37,20 @@ $($safeLines -join "`n")
 #
 # .PARAMETER claudeHome
 # Home directory of the user whose Claude config the agent should share. Creates a junction
-# for .claude/ and a symlink for .claude.json in the agent's home.
+# for .claude/ in the agent's home.
 #
 # .PARAMETER safeDirectories
 # Git repo paths to add as safe.directory in the agent's .gitconfig, so git doesn't
 # reject repos owned by a different user.
+#
+# .PARAMETER homeJunctions
+# Hashtable of name => target: creates junctions in the agent's home so that ~/name resolves
+# to the target path. E.g. @{ de = "C:\Users\andrew\de" } creates ~/de as a junction.
+#
+# .PARAMETER profileContent
+# Content to write to the agent's PowerShell profile
+# (Documents\PowerShell\Microsoft.PowerShell_profile.ps1). Typically used to dot-source
+# the managing user's prat interactive profile so aliases like 't' are available.
 function Install-LocalAgentSandbox {
     [CmdletBinding()]
     param(
@@ -50,7 +59,9 @@ function Install-LocalAgentSandbox {
         [string[]] $rwPaths = @(),
         [string[]] $roPaths = @(),
         [string] $claudeHome = $null,
-        [string[]] $safeDirectories = @()
+        [string[]] $safeDirectories = @(),
+        [hashtable] $homeJunctions = @{},
+        [string] $profileContent = $null
     )
 
     $agentHome = "$env:SystemDrive\Users\$agentUser"
@@ -118,6 +129,26 @@ function Install-LocalAgentSandbox {
             if ($null -ne $jItem) { Invoke-Gsudo { Remove-Item -Force -Recurse $using:jLink } }
             Invoke-Gsudo { New-Item -ItemType Junction    -Path $using:jLink   -Target $using:jTarget | Out-Null }
         }
+    }
+
+    # Home directory junctions — make ~/name resolve to the target from the agent's perspective.
+    # Andrew has Modify on agentHome (granted above) so no elevation needed.
+    foreach ($name in $homeJunctions.Keys) {
+        $jLink   = "$agentHome\$name"
+        $jTarget = $homeJunctions[$name] -replace '/', '\'
+        $jItem   = Get-Item $jLink -ErrorAction SilentlyContinue
+        if ($null -eq $jItem -or $jItem.LinkType -ne 'Junction') {
+            $stage.OnChange()
+            if ($null -ne $jItem) { Remove-Item -Force -Recurse $jLink }
+            New-Item -ItemType Junction -Path $jLink -Target $jTarget | Out-Null
+        }
+    }
+
+    # PowerShell profile — makes prat aliases (t, c, etc.) available in the agent's sessions.
+    if ($profileContent) {
+        $profileDir = Join-Path $agentHome "Documents\PowerShell"
+        $null = New-Item -ItemType Directory -Path $profileDir -ErrorAction SilentlyContinue
+        Install-TextToFile $stage (Join-Path $profileDir "Microsoft.PowerShell_profile.ps1") $profileContent
     }
 
     # gitconfig safe.directory entries

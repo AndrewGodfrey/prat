@@ -215,6 +215,8 @@ function Get-PratRepo {
     param([string] $Location = $pwd)
 
     $Location = (Resolve-Path $Location).ProviderPath
+    $locItem = Get-Item -LiteralPath $Location -ErrorAction SilentlyContinue
+    if ($locItem -and $locItem.LinkType -eq 'Junction') { $Location = $locItem.Target }
 
     $index = Get-PratRepoIndex (Get-RepoProfileFiles)
     if ($null -eq $index) { return $null }
@@ -239,6 +241,8 @@ function Get-PratProject {
     param([string] $Location = $pwd)
 
     $Location = (Resolve-Path $Location).ProviderPath
+    $locItem = Get-Item -LiteralPath $Location -ErrorAction SilentlyContinue
+    if ($locItem -and $locItem.LinkType -eq 'Junction') { $Location = $locItem.Target }
 
     $index = Get-PratRepoIndex (Get-RepoProfileFiles)
     if ($null -eq $index) { return $null }

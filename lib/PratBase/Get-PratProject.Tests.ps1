@@ -76,13 +76,26 @@ Describe "Get-PratProject" {
             (Get-PratProject -Location $root/lib/sub).cachedEnvDelta | Should -Be "env.ps1"
         }
 
-        It "Resolves ties using path length" {
-            # This doesn't seem like a good way to model a nested repo, but it might be desirable for some cases, to control property inheritance.
+        It "Resolves ties using path length" {            # This doesn't seem like a good way to model a nested repo, but it might be desirable for some cases, to control property inheritance.
 
             New-Item -ItemType Directory "TestDrive:\lib\sub\nested" -Force | Out-Null
             makeTestProfile "@{ root = '$root'; subprojects = @{ sub = @{ path = 'lib/sub' }; nested = @{ path = 'lib/sub/nested' } } }"
 
             (Get-PratProject -Location $root/lib/sub/nested).id | Should -Be "repo/nested"
+        }
+    }
+
+    Context "Windows junction resolution" {
+        It "finds the project when given a junction path pointing to the registered root" {
+            New-Item -ItemType Directory "$root/realrepo" -Force | Out-Null
+            New-Item -ItemType Junction  "$root/junction" -Target "$root/realrepo" | Out-Null
+            makeTestProfile "@{ root = '$root/realrepo' }"
+
+            $result = Get-PratProject -Location "$root/junction"
+
+            $result        | Should -Not -BeNullOrEmpty
+            $result.id     | Should -Be "repo"
+            $result.subdir | Should -Be ''
         }
     }
 }
