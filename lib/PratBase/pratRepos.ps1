@@ -136,6 +136,7 @@ function Get-PratRepoIndex {
     $allShortcutSources = @{}
 
     foreach ($file in $Files) {
+        $file        = Resolve-JunctionInPath $file
         $fileItem    = Get-Item $file
         $fileDir     = $fileItem.DirectoryName.Replace('\', '/')
         $profileData = Import-Scriptblock $file
@@ -181,6 +182,26 @@ function Get-PratRepoIndex {
     }
 }
 
+# Resolve-JunctionInPath: if $path itself or any ancestor is a Windows NTFS junction,
+# returns the path with that junction replaced by its target. Otherwise returns $path.
+function Resolve-JunctionInPath([string]$path) {
+    $suffix  = [System.Collections.Generic.List[string]]::new()
+    $current = $path
+    while ($true) {
+        $item = Get-Item -LiteralPath $current -ErrorAction SilentlyContinue
+        if ($item -and $item.LinkType -eq 'Junction') {
+            $base = $item.Target
+            if ($suffix.Count -eq 0) { return $base }
+            return "$base\$($suffix -join '\')"
+        }
+        $parent = [System.IO.Path]::GetDirectoryName($current)
+        if ([string]::IsNullOrEmpty($parent) -or $parent -eq $current) { break }
+        $suffix.Insert(0, [System.IO.Path]::GetFileName($current))
+        $current = $parent
+    }
+    return $path
+}
+
 # Private: finds the most-specific node in $nodes whose root is a prefix of $Location.
 # Returns $null if no match. Throws if two nodes tie at the same root length.
 function Find-BestMatch($nodes, [string] $Location) {
@@ -214,9 +235,7 @@ function Get-PratRepo {
     [CmdletBinding()]
     param([string] $Location = $pwd)
 
-    $Location = (Resolve-Path $Location).ProviderPath
-    $locItem = Get-Item -LiteralPath $Location -ErrorAction SilentlyContinue
-    if ($locItem -and $locItem.LinkType -eq 'Junction') { $Location = $locItem.Target }
+    $Location = Resolve-JunctionInPath (Resolve-Path $Location).ProviderPath
 
     $index = Get-PratRepoIndex (Get-RepoProfileFiles)
     if ($null -eq $index) { return $null }
@@ -240,9 +259,7 @@ function Get-PratProject {
     [CmdletBinding()]
     param([string] $Location = $pwd)
 
-    $Location = (Resolve-Path $Location).ProviderPath
-    $locItem = Get-Item -LiteralPath $Location -ErrorAction SilentlyContinue
-    if ($locItem -and $locItem.LinkType -eq 'Junction') { $Location = $locItem.Target }
+    $Location = Resolve-JunctionInPath (Resolve-Path $Location).ProviderPath
 
     $index = Get-PratRepoIndex (Get-RepoProfileFiles)
     if ($null -eq $index) { return $null }

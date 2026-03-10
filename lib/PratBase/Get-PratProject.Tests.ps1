@@ -97,5 +97,31 @@ Describe "Get-PratProject" {
             $result.id     | Should -Be "repo"
             $result.subdir | Should -Be ''
         }
+
+        It "finds the project when given a path inside a junction" {
+            New-Item -ItemType Directory "$root/realrepo/src" -Force | Out-Null
+            New-Item -ItemType Junction  "$root/junction2" -Target "$root/realrepo" | Out-Null
+            makeTestProfile "@{ root = '$root/realrepo' }"
+
+            $result = Get-PratProject -Location "$root/junction2/src"
+
+            $result        | Should -Not -BeNullOrEmpty
+            $result.id     | Should -Be "repo"
+            $result.subdir | Should -Be "src"
+        }
+
+        It "finds the project when the repoProfile file is loaded via a junction path" {
+            New-Item -ItemType Directory "$root/realsrc/myrepo" -Force | Out-Null
+            New-Item -ItemType Junction  "$root/jlink" -Target "$root/realsrc" | Out-Null
+
+            # Profile with a RELATIVE root — so sectionRoot (derived from fileDir) matters
+            "@{ '.' = @{ repos = @{ myrepo = @{ root = 'myrepo' } } } }" | Out-File "$root/realsrc/rp.ps1"
+            Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$root/jlink/rp.ps1") }
+
+            $result = Get-PratProject -Location "$root/realsrc/myrepo"
+
+            $result     | Should -Not -BeNullOrEmpty
+            $result.id  | Should -Be "myrepo"
+        }
     }
 }
