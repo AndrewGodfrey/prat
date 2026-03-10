@@ -1,8 +1,18 @@
 function Get-AgentGitconfigContent([string[]] $directories) {
-    # Generate a .gitconfig [safe] section marking the given directories as safe
-    # for a user account that doesn't own them (suppresses git's "dubious ownership" check).
-    $lines = $directories | ForEach-Object { "`tdirectory = $($_ -replace '\\', '/')" }
-    return "[safe]`n" + ($lines -join "`n") + "`n"
+    # Generate a .gitconfig for a sandboxed agent account:
+    # - [safe] entries suppress git's "dubious ownership" check for repos owned by the managing user
+    # - [credential] disables credential helpers to prevent interactive auth dialogs
+    # - [user] provides a commit identity (commits are not expected but git errors without one)
+    $safeLines = $directories | ForEach-Object { "`tdirectory = $($_ -replace '\\', '/')" }
+    return @"
+[safe]
+$($safeLines -join "`n")
+[credential]
+	helper =
+[user]
+	name = agent
+	email = agent@localhost
+"@
 }
 
 # .SYNOPSIS

@@ -7,17 +7,32 @@ Describe "Get-AgentGitconfigContent" {
         Import-Module "$PSScriptRoot/Installers.psd1" -Force
     }
 
-    It "produces a [safe] section with one directory" {
+    It "includes [safe] entries for each directory" {
         InModuleScope Installers {
-            $result = Get-AgentGitconfigContent @("C:\Users\andrew\de")
-            $result | Should -Be "[safe]`n`tdirectory = C:/Users/andrew/de`n"
+            $result = Get-AgentGitconfigContent @("C:\Users\andrew\de", "C:\Users\andrew\prat")
+
+            $result | Should -Match "\[safe\]"
+            $result | Should -Match "directory = C:/Users/andrew/de"
+            $result | Should -Match "directory = C:/Users/andrew/prat"
         }
     }
 
-    It "produces a [safe] section with multiple directories" {
+    It "includes [credential] section with empty helper to suppress auth dialogs" {
         InModuleScope Installers {
-            $result = Get-AgentGitconfigContent @("C:\Users\andrew\de", "C:\Users\andrew\prat")
-            $result | Should -Be "[safe]`n`tdirectory = C:/Users/andrew/de`n`tdirectory = C:/Users/andrew/prat`n"
+            $result = Get-AgentGitconfigContent @("C:\Users\andrew\de")
+
+            $result | Should -Match "\[credential\]"
+            $result | Should -Match "helper\s*="
+        }
+    }
+
+    It "includes [user] section with a commit identity" {
+        InModuleScope Installers {
+            $result = Get-AgentGitconfigContent @("C:\Users\andrew\de")
+
+            $result | Should -Match "\[user\]"
+            $result | Should -Match "name\s*="
+            $result | Should -Match "email\s*="
         }
     }
 
