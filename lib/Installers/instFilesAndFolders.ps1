@@ -114,7 +114,7 @@ function Install-DeleteFiles($stage, $destDir, $listOfFilenames) {
         foreach ($filename in $listOfFilenames) {
             if ((Test-Path -PathType Leaf $destDir\$filename)) {
                 $stage.OnChange()
-                Remove-Item $destDir\$filename
+                Remove-Item -Force $destDir\$filename
             }
         }
     }
