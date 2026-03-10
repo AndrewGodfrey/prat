@@ -1,5 +1,10 @@
 # instructions from 'prat' repo
 
+## Useful tools
+
+- `glp [range]` — compact git log (date, author, hash, message). Prefer over `git log --oneline`
+  when reviewing history. Example: `glp main...localAgentSandbox`
+
 ## Bash tool
 
 - Always use forward slashes in paths, e.g. `C:/Users/foo` not `C:\Users\foo`. Backslashes will be
@@ -49,8 +54,8 @@ impatience.
 ## Self-improvement
 
 When the user corrects a behavioral mistake, update the relevant file so it doesn't recur:
-- Repo-specific facts → that repo's `CLAUDE.md`
-- Cross-repo behavioral rules → `prat/lib/agents/agent-user.md`
+- Dev-environment-wide facts and tools (apply to any repo when using this environment) → `prat/lib/agents/agent-user.md`
+- Repo-specific facts → that repo's `CLAUDE.md` (e.g. `prat/CLAUDE.md` for prat-specific conventions)
 - User-specific preferences → `de/lib/agents/agent-user.md`
 - Triggerable procedures → modify/create a command or agent (or skill, but skill triggering seems unreliable)
 
