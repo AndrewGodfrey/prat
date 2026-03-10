@@ -10,9 +10,17 @@
 
 - Always use forward slashes in paths, e.g. `C:/Users/foo` not `C:\Users\foo`. Backslashes will be
   misinterpreted.
-- When running PowerShell commands via Bash, use `pwsh -c "..."`. Must escape `$`, e.g.
-  `pwsh -c "& \$env:USERPROFILE/de/pathbin/Deploy-DevEnvironment.ps1"` — otherwise Bash interpolates
-  `$` before pwsh sees it.
+- For PowerShell one-liners, use single quotes: `pwsh -c '...'` — bash won't interpolate `$` or
+  backticks, so PowerShell receives them as-is. Only use double quotes if you need bash to expand
+  a variable into the command first.
+- For multi-statement scripts or anything complex, use a single-quoted heredoc — no escaping needed:
+  ```bash
+  pwsh -File - <<'PWSH'
+  $var = $env:USERNAME
+  Write-Host "Hello $var"
+  PWSH
+  ```
+  The single-quoted delimiter `<<'PWSH'` is what prevents bash interpolation inside the heredoc.
 
 ## Testing
 
