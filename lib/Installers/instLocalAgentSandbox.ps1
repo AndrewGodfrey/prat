@@ -44,6 +44,8 @@ function Install-LocalAgentSandbox {
 
     $agentHome = "$env:SystemDrive\Users\$agentUser"
 
+    if ($stage.GetIsStepComplete("localAgentSandbox/$agentUser")) { return }
+
     # Create account — interactive: sudo prompts for password via 'net user *'
     if ($null -eq (Get-LocalUser $agentUser -ErrorAction SilentlyContinue)) {
         $stage.OnChange()
@@ -102,4 +104,5 @@ function Install-LocalAgentSandbox {
     $agentGitconfig = Join-Path $agentHome ".gitconfig"
     Install-TextToFile $stage $agentGitconfig (Get-AgentGitconfigContent $safeDirectories) -SudoOnWrite
 
+    $stage.SetStepComplete("localAgentSandbox/$agentUser")
 }
