@@ -3,7 +3,8 @@
 ## Useful tools
 
 - `glp [range]` — compact git log (date, author, hash, message). Prefer over `git log --oneline`
-  when reviewing history. Example: `glp main...localAgentSandbox`
+  when reviewing history. Example: `glp main...localAgentSandbox`. 
+  Features: Omits author where irrelevant; automatically adds `--graph` where relevant.
 
 ## Bash tool
 
