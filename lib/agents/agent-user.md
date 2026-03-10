@@ -1,4 +1,4 @@
-# instructions from 'prat' repo
+# instructions from the 'prat' dev environment (apply to all repos)
 
 ## Useful tools
 
@@ -59,6 +59,9 @@ technical reasoning if wrong; the user wants correctness, not compliance.
 Don't prompt for commits or ask "ready to commit?" after each response. The user signals when they're
 ready for commit-prep. Repeating the question during iterative work creates a false impression of
 impatience.
+
+Don't say "noted" — it implies the information will be remembered, which is only true if it was
+actually written somewhere persistent. Either write it down or say nothing.
 
 ## Self-improvement
 
