@@ -10,7 +10,7 @@ function Get-AgentGitconfigContent([string[]] $directories) {
 #
 # Creates the account interactively (prompts for password via sudo), stores the launch
 # credential via runas /savecred (which also creates the home directory with correct ACLs),
-# grants NTFS access to the specified paths, creates a directory junction for .claude config,
+# grants NTFS access to the specified paths, links Claude config from an existing user's home,
 # and writes a gitconfig with safe.directory entries.
 #
 # .PARAMETER stage
@@ -25,8 +25,9 @@ function Get-AgentGitconfigContent([string[]] $directories) {
 # .PARAMETER roPaths
 # Paths to grant ReadAndExecute access with inheritance: (OI)(CI)RX.
 #
-# .PARAMETER claudeJunction
-# Hashtable @{ link = "path"; target = "path" } for a .claude directory junction in the agent's home.
+# .PARAMETER claudeHome
+# Home directory of the user whose Claude config the agent should share. Creates a junction
+# for .claude/ and a symlink for .claude.json in the agent's home.
 #
 # .PARAMETER safeDirectories
 # Git repo paths to add as safe.directory in the agent's .gitconfig, so git doesn't
@@ -38,7 +39,7 @@ function Install-LocalAgentSandbox {
         [string] $agentUser,
         [string[]] $rwPaths = @(),
         [string[]] $roPaths = @(),
-        [hashtable] $claudeJunction = $null,
+        [string] $claudeHome = $null,
         [string[]] $safeDirectories = @()
     )
 
@@ -62,10 +63,10 @@ function Install-LocalAgentSandbox {
         throw "Failed to create home directory for $agentUser at $agentHome"
     }
 
-    # Grant the managing user read access to agentHome so unelevated management operations
-    # (Test-Path, file reads for idempotency checks) work without elevation.
+    # Grant the managing user Modify access to agentHome for unelevated management operations
+    # (idempotency checks, config injection at launch time).
     $agentHomeNorm = $agentHome -replace '/', '\'
-    $managerGrant  = "${env:USERNAME}:(OI)(CI)RX"
+    $managerGrant  = "${env:USERNAME}:(OI)(CI)M"
     Invoke-Gsudo {
         icacls $using:agentHomeNorm /grant:r $using:managerGrant | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:agentHomeNorm (exit $LASTEXITCODE)" }
@@ -75,28 +76,37 @@ function Install-LocalAgentSandbox {
     # Run elevated so icacls can traverse subdirectories owned by the agent account.
     foreach ($path in $rwPaths) {
         $normPath = $path -replace '/', '\'
-        $grant = "${agentUser}:(OI)(CI)M"
+        $isDir    = Test-Path -PathType Container $normPath
+        $grant    = if ($isDir) { "${agentUser}:(OI)(CI)M" } else { "${agentUser}:M" }
+        $icacls   = if ($isDir) { "icacls `"$normPath`" /grant:r `"$grant`" /T" } `
+                    else        { "icacls `"$normPath`" /grant:r `"$grant`"" }
         Invoke-Gsudo {
-            icacls $using:normPath /grant:r $using:grant /T | Out-Null
+            Invoke-Expression $using:icacls | Out-Null
             if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:normPath (exit $LASTEXITCODE)" }
         }
     }
     foreach ($path in $roPaths) {
         $normPath = $path -replace '/', '\'
-        $grant = "${agentUser}:(OI)(CI)RX"
+        $isDir    = Test-Path -PathType Container $normPath
+        $grant    = if ($isDir) { "${agentUser}:(OI)(CI)RX" } else { "${agentUser}:RX" }
+        $icacls   = if ($isDir) { "icacls `"$normPath`" /grant:r `"$grant`" /T" } `
+                    else        { "icacls `"$normPath`" /grant:r `"$grant`"" }
         Invoke-Gsudo {
-            icacls $using:normPath /grant:r $using:grant /T | Out-Null
+            Invoke-Expression $using:icacls | Out-Null
             if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:normPath (exit $LASTEXITCODE)" }
         }
     }
 
-    # Directory junction for .claude — idempotent via Test-Path
-    if ($claudeJunction) {
-        $jLink   = $claudeJunction.link   -replace '/', '\'
-        $jTarget = $claudeJunction.target -replace '/', '\'
-        if (-not (Test-Path $jLink)) {
+    # Link Claude config from the managing user's home — junction for .claude/, symlink for .claude.json
+    if ($claudeHome) {
+        $claudeHome = $claudeHome -replace '/', '\'
+        $jLink   = "$agentHome\.claude"
+        $jTarget = "$claudeHome\.claude"
+        $jItem   = Get-Item $jLink -ErrorAction SilentlyContinue
+        if ($null -eq $jItem -or $jItem.LinkType -ne 'Junction') {
             $stage.OnChange()
-            Invoke-Gsudo { New-Item -ItemType Junction -Path $using:jLink -Target $using:jTarget | Out-Null }
+            if ($null -ne $jItem) { Invoke-Gsudo { Remove-Item -Force -Recurse $using:jLink } }
+            Invoke-Gsudo { New-Item -ItemType Junction    -Path $using:jLink   -Target $using:jTarget | Out-Null }
         }
     }
 
