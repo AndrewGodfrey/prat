@@ -76,13 +76,66 @@ Describe "Get-PratProject" {
             (Get-PratProject -Location $root/lib/sub).cachedEnvDelta | Should -Be "env.ps1"
         }
 
-        It "Resolves ties using path length" {
-            # This doesn't seem like a good way to model a nested repo, but it might be desirable for some cases, to control property inheritance.
+        It "Resolves ties using path length" {            # This doesn't seem like a good way to model a nested repo, but it might be desirable for some cases, to control property inheritance.
 
             New-Item -ItemType Directory "TestDrive:\lib\sub\nested" -Force | Out-Null
             makeTestProfile "@{ root = '$root'; subprojects = @{ sub = @{ path = 'lib/sub' }; nested = @{ path = 'lib/sub/nested' } } }"
 
             (Get-PratProject -Location $root/lib/sub/nested).id | Should -Be "repo/nested"
+        }
+    }
+
+    Context "Windows junction resolution" {
+        It "finds the project when given a junction path pointing to the registered root" {
+            New-Item -ItemType Directory "$root/realrepo" -Force | Out-Null
+            New-Item -ItemType Junction  "$root/junction" -Target "$root/realrepo" | Out-Null
+            makeTestProfile "@{ root = '$root/realrepo' }"
+
+            $result = Get-PratProject -Location "$root/junction"
+
+            $result        | Should -Not -BeNullOrEmpty
+            $result.id     | Should -Be "repo"
+            $result.subdir | Should -Be ''
+        }
+
+        It "finds the project when given a path inside a junction" {
+            New-Item -ItemType Directory "$root/realrepo/src" -Force | Out-Null
+            New-Item -ItemType Junction  "$root/junction2" -Target "$root/realrepo" | Out-Null
+            makeTestProfile "@{ root = '$root/realrepo' }"
+
+            $result = Get-PratProject -Location "$root/junction2/src"
+
+            $result        | Should -Not -BeNullOrEmpty
+            $result.id     | Should -Be "repo"
+            $result.subdir | Should -Be "src"
+        }
+
+        It "finds the project when the repoProfile registers an absolute junction-based root" {
+            New-Item -ItemType Directory "$root/realrepo2" -Force | Out-Null
+            New-Item -ItemType Junction  "$root/jlink3" -Target "$root/realrepo2" | Out-Null
+
+            # Profile has an ABSOLUTE junction-based root (as when testCbDir is junction-based)
+            "@{ '.' = @{ repos = @{ myrepo2 = @{ root = '$root/jlink3' } } } }" | Out-File "$root/abs-root-profile.ps1"
+            Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$root/abs-root-profile.ps1") }
+
+            $result = Get-PratProject -Location "$root/realrepo2"
+
+            $result     | Should -Not -BeNullOrEmpty
+            $result.id  | Should -Be "myrepo2"
+        }
+
+        It "finds the project when the repoProfile file is loaded via a junction path" {
+            New-Item -ItemType Directory "$root/realsrc/myrepo" -Force | Out-Null
+            New-Item -ItemType Junction  "$root/jlink" -Target "$root/realsrc" | Out-Null
+
+            # Profile with a RELATIVE root — so sectionRoot (derived from fileDir) matters
+            "@{ '.' = @{ repos = @{ myrepo = @{ root = 'myrepo' } } } }" | Out-File "$root/realsrc/rp.ps1"
+            Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$root/jlink/rp.ps1") }
+
+            $result = Get-PratProject -Location "$root/realsrc/myrepo"
+
+            $result     | Should -Not -BeNullOrEmpty
+            $result.id  | Should -Be "myrepo"
         }
     }
 }

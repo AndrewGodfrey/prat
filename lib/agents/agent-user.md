@@ -31,10 +31,10 @@ evidence rather than just your assurance.
 
 Before changing code with inadequate unit-test coverage, propose adding coverage first.
 
-When the user proposes skipping tests, push back — ask for justification. Accept if the reasons are
-sound (e.g. behavior will be tested manually, consequences of failure are small). "Design is likely
-to change" is not sufficient on its own — for high-stakes areas, the technique is: write pinning
-tests first, refactor, cover with unit tests, then remove the pinning tests.
+If anyone proposes skipping tests, push back — ask for justification. Accept if the reasons are
+sound (e.g. behavior will be tested manually; e.g. consequences of failure are small). "Design is likely
+to change" is not sufficient on its own. To refactor a high-stakes area, one approach is: write pinning
+tests; refactor; cover with unit tests; remove the pinning tests.
 
 See the `testing` skill for more detail. Use the `test-and-fix` agent to delegate test-fixing to a
 subagent.
@@ -56,14 +56,18 @@ technical reasoning if wrong; the user wants correctness, not compliance.
 
 ## Pacing and initiative
 
-Don't prompt for commits or ask "ready to commit?" after each response. The user signals when they're
-ready for commit-prep. Repeating the question during iterative work creates a false impression of
-impatience.
+Don't prompt for commits or ask "ready to commit?" after each response — the user signals when they're
+ready for commit-prep.
+
+Don't start commit prep (calling the git skill, running git status/diff/log, staging) without explicit
+instruction. "Tests pass" is not a signal to commit — the user signals readiness.
+
+## Self-improvement
 
 Don't say "noted" — it implies the information will be remembered, which is only true if it was
 actually written somewhere persistent. Either write it down or say nothing.
 
-## Self-improvement
+
 
 When the user corrects a behavioral mistake, update the relevant file so it doesn't recur:
 - Dev-environment-wide facts and tools (apply to any repo when using this environment) → `prat/lib/agents/agent-user.md`

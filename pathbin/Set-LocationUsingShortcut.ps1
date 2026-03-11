@@ -33,7 +33,7 @@ function GetAllShortcuts() {
 
 function ReverseSearchForShortcut($path) {
     $allShortcuts = GetAllShortcuts
-    $path = $path -replace '\\', '/'
+    $path = (Resolve-JunctionInPath $path) -replace '\\', '/'
     foreach ($key in $allShortcuts.Keys) {
         $target = $allShortcuts[$key] -replace '\\', '/'
         if ($target.endswith('/')) {

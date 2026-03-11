@@ -57,6 +57,7 @@ function instInteractiveAliases($it) {
     Install-InteractiveAlias $stage 'e' 'Open-FileInEditor'
     Install-InteractiveAlias $stage 'lsl' 'Get-LatestFiles'
     Install-InteractiveAlias $stage 'ude' 'Update-DevEnvironment'
+    Install-InteractiveAlias $stage 'rppr' 'Remove-PratPackageRecord'
     Install-InteractiveAlias $stage 'ch' 'Compare-Hash'
     Install-InteractiveAlias $stage 'aext' 'Analyze-FileExtensions'
     Install-InteractiveAlias $stage 'filever' 'Get-FileVersionInfo'
