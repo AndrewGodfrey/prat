@@ -2,6 +2,30 @@ BeforeDiscovery {
     Import-Module "$PSScriptRoot/Installers.psd1" -Force
 }
 
+Describe "Get-SshdConfigContent" {
+    BeforeAll {
+        Import-Module "$PSScriptRoot/Installers.psd1" -Force
+    }
+
+    It "restricts listening to loopback only" {
+        InModuleScope Installers {
+            Get-SshdConfigContent | Should -Match "ListenAddress 127\.0\.0\.1"
+        }
+    }
+
+    It "enables pubkey authentication" {
+        InModuleScope Installers {
+            Get-SshdConfigContent | Should -Match "PubkeyAuthentication yes"
+        }
+    }
+
+    It "disables password authentication" {
+        InModuleScope Installers {
+            Get-SshdConfigContent | Should -Match "PasswordAuthentication no"
+        }
+    }
+}
+
 Describe "Get-AgentGitconfigContent" {
     BeforeAll {
         Import-Module "$PSScriptRoot/Installers.psd1" -Force

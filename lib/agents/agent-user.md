@@ -42,6 +42,14 @@ subagent.
 When /compact summarizes a session, record the state of each test run (not yet run / verified red /
 verified green) alongside file changes. These are distinct states with different implications.
 
+## Reasoning
+
+Don't borrow justifications from adjacent contexts. A fact about one thing ("this sandbox's goal is
+mistake prevention") doesn't answer a different question ("should we harden this new SSH config").
+Each concern stands on its own: evaluate it directly rather than letting a nearby framing dismiss it.
+Same pattern: "this is a prototype" doesn't mean tests don't matter; "this is internal" doesn't mean
+input validation isn't needed.
+
 ## Debugging
 
 Find root cause before fixing. If three fixes have failed, stop and question the approach rather

@@ -1,3 +1,59 @@
+function Get-SshdConfigContent {
+    return @"
+ListenAddress 127.0.0.1
+PubkeyAuthentication yes
+PasswordAuthentication no
+"@
+}
+
+# .SYNOPSIS
+# Set up OpenSSH Server as a loopback-only SSH server for sandbox access.
+#
+# Installs the OpenSSH Server Windows optional feature if absent, writes a minimal
+# sshd_config (loopback-only, pubkey auth only), and starts/enables the sshd service.
+# Intended for use with Install-LocalAgentSandbox to enable Windows Terminal access
+# to the sandboxed agent account via SSH instead of a conhost window.
+#
+# .PARAMETER stage
+# InstallationStage from the caller's Start-Installation tracker.
+#
+# .PARAMETER sshdConfigPath
+# Path to sshd_config. Defaults to C:\ProgramData\ssh\sshd_config.
+function Install-SandboxSshServer {
+    [CmdletBinding()]
+    param(
+        $stage,
+        [string] $sshdConfigPath = "C:\ProgramData\ssh\sshd_config"
+    )
+
+    if ($stage.GetIsStepComplete("sandboxSshServer")) { return }
+
+    # Install OpenSSH Server feature if not present (sshd service existence is the proxy)
+    if ($null -eq (Get-Service sshd -ErrorAction SilentlyContinue)) {
+        $stage.OnChange()
+        Invoke-Gsudo { Add-WindowsCapability -Online -Name "OpenSSH.Server~~~~0.0.1.0" | Out-Null }
+    }
+
+    # Write minimal sshd_config: loopback-only, pubkey auth, no password auth
+    Install-TextToFile $stage $sshdConfigPath (Get-SshdConfigContent) -SudoOnWrite
+
+    # Start/restart the service and set to auto-start
+    $stage.OnChange()
+    Invoke-Gsudo {
+        $sshd = Get-Service sshd -ErrorAction SilentlyContinue
+        if ($null -ne $sshd) {
+            $sshd | Set-Service -StartupType Automatic | Out-Null
+            if ($sshd.Status -eq "Running") {
+                $sshd | Restart-Service | Out-Null
+            } else {
+                $sshd | Start-Service | Out-Null
+            }
+        }
+    }
+
+    $stage.SetStepComplete("sandboxSshServer")
+}
+
 function Get-AgentGitconfigContent([string[]] $directories) {
     # Generate a .gitconfig for a sandboxed agent account:
     # - [safe] entries suppress git's "dubious ownership" check for repos owned by the managing user
@@ -61,7 +117,8 @@ function Install-LocalAgentSandbox {
         [string] $claudeHome = $null,
         [string[]] $safeDirectories = @(),
         [hashtable] $homeJunctions = @{},
-        [string] $profileContent = $null
+        [string] $profileContent = $null,
+        [string] $sshPublicKeyPath = $null
     )
 
     $agentHome = "$env:SystemDrive\Users\$agentUser"
@@ -154,6 +211,47 @@ function Install-LocalAgentSandbox {
     # gitconfig safe.directory entries
     $agentGitconfig = Join-Path $agentHome ".gitconfig"
     Install-TextToFile $stage $agentGitconfig (Get-AgentGitconfigContent $safeDirectories) -SudoOnWrite
+
+    # Junction .local\bin to the managing user's — ensures agent always runs the current version
+    # and can't accumulate a stale separate copy (agent has RX on the target, so writes fail cleanly).
+    if ($claudeHome) {
+        $localBin       = "$agentHome\.local\bin"
+        $localBinTarget = "$claudeHome\.local\bin"
+        $null = New-Item -ItemType Directory -Path "$agentHome\.local" -ErrorAction SilentlyContinue
+        $jItem = Get-Item $localBin -ErrorAction SilentlyContinue
+        if ($null -eq $jItem -or $jItem.LinkType -ne 'Junction') {
+            $stage.OnChange()
+            if ($null -ne $jItem) { Remove-Item -Force -Recurse $localBin }
+            New-Item -ItemType Junction -Path $localBin -Target $localBinTarget | Out-Null
+        }
+    }
+
+    # SSH authorized_keys — enables loopback SSH access from the managing user.
+    # Done entirely elevated: after first run the file is owned by agentUser with no ACE for andrew,
+    # so non-elevated reads/writes would fail on re-runs.
+    if ($sshPublicKeyPath) {
+        $sshDir         = "$agentHome\.ssh"
+        $authKeys       = "$sshDir\authorized_keys"
+        $desiredContent = Get-Content $sshPublicKeyPath -Raw
+        New-Item -ItemType Directory -Path $sshDir -ErrorAction SilentlyContinue | Out-Null
+        Invoke-Gsudo {
+            if (Test-Path $using:authKeys) {
+                # File has owner=agentUser, ACL=agentUser+SYSTEM only — no ACE for Administrators.
+                # Take ownership first (SeTakeOwnershipPrivilege), then grant admin read/write.
+                & takeown /f $using:authKeys | Out-Null
+                & icacls $using:authKeys /grant "Administrators:(F)" | Out-Null
+            }
+            $existing = Get-Content $using:authKeys -Raw -ErrorAction SilentlyContinue
+            if ($existing -ne $using:desiredContent) {
+                Set-Content $using:authKeys $using:desiredContent -Encoding UTF8
+            }
+            # Restore owner and apply final ACLs
+            & icacls $using:authKeys /setowner $using:agentUser | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "icacls /setowner failed for $using:authKeys (exit $LASTEXITCODE)" }
+            & icacls $using:authKeys /inheritance:r /grant:r "$($using:agentUser):(F)" /grant:r "NT AUTHORITY\SYSTEM:(F)" | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "icacls ACL failed for $using:authKeys (exit $LASTEXITCODE)" }
+        }
+    }
 
     $stage.SetStepComplete("localAgentSandbox/$agentUser")
 }
