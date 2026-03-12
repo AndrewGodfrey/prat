@@ -22,6 +22,27 @@
   ```
   The single-quoted delimiter `<<'PWSH'` is what prevents bash interpolation inside the heredoc.
 
+## Editing files
+
+When replacing a large block of text in a Windows file (CRLF line endings), the Edit tool's
+string matching can fail even when the content looks correct — "String to replace not found."
+Workaround for large deletions:
+1. Insert marker comments using small targeted Edits (short unique strings match reliably):
+   - Before the block: `<!-- DELETE_FROM_HERE -->`
+   - After the block: `<!-- DELETE_TO_HERE -->`
+2. Use a pwsh script to splice between the markers:
+   ```bash
+   pwsh -File - <<'PWSH'
+   $path = 'C:/path/to/file.md'
+   $c = Get-Content $path -Raw
+   $a = $c.IndexOf('<!-- DELETE_FROM_HERE -->')
+   $b = $c.IndexOf('<!-- DELETE_TO_HERE -->') + '<!-- DELETE_TO_HERE -->'.Length
+   if ($c[$b] -eq "`r") { $b++ }
+   if ($c[$b] -eq "`n") { $b++ }
+   Set-Content $path ($c.Substring(0, $a) + $c.Substring($b)) -NoNewline -Encoding UTF8
+   PWSH
+   ```
+
 ## Testing
 
 Write the test first, and run it to verify it fails in the expected way. Only implement after that.
