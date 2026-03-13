@@ -3,13 +3,30 @@
 ## Useful tools
 
 - `glp [range]` — compact git log (date, author, hash, message). Prefer over `git log --oneline`
-  when reviewing history. Example: `glp main...localAgentSandbox`. 
+  when reviewing history. Example: `glp main...localAgentSandbox`.
   Features: Omits author where irrelevant; automatically adds `--graph` where relevant.
+
+### Interactive aliases (installed by prat into `~/prat/auto/profile/interactiveAliases.ps1`)
+
+When telling the user to run something, prefer these aliases over full command names:
+
+- `d` — Deploy-Codebase (runs the deploy script for the current codebase)
+- `ude` — Update-DevEnvironment
+- `t` — Test-Project
+- `b` — Build-Codebase
+- `c` — Set-LocationUsingShortcut (navigate by repo shortcut)
+
+## Forcing a deploy stage to re-run
+
+Some deploy stages track state in instDb files. For those, to force a re-run:
+`rppr <stageName> && d`. The stage name matches the string passed to `StartStage`.
 
 ## Bash tool
 
 - Always use forward slashes in paths, e.g. `C:/Users/foo` not `C:\Users\foo`. Backslashes will be
   misinterpreted.
+- `~` only expands in pwsh. Most external programs on Windows (including git) don't understand it —
+  use `$home/prefs` or the full path instead. In pwsh you can freely use `~/prefs`, `cd ~/prat`, etc.
 - For PowerShell one-liners, use single quotes: `pwsh -c '...'` — bash won't interpolate `$` or
   backticks, so PowerShell receives them as-is. Only use double quotes if you need bash to expand
   a variable into the command first.
@@ -116,3 +133,8 @@ for confirmation before capturing.
 - Managed by the `de` and `prat` repos. Each `de` repo is user-specific. If a user says "the" de repo
   they mean their own one.
 - When making a plan, label each step with "[USER]" or "[CLAUDE]" as appropriate.
+
+## Style
+
+- Markdown files: wrap lines at 120 characters max. Break at natural phrase boundaries
+  for readability (like this).
