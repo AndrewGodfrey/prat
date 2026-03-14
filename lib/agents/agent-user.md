@@ -153,6 +153,23 @@ az devops invoke --area git --resource pullRequestThreads \
 `WebFetch` will not work on ADO URLs (auth redirect). `curl` requires a PAT. The `az devops invoke`
 approach works with the existing `az login` session.
 
+## Sandbox workarounds
+
+When running as `andrew_agent`, compensate for sandbox-specific bugs. Review when the sandbox
+is updated.
+
+### pwsh heredoc hangs
+
+`pwsh -File - <<'PWSH' ... PWSH` hangs in the sandbox. Write the script to a temp file instead:
+
+```bash
+cat > /tmp/script.ps1 << 'EOF'
+$a = "hello"
+Write-Host $a
+EOF
+pwsh -File /tmp/script.ps1
+```
+
 ## Model workarounds
 
 Compensate for model reasoning/behavior tendencies. Review when upgrading Claude model versions.
