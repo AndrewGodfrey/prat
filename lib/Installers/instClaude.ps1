@@ -117,6 +117,61 @@ function Install-ClaudeProjectMemory {
 }
 
 # Installs Claude Code user-level settings.json. For now just a copy, may need merging later.
+# Wraps Install-LocalAgentSandbox with Claude-specific config sharing: junction for .claude/,
+# symlinks for .claude.json and .claude.json.backup. The two json files are automatically added
+# to rwPaths so permissions are granted and {} placeholders created if not yet present.
+#
+# .PARAMETER claudeHome
+# Home directory of the user whose Claude config the agent should share.
+function Install-ClaudeAgentSandbox {
+    [CmdletBinding()]
+    param(
+        $stage,
+        [string] $agentUser,
+        [string] $claudeHome,
+        [string[]] $rwPaths = @(),
+        [string[]] $roPaths = @(),
+        [string[]] $safeDirectories = @(),
+        [hashtable] $homeJunctions = @{},
+        [string] $profileContent = $null,
+        [string] $sshPublicKeyPath = $null
+    )
+
+    $claudeHome = $claudeHome -replace '/', '\'
+
+    Install-LocalAgentSandbox $stage `
+        -agentUser       $agentUser `
+        -rwPaths         ($rwPaths + @("$claudeHome\.claude", "$claudeHome\.claude.json", "$claudeHome\.claude.json.backup")) `
+        -roPaths         ($roPaths + @("$claudeHome\.local\bin")) `
+        -safeDirectories $safeDirectories `
+        -homeJunctions   $homeJunctions `
+        -profileContent  $profileContent `
+        -sshPublicKeyPath $sshPublicKeyPath
+
+    # Create junction and symlinks after Install-LocalAgentSandbox has set ACLs and ensured targets exist.
+    $agentHome = "$env:SystemDrive\Users\$agentUser"
+
+    $jLink = "$agentHome\.claude"
+    $jItem = Get-Item $jLink -ErrorAction SilentlyContinue
+    if ($null -eq $jItem -or $jItem.LinkType -ne 'Junction') {
+        $stage.OnChange()
+        $jTarget = "$claudeHome\.claude"
+        if ($null -ne $jItem) { Invoke-Gsudo { Remove-Item -Force -Recurse $using:jLink } }
+        Invoke-Gsudo { New-Item -ItemType Junction -Path $using:jLink -Target $using:jTarget | Out-Null }
+    }
+
+    foreach ($fileName in @('.claude.json', '.claude.json.backup')) {
+        $sLink = "$agentHome\$fileName"
+        $sItem = Get-Item $sLink -ErrorAction SilentlyContinue
+        if ($null -eq $sItem -or $sItem.LinkType -ne 'SymbolicLink') {
+            $stage.OnChange()
+            $sTarget = "$claudeHome\$fileName"
+            if ($null -ne $sItem) { Invoke-Gsudo { Remove-Item -Force $using:sLink } }
+            Invoke-Gsudo { New-Item -ItemType SymbolicLink -Path $using:sLink -Target $using:sTarget | Out-Null }
+        }
+    }
+}
+
 function Install-ClaudeUserSettings($stage, [string] $sourceFile) {
     $destFile = "$home\.claude\settings.json"
 

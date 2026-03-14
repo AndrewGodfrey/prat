@@ -91,10 +91,6 @@ $($safeLines -join "`n")
 # .PARAMETER roPaths
 # Paths to grant ReadAndExecute access with inheritance: (OI)(CI)RX.
 #
-# .PARAMETER claudeHome
-# Home directory of the user whose Claude config the agent should share. Creates a junction
-# for .claude/ in the agent's home.
-#
 # .PARAMETER safeDirectories
 # Git repo paths to add as safe.directory in the agent's .gitconfig, so git doesn't
 # reject repos owned by a different user.
@@ -114,7 +110,6 @@ function Install-LocalAgentSandbox {
         [string] $agentUser,
         [string[]] $rwPaths = @(),
         [string[]] $roPaths = @(),
-        [string] $claudeHome = $null,
         [string[]] $safeDirectories = @(),
         [hashtable] $homeJunctions = @{},
         [string] $profileContent = $null,
@@ -152,8 +147,21 @@ function Install-LocalAgentSandbox {
 
     # NTFS grants — always re-apply; /grant:r avoids duplicate ACEs on re-runs.
     # Run elevated so icacls can traverse subdirectories owned by the agent account.
+    function ensurePathExists($normPath) {
+        if (Test-Path $normPath) { return }
+        $ext = [System.IO.Path]::GetExtension($normPath)
+        if ($ext -eq '') {
+            New-Item -ItemType Directory -Path $normPath -Force | Out-Null
+        } elseif ($ext -eq '.json' -or $normPath.EndsWith('.json.backup')) {
+            Set-Content -Path $normPath -Value '{}' -Encoding utf8NoBOM
+        } else {
+            throw "Don't know how to create placeholder for: $normPath"
+        }
+    }
+
     foreach ($path in $rwPaths) {
         $normPath = $path -replace '/', '\'
+        ensurePathExists $normPath
         $isDir    = Test-Path -PathType Container $normPath
         $grant    = if ($isDir) { "${agentUser}:(OI)(CI)M" } else { "${agentUser}:M" }
         $icacls   = if ($isDir) { "icacls `"$normPath`" /grant:r `"$grant`" /T" } `
@@ -165,6 +173,7 @@ function Install-LocalAgentSandbox {
     }
     foreach ($path in $roPaths) {
         $normPath = $path -replace '/', '\'
+        ensurePathExists $normPath
         $isDir    = Test-Path -PathType Container $normPath
         $grant    = if ($isDir) { "${agentUser}:(OI)(CI)RX" } else { "${agentUser}:RX" }
         $icacls   = if ($isDir) { "icacls `"$normPath`" /grant:r `"$grant`" /T" } `
@@ -172,19 +181,6 @@ function Install-LocalAgentSandbox {
         Invoke-Gsudo {
             Invoke-Expression $using:icacls | Out-Null
             if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:normPath (exit $LASTEXITCODE)" }
-        }
-    }
-
-    # Link Claude config from the managing user's home — junction for .claude/, symlink for .claude.json
-    if ($claudeHome) {
-        $claudeHome = $claudeHome -replace '/', '\'
-        $jLink   = "$agentHome\.claude"
-        $jTarget = "$claudeHome\.claude"
-        $jItem   = Get-Item $jLink -ErrorAction SilentlyContinue
-        if ($null -eq $jItem -or $jItem.LinkType -ne 'Junction') {
-            $stage.OnChange()
-            if ($null -ne $jItem) { Invoke-Gsudo { Remove-Item -Force -Recurse $using:jLink } }
-            Invoke-Gsudo { New-Item -ItemType Junction    -Path $using:jLink   -Target $using:jTarget | Out-Null }
         }
     }
 
