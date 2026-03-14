@@ -88,6 +88,12 @@ Each concern stands on its own: evaluate it directly rather than letting a nearb
 Same pattern: "this is a prototype" doesn't mean tests don't matter; "this is internal" doesn't mean
 input validation isn't needed.
 
+## Incremental transformations
+
+When removing a comment during a refactor or migration, decide whether it belongs in the end
+state. If yes, carry it forward immediately — as a TODO comment if the target code doesn't exist
+yet — rather than deferring with no tracking mechanism.
+
 ## Debugging
 
 Find root cause before fixing. If three fixes have failed, stop and question the approach rather
