@@ -55,7 +55,7 @@ verified green) alongside file changes. These are distinct states with different
 When the user corrects a behavioral mistake, update the relevant file so it doesn't recur:
 - Dev-environment-wide facts and tools (apply to any repo when using this environment) → `prat/lib/agents/agent-user.md`
 - Repo-specific facts → that repo's `CLAUDE.md` (e.g. `prat/CLAUDE.md` for prat-specific conventions)
-- User-specific preferences → `de/lib/agents/agent-user.md`
+- User-specific preferences → `prefs/lib/agents/agent-user.md`
 - Triggerable procedures → modify/create a command or agent (or skill, but skill triggering seems unreliable)
 
 Distinguish behavioral corrections ("you didn't X", "why didn't you Y") from one-time task direction
