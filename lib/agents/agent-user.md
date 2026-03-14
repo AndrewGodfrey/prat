@@ -11,6 +11,7 @@ These are stable — no periodic review needed.
 - `glp [range]` — compact git log (date, author, hash, message). Prefer over `git log --oneline`
   when reviewing history. Example: `glp main...localAgentSandbox`.
   Features: Omits author where irrelevant; automatically adds `--graph` where relevant.
+  **Note:** `glp` is a PowerShell function. In the bash tool, invoke it via `pwsh -c 'glp ...'`.  
 
 #### Interactive aliases (installed by prat into `~/prat/auto/profile/interactiveAliases.ps1`)
 
@@ -99,6 +100,22 @@ CC is not well-designed for Windows. Review this section when CC improves Window
   ```
   The single-quoted delimiter `<<'PWSH'` is what prevents bash interpolation inside the heredoc.
 
+### File tools on Windows
+
+The Write and Edit tools both produce LF line endings. On Windows repos where `core.autocrlf=true`
+(common default), git will refuse to stage LF-only files. After writing or editing files, convert to
+CRLF:
+
+```bash
+sed -i 's/\r$//' "<file>" && sed -i 's/$/\r/' "<file>"
+```
+
+The first `sed` strips any existing `\r` so the second one is idempotent — safe to run multiple
+times on the same file (e.g. after editing a file across multiple rounds).
+
+Check with `git config core.autocrlf` if unsure. Verify with `file <path>` that line endings match
+expectations before telling the user the files are ready.
+
 ### Editing files
 
 When replacing a large block of text in a Windows file (CRLF line endings), the Edit tool's
@@ -121,6 +138,20 @@ Workaround for large deletions:
    ```
 
 ---
+
+### Azure DevOps PR comments
+
+`az repos pr` does not have a `thread` subcommand. To fetch PR comment threads, use the lower-level
+`az devops invoke`:
+
+```bash
+az devops invoke --area git --resource pullRequestThreads \
+  --route-parameters project="<project>" repositoryId=<repo> pullRequestId=<id> \
+  --api-version 7.0 -o json
+```
+
+`WebFetch` will not work on ADO URLs (auth redirect). `curl` requires a PAT. The `az devops invoke`
+approach works with the existing `az login` session.
 
 ## Model workarounds
 
