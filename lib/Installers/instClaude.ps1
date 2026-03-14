@@ -77,9 +77,9 @@ function Install-ClaudeSyncFolders($stage, [string] $syncRoot, [string] $claudeD
 
     # file-history: undo/rewind snapshots - local file contents, not portable across machines
     $knownLocalDirs = @(
-        "agents", "backups", "cache", "commands", "debug", 
-        "downloads", "file-history", "ide", "image-cache", "paste-cache", 
-        "plugins", "session-env", "shell-snapshots", "skills",
+        "agents", "backups", "cache", "commands", "debug",
+        "downloads", "file-history", "ide", "image-cache", "paste-cache",
+        "plugins", "session-env", "sessions", "shell-snapshots", "skills",
         "statsig", "telemetry"
     )
 
