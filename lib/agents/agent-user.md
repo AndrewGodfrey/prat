@@ -174,6 +174,17 @@ pwsh -File /tmp/script.ps1
 
 Compensate for model reasoning/behavior tendencies. Review when upgrading Claude model versions.
 
+### Plan vs. context contradictions
+
+Before implementing a plan step, cross-check it against CLAUDE.md and done files for contradictions —
+plans can go stale.
+
+### `$PSScriptRoot` when merging scripts
+
+When merging scripts that run from different locations (e.g. a distributed OneDrive copy vs. its source
+in a repo), audit all `$PSScriptRoot`-relative paths — they may be correct in one location but broken
+in the other.
+
 ### Reasoning
 
 Don't borrow justifications from adjacent contexts. A fact about one thing ("this sandbox's goal is
