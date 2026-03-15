@@ -212,3 +212,22 @@ ready for commit-prep.
 
 Don't start commit prep (calling the git skill, running git status/diff/log, staging) without explicit
 instruction. "Tests pass" is not a signal to commit — the user signals readiness.
+
+## Public repos (e.g. prat, prefs)
+
+Before finalizing a feature branch or committing directly to main in a public repo, run
+`Find-SensitiveData` and remind the user to do this if they haven't mentioned it:
+
+```powershell
+Find-SensitiveData -Path ~/prat  # for example
+```
+
+The tool auto-detects hardcoded home paths, email addresses, and IP addresses. Also manually
+verify the file contains none of:
+
+- Full paths with username (`C:\Users\<username>\...`) — replace with `$home\...`
+- Account usernames (GitHub, work accounts, etc.)
+- User email addresses
+- Machine names, hostnames
+- Internal URLs, site names, channel/team names, email DLs, IP addresses
+- Tokens, passwords, API keys, SSH private keys
