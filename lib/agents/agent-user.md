@@ -52,18 +52,7 @@ verified green) alongside file changes. These are distinct states with different
 
 #### Capturing corrections
 
-When the user corrects a behavioral mistake, update the relevant file so it doesn't recur:
-- Dev-environment-wide facts and tools (apply to any repo when using this environment) → `prat/lib/agents/agent-user.md`
-- Repo-specific facts → that repo's `CLAUDE.md` (e.g. `prat/CLAUDE.md` for prat-specific conventions)
-- User-specific preferences → `prefs/lib/agents/agent-user.md`
-- Triggerable procedures → modify/create a command or agent (or skill, but skill triggering seems unreliable)
-
-Distinguish behavioral corrections ("you didn't X", "why didn't you Y") from one-time task direction
-("please also include X in this document"). Test: would a fresh Claude have made the same mistake
-without this direction? If yes, capture it. If no, it was context-specific — skip.
-
-Edge case: "please ask me before doing X" sounds one-time but is usually a standing preference — flag
-for confirmation before capturing.
+To capture a correction, invoke the `remember` skill — it covers where to save and how to write entries.
 
 ### Dev environment
 
