@@ -273,3 +273,86 @@ Describe "Install-ClaudeProjectMemory" {
         Get-Content "$memoryDir\MEMORY.md" -Raw | Should -BeLike "*custom content*"
     }
 }
+
+Describe "Merge-DeepHashtable" {
+    It "returns overlay scalar when both layers have the same key" {
+        $result = Merge-DeepHashtable @{a = "base"} @{a = "overlay"}
+
+        $result.a | Should -Be "overlay"
+    }
+
+    It "keeps base key when overlay does not have it" {
+        $result = Merge-DeepHashtable @{a = "base"} @{}
+
+        $result.a | Should -Be "base"
+    }
+
+    It "adds overlay key when base does not have it" {
+        $result = Merge-DeepHashtable @{} @{b = "overlay"}
+
+        $result.b | Should -Be "overlay"
+    }
+
+    It "concatenates arrays" {
+        $result = Merge-DeepHashtable @{a = @("x")} @{a = @("y")}
+
+        $result.a | Should -Be @("x", "y")
+    }
+
+    It "recurses into nested hashtables" {
+        $result = Merge-DeepHashtable @{p = @{a = "base-a"; b = "base-b"}} @{p = @{b = "over-b"; c = "over-c"}}
+
+        $result.p.a | Should -Be "base-a"
+        $result.p.b | Should -Be "over-b"
+        $result.p.c | Should -Be "over-c"
+    }
+
+    It "does not mutate the input hashtables" {
+        $base    = @{a = "base"}
+        $overlay = @{b = "overlay"}
+
+        Merge-DeepHashtable $base $overlay | Out-Null
+
+        $base.Keys    | Should -Not -Contain "b"
+        $overlay.Keys | Should -Not -Contain "a"
+    }
+
+    It "throws when one value is a hashtable and the other is an array" {
+        { Merge-DeepHashtable @{a = @{}} @{a = @()} } | Should -Throw
+    }
+
+    It "returns keys in sorted order" {
+        $result = Merge-DeepHashtable @{b = 1; a = 2} @{c = 3}
+
+        ($result.Keys | Select-Object -First 3) | Should -Be @("a", "b", "c")
+    }
+
+    It "preserves single-element arrays as arrays across sequential merges" {
+        # The first layer has a single-element array; the second has two elements.
+        # Without the fix, ConvertTo-DeepOrdered unboxes the single-element array to a scalar,
+        # causing a type mismatch on the second merge.
+        $layer1 = @{items = @("single")}
+        $layer2 = @{items = @("a", "b")}
+
+        $result = Merge-DeepHashtable (Merge-DeepHashtable @{} $layer1) $layer2
+
+        $result.items | Should -Be @("single", "a", "b")
+    }
+
+    It "sorts keys in nested hashtables contributed by only one layer" {
+        $inner = [ordered]@{}; $inner['z'] = 0; $inner['a'] = 1  # z before a — out of sorted order
+        $result = Merge-DeepHashtable @{} @{outer = $inner}
+
+        ($result.outer.Keys | Select-Object -First 1) | Should -Be "a"
+    }
+
+    It "correctly merges three layers with nested hashtables" {
+        $layer1 = @{permissions = @{allow = @("a")}}
+        $layer2 = @{permissions = @{allow = @("b")}}
+        $layer3 = @{permissions = @{allow = @("c")}}
+
+        $merged = Merge-DeepHashtable (Merge-DeepHashtable $layer1 $layer2) $layer3
+
+        $merged.permissions.allow | Should -Be @("a", "b", "c")
+    }
+}
