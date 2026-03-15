@@ -1,5 +1,5 @@
 # instructions from the 'prat' dev environment (apply to all repos)
-
+Source: prat/lib/agents/agent-user_prat.md
 ---
 
 ## Environment facts
