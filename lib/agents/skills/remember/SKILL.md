@@ -1,9 +1,8 @@
 ---
 name: remember
-description: >
-  Use when the user asks Claude to remember or note something for future sessions ("remember that",
-  "note that", "don't forget"), or when capturing a behavioral correction. Also invoked as /remember.
-  Do NOT invoke for one-time task direction within the current task (e.g. "please also include X").
+description: Use when the user asks Claude to remember or note something for future sessions ("remember that",
+  "note that", "don't forget"), or when capturing a behavioral correction. Do NOT invoke for 
+  one-time task direction within the current task (e.g. "please also include X").
 ---
 
 ## Where to save
