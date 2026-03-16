@@ -80,3 +80,53 @@ Describe "Find-SensitiveDataInContent" {
         }
     }
 }
+
+Describe "Get-SensitiveDataFindings" {
+    BeforeEach {
+        $script:testDir = Join-Path (Resolve-Path "TestDrive:\").ProviderPath "fsd-test"
+        mkdir $testDir | Out-Null
+    }
+    AfterEach {
+        Remove-Item $testDir -Recurse -Force
+    }
+
+    Context "directory path" {
+        It "finds sensitive data in a file in the directory" {
+            "C:\Users\alice\prat" | Set-Content "$testDir\script.ps1" -Encoding utf8NoBOM
+
+            $result = @(Get-SensitiveDataFindings -Path $testDir -HomeDir "C:\Users\alice")
+
+            $result | Should -HaveCount 1
+            $result[0] | Should -Match "hardcoded home path"
+        }
+
+        It "returns empty for a clean directory" {
+            "hello world" | Set-Content "$testDir\clean.ps1" -Encoding utf8NoBOM
+
+            $result = @(Get-SensitiveDataFindings -Path $testDir -HomeDir "C:\Users\alice")
+
+            $result | Should -HaveCount 0
+        }
+    }
+
+    Context "file path" {
+        It "finds sensitive data in a single file" {
+            $file = "$testDir\secret.ps1"
+            "C:\Users\alice\prat" | Set-Content $file -Encoding utf8NoBOM
+
+            $result = @(Get-SensitiveDataFindings -Path $file -HomeDir "C:\Users\alice")
+
+            $result | Should -HaveCount 1
+            $result[0] | Should -Match "hardcoded home path"
+        }
+
+        It "returns empty for a clean file" {
+            $file = "$testDir\clean.ps1"
+            "hello world" | Set-Content $file -Encoding utf8NoBOM
+
+            $result = @(Get-SensitiveDataFindings -Path $file -HomeDir "C:\Users\alice")
+
+            $result | Should -HaveCount 0
+        }
+    }
+}

@@ -37,43 +37,63 @@ function Find-SensitiveDataInContent {
     return $findings
 }
 
-# Only run main logic when invoked directly (not dot-sourced for testing)
-if ($MyInvocation.InvocationName -ne '.') {
+function Get-SensitiveDataFindings {
+    param(
+        [string] $Path,
+        [string] $HomeDir = (Get-Item $home).FullName
+    )
+
     $textExtensions = 'ps1|md|txt|json|yaml|yml|ini|cfg|sh|bat|cmd'
+    $allFindings = [System.Collections.Generic.List[string]]::new()
 
-    Push-Location $Path
-    try {
-        $gitFiles = git ls-files 2>$null
-        if ($LASTEXITCODE -eq 0 -and $gitFiles) {
-            $files = $gitFiles | Where-Object { $_ -match "\.($textExtensions)$" }
-        } else {
-            Write-Warning "Not a git repo or git ls-files failed — scanning all text files"
-            $files = Get-ChildItem -Recurse |
-                Where-Object { $_.Name -match "\.($textExtensions)$" } |
-                ForEach-Object { $_.FullName.Substring($Path.Length + 1) }
-        }
-
-        $homeDir = (Get-Item $home).FullName  # normalize to real path, no trailing slash
-        $allFindings = [System.Collections.Generic.List[string]]::new()
-
-        foreach ($rel in $files) {
-            $content = Get-Content $rel -Raw -ErrorAction SilentlyContinue
-            if ($null -eq $content) { continue }
-            foreach ($f in (Find-SensitiveDataInContent -Content $content -RelPath $rel -HomeDir $homeDir)) {
+    if (Test-Path $Path -PathType Leaf) {
+        $content = Get-Content $Path -Raw -ErrorAction SilentlyContinue
+        if ($null -ne $content) {
+            $rel = Split-Path $Path -Leaf
+            foreach ($f in (Find-SensitiveDataInContent -Content $content -RelPath $rel -HomeDir $HomeDir)) {
                 $allFindings.Add($f)
             }
         }
-
-        if ($allFindings.Count -eq 0) {
-            Write-Host "Clean: no sensitive data found in $Path"
-            exit 0
-        } else {
-            foreach ($f in $allFindings) {
-                Write-Host "FOUND: $f"
+    } else {
+        Push-Location $Path
+        try {
+            $gitFiles = git ls-files 2>$null
+            if ($LASTEXITCODE -eq 0 -and $gitFiles) {
+                $files = $gitFiles | Where-Object { $_ -match "\.($textExtensions)$" }
+            } else {
+                Write-Warning "Not a git repo or git ls-files failed — scanning all text files"
+                $files = Get-ChildItem -Recurse |
+                    Where-Object { $_.Name -match "\.($textExtensions)$" } |
+                    ForEach-Object { $_.FullName.Substring($Path.Length + 1) }
             }
-            exit 1
+
+            foreach ($rel in $files) {
+                $content = Get-Content $rel -Raw -ErrorAction SilentlyContinue
+                if ($null -eq $content) { continue }
+                foreach ($f in (Find-SensitiveDataInContent -Content $content -RelPath $rel -HomeDir $HomeDir)) {
+                    $allFindings.Add($f)
+                }
+            }
+        } finally {
+            Pop-Location
         }
-    } finally {
-        Pop-Location
+    }
+
+    return $allFindings
+}
+
+# Only run main logic when invoked directly (not dot-sourced for testing)
+if ($MyInvocation.InvocationName -ne '.') {
+    $homeDir = (Get-Item $home).FullName  # normalize to real path, no trailing slash
+    $allFindings = Get-SensitiveDataFindings -Path $Path -HomeDir $homeDir
+
+    if ($allFindings.Count -eq 0) {
+        Write-Host "Clean: no sensitive data found in $Path"
+        exit 0
+    } else {
+        foreach ($f in $allFindings) {
+            Write-Host "FOUND: $f"
+        }
+        exit 1
     }
 }
