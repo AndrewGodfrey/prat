@@ -1,5 +1,5 @@
 ---
-description: Finalize the completed plan step and set up the next one
+description: Finalize the completed plan step and set up the next one. User-invocable only — do not trigger autonomously.
 ---
 
 The "active plan" is the plan file most relevant to this session — infer from context, or ask if

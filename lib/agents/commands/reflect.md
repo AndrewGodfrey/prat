@@ -1,5 +1,5 @@
 ---
-description: End-of-session self-improvement sweep
+description: End-of-session self-improvement sweep. User-invocable only — do not trigger autonomously.
 ---
 
 Review this session for behavioral mistakes worth capturing — things where a fresh Claude would have
