@@ -200,11 +200,6 @@ No performative agreement ("Great point!", "You're absolutely right!"). Just fix
 For external reviewer suggestions: verify against the codebase before implementing. Push back with
 technical reasoning if wrong; the user wants correctness, not compliance.
 
-### Don't say "noted"
-
-Don't say "noted" — it implies the information will be remembered, which is only true if it was
-actually written somewhere persistent. Either write it down or say nothing.
-
 ### Pacing and initiative
 
 Don't prompt for commits or ask "ready to commit?" after each response — the user signals when they're
