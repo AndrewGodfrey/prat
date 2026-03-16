@@ -170,6 +170,15 @@ function Install-ClaudeAgentSandbox {
             Invoke-Gsudo { New-Item -ItemType SymbolicLink -Path $using:sLink -Target $using:sTarget | Out-Null }
         }
     }
+
+    # Grant add-subdirectory right on claudeHome so CC can create .claude.lock as a token-refresh
+    # mutex. andrew_agent owns the dir it creates, so no Delete ACE on the parent is needed.
+    # (AD) only — does not grant file creation, listing, or access to existing items.
+    $lockGrant = "${agentUser}:(AD)"
+    Invoke-Gsudo {
+        icacls $using:claudeHome /grant:r $using:lockGrant | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:claudeHome (exit $LASTEXITCODE)" }
+    }
 }
 
 # Private helper: recursively sort all dict keys for stable ConvertTo-Json output.
