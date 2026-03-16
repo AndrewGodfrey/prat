@@ -79,7 +79,9 @@ CC is not well-designed for Windows. Review this section when CC improves Window
   use `$home/prefs` or the full path instead. In pwsh you can freely use `~/prefs`, `cd ~/prat`, etc.
 - For PowerShell one-liners, use single quotes: `pwsh -c '...'` — bash won't interpolate `$` or
   backticks, so PowerShell receives them as-is. Only use double quotes if you need bash to expand
-  a variable into the command first.
+  a **bash** variable into the command. PowerShell variables (`$home`, `$env:USERNAME`, etc.) must
+  stay in single quotes — bash expands them to empty. ❌ `pwsh -c "... $home ..."` silently passes
+  an empty string.
 - For multi-statement scripts or anything complex, use a single-quoted heredoc — no escaping needed:
   ```bash
   pwsh -File - <<'PWSH'
@@ -192,6 +194,12 @@ yet — rather than deferring with no tracking mechanism.
 
 Find root cause before fixing. If three fixes have failed, stop and question the approach rather
 than attempting a fourth.
+
+### Claiming success
+
+If you tell the user something worked, that claim should be backed by evidence — not just "the script
+exited cleanly". Either the action was self-evidently verifiable (e.g. the Edit tool confirmed a
+match), or you checked the result. If you haven't checked, don't claim success.
 
 ### Code review
 
