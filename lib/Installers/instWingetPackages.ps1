@@ -24,21 +24,28 @@ function installWingetPackage([string] $packageId, [string] $version = """") {
 # .PARAMETER version
 # Optional - specific version number to install. ONLY USED if the package isn't already installed.
 # Doesn't upgrade or downgrade.
-# 
+#
+# .PARAMETER AlternatePaths
+# Optional additional paths that also indicate the package is already installed (e.g. a system-wide
+# install). If any alternate path exists, the install is skipped entirely — we don't
+# own that copy and don't attempt to update it.
+#
 # .NOTES
 #
 # Tip: When adding code for a new package, I might not know the installation path yet and want to install the package first to find out.
 # Just do this:
-# - Use something that doesn't exist, like "\foo". 
+# - Use something that doesn't exist, like "\foo".
 # - The 'verify' step will fail, after installing the package.
 # - Now find the location, update the code, and rerun.
-function Install-WingetPackage($stage, [string] $packageId, [string] $installPath, [string] $version = "") {
+function Install-WingetPackage($stage, [string] $packageId, [string] $installPath, [string] $version = "", [string[]] $AlternatePaths = @()) {
     $stage.SetSubstage("Install-WingetPackage($packageId) : package check")
 
     if ($installPath -eq "") { throw "Install path required" }
 
+    $alreadyInstalled = (Test-Path $installPath) -or ($AlternatePaths | Where-Object { Test-Path $_ } | Select-Object -First 1)
+
     #    if (-not (isPackageInstalled $packageId)) {   # This is very slow, so instead:
-    if (-not (Test-Path $installPath)) {
+    if (-not $alreadyInstalled) {
         $stage.OnChange()
         $stage.SetSubstage("Install-WingetPackage($packageId) : install")
         installWingetPackage $packageId $version
