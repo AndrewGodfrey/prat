@@ -99,22 +99,6 @@ CC is not well-designed for Windows. Review this section when CC improves Window
   ```
   The single-quoted delimiter `<<'PWSH'` is what prevents bash interpolation inside the heredoc.
 
-### File tools on Windows
-
-The Write and Edit tools both produce LF line endings. On Windows repos where `core.autocrlf=true`
-(common default), git will refuse to stage LF-only files. After writing or editing files, convert to
-CRLF:
-
-```bash
-sed -i 's/\r$//' "<file>" && sed -i 's/$/\r/' "<file>"
-```
-
-The first `sed` strips any existing `\r` so the second one is idempotent — safe to run multiple
-times on the same file (e.g. after editing a file across multiple rounds).
-
-Check with `git config core.autocrlf` if unsure. Verify with `file <path>` that line endings match
-expectations before telling the user the files are ready.
-
 ### Editing files
 
 When replacing a large block of text in a Windows file (CRLF line endings), the Edit tool's
