@@ -141,7 +141,7 @@ function Install-ClaudeAgentSandbox {
 
     Install-LocalAgentSandbox $stage `
         -agentUser       $agentUser `
-        -rwPaths         ($rwPaths + @("$claudeHome\.claude", "$claudeHome\.claude.json", "$claudeHome\.claude.json.backup")) `
+        -rwPaths         ($rwPaths + @("$claudeHome\.claude", "$claudeHome\.claude.json.backup")) `
         -roPaths         ($roPaths + @("$claudeHome\.local\bin")) `
         -safeDirectories $safeDirectories `
         -homeJunctions   $homeJunctions `
@@ -160,7 +160,10 @@ function Install-ClaudeAgentSandbox {
         Invoke-Gsudo { New-Item -ItemType Junction -Path $using:jLink -Target $using:jTarget | Out-Null }
     }
 
-    foreach ($fileName in @('.claude.json', '.claude.json.backup')) {
+    # .claude.json is intentionally NOT symlinked: Start-CommandLineAgent.ps1 removes and
+    # re-copies .claude.json at each launch (to refresh auth), so a symlink here would be
+    # replaced with a regular file on every cl invocation, causing spurious deploy updates.
+    foreach ($fileName in @('.claude.json.backup')) {
         $sLink = "$agentHome\$fileName"
         $sItem = Get-Item $sLink -ErrorAction SilentlyContinue
         if ($null -eq $sItem -or $sItem.LinkType -ne 'SymbolicLink') {
@@ -174,10 +177,13 @@ function Install-ClaudeAgentSandbox {
     # Grant add-subdirectory right on claudeHome so CC can create .claude.lock as a token-refresh
     # mutex. andrew_agent owns the dir it creates, so no Delete ACE on the parent is needed.
     # (AD) only — does not grant file creation, listing, or access to existing items.
-    $lockGrant = "${agentUser}:(AD)"
-    Invoke-Gsudo {
-        icacls $using:claudeHome /grant:r $using:lockGrant | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:claudeHome (exit $LASTEXITCODE)" }
+    if (-not $stage.GetIsStepComplete("claudeAgentSandbox/lockGrant/$agentUser")) {
+        $lockGrant = "${agentUser}:(AD)"
+        Invoke-Gsudo {
+            icacls $using:claudeHome /grant:r $using:lockGrant | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:claudeHome (exit $LASTEXITCODE)" }
+        }
+        $stage.SetStepComplete("claudeAgentSandbox/lockGrant/$agentUser")
     }
 }
 
