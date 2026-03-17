@@ -356,3 +356,33 @@ Describe "Merge-DeepHashtable" {
         $merged.permissions.allow | Should -Be @("a", "b", "c")
     }
 }
+
+Describe "Install-ClaudeUserSettings" {
+    BeforeEach {
+        $script:testDir = Join-Path (Resolve-Path "TestDrive:\").ProviderPath "instClaude-settings.Tests"
+        mkdir $testDir | Out-Null
+        $script:claudeDir = "$testDir\.claude"
+        mkdir $claudeDir | Out-Null
+        $script:stage = [MockStage]::new()
+
+        $script:settingsScript = "$testDir\Get-ClaudeUserSettings.ps1"
+        '@{ theme = "dark" }' | Out-File $settingsScript -Encoding utf8NoBOM
+
+        Mock Resolve-PratLibFile { return @($script:settingsScript) }
+    }
+    AfterEach {
+        Remove-Item $testDir -Recurse -Force
+    }
+
+    It "creates settings.json" {
+        Install-ClaudeUserSettings $stage $claudeDir
+
+        "$claudeDir\settings.json" | Should -Exist
+    }
+
+    It "does not set settings.json read-only" {
+        Install-ClaudeUserSettings $stage $claudeDir
+
+        (Get-ItemProperty "$claudeDir\settings.json").IsReadOnly | Should -BeFalse
+    }
+}
