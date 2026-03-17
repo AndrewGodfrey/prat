@@ -33,17 +33,17 @@ Describe "Get-AgentGitconfigContent" {
 
     It "includes [safe] entries for each directory" {
         InModuleScope Installers {
-            $result = Get-AgentGitconfigContent @("C:\Users\andrew\de", "C:\Users\andrew\prat")
+            $result = Get-AgentGitconfigContent @("C:\Users\xyz\de", "C:\Users\xyz\prat")
 
             $result | Should -Match "\[safe\]"
-            $result | Should -Match "directory = C:/Users/andrew/de"
-            $result | Should -Match "directory = C:/Users/andrew/prat"
+            $result | Should -Match "directory = C:/Users/xyz/de"
+            $result | Should -Match "directory = C:/Users/xyz/prat"
         }
     }
 
     It "includes [credential] section with empty helper to suppress auth dialogs" {
         InModuleScope Installers {
-            $result = Get-AgentGitconfigContent @("C:\Users\andrew\de")
+            $result = Get-AgentGitconfigContent @("C:\Users\xyz\de")
 
             $result | Should -Match "\[credential\]"
             $result | Should -Match "helper\s*="
@@ -52,7 +52,7 @@ Describe "Get-AgentGitconfigContent" {
 
     It "includes [user] section with a commit identity" {
         InModuleScope Installers {
-            $result = Get-AgentGitconfigContent @("C:\Users\andrew\de")
+            $result = Get-AgentGitconfigContent @("C:\Users\xyz\de")
 
             $result | Should -Match "\[user\]"
             $result | Should -Match "name\s*="

@@ -84,8 +84,8 @@ function internal_installDitto($stage) {
 
     # http://ditto-cp.sourceforge.net/
     #
-    # A version that I used for a long time and worked great, published in 2017: 3.21.223.0.
-    # Latest version as of 3/27/2024: 3.24.246.0
+    # A version that I used for a long time and worked great, published in 2017: v3.21.223.0.
+    # Latest version as of 3/27/2024: v3.24.246.0
     # Release notes: https://ditto-cp.sourceforge.io/
 
     # Bind Ctrl-Shift-V to text-only paste
@@ -148,7 +148,7 @@ function installPushoverNotification($stage, [array] $packageArgs) {
 <#
         # My activation information for https://fork.dev/
         @{
-            email = "bob@null.com"
+            email = "bob@example.com"
             key = "21A014C1-7137A92D-0A8F4857"
         }
 #>
@@ -253,8 +253,8 @@ $pratPackages = @{
     }
     pwsh = @{
         install = {
-            # If I want the latest version, I have to use machine scope. As of May 2024, the last version that supported user scope was 7.2.6.0,
-            # and the latest version was 7.4.2.0. https://github.com/microsoft/winget-cli/issues/4318
+            # If I want the latest version, I have to use machine scope. As of May 2024, the last version that supported user scope was v7.2.6.0,
+            # and the latest version was v7.4.2.0. https://github.com/microsoft/winget-cli/issues/4318
             installPratWingetPackage "Microsoft.PowerShell" -MachineScope
             fixupPath $stage "$env:programfiles\PowerShell\7"
         }
@@ -319,7 +319,7 @@ $pratPackages = @{
 
             # The winget package updates PATH
             #
-            # On one machine but not the other, it also created a symlink here: C:\Users\Andrew\AppData\Local\Microsoft\WinGet\Links\wget.exe
+            # On one machine but not the other, it also created a symlink here: C:\Users\xyz\AppData\Local\Microsoft\WinGet\Links\wget.exe
             # Dunno what that's about!
         }
     }

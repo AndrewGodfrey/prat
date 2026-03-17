@@ -97,7 +97,7 @@ $($safeLines -join "`n")
 #
 # .PARAMETER homeJunctions
 # Hashtable of name => target: creates junctions in the agent's home so that ~/name resolves
-# to the target path. E.g. @{ de = "C:\Users\andrew\de" } creates ~/de as a junction.
+# to the target path. E.g. @{ de = "C:\Users\xyz\de" } creates ~/de as a junction.
 #
 # .PARAMETER profileContent
 # Content to write to the agent's PowerShell profile

@@ -1,5 +1,7 @@
 BeforeAll {
     . $PSScriptRoot/../Find-SensitiveData.ps1
+
+    $sampleEmail = "user" + "@badexample.com"
 }
 
 Describe "Find-SensitiveDataInContent" {
@@ -34,21 +36,21 @@ Describe "Find-SensitiveDataInContent" {
 
     Context "email addresses" {
         It "flags a plain email address" {
-            $result = @(Find-SensitiveDataInContent -Content "contact user@example.com here" -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
+            $result = @(Find-SensitiveDataInContent -Content "contact $sampleEmail here" -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
 
             $result | Should -HaveCount 1
             $result[0] | Should -Match "email address"
         }
 
         It "flags an email in a comment" {
-            $result = @(Find-SensitiveDataInContent -Content "# send to andrew@home.net" -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
+            $result = @(Find-SensitiveDataInContent -Content "# send to $sampleEmail" -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
 
             $result | Should -HaveCount 1
             $result[0] | Should -Match "email address"
         }
 
         It "reports the file path in the finding" {
-            $result = @(Find-SensitiveDataInContent -Content "user@example.com" -RelPath "lib/foo.ps1" -HomeDir "C:\Users\alice")
+            $result = @(Find-SensitiveDataInContent -Content $sampleEmail -RelPath "lib/foo.ps1" -HomeDir "C:\Users\alice")
 
             $result[0] | Should -Match "lib/foo\.ps1"
         }
@@ -56,7 +58,7 @@ Describe "Find-SensitiveDataInContent" {
 
     Context "IP addresses" {
         It "flags a dotted-quad IP address" {
-            $result = @(Find-SensitiveDataInContent -Content "server at 192.168.1.10" -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
+            $result = @(Find-SensitiveDataInContent -Content ("server at 192.168" + ".1.10") -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
 
             $result | Should -HaveCount 1
             $result[0] | Should -Match "IP address"
@@ -65,7 +67,7 @@ Describe "Find-SensitiveDataInContent" {
 
     Context "multiple findings" {
         It "returns one finding per pattern matched, not per occurrence" {
-            $content = "user@a.com user@b.com"
+            $content = "user@" + "a.com user" + "@b.com"
             $result = @(Find-SensitiveDataInContent -Content $content -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
 
             $result | Should -HaveCount 1
@@ -73,7 +75,7 @@ Describe "Find-SensitiveDataInContent" {
         }
 
         It "returns one finding per pattern type when multiple types match" {
-            $content = "C:\Users\alice\prat and user@example.com and 10.0.0.1"
+            $content = "C:\Users\alice\prat and $sampleEmail and 10.0" + ".0.1"
             $result = @(Find-SensitiveDataInContent -Content $content -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
 
             $result | Should -HaveCount 3

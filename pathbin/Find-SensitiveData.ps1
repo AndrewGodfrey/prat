@@ -27,11 +27,15 @@ function Find-SensitiveDataInContent {
     if ($Content -match [regex]::Escape($HomeDir)) {
         $findings.Add("hardcoded home path: $RelPath")
     }
-    if ($Content -match '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}') {
-        $findings.Add("email address: $RelPath")
+    if ($Content -match '([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})') {
+        if (!($matches[0].EndsWith("@example.com"))) {
+            $findings.Add("email address: $RelPath")
+        }
     }
-    if ($Content -match '\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b') {
-        $findings.Add("IP address: $RelPath")
+    if ($Content -match '\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b') {
+        if ($matches[0] -notin @("127.0.0.1", "1.1.1.1")) {
+            $findings.Add("IP address: $RelPath")
+        }
     }
 
     return $findings
