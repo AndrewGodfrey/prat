@@ -27,7 +27,7 @@ function displayLastCommandTime($duration) {
 
 function reportOnSlowCommands($duration, $historyInfo, $lastCommandErrorStatus) {
     if ($duration -le 15) { return }
-    MaybeReport-SlowCommand $historyInfo $lastCommandErrorStatus
+    & "$PSScriptRoot/../On-SlowCommand.ps1" $historyInfo $lastCommandErrorStatus
 }
 
 
