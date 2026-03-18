@@ -1,6 +1,4 @@
-using module ..\PratBase\PratBase.psd1
 using module ..\TextFileEditor\TextFileEditor.psd1
-
 
 function installOrGetInstalledAliasesFile($stage, [string] $filename) {
     $autoProfilePath = (Resolve-Path "$PSScriptRoot\..\..").Path + "\auto\profile"
