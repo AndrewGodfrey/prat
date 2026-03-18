@@ -85,7 +85,7 @@ class InstallationTracker {
 
     [Void] EndStage([InstallationStage] $stage) {
         if ($this.currentStage -ne $stage) { throw "Internal error" }
-        Write-Verbose "Ending stage: $($stage.Name)"
+        Write-Verbose "Ending stage: $($stage.Name) ($($stage.Stopwatch.ElapsedMilliseconds)ms)"
         $this.currentStage = $null
     }
 
@@ -154,6 +154,7 @@ class InstallationStage {
     hidden [InstallationTracker] $parent
     hidden [bool] $stageHasMadeChanges = $False  # Whether the entire stage has made any changes so far
     hidden [bool] $throwOnChange = $False  # Useful for debugging unexpected changes
+    hidden [System.Diagnostics.Stopwatch] $Stopwatch
 
     [string] $Name
     [string] $CurrentSubStage = ""        # For progress reporting and error context (but not used for regular console output - too verbose).
@@ -162,6 +163,7 @@ class InstallationStage {
     InstallationStage([InstallationTracker] $parent, [string] $stageName) {
         $this.parent = $parent
         $this.Name = $stageName
+        $this.Stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
         $this.parent.UpdateProgress("")
     }
 

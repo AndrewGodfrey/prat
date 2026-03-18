@@ -33,6 +33,13 @@ Describe "InstallationTracker" {
         $tracker.EndStage($stage1)
     }
 
+    It "EndStage emits timing via Write-Verbose" {
+        Mock -ModuleName Installers Write-Verbose {}
+        $stage = $tracker.StartStage("timed stage")
+        $tracker.EndStage($stage)
+        Should -Invoke -ModuleName Installers -CommandName Write-Verbose -ParameterFilter { $Message -match "timed stage.*ms" }
+    }
+
     It "ReportErrorContext includes stage name" {
         $stage = $tracker.StartStage("my stage")
         try { throw "test error" } catch { $err = $_ }
