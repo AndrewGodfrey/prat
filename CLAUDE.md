@@ -19,6 +19,23 @@ t -RepoRoot ~/prat -Focus lib/Foo.ps1   # focused run
 - Tests for exported functions (e.g. `Get-PratRepo`, `Get-PratProject`) go in `lib/PratBase/` too (since that
   is where the source lives), but don't need `InModuleScope`.
 
+### Testing helper functions in deploy scripts
+Deploy scripts (`param` at top, side effects) can't be dot-sourced without triggering execution. To make
+helper functions testable, inline them at the top of the script and guard the execution body:
+
+```powershell
+param(...)           # must stay at top — NOT inside the if block
+
+function Helper { ... }
+
+if ($MyInvocation.InvocationName -ne ".") {
+    # main body — only runs when executed directly, not when dot-sourced
+}
+```
+
+Test files dot-source the script (`BeforeAll { . "$PSScriptRoot/myscript.ps1" }`) to load the helpers
+without triggering the body. Don't create separate files just to hold helpers for a single script.
+
 ### Readability patterns (see `Get-PratProject.Tests.ps1` as a reference)
 - Extract a `makeTestProfile` / `makeIndex` helper in `BeforeAll` to eliminate repeated profile-writing boilerplate.
 - Group related tests into `Context` blocks (e.g. "root resolution", "shortcuts", "command properties").
