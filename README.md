@@ -64,6 +64,10 @@ scripts in `pathbin/`.
 **Installation Pattern:** All installers use `Start-Installation` / `StartStage` / `EndStage` / `StopInstallation`
 with try/catch/finally and `ReportErrorContext`. Idempotent with quick-check support.
 
+**Config file ownership:** When a deploy script overwrites a config file that an external tool also writes to,
+the fix depends on who owns the file. If the external tool owns it (e.g. dynamically generated credentials),
+preserve those sections — don't default to "add it to our deploy layer".
+
 ### Profile Startup Chain
 
 `installedProfile.ps1` → `profilePicker.ps1` → `scriptProfile.ps1` (aliases, PATH, formatting) →
