@@ -41,6 +41,10 @@ Run a focused subset of tests, add: `-Focus <focus>`, where focus can be a file 
   LineArray class, XML sections, PowerShell hashtable editing. Preserves line endings.
 - **Installers** — Idempotent deployment framework:
   `InstallationTracker` class, installation database (`auto/instDb`), staged installs with change tracking.
+  `Install-PratPackage` (in `lib/Installers/instPackages.ps1`) installs a named package and its transitive
+  dependencies automatically. When analyzing what a deploy script installs, trace the `dependencies` field
+  in the `$pratPackages` hashtable — e.g. `Install-PratPackage "pwsh"` also installs `sudo`;
+  `Install-PratPackage "pester"` also installs `sudo` and `removeBuiltinPester`.
 
 ### Key Patterns
 
