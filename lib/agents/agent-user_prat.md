@@ -122,20 +122,6 @@ Workaround for large deletions:
 
 ---
 
-### Azure DevOps PR comments
-
-`az repos pr` does not have a `thread` subcommand. To fetch PR comment threads, use the lower-level
-`az devops invoke`:
-
-```bash
-az devops invoke --area git --resource pullRequestThreads \
-  --route-parameters project="<project>" repositoryId=<repo> pullRequestId=<id> \
-  --api-version 7.0 -o json
-```
-
-`WebFetch` will not work on ADO URLs (auth redirect). `curl` requires a PAT. The `az devops invoke`
-approach works with the existing `az login` session.
-
 ## Model workarounds
 
 Compensate for model reasoning/behavior tendencies. Review when upgrading Claude model versions.
@@ -182,6 +168,13 @@ No performative agreement ("Great point!", "You're absolutely right!"). Just fix
 
 For external reviewer suggestions: verify against the codebase before implementing. Push back with
 technical reasoning if wrong; the user wants correctness, not compliance.
+
+### Claude Code feature knowledge
+
+Your training data knowledge of Claude Code features is unreliable — file loading behavior, include syntax,
+skill discovery, settings, and conventions are all areas where you've been confidently wrong. Before making
+claims about what Claude Code does or doesn't support, consult the `claude-code-guide` agent. Don't answer
+authoritatively from model knowledge alone.
 
 ### Pacing and initiative
 
