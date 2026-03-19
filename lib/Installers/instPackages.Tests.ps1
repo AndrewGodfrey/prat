@@ -1,9 +1,11 @@
 BeforeDiscovery {
+    Import-Module "$PSScriptRoot/../PratBase/PratBase.psd1" -Force
     Import-Module "$PSScriptRoot/Installers.psd1" -Force
 }
 
 Describe "Install-PratPackage" {
     BeforeAll {
+        Import-Module "$PSScriptRoot/../PratBase/PratBase.psd1" -Force
         Import-Module "$PSScriptRoot/Installers.psd1" -Force
         Mock -ModuleName Installers Write-Progress {}
         Mock -ModuleName Installers Write-Host {}
