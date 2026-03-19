@@ -86,7 +86,7 @@ $($safeLines -join "`n")
 # Local Windows username for the sandboxed agent account.
 #
 # .PARAMETER rwPaths
-# Paths to grant Modify (read/write) access with inheritance: (OI)(CI)M.
+# Paths to grant Full Control with inheritance: (OI)(CI)F.
 #
 # .PARAMETER roPaths
 # Paths to grant ReadAndExecute access with inheritance: (OI)(CI)RX.
@@ -163,7 +163,7 @@ function Install-LocalAgentSandbox {
         $normPath = $path -replace '/', '\'
         ensurePathExists $normPath
         $isDir    = Test-Path -PathType Container $normPath
-        $grant    = if ($isDir) { "${agentUser}:(OI)(CI)M" } else { "${agentUser}:M" }
+        $grant    = if ($isDir) { "${agentUser}:(OI)(CI)F" } else { "${agentUser}:F" }
         $icacls   = if ($isDir) { "icacls `"$normPath`" /grant:r `"$grant`" /T" } `
                     else        { "icacls `"$normPath`" /grant:r `"$grant`"" }
         Invoke-Gsudo {
