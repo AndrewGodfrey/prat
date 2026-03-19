@@ -245,6 +245,11 @@ $pratPackages = @{
         }
         dependencies = @("sudo", "removeBuiltinPester")
     }
+    powerToys = @{
+        install = {
+            installPratWingetPackage "Microsoft.PowerToys"
+        }
+    }
     pushoverNotification = @{
         install = { installPushoverNotification $stage $packageArgs }
     }
