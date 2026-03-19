@@ -104,3 +104,30 @@ Describe "Install-PratPackage" {
         }
     }
 }
+
+Describe "installClaude" {
+    BeforeAll {
+        Import-Module "$PSScriptRoot/Installers.psd1" -Force
+        Mock -ModuleName Installers invokeClaudeInstaller {}
+        Mock -ModuleName Installers Install-UserPathEntry {}
+    }
+
+    It "warns and skips install when Claude is running" {
+        Mock -ModuleName Installers isClaudeRunning { return $true }
+
+        $warnings = InModuleScope Installers { installClaude $null } 3>&1 |
+            Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
+
+        $warnings | Should -Not -BeNullOrEmpty
+        Should -Not -Invoke invokeClaudeInstaller -ModuleName Installers
+    }
+
+    It "runs installer when Claude is not running" {
+        Mock -ModuleName Installers isClaudeRunning { return $false }
+        Mock -ModuleName Installers Test-Path { return $true } -ParameterFilter { $Path -like "*claude.exe" }
+
+        InModuleScope Installers { installClaude $null }
+
+        Should -Invoke invokeClaudeInstaller -ModuleName Installers -Times 1
+    }
+}

@@ -177,17 +177,26 @@ function installForkGitClient($stage) {
     }
 }
 
+function isClaudeRunning() {
+    return [bool](Get-Process claude -ErrorAction SilentlyContinue)
+}
+
+function invokeClaudeInstaller() {
+    irm https://claude.ai/install.ps1 | iex
+}
+
 function installClaude($stage) {
     # Use the native installer, because:
     # - the winget installer lags behind the latest version
     # - the npm installer depends on the system-installed node.js, causing conflicts when working
     #   on code that requires an old version).
 
-    if (Get-Process claude -ErrorAction SilentlyContinue) {
-        throw "Claude is running — close it and run 'd' again to apply the update."
+    if (isClaudeRunning) {
+        Write-Warning "Claude is running — skipping update. Close Claude and run 'd' again to apply it."
+        return
     }
 
-    irm https://claude.ai/install.ps1 | iex
+    invokeClaudeInstaller
 
     $localBin = "$home/.local/bin"
     $destFile = "$localBin/claude.exe"
