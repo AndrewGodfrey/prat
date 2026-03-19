@@ -47,20 +47,25 @@ function fixupPath($stage, $newPath) {
     Install-UserPathEntry $stage $newPath -CurrentProcessOnly
 }
 
+function invokeWingetUserScope([string] $wingetPackageId) {
+    winget install --scope user --silent --exact --id $wingetPackageId --accept-package-agreements
+}
+
 function installPratWingetPackage([string] $wingetPackageId, [switch] $MachineScope, [switch] $NoScope) {
     if ($NoScope -and $MachineScope) { throw "Can't specify both -NoScope and -MachineScope" }
     $errorName = ""
 
     if ($NoScope) {
-        # This was added specifically for package "Ditto.Ditto". 
-        #   It doesn't support "--scope machine": If you sudo, then it runs elevated; if you don't sudo, then it fails with "access denied". 
+        # This was added specifically for package "Ditto.Ditto".
+        #   It doesn't support "--scope machine": If you sudo, then it runs elevated; if you don't sudo, then it fails with "access denied".
         #   And it doesn't support "--scope user" - it fails with APPINSTALLER_CLI_ERROR_NO_APPLICABLE_INSTALLER in that case.
         winget install --silent --exact --id $wingetPackageId --accept-package-agreements --accept-source-agreements
     } elseif ($MachineScope) {
         # I prefer user scope, but some packages don't support it.
         Invoke-Gsudo {winget install --scope machine --silent --exact --id $using:wingetPackageId --accept-package-agreements}
     } else {
-        winget install --scope user --silent --exact --id $wingetPackageId --accept-package-agreements
+        if (isWingetPackageInstalledMachineScope $wingetPackageId) { return }
+        invokeWingetUserScope $wingetPackageId
     }
 
     switch ($lastExitCode) {

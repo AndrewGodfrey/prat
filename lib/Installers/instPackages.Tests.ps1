@@ -105,6 +105,29 @@ Describe "Install-PratPackage" {
     }
 }
 
+Describe "installPratWingetPackage" {
+    BeforeAll {
+        Import-Module "$PSScriptRoot/Installers.psd1" -Force
+        Mock -ModuleName Installers invokeWingetUserScope { $global:LASTEXITCODE = 0 }
+    }
+
+    It "skips user-scope install when package is already installed at machine scope" {
+        Mock -ModuleName Installers isWingetPackageInstalledMachineScope { return $true }
+
+        InModuleScope Installers { installPratWingetPackage "Some.Package" }
+
+        Should -Not -Invoke invokeWingetUserScope -ModuleName Installers
+    }
+
+    It "runs user-scope install when package is not installed at machine scope" {
+        Mock -ModuleName Installers isWingetPackageInstalledMachineScope { return $false }
+
+        InModuleScope Installers { installPratWingetPackage "Some.Package" }
+
+        Should -Invoke invokeWingetUserScope -ModuleName Installers -Times 1
+    }
+}
+
 Describe "installClaude" {
     BeforeAll {
         Import-Module "$PSScriptRoot/Installers.psd1" -Force

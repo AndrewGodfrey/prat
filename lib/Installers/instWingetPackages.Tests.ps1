@@ -13,6 +13,7 @@ Describe "Install-WingetPackage" {
         $script:stage = [MockStage]::new()
         Mock installWingetPackage {}
         Mock isWingetPackageInstalled { return $true }
+        Mock isWingetPackageInstalledMachineScope { return $false }
     }
 
     Context "installPath present" {
@@ -42,6 +43,18 @@ Describe "Install-WingetPackage" {
             $path = "TestDrive:\broken-install"
 
             { Install-WingetPackage $stage "Foo.Bar" $path } | Should -Throw
+        }
+    }
+
+    Context "machine-scope already installed" {
+        It "skips install when machine-scope package is present" {
+            $path = "TestDrive:\not-present"
+            Mock isWingetPackageInstalledMachineScope { return $true }
+
+            Install-WingetPackage $stage "Foo.Bar" $path
+
+            $stage.changeCount | Should -Be 0
+            Should -Not -Invoke installWingetPackage
         }
     }
 

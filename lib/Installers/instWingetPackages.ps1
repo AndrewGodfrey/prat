@@ -7,6 +7,11 @@ function isWingetPackageInstalled([string] $packageId) {
     return [String]::Join("", $outputStrings).Contains($packageId)
 }
 
+function isWingetPackageInstalledMachineScope([string] $packageId) {
+    winget list --exact --id $packageId --scope machine | Out-Null
+    return $LASTEXITCODE -eq 0
+}
+
 function installWingetPackage([string] $packageId, [string] $version = """") {
     $versionParam = @()
     if ($version -ne "") {
@@ -46,6 +51,10 @@ function Install-WingetPackage($stage, [string] $packageId, [string] $installPat
 
     #    if (-not (isPackageInstalled $packageId)) {   # This is very slow, so instead:
     if (-not $alreadyInstalled) {
+        if (isWingetPackageInstalledMachineScope $packageId) {
+            return
+        }
+
         $stage.OnChange()
         $stage.SetSubstage("Install-WingetPackage($packageId) : install")
         installWingetPackage $packageId $version
