@@ -66,7 +66,6 @@ To capture a correction, invoke the `remember` skill — it covers where to save
 
 - Managed by the `de` and `prat` repos. Each `de` repo is user-specific. If a user says "the" de repo
   they mean their own one.
-- When making a plan, label each step with "[USER]" or "[CLAUDE]" as appropriate.
 
 ### Style
 
