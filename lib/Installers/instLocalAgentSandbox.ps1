@@ -208,20 +208,6 @@ function Install-LocalAgentSandbox {
     $agentGitconfig = Join-Path $agentHome ".gitconfig"
     Install-TextToFile $stage $agentGitconfig (Get-AgentGitconfigContent $safeDirectories) -SudoOnWrite
 
-    # Junction .local\bin to the managing user's — ensures agent always runs the current version
-    # and can't accumulate a stale separate copy (agent has RX on the target, so writes fail cleanly).
-    if ($claudeHome) {
-        $localBin       = "$agentHome\.local\bin"
-        $localBinTarget = "$claudeHome\.local\bin"
-        $null = New-Item -ItemType Directory -Path "$agentHome\.local" -ErrorAction SilentlyContinue
-        $jItem = Get-Item $localBin -ErrorAction SilentlyContinue
-        if ($null -eq $jItem -or $jItem.LinkType -ne 'Junction') {
-            $stage.OnChange()
-            if ($null -ne $jItem) { Remove-Item -Force -Recurse $localBin }
-            New-Item -ItemType Junction -Path $localBin -Target $localBinTarget | Out-Null
-        }
-    }
-
     # SSH authorized_keys — enables loopback SSH access from the managing user.
     # Done entirely elevated: after first run the file is owned by agentUser with no ACE for andrew,
     # so non-elevated reads/writes would fail on re-runs.

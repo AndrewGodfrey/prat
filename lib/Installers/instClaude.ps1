@@ -174,6 +174,18 @@ function Install-ClaudeAgentSandbox {
         }
     }
 
+    # Junction .local\bin to the managing user's — ensures agent always runs the current version
+    # and can't accumulate a stale separate copy (agent has RX on the target via roPaths).
+    $localBin       = "$agentHome\.local\bin"
+    $localBinTarget = "$claudeHome\.local\bin"
+    $null = New-Item -ItemType Directory -Path "$agentHome\.local" -ErrorAction SilentlyContinue
+    $jItem = Get-Item $localBin -ErrorAction SilentlyContinue
+    if ($null -eq $jItem -or $jItem.LinkType -ne 'Junction') {
+        $stage.OnChange()
+        if ($null -ne $jItem) { Remove-Item -Force -Recurse $localBin }
+        New-Item -ItemType Junction -Path $localBin -Target $localBinTarget | Out-Null
+    }
+
     # Grant add-subdirectory right on claudeHome so CC can create .claude.lock as a token-refresh
     # mutex. andrew_agent owns the dir it creates, so no Delete ACE on the parent is needed.
     # (AD) only — does not grant file creation, listing, or access to existing items.
