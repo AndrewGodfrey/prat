@@ -100,6 +100,9 @@ CC is not well-designed for Windows. Review this section when CC improves Window
 
 ### Editing files
 
+If the user mentions they have edited a file, re-read it before attempting any further edits — even
+if you already read it earlier in the conversation.
+
 When replacing a large block of text in a Windows file (CRLF line endings), the Edit tool's
 string matching can fail even when the content looks correct — "String to replace not found."
 Workaround for large deletions:
