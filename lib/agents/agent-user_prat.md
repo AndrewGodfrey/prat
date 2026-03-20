@@ -103,6 +103,10 @@ CC is not well-designed for Windows. Review this section when CC improves Window
 Re-read a file whenever it may have changed since you last read it — e.g. the user has edited it,
 or time has passed. Don't rely on a stale read.
 
+For multi-line string replacements in pwsh scripts, use `.IndexOf()` + `.Substring()` rather than
+`.Replace()` with multi-line literals. Single-quoted PS strings don't expand `` `r`n ``, so `.Replace()`
+silently fails on CRLF content. Index-based splicing is reliable regardless of line endings.
+
 When replacing a large block of text in a Windows file (CRLF line endings), the Edit tool's
 string matching can fail even when the content looks correct — "String to replace not found."
 Workaround for large deletions:
