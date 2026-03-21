@@ -7,37 +7,22 @@ Describe "Find-JsonSection" {
         $filename = "test.json"
 
         # Lines (0-based):
-        #  0: {
-        #  1:   "profiles": {
-        #  2:     "defaults": {},
-        #  3:     "list": [
-        #  4:       {
-        #  5:         "guid": "{abc}",
-        #  6:         "name": "Profile1"
-        #  7:       },
-        #  8:       {
-        #  9:         "guid": "{def}",
-        # 10:         "name": "Profile2"
-        # 11:       }
-        # 12:     ]
-        # 13:   }
-        # 14: }
-        $script:json = testText @"
-            {
-              "profiles": {
-                "defaults": {},
-                "list": [
-                  {
-                    "guid": "{abc}",
-                    "name": "Profile1"
-                  },
-                  {
-                    "guid": "{def}",
-                    "name": "Profile2"
-                  }
-                ]
-              }
-            }
+        $script:json = testTextAt 12 @"
+         0: {
+         1:   "profiles": {
+         2:     "defaults": {},
+         3:     "list": [
+         4:       {
+         5:         "guid": "{abc}",
+         6:         "name": "Profile1"
+         7:       },
+         8:       {
+         9:         "guid": "{def}",
+        10:         "name": "Profile2"
+        11:       }
+        12:     ]
+        13:   }
+        14: }
 "@
     }
 
