@@ -255,6 +255,7 @@ function Invoke-PesterAsJob {
     }
 }
 
+. $PSScriptRoot\Format-Duration.ps1
 . $PSScriptRoot\envDelta.ps1
 . $PSScriptRoot\gitForkpoint.ps1
 . $PSScriptRoot\pratRepos.ps1
