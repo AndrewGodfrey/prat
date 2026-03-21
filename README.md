@@ -57,7 +57,7 @@ navigation shortcuts, workspace definitions, cached env delta path.
 caches them, and replays them fast — avoiding slow enlistment-window startup. Key functions:
 `Export-EnvDeltaFromInvokedBatchScript`, `Invoke-CommandWithCachedEnvDelta`, `Install-CachedEnvDelta`.
 
-**Override Mechanism:** `Get-DevEnvironments` returns layered dev environment descriptors.
+**Override Mechanism:** `Get-CodebaseLayers` returns codebase layer descriptors.
 `Resolve-PratLibFile` finds overridden files (e.g., `interactiveProfile_<devenv>.ps1`). PATH-based override for
 scripts in `pathbin/`.
 

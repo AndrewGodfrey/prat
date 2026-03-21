@@ -1,5 +1,5 @@
 # .SYNOPSIS
-# Resolves a file path to a file in one of the registered dev environments (as in Get-DevEnvironments).
+# Resolves a file path to a file in one of the registered codebase layers (as in Get-CodebaseLayers).
 # e.g. given "lib\profile\interactiveProfile.ps1" it will match to "lib\profile\interactiveProfile_prat.ps1" unless
 #      another dev environment overrides it. Note the "_prat" suffix. Appending the dev environment name serves 2 purposes:
 #      1. The files are easier to distinguish in an IDE.
@@ -14,7 +14,7 @@ $fileWithoutExt = $file.SubString(0, $file.Length - $ext.Length)
 
 $listAllResults = @()
 
-foreach ($de in (Get-DevEnvironments)) {
+foreach ($de in (Get-CodebaseLayers)) {
     $candidate = "$($de.Path)\$($fileWithoutExt)_$($de.Name)$ext"
     if (Test-Path $candidate) {
         if ($ListAll) {

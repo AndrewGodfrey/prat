@@ -1,6 +1,6 @@
 <#
   Add one or more override paths to Prat's binary search path. 
-  They are added before Prat's own paths, so we can override things like Get-DevEnvironments.ps1.
+  They are added before Prat's own paths, so we can override things like Get-CodebaseLayers.ps1.
 
   Note: For the bootstrap case, in order to get this far we would have put Prat in $env:Path already.
         So, after doing this step, a bootstrap script needs to rearrange $env:Path. 

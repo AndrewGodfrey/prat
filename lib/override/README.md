@@ -5,7 +5,7 @@ This is for making your own custom dev environment, using Prat as a base.
 Mechanisms are provided so that you can 'override' various things in Prat:
 
 - You can put things in $env:Path earlier than Prat's binpaths. See Install-PratBinPathOverride.ps1.
-- Using that, you can override Prat scripts like 'Get-DevEnvironments.ps1'.
+- Using that, you can override Prat scripts like 'Get-CodebaseLayers.ps1'.
 - Using Resolve-PratLibFile.ps1, you can override Powershell startup ('profile') behavior.
 
 
@@ -44,5 +44,5 @@ I could also imagine someone wanting it to be nestable. This makes sense:
 - instead of customizing Prat, you might piggyback on someone else's customization.
 - or, you could have some common customization, and then on a work machine some work-specific customization
 
-I've started in that direction by making Get-DevEnvironments.ps1 return an array. (i.e. a 'stack' of devenvs).
+I've started in that direction by making Get-CodebaseLayers.ps1 return an array. (i.e. a 'stack' of devenvs).
 But more work is needed.

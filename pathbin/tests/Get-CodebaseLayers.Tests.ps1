@@ -1,6 +1,6 @@
 BeforeAll {
-    $pratImplementation = Resolve-Path "$PSScriptRoot\..\Get-DevEnvironments.ps1"
-    $overriddenImplementation = (Get-Command Get-DevEnvironments).Source
+    $pratImplementation = Resolve-Path "$PSScriptRoot\..\Get-CodebaseLayers.ps1"
+    $overriddenImplementation = (Get-Command Get-CodebaseLayers).Source
 
     function test_returnsExpectedFormat($ACT) {
         $result = @( &$ACT )
@@ -13,7 +13,7 @@ BeforeAll {
     }
 }
 
-Describe "Get-DevEnvironments" {
+Describe "Get-CodebaseLayers" {
     It "Returns the expected format" {
         test_returnsExpectedFormat $pratImplementation
     }
