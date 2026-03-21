@@ -1,7 +1,7 @@
-using module ..\..\TextFileEditor\TextFileEditor.psd1
-using module ..\..\Installers\Installers.psd1
+using module .\TextFileEditor\TextFileEditor.psd1
+using module .\Installers\Installers.psd1
 
-param($project, [hashtable]$CommandParameters = @{})
+param([switch]$Force)
 
 function main($Force) {
     $ErrorActionPreference = "stop"
@@ -13,7 +13,7 @@ function main($Force) {
 
         Install-PsProfile $it
         instInteractiveAliases $it
-        
+
         instSchTasks $it
 
         # This is already done in Install-PratPhase3.ps1. Just putting it here for ease of Prat development.
@@ -29,11 +29,11 @@ function main($Force) {
 function instSchTasks($it) {
     $stage = $it.StartStage('schTasks')
 
-    Install-DailyScheduledTask $stage "test" "Prat - test task" $PSScriptRoot\..\..\schtasks\daily_test.ps1 "1:08AM"
-    Install-DailyScheduledTask $stage "cleanManagedDirectories" "Prat - Clean managed directories"  $PSScriptRoot\..\..\schtasks\daily_cleanManagedDirectories.ps1 "1:30AM"
+    Install-DailyScheduledTask $stage "test" "Prat - test task" $PSScriptRoot\schtasks\daily_test.ps1 "1:08AM"
+    Install-DailyScheduledTask $stage "cleanManagedDirectories" "Prat - Clean managed directories"  $PSScriptRoot\schtasks\daily_cleanManagedDirectories.ps1 "1:30AM"
     $onLogonScripts = & (Resolve-PratLibFile "lib/schtasks/Get-OnLogonScripts.ps1")
     if ($onLogonScripts.Count -gt 0) {
-        Install-AtLogonScheduledTask $stage "onLogonScripts" "Prat - invoke on-logon scripts" $PSScriptRoot\..\..\schtasks\onLogon_Invoke-OnLogonScripts.ps1
+        Install-AtLogonScheduledTask $stage "onLogonScripts" "Prat - invoke on-logon scripts" $PSScriptRoot\schtasks\onLogon_Invoke-OnLogonScripts.ps1
     }
 
     $it.EndStage($stage)
@@ -42,7 +42,7 @@ function instSchTasks($it) {
 function instInteractiveAliases($it) {
     # If any of these aliases prove objectionable, they can be made opt-in using pratPackages.
     # For an example see the package "df", which aliases to Get-DiskFreeSpace.
-    
+
     $stage = $it.StartStage("interactive aliases")
     Install-InteractiveAlias $stage 'pb' 'Prebuild-Codebase'
     Install-InteractiveAlias $stage 'b' 'Build-Codebase'
@@ -69,4 +69,4 @@ function instInteractiveAliases($it) {
     $it.EndStage($stage)
 }
 
-main $CommandParameters['Force']
+main $Force

@@ -18,6 +18,11 @@ function makeTestCommand([string]$cmd) {
             prat   = @{
                 root   = $PSScriptRoot
                 test   = "lib/Test-PratLayer.ps1"
+                deploy = {
+                    param($project, [hashtable]$CommandParameters = @{})
+                    $force = [bool]($CommandParameters['Force'])
+                    pwsh -File "$($project.root)/lib/deployLayer_prat.ps1" -Force:$force
+                }
             }
             testCb = @{
                 root           = "pathbin/tests/testCb"
