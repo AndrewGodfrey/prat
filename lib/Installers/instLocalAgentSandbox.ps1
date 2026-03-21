@@ -71,6 +71,33 @@ $($safeLines -join "`n")
 "@
 }
 
+function ensurePathExists($normPath) {
+    if (Test-Path $normPath) { return }
+    $ext = [System.IO.Path]::GetExtension($normPath)
+    if ($ext -eq '') {
+        New-Item -ItemType Directory -Path $normPath -Force | Out-Null
+    } elseif ($ext -eq '.json' -or $normPath.EndsWith('.json.backup')) {
+        Set-Content -Path $normPath -Value '{}' -Encoding utf8NoBOM
+    } else {
+        throw "Don't know how to create placeholder for: $normPath"
+    }
+}
+
+function applyPathGrants($agentUser, $paths, $permission) {
+    foreach ($path in $paths) {
+        $normPath = $path -replace '/', '\'
+        ensurePathExists $normPath
+        $isDir  = Test-Path -PathType Container $normPath
+        $grant  = if ($isDir) { "${agentUser}:(OI)(CI)$permission" } else { "${agentUser}:$permission" }
+        $icacls = if ($isDir) { "icacls `"$normPath`" /grant:r `"$grant`" /T" } `
+                  else        { "icacls `"$normPath`" /grant:r `"$grant`"" }
+        Invoke-Gsudo {
+            Invoke-Expression $using:icacls | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:normPath (exit $LASTEXITCODE)" }
+        }
+    }
+}
+
 # .SYNOPSIS
 # Set up a sandboxed local Windows account for running an AI coding agent.
 #
@@ -145,44 +172,11 @@ function Install-LocalAgentSandbox {
         if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:agentHomeNorm (exit $LASTEXITCODE)" }
     }
 
-    # NTFS grants — always re-apply; /grant:r avoids duplicate ACEs on re-runs.
+    # NTFS grants — roPaths first, then rwPaths so rwPaths wins when paths overlap (e.g. a roPath
+    # parent of an rwPath). /grant:r avoids duplicate ACEs on re-runs.
     # Run elevated so icacls can traverse subdirectories owned by the agent account.
-    function ensurePathExists($normPath) {
-        if (Test-Path $normPath) { return }
-        $ext = [System.IO.Path]::GetExtension($normPath)
-        if ($ext -eq '') {
-            New-Item -ItemType Directory -Path $normPath -Force | Out-Null
-        } elseif ($ext -eq '.json' -or $normPath.EndsWith('.json.backup')) {
-            Set-Content -Path $normPath -Value '{}' -Encoding utf8NoBOM
-        } else {
-            throw "Don't know how to create placeholder for: $normPath"
-        }
-    }
-
-    foreach ($path in $rwPaths) {
-        $normPath = $path -replace '/', '\'
-        ensurePathExists $normPath
-        $isDir    = Test-Path -PathType Container $normPath
-        $grant    = if ($isDir) { "${agentUser}:(OI)(CI)F" } else { "${agentUser}:F" }
-        $icacls   = if ($isDir) { "icacls `"$normPath`" /grant:r `"$grant`" /T" } `
-                    else        { "icacls `"$normPath`" /grant:r `"$grant`"" }
-        Invoke-Gsudo {
-            Invoke-Expression $using:icacls | Out-Null
-            if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:normPath (exit $LASTEXITCODE)" }
-        }
-    }
-    foreach ($path in $roPaths) {
-        $normPath = $path -replace '/', '\'
-        ensurePathExists $normPath
-        $isDir    = Test-Path -PathType Container $normPath
-        $grant    = if ($isDir) { "${agentUser}:(OI)(CI)RX" } else { "${agentUser}:RX" }
-        $icacls   = if ($isDir) { "icacls `"$normPath`" /grant:r `"$grant`" /T" } `
-                    else        { "icacls `"$normPath`" /grant:r `"$grant`"" }
-        Invoke-Gsudo {
-            Invoke-Expression $using:icacls | Out-Null
-            if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:normPath (exit $LASTEXITCODE)" }
-        }
-    }
+    applyPathGrants $agentUser $roPaths 'RX'
+    applyPathGrants $agentUser $rwPaths 'F'
 
     # Home directory junctions — make ~/name resolve to the target from the agent's perspective.
     # Andrew has Modify on agentHome (granted above) so no elevation needed.

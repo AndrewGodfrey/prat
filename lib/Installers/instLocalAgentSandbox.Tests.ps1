@@ -2,6 +2,37 @@ BeforeDiscovery {
     Import-Module "$PSScriptRoot/Installers.psd1" -Force
 }
 
+Describe "Install-LocalAgentSandbox" {
+    BeforeAll {
+        Import-Module "$PSScriptRoot/Installers.psd1" -Force
+        # Stub for external command not available in test environment
+        function global:Invoke-Gsudo([scriptblock]$ScriptBlock) {}
+    }
+
+    Context "NTFS grant ordering" {
+        It "applies roPaths grants before rwPaths so rwPaths wins on overlap" {
+            InModuleScope Installers {
+                $stage = [PSCustomObject]@{}
+                $stage | Add-Member ScriptMethod GetIsStepComplete { $false }
+                $stage | Add-Member ScriptMethod OnChange {}
+                $stage | Add-Member ScriptMethod SetStepComplete {}
+
+                $callOrder = [System.Collections.Generic.List[string]]::new()
+                Mock applyPathGrants    { $callOrder.Add($permission) }
+                Mock Get-LocalUser      { [PSCustomObject]@{} }
+                Mock Test-Path          { $true }
+                Mock Invoke-Gsudo       {}
+                Mock Install-TextToFile {}
+
+                Install-LocalAgentSandbox $stage -agentUser 'test_agent' `
+                    -rwPaths @('C:\test\rw') -roPaths @('C:\test\ro')
+
+                $callOrder | Should -Be @('RX', 'F')
+            }
+        }
+    }
+}
+
 Describe "Get-SshdConfigContent" {
     BeforeAll {
         Import-Module "$PSScriptRoot/Installers.psd1" -Force
