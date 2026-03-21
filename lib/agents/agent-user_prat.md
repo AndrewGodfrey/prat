@@ -153,9 +153,10 @@ input validation isn't needed.
 
 ### Incremental transformations
 
-When removing a comment during a refactor or migration, decide whether it belongs in the end
-state. If yes, carry it forward immediately — as a TODO comment if the target code doesn't exist
-yet — rather than deferring with no tracking mechanism.
+When removing any structural element during a refactor or migration — comment, error handling,
+resource cleanup (e.g. `Push-Location`/`Pop-Location`), try/finally — decide whether it belongs
+in the end state. If yes, carry it forward immediately — as a TODO comment if the target code
+doesn't exist yet — rather than deferring with no tracking mechanism.
 
 ### Debugging
 

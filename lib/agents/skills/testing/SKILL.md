@@ -51,6 +51,11 @@ Anti-patterns:
 - Collection-processing code tested only with one item (zero and two-plus unchecked)
 - Relative path with implicit current-directory dependency
 - Numeric edge cases (zero, overflow)
+- **"Value is restored" tests:** when asserting that X is restored to its original value, ensure
+  the pre-test value of X is distinct from what the code would leave it at without restoration —
+  otherwise a coincidental match makes the test pass when it should fail. Set an explicit starting
+  state (e.g. `Set-Location $startDir` where `$startDir` differs from all paths the code navigates
+  to) rather than relying on wherever the test process happens to be.
 
 The goal is not to test every parameter, but to test every distinct mechanism or assumption. When
 several inputs are structurally identical, one representative test is enough — but watch for inputs
