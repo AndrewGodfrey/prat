@@ -264,3 +264,62 @@ function Update-JsonSection($jsonContent, $pathArray, $newSection, $filename) {
 
     return Add-Lines $jsonContent $parentRange.idxLast $newSection
 }
+
+# Moves a JSON array element (identified by the last [@key='value'] step in $pathArray) to position 0.
+# Returns the updated JSON content. No-op if not found or already first.
+function Move-JsonArrayElementToFirst($jsonContent, $pathArray, $filename) {
+    $elemRange = Find-JsonSection $jsonContent $pathArray $filename
+    if ($null -eq $elemRange) { return $jsonContent }
+
+    $parentPath = $pathArray[0..($pathArray.Length - 2)]
+    $parentRange = Find-JsonSection $jsonContent $parentPath $filename
+
+    # Find first non-whitespace line after the opening bracket
+    $lines = (ConvertTo-UnixLineEndings $jsonContent) -split "`n"
+    $firstElemLine = $parentRange.idxFirst + 1
+    while ($firstElemLine -lt $parentRange.idxLast -and [string]::IsNullOrWhiteSpace($lines[$firstElemLine])) {
+        $firstElemLine++
+    }
+    if ($elemRange.idxFirst -eq $firstElemLine) { return $jsonContent }  # already first
+
+    # Extract element text, stripping trailing comma if present
+    $elemText = Read-Lines $jsonContent $elemRange
+    $elemLastLine = $lines[$elemRange.idxLast]
+    $hasTrailingComma = $elemLastLine.TrimEnd().EndsWith(',')
+    if ($hasTrailingComma) {
+        $elemLines = $elemText -split "`n"
+        $trimmed = $elemLines[-1].TrimEnd()
+        $elemLines[-1] = $trimmed.Substring(0, $trimmed.Length - 1)
+        $elemText = $elemLines -join "`n"
+    }
+
+    # Remove element from current position
+    if ($hasTrailingComma) {
+        $jsonContent = Format-ReplaceLines $jsonContent $elemRange ""
+    } else {
+        # Element was last — strip comma from the preceding non-whitespace line
+        $prevLine = $elemRange.idxFirst - 1
+        while ($prevLine -ge 0 -and [string]::IsNullOrWhiteSpace($lines[$prevLine])) { $prevLine-- }
+        $prevContent = $lines[$prevLine]
+        if ($prevContent.TrimEnd().EndsWith(',')) {
+            $trimmed = $prevContent.TrimEnd()
+            $jsonContent = Format-ReplaceLines $jsonContent @{idxFirst=$prevLine; idxLast=$prevLine} ($trimmed.Substring(0, $trimmed.Length - 1))
+        }
+        $jsonContent = Format-ReplaceLines $jsonContent $elemRange ""
+    }
+
+    # Add trailing comma to element if the array is non-empty after removal
+    $linesAfter = (ConvertTo-UnixLineEndings $jsonContent) -split "`n"
+    $firstLineAfter = $parentRange.idxFirst + 1
+    while ($firstLineAfter -lt $linesAfter.Count -and [string]::IsNullOrWhiteSpace($linesAfter[$firstLineAfter])) {
+        $firstLineAfter++
+    }
+    $arrayNonEmpty = $linesAfter[$firstLineAfter].TrimEnd() -ne ']' -and $linesAfter[$firstLineAfter].TrimEnd() -ne '}'
+    if ($arrayNonEmpty) {
+        $elemLines = $elemText -split "`n"
+        $elemLines[-1] = $elemLines[-1].TrimEnd() + ','
+        $elemText = $elemLines -join "`n"
+    }
+
+    return Add-Lines $jsonContent ($parentRange.idxFirst + 1) $elemText
+}

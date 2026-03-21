@@ -72,7 +72,7 @@ Description = 'Tools for in-memory editing of a text file, in a line-oriented wa
 FunctionsToExport = @(
 	'Import-TextFile', 'Format-IndentLine', 'Format-ReplaceLines', 'Read-Lines', 'Add-Lines', 'ConvertTo-UnixLineEndings'
 	'Find-XmlSection', 'Update-XmlSection',
-	'Find-JsonSection', 'Update-JsonSection',
+	'Find-JsonSection', 'Update-JsonSection', 'Move-JsonArrayElementToFirst',
 	'Get-IndentLevel', 'Find-MatchingLine', 'Find-CorrespondingIndent', 'Get-SubIndent', 'Format-ReplaceMatchingLines',
 	'Test-IsSingleLinePowershellBlock', 'Find-MatchingPowershellBlock', 'Add-HashTableItemInPowershellScript', 'Test-HashTableItemInPowershellScript', 'Edit-HashOfArraysItemInPowershellScript'
 )
