@@ -44,19 +44,20 @@ function getCoverageSummary($coverageSrc) {
     "Covered $pct% / $target%. $covered/$total Commands in $files Files."
 }
 
-function getTestSummary($result) {
+function getTestSummary($result, $duration) {
     $passedCount = if ($null -ne $result) { $result.PassedCount } else { "?" }
     $failedCount = if ($null -ne $result) { $result.FailedCount } else { "?" }
+    $durationStr = if ($null -ne $duration) { " $(Format-Duration $duration.TotalSeconds)" } else { "" }
 
-    "Passed: $passedCount, Failed: $failedCount."
+    "Passed: $passedCount, Failed: $failedCount.$durationStr"
 }
 
-function getTestRunSummary($result, $coverageSrc, $summaryDest) {
+function getTestRunSummary($result, $coverageSrc, $duration) {
     $components = @()
 
     $coverageSummary = getCoverageSummary $coverageSrc
     if ($null -ne $coverageSummary) { $components += $coverageSummary }
-    $components += getTestSummary $result
+    $components += getTestSummary $result $duration
 
     return ($components -join " ")
 }
@@ -116,6 +117,8 @@ function prepareRunDir($outputDir) {
     New-Item $lastDir -ItemType Directory -Force | Out-Null
     $lastDir
 }
+
+$startTime = [DateTimeOffset]::UtcNow
 
 $savedVerbosePreference = $VerbosePreference
 if ($VerbosePreference -ne "SilentlyContinue") { $VerbosePreference = "SilentlyContinue" }
@@ -277,7 +280,7 @@ if (!$NoCoverage) {
     }
 }
 
-$testRunSummary = getTestRunSummary $result $coverageDest 
+$testRunSummary = getTestRunSummary $result $coverageDest ([DateTimeOffset]::UtcNow - $startTime)
 $testRunSummary | Out-File "$runDir/summary.txt" -Encoding utf8NoBOM
 
 $colorCode = if ($result.FailedCount -gt 0) {

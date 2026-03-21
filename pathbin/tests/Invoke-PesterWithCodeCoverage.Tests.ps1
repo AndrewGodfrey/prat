@@ -146,6 +146,7 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
         $summary | Should -Match "90%"
         $summary | Should -Match "Passed: 5"
         $summary | Should -Match "Failed: 2"
+        $summary | Should -Match '\d+(\.\d+)?(s|m)'
     }
 
     It "writes summary.txt to testRuns/last when coverage is disabled" {
@@ -158,6 +159,7 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
         $summary = Get-Content $summaryPath
         $summary | Should -Match "Passed: 5"
         $summary | Should -Match "Failed: 2"
+        $summary | Should -Match '\d+(\.\d+)?(s|m)'
         $summary | Should -Not -Match "90%"
     }
 
