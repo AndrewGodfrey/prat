@@ -168,6 +168,14 @@ If you tell the user something worked, that claim should be backed by evidence â
 exited cleanly". Either the action was self-evidently verifiable (e.g. the Edit tool confirmed a
 match), or you checked the result. If you haven't checked, don't claim success.
 
+For performance comparisons ("X is faster"), measure both before and after from the same execution
+path. Don't use failure-path timings as a proxy.
+
+### Surfacing documented constraints
+
+If you've written a comment or note encoding a constraint or dependency, surface it when given an
+instruction that conflicts with it.
+
 ### Code review
 
 No performative agreement ("Great point!", "You're absolutely right!"). Just fix it â€” actions speak.
