@@ -186,6 +186,25 @@ function isClaudeRunning() {
     return [bool](Get-Process claude -ErrorAction SilentlyContinue)
 }
 
+$script:claudeGcsBucketUrl = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases"
+
+function getInstalledClaudeVersion() {
+    $output = (claude --version 2>&1)
+    if ($output -notmatch '^(\S+)') { return $null }
+    return $matches[1]
+}
+
+function getClaudeVersionInfo() {
+    try {
+        $installed = getInstalledClaudeVersion
+        if (-not $installed) { return $null }
+        $latest = (Invoke-RestMethod "$script:claudeGcsBucketUrl/latest").Trim()
+        return @{ installed = $installed; latest = $latest }
+    } catch {
+        return $null
+    }
+}
+
 function invokeClaudeInstaller() {
     irm https://claude.ai/install.ps1 | iex
 }
@@ -197,8 +216,13 @@ function installClaude($stage) {
     #   on code that requires an old version).
 
     if (isClaudeRunning) {
-        Write-Warning "Claude is running — skipping update. Close Claude and run 'd' again to apply it."
-        return
+        $versionInfo = getClaudeVersionInfo
+        $msg = "Claude is running"
+        if ($versionInfo) { $msg += " ($($versionInfo.installed) → $($versionInfo.latest))" }
+        Write-Warning "$msg — close it to install the update."
+        Write-Host -F Blue "Hit 'Enter' to skip, or close Claude and type 'd' when done."
+        $result = Read-Host
+        if ($result -ne 'd') { return }
     }
 
     invokeClaudeInstaller

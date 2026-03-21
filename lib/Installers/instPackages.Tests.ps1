@@ -130,21 +130,82 @@ Describe "installPratWingetPackage" {
     }
 }
 
+Describe "getClaudeVersionInfo" {
+    BeforeDiscovery {
+        Import-Module "$PSScriptRoot/Installers.psd1" -Force
+    }
+    BeforeAll {
+        Import-Module "$PSScriptRoot/Installers.psd1" -Force
+    }
+
+    It "returns null when installed version cannot be determined" {
+        Mock -ModuleName Installers getInstalledClaudeVersion { return $null }
+
+        $result = InModuleScope Installers { getClaudeVersionInfo }
+
+        $result | Should -BeNullOrEmpty
+    }
+
+    It "returns null when network call fails" {
+        Mock -ModuleName Installers getInstalledClaudeVersion { return "1.2.3" }
+        Mock -ModuleName Installers Invoke-RestMethod { throw "network error" }
+
+        $result = InModuleScope Installers { getClaudeVersionInfo }
+
+        $result | Should -BeNullOrEmpty
+    }
+
+    It "returns installed and latest versions" {
+        Mock -ModuleName Installers getInstalledClaudeVersion { return "1.2.3" }
+        Mock -ModuleName Installers Invoke-RestMethod { return "1.3.0`n" }
+
+        $result = InModuleScope Installers { getClaudeVersionInfo }
+
+        $result.installed | Should -Be "1.2.3"
+        $result.latest    | Should -Be "1.3.0"
+    }
+}
+
 Describe "installClaude" {
     BeforeAll {
         Import-Module "$PSScriptRoot/Installers.psd1" -Force
         Mock -ModuleName Installers invokeClaudeInstaller {}
         Mock -ModuleName Installers Install-UserPathEntry {}
+        Mock -ModuleName Installers Write-Host {}
+        Mock -ModuleName Installers getClaudeVersionInfo { return $null }
     }
 
-    It "warns and skips install when Claude is running" {
+    It "warns and skips when Claude is running and user presses Enter" {
         Mock -ModuleName Installers isClaudeRunning { return $true }
+        Mock -ModuleName Installers Read-Host { return '' }
 
         $warnings = InModuleScope Installers { installClaude $null } 3>&1 |
             Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
 
         $warnings | Should -Not -BeNullOrEmpty
         Should -Not -Invoke invokeClaudeInstaller -ModuleName Installers
+    }
+
+    It "installs when Claude is running and user types 'd'" {
+        Mock -ModuleName Installers isClaudeRunning { return $true }
+        Mock -ModuleName Installers Read-Host { return 'd' }
+        Mock -ModuleName Installers Test-Path { return $true } -ParameterFilter { $Path -like "*claude.exe" }
+
+        InModuleScope Installers { installClaude $null }
+
+        Should -Invoke invokeClaudeInstaller -ModuleName Installers -Times 1
+    }
+
+    It "includes version info in warning when available" {
+        Mock -ModuleName Installers isClaudeRunning { return $true }
+        Mock -ModuleName Installers Read-Host { return '' }
+        Mock -ModuleName Installers getClaudeVersionInfo { return @{ installed = "1.2.3"; latest = "1.3.0" } }
+
+        $warnings = InModuleScope Installers { installClaude $null } 3>&1 |
+            Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
+
+        $warnings.Message | Should -Match "1\.2\.3"
+        $warnings.Message | Should -Match "1\.3\.0"
     }
 
     It "runs installer when Claude is not running" {
