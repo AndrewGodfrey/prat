@@ -68,6 +68,11 @@ function getPsversionString {
     return "[PS $($psversiontable.PSEdition) v$($psversiontable.PSVersion.Major)] "
 }
 
+function getUserString {
+    if ($env:USERNAME.EndsWith("_agent")) { return "🔐 " }
+    return ""
+}
+
 # Custom Powershell prompt.
 #
 # But, avoid customizing it in the vscode terminal. When you debug Pester tests in vscode,
@@ -88,10 +93,11 @@ if ($env:TERM_PROGRAM -ne "vscode") {
 
             pratDetectLocationChange
             $ver = getPsversionString
+            $user = getUserString
         } catch { Write-Warning ("Exception during prompt: " + $Error[0] + "`n" + (stack)) }
 
         # $global:__prat_currentLocation is maintained by On-PromptLocationChanged.ps1
-        return $global:__prat_notifications + (contextPath) + $ver + $global:__prat_currentLocation + "`n> "
+        return $global:__prat_notifications + $user + (contextPath) + $ver + $global:__prat_currentLocation + "`n> "
     }
 }
 
