@@ -146,6 +146,8 @@ function Add-Lines($data, $idxLine, $newText) {
 
 . $PSScriptRoot\editXml.ps1
 
+. $PSScriptRoot\editJson.ps1
+
 . $PSScriptRoot\editCode.ps1
 
 . $PSScriptRoot\editPowershellScript.ps1
