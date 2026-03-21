@@ -20,7 +20,7 @@ See [INSTALLATION.md](INSTALLATION.md) for installation and customization instru
 ## Dev Loop Commands
 
 ```powershell
-Test-Project          # alias: t — runs Pester tests; -NoCoverage to skip coverage; -IncludeIntegrationTests to include integration tests; -Integration to run only integration tests
+Test-Codebase         # alias: t — runs Pester tests; -NoCoverage to skip coverage; -IncludeIntegrationTests to include integration tests; -Integration to run only integration tests
 Deploy-Codebase       # alias: d — installs profile, scheduled tasks, Pester
 Start-CodebaseDevLoop # alias: x — runs prebuild → build → test → deploy
 ```
@@ -50,7 +50,7 @@ Run a focused subset of tests, add: `-Focus <focus>`, where focus can be a file 
 
 **Repo Profile (`repoProfile.*.ps1`):** Each repo declares its metadata — root dir, build/test/deploy scripts,
 navigation shortcuts, workspace definitions, cached env delta path.
-`Invoke-ProjectCommand` dispatches actions (prebuild/build/test/deploy) defined in `$project[$CommandName]`
+`Invoke-CodebaseCommand` dispatches actions (prebuild/build/test/deploy) defined in `$project[$CommandName]`
 (scriptblock → executed; string → resolved to absolute path and called as script).
 
 **Environment Delta (`lib/PratBase/envDelta.ps1`):** Captures env var changes from batch scripts, 

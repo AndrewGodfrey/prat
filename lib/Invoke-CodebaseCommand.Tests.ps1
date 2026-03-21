@@ -5,7 +5,7 @@ BeforeAll {
     $pratRoot   = (Resolve-Path "$testCbDir\..\..\..").Path
 }
 
-Describe "Invoke-ProjectCommand" {
+Describe "Invoke-CodebaseCommand" {
     BeforeEach {
         Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$pratRoot/repoProfile_prat.ps1") }
     }

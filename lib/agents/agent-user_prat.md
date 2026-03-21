@@ -27,7 +27,7 @@ When telling the user to run something, prefer these aliases over full command n
 
 - `d` — Deploy-Codebase (runs the deploy script for the current codebase)
 - `ude` — Update-DevEnvironment
-- `t` — Test-Project
+- `t` — Test-Codebase
 - `b` — Build-Codebase
 - `c` — Set-LocationUsingShortcut (navigate by repo shortcut)
 

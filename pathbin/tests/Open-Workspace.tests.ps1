@@ -20,7 +20,7 @@ BeforeAll {
     }
 }
 
-Describe "Open-ProjectWorkspace" {
+Describe "Open-Workspace" {
     It "runs the given script with a temporary environment" {
         Mock Write-Host {}
         $prev = pushTestEnvironment
@@ -36,7 +36,7 @@ Describe "Open-ProjectWorkspace" {
             }
 
             # Act
-            $result = Open-ProjectWorkspace {echo "hi: $($env:testValue_set)"} $project
+            $result = Open-Workspace {echo "hi: $($env:testValue_set)"} $project
 
             # Assert
             $result | Should -Be "hi: set_updated77"

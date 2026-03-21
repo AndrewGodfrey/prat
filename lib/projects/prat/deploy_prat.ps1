@@ -46,11 +46,11 @@ function instInteractiveAliases($it) {
     $stage = $it.StartStage("interactive aliases")
     Install-InteractiveAlias $stage 'pb' 'Prebuild-Codebase'
     Install-InteractiveAlias $stage 'b' 'Build-Codebase'
-    Install-InteractiveAlias $stage 't' 'Test-Project'
+    Install-InteractiveAlias $stage 't' 'Test-Codebase'
     Install-InteractiveAlias $stage 'd' 'Deploy-Codebase'
     Install-InteractiveAlias $stage 'x' 'Start-CodebaseDevLoop'
     Install-InteractiveAlias $stage 'c' 'Set-LocationUsingShortcut'
-    Install-InteractiveAlias $stage 'ow' 'Open-ProjectWorkspace'
+    Install-InteractiveAlias $stage 'ow' 'Open-Workspace'
     Install-InteractiveAlias $stage 'gtfe' 'Get-TextFileEncoding'
     Install-InteractiveAlias $stage 'gll' 'GitLog-Local'
     Install-InteractiveAlias $stage 'glp' 'GitLog-Pretty'

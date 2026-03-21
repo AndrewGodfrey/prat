@@ -16,7 +16,7 @@ param([switch] $Force=$false)
 
 Prebuild-Codebase -Force:$Force
 Build-Codebase
-Test-Project
+Test-Codebase
 Deploy-Codebase -Force:$Force
 
 # OmitFromCoverageReport: a unit test would just restate it
