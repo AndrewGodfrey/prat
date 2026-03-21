@@ -107,8 +107,9 @@ function prepareRunDir($outputDir) {
             Where-Object { $_.Name -ne 'last' } |
             Sort-Object CreationTime, Name
         if ($oldDirs.Count -gt $retention) {
-            $oldDirs | Select-Object -First ($oldDirs.Count - $retention) |
-                Remove-Item -Recurse -Force
+            $oldDirs | Select-Object -First ($oldDirs.Count - $retention) | ForEach-Object {
+                [System.IO.Directory]::Delete($_.FullName, $true)
+            }
         }
     }
 
