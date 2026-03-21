@@ -70,17 +70,15 @@ function Install-ClaudeMarkdownFiles($stage, [string] $srcDir, [string] $destDir
 # $syncRoot: The sync folder root for claude data, e.g. "$home\OneDrive\.claude-sync"
 # $claudeDir: Override for testing. Defaults to "$home\.claude".
 function Install-ClaudeSyncFolders($stage, [string] $syncRoot, [string] $claudeDir = "$home\.claude") {
-    # Note: session transcripts in projects/ contain references to file-history/ (for undo/rewind),
-    # which is local-only. This is benign — rewind won't work for sessions from another machine,
-    # but conversation history, memory, and context are unaffected.
-    $syncDirs = @("projects", "tasks", "todos", "plans")
+    $syncDirs = @("plans")
 
     # file-history: undo/rewind snapshots - local file contents, not portable across machines
+    # projects, tasks, todos: CC writes into these each session; read-only parent dirs cause failures
     $knownLocalDirs = @(
         "agents", "backups", "cache", "commands", "debug",
         "downloads", "file-history", "ide", "image-cache", "logs", "paste-cache",
-        "plugins", "session-env", "sessions", "shell-snapshots", "skills",
-        "statsig", "telemetry"
+        "plugins", "projects", "session-env", "sessions", "shell-snapshots", "skills",
+        "statsig", "tasks", "telemetry", "todos"
     )
 
     Install-SyncFolders $stage ".claude" $claudeDir $syncRoot $syncDirs $knownLocalDirs

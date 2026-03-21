@@ -180,14 +180,24 @@ Describe "Install-ClaudeSyncFolders" {
 
         Install-ClaudeSyncFolders $stage $syncRoot $claudeDir
 
-        foreach ($dir in @("projects", "tasks", "todos", "plans")) {
+        foreach ($dir in @("plans")) {
             (Get-Item "$claudeDir\$dir").LinkType | Should -Be "Junction"
+        }
+    }
+
+    It "Does not junction the projects, tasks, or todos directories" {
+        mkdir $claudeDir | Out-Null
+
+        Install-ClaudeSyncFolders $stage $syncRoot $claudeDir
+
+        foreach ($dir in @("projects", "tasks", "todos")) {
+            (Get-Item "$claudeDir\$dir" -ErrorAction SilentlyContinue).LinkType | Should -BeNullOrEmpty -Because "$dir should be local"
         }
     }
 
     It "Does not warn about known local directories" {
         mkdir $claudeDir | Out-Null
-        foreach ($dir in @("agents", "commands", "skills", "file-history", "cache", "debug", "paste-cache", "shell-snapshots", "plugins", "ide", "session-env", "statsig")) {
+        foreach ($dir in @("agents", "commands", "skills", "file-history", "cache", "debug", "paste-cache", "shell-snapshots", "plugins", "ide", "projects", "session-env", "statsig", "tasks", "todos")) {
             mkdir "$claudeDir\$dir" | Out-Null
         }
 
