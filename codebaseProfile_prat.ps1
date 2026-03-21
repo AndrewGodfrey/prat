@@ -21,7 +21,8 @@ function makeTestCommand([string]$cmd) {
                 deploy = {
                     param($project, [hashtable]$CommandParameters = @{})
                     $force = [bool]($CommandParameters['Force'])
-                    pwsh -File "$($project.root)/lib/deployLayer_prat.ps1" -Force:$force
+                    $script = Resolve-PratLibFile "lib/deployEnv.ps1"
+                    pwsh -File $script -Force:$force
                 }
             }
             testCb = @{

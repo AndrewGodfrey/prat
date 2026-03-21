@@ -33,9 +33,10 @@ Describe "Invoke-CodebaseCommand" {
     It "resolves ~ in RepoRoot from CommandParameters" {
         New-Item -Type Directory "TestDrive:\someOtherDir2" | Out-Null
         Push-Location "TestDrive:\someOtherDir2"
-        $tildePath = "~" + $testCbDir.Substring($HOME.Length)
+        $tildePath    = "~/prat" + $testCbDir.Substring($pratRoot.Length)
+        $expandedPath = (Resolve-Path $tildePath).Path
         $result = &$scriptToTest "test" -CommandParameters @{NoCoverage=$true; RepoRoot=$tildePath}
-        $result | Should -Be "testCb: test: bar: NoCoverage=True RepoRoot=$testCbDir"
+        $result | Should -Be "testCb: test: bar: NoCoverage=True RepoRoot=$expandedPath"
     }
 
     It "Runs the project deploy script" {

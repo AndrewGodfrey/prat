@@ -6,7 +6,7 @@ Describe "up" {
     It "traverses upwards to find a match" {
         pushd $PSScriptRoot\testCb
 
-        up "up.ps1" | Should -Be (Get-Command up).Source
+        up "up.ps1" | Should -Be (Resolve-JunctionInPath (Get-Command up).Source)
         popd
     }
     It "supports wildcards" {
