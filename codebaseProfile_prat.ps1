@@ -17,7 +17,7 @@ function makeTestCommand([string]$cmd) {
         repos = @{
             prat   = @{
                 root   = $PSScriptRoot
-                test   = "lib/Test-PratCodebase.ps1"
+                test   = "lib/Test-PratLayer.ps1"
             }
             testCb = @{
                 root           = "pathbin/tests/testCb"

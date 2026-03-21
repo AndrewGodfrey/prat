@@ -14,7 +14,7 @@ function Invoke-DeployCodebase($location) {
     pwsh -NoLogo -Command "Set-Location '$location'; Deploy-Codebase"
 }
 
-function updateEnvironment($environmentShortcut, [switch] $EnvironmentMayNotExist = $false) {
+function updateLayer($environmentShortcut, [switch] $EnvironmentMayNotExist = $false) {
     Push-Location
     try {
         try {
@@ -33,5 +33,5 @@ function updateEnvironment($environmentShortcut, [switch] $EnvironmentMayNotExis
     }
 }
 
-updateEnvironment prat
-updateEnvironment de -EnvironmentMayNotExist
+updateLayer prat
+updateLayer de -EnvironmentMayNotExist

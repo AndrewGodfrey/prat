@@ -46,7 +46,7 @@ function Strip-Scriptblocks($data) {
 
 # Private wrapper
 function Get-RepoProfileFiles {
-    return @(Resolve-PratLibFile "repoProfile.ps1" -ListAll)
+    return @(Resolve-PratLibFile "codebaseProfile.ps1" -ListAll)
 }
 
 # Private helper: loads a list of repoProfile files and merges their repos and shortcuts.
@@ -226,7 +226,7 @@ function Find-BestMatch($nodes, [string] $Location) {
 
 # .SYNOPSIS
 # Given a location, finds which top-level repo it's in.
-# Searches repos registered in repoProfile_<devenv>.ps1 files from all registered dev environments.
+# Searches repos registered in codebaseProfile_<devenv>.ps1 files from all registered dev environments.
 # Returns the top-level repo only — use Get-PratProject to match subprojects.
 #
 # Other properties added to the returned object:

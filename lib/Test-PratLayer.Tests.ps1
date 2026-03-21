@@ -1,10 +1,10 @@
 BeforeAll {
-    $scriptToTest = "$PSScriptRoot/Test-PratCodebase.ps1"
+    $scriptToTest = "$PSScriptRoot/Test-PratLayer.ps1"
     function Invoke-PesterWithCodeCoverage(
         $NoCoverage, $PathToTest, $RepoRoot, $Debugging, $OutputDir, $IncludeIntegrationTests, $Integration) {}
 }
 
-Describe "Test-PratCodebase.ps1" {
+Describe "Test-PratLayer.ps1" {
     BeforeAll {
         Mock Invoke-PesterWithCodeCoverage {}
         $project = @{ root = "C:/test/repo" }

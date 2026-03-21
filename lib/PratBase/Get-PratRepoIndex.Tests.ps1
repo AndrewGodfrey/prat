@@ -10,8 +10,8 @@ Describe "Get-PratRepoIndex" {
     InModuleScope PratBase {
         BeforeAll {
             function makeIndex($content) {
-                $content | Out-File "TestDrive:\repoProfile_test.ps1"
-                Get-PratRepoIndex @("$dir/repoProfile_test.ps1")
+                $content | Out-File "TestDrive:\codebaseProfile_test.ps1"
+                Get-PratRepoIndex @("$dir/codebaseProfile_test.ps1")
             }
         }
 
@@ -90,10 +90,10 @@ Describe "Get-PratRepoIndex" {
 
         Context "multi-file merging" {
             It "Merges repos and shortcuts from multiple files, first-file-wins for shortcuts" {
-                "@{ '.' = @{ repos = @{ repoA = @{} }; shortcuts = @{ shared = '/from-file1' } } }" | Out-File "TestDrive:\repoProfile_a.ps1"
-                "@{ '.' = @{ repos = @{ repoB = @{} }; shortcuts = @{ shared = '/from-file2' } } }" | Out-File "TestDrive:\repoProfile_b.ps1"
+                "@{ '.' = @{ repos = @{ repoA = @{} }; shortcuts = @{ shared = '/from-file1' } } }" | Out-File "TestDrive:\codebaseProfile_a.ps1"
+                "@{ '.' = @{ repos = @{ repoB = @{} }; shortcuts = @{ shared = '/from-file2' } } }" | Out-File "TestDrive:\codebaseProfile_b.ps1"
 
-                $index = Get-PratRepoIndex @("$dir/repoProfile_a.ps1", "$dir/repoProfile_b.ps1")
+                $index = Get-PratRepoIndex @("$dir/codebaseProfile_a.ps1", "$dir/codebaseProfile_b.ps1")
 
                 $index.repos.Keys | Should -Contain "repoA"
                 $index.repos.Keys | Should -Contain "repoB"

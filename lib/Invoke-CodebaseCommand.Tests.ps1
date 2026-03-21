@@ -7,7 +7,7 @@ BeforeAll {
 
 Describe "Invoke-CodebaseCommand" {
     BeforeEach {
-        Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$pratRoot/repoProfile_prat.ps1") }
+        Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$pratRoot/codebaseProfile_prat.ps1") }
     }
     AfterEach { Pop-Location }
 

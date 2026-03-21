@@ -6,7 +6,7 @@
 # The shortcut "?" lists all shortcuts.
 #
 # .NOTES
-# Shortcuts are defined in repoProfile_<devenv>.ps1
+# Shortcuts are defined in codebaseProfile_<devenv>.ps1
 #
 # .EXAMPLE
 # c appdata

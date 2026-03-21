@@ -8,7 +8,7 @@ BeforeAll {
 Describe "Get-PratProject" {
     BeforeEach {
         $root = (Get-Item "TestDrive:\").FullName.TrimEnd('\')
-        $testProfilePath = "$root\repoProfile_test.ps1"
+        $testProfilePath = "$root\codebaseProfile_test.ps1"
         Mock Get-RepoProfileFiles -ModuleName PratBase { return @($testProfilePath) }
     }
 

@@ -5,7 +5,7 @@ BeforeAll {
 Describe "Find-ProjectShortcut" {
     BeforeAll {
         $dir = (Get-Item "TestDrive:\").FullName.TrimEnd('\').Replace('\', '/')
-        $testProfilePath = "$dir/repoProfile_test.ps1"
+        $testProfilePath = "$dir/codebaseProfile_test.ps1"
         $simpleRepo = "repoA = @{ root = 'rootA'; subprojects = @{ subA = @{ path = 'subA' } } }"
 
         function makeProfile($repoContent, $shortcutContent="", $filename = $testProfilePath) {
@@ -37,7 +37,7 @@ Describe "Find-ProjectShortcut" {
 
     Context "multiple repo files" {
         It "Returns all shortcuts as a dict with -ListAll" {
-            $pathB = "$dir/repoProfile_b.ps1"
+            $pathB = "$dir/codebaseProfile_b.ps1"
             makeProfile $simpleRepo "shortA = 'rootA/foo'"
             makeProfile "repoB = @{ root = 'rootB' }" "shortB = 'rootB/bar'" $pathB
             Mock Get-RepoProfileFiles -ModuleName PratBase { return @($testProfilePath, $pathB) }
@@ -49,7 +49,7 @@ Describe "Find-ProjectShortcut" {
         }
 
         It "picks the first file, when the same shortcut name appears in multiple files" {
-            $pathB = "$dir/repoProfile_b.ps1"
+            $pathB = "$dir/codebaseProfile_b.ps1"
             makeProfile "repoA = @{ root = 'a' }" "shared = 'a/from-file1'"
             makeProfile "repoB = @{ root = 'b' }" "shared = 'b/from-file2'" $pathB
             Mock Get-RepoProfileFiles -ModuleName PratBase { return @($testProfilePath, $pathB) }

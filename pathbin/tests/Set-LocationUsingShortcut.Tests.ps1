@@ -67,7 +67,7 @@ Describe "Set-LocationUsingShortcut" {
 Describe "ReverseSearchForShortcut" {
     It "Does not match a sibling path that shares a name prefix" {
         $dir = (Get-Item "TestDrive:\").FullName.TrimEnd('\').Replace('\', '/')
-        $testProfilePath = "$dir/repoProfile_test.ps1"
+        $testProfilePath = "$dir/codebaseProfile_test.ps1"
         "@{ '.' = @{ repos = @{ myrepo = @{ root = '$dir/myrepo' } } } }" | Out-File $testProfilePath
         Mock Get-RepoProfileFiles -ModuleName PratBase { return @($testProfilePath) }
 
@@ -78,7 +78,7 @@ Describe "ReverseSearchForShortcut" {
 
     It "Matches when exactly at the shortcut target" {
         $dir = (Get-Item "TestDrive:\").FullName.TrimEnd('\').Replace('\', '/')
-        $testProfilePath = "$dir/repoProfile_test.ps1"
+        $testProfilePath = "$dir/codebaseProfile_test.ps1"
         "@{ '.' = @{ repos = @{ myrepo = @{ root = '$dir/myrepo' } } } }" | Out-File $testProfilePath
         Mock Get-RepoProfileFiles -ModuleName PratBase { return @($testProfilePath) }
 

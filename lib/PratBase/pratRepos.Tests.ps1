@@ -8,8 +8,8 @@ Describe "Find-ProjectShortcut" {
     }
 
     It "-ListAll returns shortcuts sorted alphabetically" {
-        "@{ '.' = @{ repos = @{ z = @{} }; shortcuts = @{ b = 'b'; a = 'a' } } }" | Out-File "TestDrive:\repoProfile_test.ps1"
-        Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$dir/repoProfile_test.ps1") }
+        "@{ '.' = @{ repos = @{ z = @{} }; shortcuts = @{ b = 'b'; a = 'a' } } }" | Out-File "TestDrive:\codebaseProfile_test.ps1"
+        Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$dir/codebaseProfile_test.ps1") }
 
         $keys = @((Find-ProjectShortcut -ListAll).Keys)
 

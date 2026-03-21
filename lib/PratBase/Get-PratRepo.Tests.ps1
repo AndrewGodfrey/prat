@@ -8,11 +8,11 @@ BeforeAll {
 Describe "Get-PratRepo" {
     BeforeEach {
         $root = (Get-Item "TestDrive:\").FullName.TrimEnd('\')
-        $testProfilePath = "$root\repoProfile_test.ps1"
+        $testProfilePath = "$root\codebaseProfile_test.ps1"
         Mock Get-RepoProfileFiles -ModuleName PratBase { return @($testProfilePath) }
     }
 
-    It "Returns null when no repoProfile files are found" {
+    It "Returns null when no codebaseProfile files are found" {
         Mock Get-RepoProfileFiles -ModuleName PratBase { return @() }
 
         Get-PratRepo -Location $root | Should -BeNull
