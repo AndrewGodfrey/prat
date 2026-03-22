@@ -61,27 +61,15 @@ function Install-ClaudeMarkdownFiles($stage, [string] $srcDir, [string] $destDir
     }
 }
 
-# Sync selected .claude subdirectories to a sync folder (OneDrive, Dropbox, etc.)
-# using directory junctions.
-#
-# This lets conversation history, plans, memory, etc. be backed up and shared across machines,
-# while keeping credentials, machine-specific data, and ephemeral data local.
+# Sync the .claude/plan folder to a sync folder (OneDrive, Dropbox, etc.)
+# using a directory junction.
 #
 # $syncRoot: The sync folder root for claude data, e.g. "$home\OneDrive\.claude-sync"
 # $claudeDir: Override for testing. Defaults to "$home\.claude".
 function Install-ClaudeSyncFolders($stage, [string] $syncRoot, [string] $claudeDir = "$home\.claude") {
     $syncDirs = @("plans")
 
-    # file-history: undo/rewind snapshots - local file contents, not portable across machines
-    # projects, tasks, todos: CC writes into these each session; read-only parent dirs cause failures
-    $knownLocalDirs = @(
-        "agents", "backups", "cache", "commands", "debug",
-        "downloads", "file-history", "ide", "image-cache", "logs", "paste-cache",
-        "plugins", "projects", "session-env", "sessions", "shell-snapshots", "skills",
-        "statsig", "tasks", "telemetry", "todos"
-    )
-
-    Install-SyncFolders $stage ".claude" $claudeDir $syncRoot $syncDirs $knownLocalDirs
+    Install-SyncFolders $stage ".claude" $claudeDir $syncRoot $syncDirs
 }
 
 # Installs a read-only MEMORY.md into every Claude Code project memory directory found under $claudeDir,

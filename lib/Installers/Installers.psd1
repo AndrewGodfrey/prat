@@ -88,7 +88,6 @@ FunctionsToExport = @(
 	'Install-CustomBrowserHomePage', 'Install-PsProfile',
 	'Install-ClaudeUserConfig', 'Install-ClaudeUserSettings', 'Install-ClaudeSyncFolders', 'Install-ClaudeProjectMemory', 'Install-ClaudeSkillSet', 'Install-ClaudeMarkdownFiles', 'Install-ClaudeAgentSandbox',
 	'Install-LocalAgentSandbox', 'Install-SandboxSshServer',
-	'Install-CopilotSyncFolders',
     'Get-AgentsForCodebase', 'Select-AgentForCodebase'
 )
 

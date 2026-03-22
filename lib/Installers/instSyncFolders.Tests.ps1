@@ -54,37 +54,4 @@ Describe "Install-SyncFolders" {
 
         $stage2.changeCount | Should -Be 0
     }
-
-    It "Warns about unknown directories" {
-        mkdir $appDir | Out-Null
-        mkdir "$appDir\surprise" | Out-Null
-
-        $warnings = Install-SyncFolders $stage ".testapp" $appDir $syncRoot @("data") @("local-stuff") 3>&1 |
-            Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
-
-        $warnings | Should -Not -BeNullOrEmpty
-        ($warnings | Where-Object { $_.Message -match "surprise" }) | Should -Not -BeNullOrEmpty
-        ($warnings | Where-Object { $_.Message -match "\.testapp" }) | Should -Not -BeNullOrEmpty
-    }
-
-    It "Does not warn about known local directories" {
-        mkdir $appDir | Out-Null
-        mkdir "$appDir\local-stuff" | Out-Null
-
-        $warnings = Install-SyncFolders $stage ".testapp" $appDir $syncRoot @("data") @("local-stuff") 3>&1 |
-            Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
-
-        $warnings | Should -BeNullOrEmpty
-    }
-
-    It "Does not warn about files" {
-        mkdir $appDir | Out-Null
-        "data" | Out-File "$appDir\config.json"
-        "data" | Out-File "$appDir\unknown.txt"
-
-        $warnings = Install-SyncFolders $stage ".testapp" $appDir $syncRoot @("data") @() 3>&1 |
-            Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
-
-        $warnings | Should -BeNullOrEmpty
-    }
 }

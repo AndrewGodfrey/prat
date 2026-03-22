@@ -194,18 +194,6 @@ Describe "Install-ClaudeSyncFolders" {
             (Get-Item "$claudeDir\$dir" -ErrorAction SilentlyContinue).LinkType | Should -BeNullOrEmpty -Because "$dir should be local"
         }
     }
-
-    It "Does not warn about known local directories" {
-        mkdir $claudeDir | Out-Null
-        foreach ($dir in @("agents", "commands", "skills", "file-history", "cache", "debug", "paste-cache", "shell-snapshots", "plugins", "ide", "projects", "session-env", "statsig", "tasks", "todos")) {
-            mkdir "$claudeDir\$dir" | Out-Null
-        }
-
-        $warnings = Install-ClaudeSyncFolders $stage $syncRoot $claudeDir 3>&1 |
-            Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
-
-        $warnings | Should -BeNullOrEmpty
-    }
 }
 
 Describe "Install-ClaudeProjectMemory" {
