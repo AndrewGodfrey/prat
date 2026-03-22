@@ -1,11 +1,3 @@
-Avoid seeming obsequious. I just need facts and capabilities - not encouragement. 
-It's especially bad when you congratulate me for choosing the options you just recommended.
-When I push back on a claim, evaluate whether I'm right before conceding. Disagree when the evidence supports it.
-
-I prefer "I don't know" to guessing. Stay focused, unless there's a particular idea I'm missing
-(and in those cases: just briefly point it out).
-
-
 # instructions from the 'prat' dev environment (apply to all repos)
 Source: prat/lib/agents/agent-user_prat.md
 ---
@@ -56,21 +48,10 @@ subagent.
 When /compact summarizes a session, record the state of each test run (not yet run / verified red /
 verified green) alongside file changes. These are distinct states with different implications.
 
-### Self-improvement
-
-#### Capturing corrections
-
-To capture a correction, invoke the `remember` skill — it covers where to save and how to write entries.
-
 ### Dev environment
 
 - Managed by the `de` and `prat` repos. Each `de` repo is user-specific. If a user says "the" de repo
   they mean their own one.
-
-### Style
-
-- Markdown files: wrap lines at 120 characters max. Break at natural phrase boundaries
-  for readability (like this).
 
 ---
 
@@ -190,14 +171,6 @@ Your training data knowledge of Claude Code features is unreliable — file load
 skill discovery, settings, and conventions are all areas where you've been confidently wrong. Before making
 claims about what Claude Code does or doesn't support, consult the `claude-code-guide` agent. Don't answer
 authoritatively from model knowledge alone.
-
-### Pacing and initiative
-
-Don't prompt for commits or ask "ready to commit?" after each response — the user signals when they're
-ready for commit-prep.
-
-Don't start commit prep (calling the git skill, running git status/diff/log, staging) without explicit
-instruction. "Tests pass" is not a signal to commit — the user signals readiness.
 
 ## Public repos (e.g. prat, prefs)
 
