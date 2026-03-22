@@ -40,3 +40,25 @@ Describe "Test-PratLayer.ps1" {
         Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $Integration }
     }
 }
+
+Describe "t -Focus (integration)" -Tag Integration {
+    BeforeDiscovery {
+        $focusTestCases = Get-ChildItem (Resolve-Path "$PSScriptRoot/..").Path -Recurse -Filter "*.Tests.ps1" |
+            ForEach-Object { @{ testFile = ($_.FullName -replace '\\', '/'); label = $_.Name } }
+    }
+
+    It "focused run passes: <label>" -ForEach $focusTestCases {
+        $env:PESTER_FOCUS_PATH = $testFile
+        $out = pwsh -NoProfile -c '
+            Import-Module Pester
+            $config = [PesterConfiguration]::Default
+            $config.Run.Path          = $env:PESTER_FOCUS_PATH
+            $config.Filter.ExcludeTag = @("Integration")
+            $config.Run.PassThru      = [bool]$true
+            $config.Output.Verbosity  = "Minimal"
+            $r = Invoke-Pester -Configuration $config
+            exit $(if ($r) { $r.FailedCount } else { 1 })
+        ' 2>&1
+        $LASTEXITCODE | Should -Be 0 -Because ($out -join "`n")
+    }
+}

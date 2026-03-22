@@ -1,5 +1,9 @@
 using module .\Installers.psd1
 
+BeforeAll {
+    Import-Module "$PSScriptRoot/../PratBase/PratBase.psd1" -Force
+}
+
 Describe "InstallationTracker" {
     BeforeEach {
         $script:installerName = [guid]::NewGuid().ToString()
