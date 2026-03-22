@@ -274,10 +274,11 @@ function Move-JsonArrayElementToFirst($jsonContent, $pathArray, $filename) {
     $parentPath = $pathArray[0..($pathArray.Length - 2)]
     $parentRange = Find-JsonSection $jsonContent $parentPath $filename
 
-    # Find first non-whitespace line after the opening bracket
+    # Find first element line after the opening bracket (bracket may be on its own line)
     $lines = (ConvertTo-UnixLineEndings $jsonContent) -split "`n"
     $firstElemLine = $parentRange.idxFirst + 1
-    while ($firstElemLine -lt $parentRange.idxLast -and [string]::IsNullOrWhiteSpace($lines[$firstElemLine])) {
+    while ($firstElemLine -lt $parentRange.idxLast -and
+           ([string]::IsNullOrWhiteSpace($lines[$firstElemLine]) -or $lines[$firstElemLine].Trim() -eq '[')) {
         $firstElemLine++
     }
     if ($elemRange.idxFirst -eq $firstElemLine) { return $jsonContent }  # already first
@@ -311,7 +312,8 @@ function Move-JsonArrayElementToFirst($jsonContent, $pathArray, $filename) {
     # Add trailing comma to element if the array is non-empty after removal
     $linesAfter = (ConvertTo-UnixLineEndings $jsonContent) -split "`n"
     $firstLineAfter = $parentRange.idxFirst + 1
-    while ($firstLineAfter -lt $linesAfter.Count -and [string]::IsNullOrWhiteSpace($linesAfter[$firstLineAfter])) {
+    while ($firstLineAfter -lt $linesAfter.Count -and
+           ([string]::IsNullOrWhiteSpace($linesAfter[$firstLineAfter]) -or $linesAfter[$firstLineAfter].Trim() -eq '[')) {
         $firstLineAfter++
     }
     $arrayNonEmpty = $linesAfter[$firstLineAfter].TrimEnd() -ne ']' -and $linesAfter[$firstLineAfter].TrimEnd() -ne '}'
@@ -321,5 +323,5 @@ function Move-JsonArrayElementToFirst($jsonContent, $pathArray, $filename) {
         $elemText = $elemLines -join "`n"
     }
 
-    return Add-Lines $jsonContent ($parentRange.idxFirst + 1) $elemText
+    return Add-Lines $jsonContent $firstElemLine $elemText
 }

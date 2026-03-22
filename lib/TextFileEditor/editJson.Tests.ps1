@@ -283,4 +283,28 @@ Describe "Move-JsonArrayElementToFirst" {
         $result = Move-JsonArrayElementToFirst $script:json @("profiles", "list", "[@guid='{zzz}']") $filename
         $result | Should -Be $script:json
     }
+
+    It "moves the last element to first when the opening bracket is on its own line" {
+        $jsonSeparateBracket = testText @"
+            {
+              "profiles": {
+                "list":
+                [
+                  {
+                    "guid": "{abc}",
+                    "name": "Profile1"
+                  },
+                  {
+                    "guid": "{def}",
+                    "name": "Profile2"
+                  }
+                ]
+              }
+            }
+"@
+        $result = Move-JsonArrayElementToFirst $jsonSeparateBracket @("profiles", "list", "[@guid='{def}']") $filename
+        $parsed = ConvertFrom-Json $result -AsHashtable
+        $parsed.profiles.list[0]['guid'] | Should -Be '{def}'
+        $parsed.profiles.list[1]['guid'] | Should -Be '{abc}'
+    }
 }
