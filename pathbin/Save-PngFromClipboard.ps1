@@ -27,8 +27,6 @@ if ($null -eq $destFile) {
     Write-Error "Couldn't find a filename to save to given '$path'"
     return
 }
-echo "Foo: $destFile"
-return
 
 Add-Type -AssemblyName System.Windows.Forms
 $image = [System.Windows.Forms.Clipboard]::GetImage()
