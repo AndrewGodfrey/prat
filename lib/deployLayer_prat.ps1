@@ -66,6 +66,7 @@ function instInteractiveAliases($it) {
     Install-InteractiveAlias $stage 'ow' 'Open-Workspace'
     Install-InteractiveAlias $stage 'pt' 'Push-UnitTestDirectory'
     Install-InteractiveAlias $stage 'rppr' 'Remove-PratPackageRecord'
+    Install-InteractiveAlias $stage 'spfc' 'Save-PngFromClipboard'
     Install-InteractiveAlias $stage 'ude' 'Update-DevEnvironment'
     $it.EndStage($stage)
 }
