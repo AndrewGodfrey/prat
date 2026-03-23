@@ -37,6 +37,9 @@ function Find-SensitiveDataInContent {
             $findings.Add("IP address: $RelPath")
         }
     }
+    if ($Content -match '[\\/]de[\\/]plans') {
+        $findings.Add("de/plans reference (private repo path): $RelPath")
+    }
 
     return $findings
 }

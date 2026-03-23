@@ -65,6 +65,28 @@ Describe "Find-SensitiveDataInContent" {
         }
     }
 
+    Context "de/plans path" {
+        It "flags de/plans (forward slash)" {
+            $result = @(Find-SensitiveDataInContent -Content '$home/de/plans' -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
+
+            $result | Should -HaveCount 1
+            $result[0] | Should -Match "de/plans"
+        }
+
+        It "flags de\plans (backslash)" {
+            $result = @(Find-SensitiveDataInContent -Content '$home\de\plans' -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
+
+            $result | Should -HaveCount 1
+            $result[0] | Should -Match "de/plans"
+        }
+
+        It "does not flag an unrelated path containing 'plans'" {
+            $result = @(Find-SensitiveDataInContent -Content '$home/prat/auto/plans' -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
+
+            $result | Should -HaveCount 0
+        }
+    }
+
     Context "multiple findings" {
         It "returns one finding per pattern matched, not per occurrence" {
             $content = "user@" + "a.com user" + "@b.com"
