@@ -1,4 +1,4 @@
-param($path = ".")
+param($path = "c:/tmp")
 
 function accumulateTryPath([ref] $path, $nextPath) {
     if ($null -eq $path.Value) {
@@ -10,6 +10,7 @@ function accumulateTryPath([ref] $path, $nextPath) {
 
 $destFile = $null
 if (Test-Path -PathType Container $path) {
+    $path = Resolve-Path $path
     accumulateTryPath ([ref] $destFile) "$path/image.png"
     foreach ($n in 1..50) {
         accumulateTryPath ([ref] $destFile) "$path/image$n.png"
