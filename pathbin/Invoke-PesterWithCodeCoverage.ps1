@@ -47,9 +47,9 @@ function getCoverageSummary($coverageSrc) {
 function getTestSummary($result, $duration) {
     $passedCount = if ($null -ne $result) { $result.PassedCount } else { "?" }
     $failedCount = if ($null -ne $result) { $result.FailedCount } else { "?" }
-    $durationStr = if ($null -ne $duration) { " $(Format-Duration $duration.TotalSeconds)" } else { "" }
+    $durationStr = Format-Duration $duration.TotalSeconds
 
-    "Passed: $passedCount, Failed: $failedCount.$durationStr"
+    "Passed: $passedCount, Failed: $failedCount. $durationStr"
 }
 
 function getTestRunSummary($result, $coverageSrc, $duration) {

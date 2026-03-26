@@ -12,6 +12,7 @@
 param(
     [string] $Focus,
     [switch] $NoCoverage,
+    [switch] $NoBuild,
     [switch] $Debugging,
     [switch] $IncludeIntegrationTests,
     [switch] $Integration,

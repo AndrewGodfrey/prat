@@ -223,3 +223,23 @@ package.
 - Project-specific: could mean copying output to a target machine, running a publish step, etc.
 - For the `de` repo itself, deploy means running `deployEnv.ps1` which applies the dev environment
   configuration to the current machine
+
+## Implementation notes
+
+### Capturing output from external processes on Windows
+
+When capturing output from an external process that emits UTF-8 (e.g. `dotnet`), set
+`[Console]::OutputEncoding` beforehand — otherwise PowerShell misinterprets the bytes using the
+system codepage (Windows-1252 on most Windows installs), corrupting non-ASCII characters such as
+Unicode arrows in assertion output.
+
+```powershell
+$savedEncoding = [Console]::OutputEncoding
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+try {
+    $output = & dotnet @args 2>&1
+} finally {
+    [Console]::OutputEncoding = $savedEncoding
+}
+```
+
