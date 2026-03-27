@@ -72,7 +72,7 @@ function getAutoDir($repoRoot) {
     $dir
 }
 
-function moveCoverageFile($tempFile, $coverageDest = "$RepoRoot/auto/testRuns/last/coverage.xml") {
+function moveCoverageFile($tempFile, $coverageDest) {
     # We send the coverage data to a temp file and then move it.
     # Why: Otherwise, Pester 5.5.0 puts relative path names in coverage.xml for any .ps1 files it finds under auto/.
     #      Which causes trouble e.g. in Get-CoverageReport.ps1.
@@ -94,17 +94,16 @@ function getTimestamp() { Get-Date -Format "yyyy-MM-ddTHH-mm-ss-fff" }
 
 function prepareRunDir($outputDir) {
     $ProgressPreference = 'SilentlyContinue'  # suppress Remove-Item -Recurse internal progress bars
-    $testRunsDir = "$outputDir/testRuns"
-    $lastDir = "$testRunsDir/last"
+    $lastDir = "$outputDir/last"
 
     if (Test-Path $lastDir) {
         # Rotate last → timestamp directory
         $timestamp = getTimestamp
-        Move-Item $lastDir "$testRunsDir/$timestamp"
+        Move-Item $lastDir "$outputDir/$timestamp"
 
         # Apply retention: keep only the N most recent timestamp dirs
         $retention = getRetention
-        $oldDirs = Get-ChildItem $testRunsDir -Directory |
+        $oldDirs = Get-ChildItem $outputDir -Directory |
             Where-Object { $_.Name -ne 'last' } |
             Sort-Object CreationTime, Name
         if ($oldDirs.Count -gt $retention) {
@@ -149,8 +148,8 @@ if (!$NoCoverage) {
     $Configuration.CodeCoverage.CoveragePercentTarget = & (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1")
 }
 
-$resolvedOutputDir = if ($OutputDir) { $OutputDir } else { getAutoDir $RepoRoot }
-if ($OutputDir -and !(Test-Path $resolvedOutputDir)) { New-Item $resolvedOutputDir -ItemType Directory | Out-Null }
+$resolvedOutputDir = if ($OutputDir) { $OutputDir } else { "$(getAutoDir $RepoRoot)/testRuns" }
+if (!(Test-Path $resolvedOutputDir)) { New-Item $resolvedOutputDir -ItemType Directory | Out-Null }
 $runDir = prepareRunDir $resolvedOutputDir
 $logFile = "$runDir/test-run.txt"
 @("RepoRoot: $RepoRoot", "PathToTest: $PathToTest", "") | Out-File $logFile -Encoding utf8NoBOM

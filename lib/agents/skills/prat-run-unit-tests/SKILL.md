@@ -29,7 +29,7 @@ t -RepoRoot ~/prat -Integration -NoCoverage                          # run only 
 | `-Integration` | Run only integration-tagged tests (skips unit tests) |
 | `-IncludeIntegrationTests` | Run unit tests AND integration tests |
 | `-Debugging` | Full Pester diagnostic output, no filtering — always pair with a tight `-Focus` |
-| `-OutputDir <path>` | Where to write output files (default: `auto/`); files go under `testRuns/last/` |
+| `-OutputDir <path>` | Direct parent of the `last/` run directory (default: `auto/testRuns/`) |
 
 ## Output modes
 

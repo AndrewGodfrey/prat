@@ -163,12 +163,12 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
         $summary | Should -Not -Match "90%"
     }
 
-    It "writes output files to testRuns/last under custom -OutputDir" {
+    It "writes output files to last under custom -OutputDir" {
         $customOutputDir = "$TestDrive/custom-outputdir"
 
         & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot "$TestDrive/repo" -OutputDir $customOutputDir
 
-        "$customOutputDir/testRuns/last/summary.txt" | Should -Exist
+        "$customOutputDir/last/summary.txt" | Should -Exist
     }
 
     It "echoes summary.txt after every run" {
