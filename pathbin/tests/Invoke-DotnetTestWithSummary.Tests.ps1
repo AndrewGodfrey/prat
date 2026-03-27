@@ -1,0 +1,51 @@
+BeforeAll {
+    Import-Module "$PSScriptRoot/../../lib/PratBase/PratBase.psd1" -Force
+    $script:dotnetScript = "$PSScriptRoot/../Invoke-DotnetTestWithSummary.ps1"
+}
+
+Describe "Invoke-DotnetTestWithSummary filter" {
+    BeforeAll {
+        # Create fake dotnet.cmd that outputs xUnit-style test results.
+        # Exit 0 to prevent the script's 'exit $exitCode' from terminating the test runner.
+        $script:fakeDotnetDir = Join-Path $TestDrive "fakedotnet"
+        New-Item $script:fakeDotnetDir -ItemType Directory | Out-Null
+        Set-Content (Join-Path $script:fakeDotnetDir "dotnet.cmd") (@'
+@echo off
+echo Test run for foo.dll (.NETCoreApp)
+echo Starting test execution, please wait...
+echo [xUnit.net 00:00:00.11]     HelloWorld.Tests.FailingTest [FAIL]
+echo.
+echo Failed!  - Failed:     1, Passed:     2, Skipped:     0, Total:     3, Duration: 1 ms
+exit /b 0
+'@.Trim())
+    }
+
+    It "shows xUnit [FAIL] lines in red" {
+        $repoRoot = Join-Path $TestDrive "repo-xunit"
+        New-Item $repoRoot -ItemType Directory | Out-Null
+        $savedPath = $env:PATH
+        $env:PATH = "$script:fakeDotnetDir;$env:PATH"
+        try {
+            $output = & $script:dotnetScript -TestArgs @("fake.csproj") -NoCoverage -RepoRoot $repoRoot
+        } finally {
+            $env:PATH = $savedPath
+        }
+
+        $output | Where-Object { $_ -match '\[FAIL\]' } | Should -Not -BeNullOrEmpty
+    }
+
+    It "does not show classic-format 'Failed!' summary line (consumed by parseTestResult)" {
+        $repoRoot = Join-Path $TestDrive "repo-summary"
+        New-Item $repoRoot -ItemType Directory | Out-Null
+        $savedPath = $env:PATH
+        $env:PATH = "$script:fakeDotnetDir;$env:PATH"
+        try {
+            $output = & $script:dotnetScript -TestArgs @("fake.csproj") -NoCoverage -RepoRoot $repoRoot
+        } finally {
+            $env:PATH = $savedPath
+        }
+
+        # The 'Failed! - ...' line is parsed by parseTestResult and suppressed (we render our own summary)
+        $output | Where-Object { $_ -match '^Failed!' } | Should -BeNullOrEmpty
+    }
+}

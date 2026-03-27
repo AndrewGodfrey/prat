@@ -44,23 +44,6 @@ function getCoverageSummary($coverageSrc) {
     "Covered $pct% / $target%. $covered/$total Commands in $files Files."
 }
 
-function getTestSummary($result, $duration) {
-    $passedCount = if ($null -ne $result) { $result.PassedCount } else { "?" }
-    $failedCount = if ($null -ne $result) { $result.FailedCount } else { "?" }
-    $durationStr = Format-Duration $duration.TotalSeconds
-
-    "Passed: $passedCount, Failed: $failedCount. $durationStr"
-}
-
-function getTestRunSummary($result, $coverageSrc, $duration) {
-    $components = @()
-
-    $coverageSummary = getCoverageSummary $coverageSrc
-    if ($null -ne $coverageSummary) { $components += $coverageSummary }
-    $components += getTestSummary $result $duration
-
-    return ($components -join " ")
-}
 
 function getAutoDir($repoRoot) {
     # TODO: Also check if .gitignore is set up to ignore it.
@@ -250,22 +233,11 @@ if (!$NoCoverage) {
     }
 }
 
-$testRunSummary = getTestRunSummary $result $coverageDest ([DateTimeOffset]::UtcNow - $startTime)
-$testRunSummary | Out-File "$runDir/summary.txt" -Encoding utf8NoBOM
-
-$colorCode = if ($result.FailedCount -gt 0) {
-    if ($result.FailedCount -ge $failureThreshold) { 91 } else { 93 }
-} else { 92 }
-Format-AnsiText $testRunSummary $colorCode
-
-if (!$Debugging -and $null -ne $result -and $result.FailedCount -gt 0) {
-    $suppressed = $result.FailedCount - $runState.failuresSeen
-    $logFile = $logFile -replace '\\', '/'
-    $hint = if ($suppressed -gt 0) {
-        "$suppressed failure$(if ($suppressed -ne 1) {'s'}) suppressed — see $logFile"
-    } else {
-        "See $logFile"
-    }
-    Format-AnsiText $hint 93
-}
+$passed = if ($null -ne $result) { $result.PassedCount } else { $null }
+$failed = if ($null -ne $result) { $result.FailedCount } else { $null }
+$failuresSeen = if ($Debugging) { 0 } else { $runState.failuresSeen }
+Write-TestRunResult -CoverageSummary (getCoverageSummary $coverageDest) `
+    -Passed $passed -Failed $failed -Elapsed ([DateTimeOffset]::UtcNow - $startTime) `
+    -FailuresSeen $failuresSeen -FailureThreshold $failureThreshold `
+    -RunDir $runDir -Debugging:$Debugging
 

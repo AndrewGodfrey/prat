@@ -196,7 +196,7 @@ if ($Debugging) {
             }
 
             # Show failure lines (red), up to threshold
-            if ($line.line -match '^\s*Failed') {
+            if ($line.line -match '^\s*Failed|\[FAIL\]') {
                 if ($state.failuresSeen -lt $failureThreshold) {
                     $state.failuresSeen++
                     $state.inFailure = $true
@@ -245,37 +245,12 @@ if (-not $NoCoverage) {
 
 # Summary
 $result = $runState.result
-$elapsed = [DateTimeOffset]::UtcNow - $startTime
-$elapsedStr = " $(Format-Duration $elapsed.TotalSeconds)"
-
 $coverageUnit = if ($CoverageCollector -eq "dotnet-coverage") { "Blocks" } else { "Lines" }
-$coverageSummary = getCoverageSummary $coveragePath $coverageUnit
-
-if ($null -ne $result) {
-    $components = @()
-    if ($coverageSummary) { $components += $coverageSummary }
-    $components += "Passed: $($result.Passed), Failed: $($result.Failed).$elapsedStr"
-    $summary = $components -join " "
-    $colorCode = if ($result.Failed -gt 0) {
-        if ($result.Failed -ge $failureThreshold) { 91 } else { 93 }
-    } else { 92 }
-} else {
-    $summary = "Test run completed (no result parsed).$elapsedStr"
-    $colorCode = 93
-}
-
-$summary | Out-File "$runDir/summary.txt" -Encoding utf8NoBOM
-Format-AnsiText $summary $colorCode
-
-if (-not $Debugging -and $null -ne $result -and $result.Failed -gt 0) {
-    $suppressed = $result.Failed - $runState.failuresSeen
-    $logFile = $logFile -replace '\\', '/'
-    $hint = if ($suppressed -gt 0) {
-        "$suppressed failure$(if ($suppressed -ne 1) {'s'}) suppressed - see $logFile"
-    } else {
-        "See $logFile"
-    }
-    Format-AnsiText $hint 93
-}
+$passed = if ($null -ne $result) { $result.Passed } else { $null }
+$failed = if ($null -ne $result) { $result.Failed } else { $null }
+Write-TestRunResult -CoverageSummary (getCoverageSummary $coveragePath $coverageUnit) `
+    -Passed $passed -Failed $failed -Elapsed ([DateTimeOffset]::UtcNow - $startTime) `
+    -FailuresSeen $runState.failuresSeen -FailureThreshold $failureThreshold `
+    -RunDir $runDir -Debugging:$Debugging
 
 if ($runState.exitCode -ne 0) { exit $runState.exitCode }
