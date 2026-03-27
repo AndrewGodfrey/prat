@@ -186,6 +186,75 @@ function Install-TextToFile($stage, $file, $newText, [switch] $ShowUpdateDetails
     }
 }
 
+# Recursively sort all dict keys for stable ConvertTo-Json output.
+function ConvertTo-DeepOrdered($value) {
+    if ($value -is [System.Collections.IDictionary]) {
+        $ordered = [ordered]@{}
+        foreach ($key in ($value.Keys | Sort-Object)) {
+            $ordered[$key] = ConvertTo-DeepOrdered $value[$key]
+        }
+        return $ordered
+    } elseif ($value -is [array]) {
+        $items = @($value | ForEach-Object { ConvertTo-DeepOrdered $_ })
+        return , $items  # comma prevents PowerShell output stream from unboxing single-element arrays
+    } else {
+        return $value
+    }
+}
+
+# Deep-merge $overlay into $base.
+# Arrays: concatenated — each layer contributes items (correct for permission lists and
+#   directory lists where every layer's entries should be present; wrong if a layer ever
+#   needs to replace an inherited list, which none currently do).
+# Hashtables: recursed. Scalars: overlay wins.
+# All dict keys are sorted deeply for stable serialization order.
+# Throws on type mismatch (e.g. one layer has a hashtable, the other an array for the same key).
+function Merge-DeepHashtable($base, $overlay) {
+    $result = @{}
+    foreach ($key in $base.Keys) { $result[$key] = $base[$key] }
+    foreach ($key in $overlay.Keys) {
+        if ($result.ContainsKey($key)) {
+            $b = $result[$key]
+            $o = $overlay[$key]
+            if ($b -is [System.Collections.IDictionary] -and $o -is [System.Collections.IDictionary]) {
+                $result[$key] = Merge-DeepHashtable $b $o
+            } elseif ($b -is [array] -and $o -is [array]) {
+                $result[$key] = $b + $o
+            } elseif ($b -is [System.Collections.IDictionary] -or $o -is [System.Collections.IDictionary] -or $b -is [array] -or $o -is [array]) {
+                throw "Merge-DeepHashtable: type mismatch for key '$key': $($b.GetType().Name) vs $($o.GetType().Name)"
+            } else {
+                $result[$key] = $o
+            }
+        } else {
+            $result[$key] = $overlay[$key]
+        }
+    }
+    return ConvertTo-DeepOrdered $result
+}
+
+# Install a JSON file with semantic comparison. Parses both the new and existing content as JSON,
+# canonicalizes (sorted keys, compressed), and compares. Only writes if semantically different.
+# Delegates to Install-TextToFile for the actual write.
+function Install-JsonToFile($stage, $file, $newText, [switch] $ShowUpdateDetails, [switch] $BackupFile=$false, [switch] $SetReadOnly=$false) {
+    $newText = ConvertTo-UnixLineEndings $newText
+
+    if (Test-Path -PathType Leaf $file) {
+        $currentText = Import-TextFile $file
+
+        $newCanonical = ConvertTo-Json (ConvertTo-DeepOrdered (ConvertFrom-Json $newText -AsHashtable -Depth 100)) -Depth 100 -Compress
+        $currentCanonical = ConvertTo-Json (ConvertTo-DeepOrdered (ConvertFrom-Json $currentText -AsHashtable -Depth 100)) -Depth 100 -Compress
+
+        if ($newCanonical -eq $currentCanonical) {
+            if ($SetReadOnly -and -not (isFileReadOnly $file)) {
+                Install-TextToFile $stage $file $newText -SetReadOnly:$SetReadOnly -BackupFile:$BackupFile -ShowUpdateDetails:$ShowUpdateDetails
+            }
+            return
+        }
+    }
+
+    Install-TextToFile $stage $file $newText -SetReadOnly:$SetReadOnly -BackupFile:$BackupFile -ShowUpdateDetails:$ShowUpdateDetails
+}
+
 function areByteArraysEqual([byte[]] $a1, [byte[]] $a2) {
     return @(Compare-Object $a1 $a2 -SyncWindow 0).Length -eq 0
 }

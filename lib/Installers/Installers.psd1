@@ -73,6 +73,7 @@ FunctionsToExport = @(
 	'Format-ReplacePlaceholdersInTemplateString',
 	'Start-Installation',
 	'Install-File', 'Install-Folder', 'Install-SetOfFiles', 'Install-DeleteFiles', 'Install-TextToFile', 'Install-BinaryDataToFile', 'Install-SmbShare', 'Test-SmbShareConnection', 'Install-ZipFileFromFolder',
+	'ConvertTo-DeepOrdered', 'Merge-DeepHashtable', 'Install-JsonToFile',
     'Install-SoftLinkToFile', 'Install-DirectoryJunction',
 	'Install-RegistryKey', 'Install-RegistryDwordValue', 'Install-RegistryStringValue', 'Install-RegistryBinaryValue',
     'Install-DailyScheduledTask', 'Install-AtLogonScheduledTask',

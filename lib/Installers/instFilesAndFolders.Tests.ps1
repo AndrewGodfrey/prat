@@ -94,6 +94,66 @@ Describe "Install-TextToFile" {
     }
 }
 
+Describe "Install-JsonToFile" {
+    BeforeEach {
+        $testDir = "TestDrive:\installJson.Tests"
+        mkdir $testDir | Out-Null
+        $testFile = "$testDir\test.json"
+        $script:stage = [MockStage]::new()
+    }
+    AfterEach {
+        Remove-Item $testDir -Recurse -Force
+    }
+
+    It "creates a new file when it does not exist" {
+        Install-JsonToFile $stage $testFile '{"a": 1}'
+
+        Import-TextFile $testFile | Should -Be '{"a": 1}'
+        $stage.changeCount | Should -Be 1
+    }
+
+    It "skips update when content is semantically identical but formatted differently" {
+        '{"b":2,"a":1}' | Out-File -Encoding utf8NoBOM $testFile
+
+        Install-JsonToFile $stage $testFile '{"a": 1, "b": 2}'
+
+        $stage.changeCount | Should -Be 0
+    }
+
+    It "updates when content is semantically different" {
+        '{"a": 1}' | Out-File -Encoding utf8NoBOM $testFile
+
+        Install-JsonToFile $stage $testFile '{"a": 2}'
+
+        Import-TextFile $testFile | Should -Be '{"a": 2}'
+        $stage.changeCount | Should -Be 1
+    }
+
+    It "treats string values differing only in casing as equivalent" {
+        '{"color": "#3C2423"}' | Out-File -Encoding utf8NoBOM $testFile
+
+        Install-JsonToFile $stage $testFile '{"color": "#3c2423"}'
+
+        $stage.changeCount | Should -Be 0
+    }
+
+    It "creates backup when -BackupFile is specified" {
+        '{"old": true}' | Out-File -Encoding utf8NoBOM $testFile
+
+        Install-JsonToFile $stage $testFile '{"new": true}' -BackupFile
+
+        Test-Path "$testFile.backup" | Should -BeTrue
+    }
+
+    It "handles nested objects in semantic comparison" {
+        '{"outer":{"b":2,"a":1}}' | Out-File -Encoding utf8NoBOM $testFile
+
+        Install-JsonToFile $stage $testFile '{"outer": {"a": 1, "b": 2}}'
+
+        $stage.changeCount | Should -Be 0
+    }
+}
+
 Describe "Install-Folder" {
     BeforeEach {
         $script:testDir = Join-Path (Resolve-Path "TestDrive:\").ProviderPath "installFolder.Tests"
@@ -272,6 +332,117 @@ Describe "Install-DirectoryJunction" {
         Install-DirectoryJunction $stage $targetDir $linkDir
 
         Get-Content "$linkDir\data.txt" | Should -BeLike "*hello*"
+    }
+}
+
+Describe "ConvertTo-DeepOrdered" {
+    It "sorts dictionary keys alphabetically" {
+        $input = @{c = 3; a = 1; b = 2}
+
+        $result = ConvertTo-DeepOrdered $input
+
+        ($result.Keys | Select-Object -First 3) | Should -Be @("a", "b", "c")
+    }
+
+    It "recursively sorts nested dictionary keys" {
+        $input = @{outer = @{z = 0; a = 1}}
+
+        $result = ConvertTo-DeepOrdered $input
+
+        ($result.outer.Keys | Select-Object -First 2) | Should -Be @("a", "z")
+    }
+
+    It "preserves single-element arrays as arrays" {
+        $result = ConvertTo-DeepOrdered @{items = @("single")}
+
+        $result.items | Should -HaveCount 1
+        $result.items -is [array] | Should -BeTrue
+    }
+
+    It "passes through scalars unchanged" {
+        ConvertTo-DeepOrdered "hello" | Should -Be "hello"
+        ConvertTo-DeepOrdered 42 | Should -Be 42
+        ConvertTo-DeepOrdered $null | Should -Be $null
+    }
+}
+
+Describe "Merge-DeepHashtable" {
+    It "returns overlay scalar when both layers have the same key" {
+        $result = Merge-DeepHashtable @{a = "base"} @{a = "overlay"}
+
+        $result.a | Should -Be "overlay"
+    }
+
+    It "keeps base key when overlay does not have it" {
+        $result = Merge-DeepHashtable @{a = "base"} @{}
+
+        $result.a | Should -Be "base"
+    }
+
+    It "adds overlay key when base does not have it" {
+        $result = Merge-DeepHashtable @{} @{b = "overlay"}
+
+        $result.b | Should -Be "overlay"
+    }
+
+    It "concatenates arrays" {
+        $result = Merge-DeepHashtable @{a = @("x")} @{a = @("y")}
+
+        $result.a | Should -Be @("x", "y")
+    }
+
+    It "recurses into nested hashtables" {
+        $result = Merge-DeepHashtable @{p = @{a = "base-a"; b = "base-b"}} @{p = @{b = "over-b"; c = "over-c"}}
+
+        $result.p.a | Should -Be "base-a"
+        $result.p.b | Should -Be "over-b"
+        $result.p.c | Should -Be "over-c"
+    }
+
+    It "does not mutate the input hashtables" {
+        $base    = @{a = "base"}
+        $overlay = @{b = "overlay"}
+
+        Merge-DeepHashtable $base $overlay | Out-Null
+
+        $base.Keys    | Should -Not -Contain "b"
+        $overlay.Keys | Should -Not -Contain "a"
+    }
+
+    It "throws when one value is a hashtable and the other is an array" {
+        { Merge-DeepHashtable @{a = @{}} @{a = @()} } | Should -Throw
+    }
+
+    It "returns keys in sorted order" {
+        $result = Merge-DeepHashtable @{b = 1; a = 2} @{c = 3}
+
+        ($result.Keys | Select-Object -First 3) | Should -Be @("a", "b", "c")
+    }
+
+    It "preserves single-element arrays as arrays across sequential merges" {
+        $layer1 = @{items = @("single")}
+        $layer2 = @{items = @("a", "b")}
+
+        $result = Merge-DeepHashtable (Merge-DeepHashtable @{} $layer1) $layer2
+
+        $result.items | Should -Be @("single", "a", "b")
+    }
+
+    It "sorts keys in nested hashtables contributed by only one layer" {
+        $inner = [ordered]@{}; $inner['z'] = 0; $inner['a'] = 1
+        $result = Merge-DeepHashtable @{} @{outer = $inner}
+
+        ($result.outer.Keys | Select-Object -First 1) | Should -Be "a"
+    }
+
+    It "correctly merges three layers with nested hashtables" {
+        $layer1 = @{permissions = @{allow = @("a")}}
+        $layer2 = @{permissions = @{allow = @("b")}}
+        $layer3 = @{permissions = @{allow = @("c")}}
+
+        $merged = Merge-DeepHashtable (Merge-DeepHashtable $layer1 $layer2) $layer3
+
+        $merged.permissions.allow | Should -Be @("a", "b", "c")
     }
 }
 

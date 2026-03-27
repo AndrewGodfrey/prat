@@ -185,52 +185,6 @@ function Install-ClaudeAgentSandbox {
     }
 }
 
-# Private helper: recursively sort all dict keys for stable ConvertTo-Json output.
-function ConvertTo-DeepOrdered($value) {
-    if ($value -is [System.Collections.IDictionary]) {
-        $ordered = [ordered]@{}
-        foreach ($key in ($value.Keys | Sort-Object)) {
-            $ordered[$key] = ConvertTo-DeepOrdered $value[$key]
-        }
-        return $ordered
-    } elseif ($value -is [array]) {
-        $items = @($value | ForEach-Object { ConvertTo-DeepOrdered $_ })
-        return , $items  # comma prevents PowerShell output stream from unboxing single-element arrays
-    } else {
-        return $value
-    }
-}
-
-# Private helper: deep-merge $overlay into $base.
-# Arrays: concatenated — each layer contributes items (correct for permission lists and
-#   directory lists where every layer's entries should be present; wrong if a layer ever
-#   needs to replace an inherited list, which none currently do).
-# Hashtables: recursed. Scalars: overlay wins.
-# All dict keys are sorted deeply for stable serialization order.
-# Throws on type mismatch (e.g. one layer has a hashtable, the other an array for the same key).
-function Merge-DeepHashtable($base, $overlay) {
-    $result = @{}
-    foreach ($key in $base.Keys) { $result[$key] = $base[$key] }
-    foreach ($key in $overlay.Keys) {
-        if ($result.ContainsKey($key)) {
-            $b = $result[$key]
-            $o = $overlay[$key]
-            if ($b -is [System.Collections.IDictionary] -and $o -is [System.Collections.IDictionary]) {
-                $result[$key] = Merge-DeepHashtable $b $o
-            } elseif ($b -is [array] -and $o -is [array]) {
-                $result[$key] = $b + $o
-            } elseif ($b -is [System.Collections.IDictionary] -or $o -is [System.Collections.IDictionary] -or $b -is [array] -or $o -is [array]) {
-                throw "Merge-DeepHashtable: type mismatch for key '$key': $($b.GetType().Name) vs $($o.GetType().Name)"
-            } else {
-                $result[$key] = $o
-            }
-        } else {
-            $result[$key] = $overlay[$key]
-        }
-    }
-    return ConvertTo-DeepOrdered $result
-}
-
 function Install-ClaudeUserSettings($stage, [string] $claudeDir = "$home\.claude") {
     $destFile = "$claudeDir\settings.json"
 
@@ -247,6 +201,6 @@ function Install-ClaudeUserSettings($stage, [string] $claudeDir = "$home\.claude
     $newText = ConvertTo-Json $merged -Depth 20
 
     # We don't set read-only on this file, because Claude Code wants to write it - it records UI/session changes.
-    Install-TextToFile $stage $destFile $newText
+    Install-JsonToFile $stage $destFile $newText
 }
 
