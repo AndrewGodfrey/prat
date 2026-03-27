@@ -5,6 +5,9 @@ description: Use when doing TDD, running tests after code changes, checking cove
 
 # Run Prat Unit Tests
 
+**To delegate to a subagent** (absorbs test output noise into a subcontext): use the `test-and-fix`
+agent type with these invocations in the prompt.
+
 Use the `t` bash script with `-RepoRoot` — no `cd` required.
 Permission is granted as `Bash(t *)`.
 
