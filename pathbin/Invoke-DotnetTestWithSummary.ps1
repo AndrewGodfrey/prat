@@ -4,13 +4,24 @@
 # Parallels Invoke-PesterWithCodeCoverage for .NET test projects.
 #
 # .PARAMETER TestArgs
-# Arguments to pass to `dotnet test` (project path, filters, coverage flags, etc.).
+# Arguments to pass to `dotnet test` (project path, filters, etc.).
 #
 # .PARAMETER OutputDir
-# Directory for test run logs. Defaults to `<RepoRoot>/auto`.
+# Direct parent of the `last/` run directory. Defaults to `<RepoRoot>/auto/testRuns`.
+# Callers that want project-namespaced runs (e.g. multiple projects under one repo root)
+# should append their own namespace: `"$auto/testRuns/myproject"`.
+#
+# .PARAMETER WorkingDir
+# Directory to run dotnet from. Affects global.json SDK selection (resolved from CWD upward).
+# Defaults to current directory. Pass the project root when using strict version pinning.
 #
 # .PARAMETER RepoRoot
 # Repository root. Defaults to git toplevel.
+#
+# .PARAMETER CoverageCollector
+# Coverage tool to use. Default is `coverlet` (XPlat Code Coverage data collector — requires
+# coverlet.collector NuGet package in the test project). Use `dotnet-coverage` to match CI
+# pipelines that use `dotnet-coverage collect` (requires the dotnet-coverage global tool).
 #
 # .PARAMETER Debugging
 # Show all output unfiltered (for diagnosing build/test issues).
@@ -22,8 +33,10 @@ param(
 
     [string] $OutputDir,
     [string] $RepoRoot,
+    [string] $WorkingDir,
     [switch] $NoCoverage,
     [switch] $NoBuild,
+    [ValidateSet("coverlet", "dotnet-coverage")] [string] $CoverageCollector = "coverlet",
     [switch] $Debugging
 )
 
@@ -46,15 +59,14 @@ function getTimestamp() { Get-Date -Format "yyyy-MM-ddTHH-mm-ss-fff" }
 
 function prepareRunDir($outputDir) {
     $ProgressPreference = 'SilentlyContinue'
-    $testRunsDir = "$outputDir/testRuns"
-    $lastDir = "$testRunsDir/last"
+    $lastDir = "$outputDir/last"
 
     if (Test-Path $lastDir) {
         $timestamp = getTimestamp
-        Move-Item $lastDir "$testRunsDir/$timestamp"
+        Move-Item $lastDir "$outputDir/$timestamp"
 
         $retention = getRetention
-        $oldDirs = Get-ChildItem $testRunsDir -Directory |
+        $oldDirs = Get-ChildItem $outputDir -Directory |
             Where-Object { $_.Name -ne 'last' } |
             Sort-Object CreationTime, Name
         if ($oldDirs.Count -gt $retention) {
@@ -73,29 +85,18 @@ function ansiColor($text, $colorCode) {
 }
 
 # Parse cobertura XML for a coverage summary line
-function getCoverageSummary($coveragePath) {
+function getCoverageSummary($coveragePath, $unit) {
     if (-not $coveragePath -or -not (Test-Path $coveragePath)) { return $null }
 
-    [xml]$cov = Get-Content $coveragePath
-    $totalLines = 0
-    $coveredLines = 0
-    $files = 0
-    foreach ($pkg in $cov.coverage.packages.package) {
-        if (-not $pkg.classes) { continue }
-        foreach ($cls in $pkg.classes.class) {
-            if (-not $cls) { continue }
-            $hasLines = $false
-            foreach ($ln in $cls.lines.line) {
-                $totalLines++
-                if ([int]$ln.hits -gt 0) { $coveredLines++ }
-                $hasLines = $true
-            }
-            if ($hasLines) { $files++ }
-        }
-    }
-    if ($totalLines -eq 0) { return $null }
-    $pct = [math]::Round($coveredLines * 100.0 / $totalLines, 2)
-    "Covered $pct%. $coveredLines/$totalLines Lines in $files Files."
+    [xml]$xml = Get-Content $coveragePath
+    $covered   = [int]$xml.coverage.'lines-covered'
+    $total     = [int]$xml.coverage.'lines-valid'
+    if ($total -eq 0) { return $null }
+    $pct       = [math]::Round([double]$xml.coverage.'line-rate' * 100, 1)
+    $fileCount = ($xml.coverage.packages.package.classes.class | Measure-Object).Count
+    $target    = & (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1")
+
+    "Covered $pct% / $target%. $covered/$total $unit in $fileCount Files."
 }
 
 # Parse dotnet test summary line. Handles both terminal logger and classic formats:
@@ -123,8 +124,8 @@ function parseTestResult($line) {
     return $null
 }
 
-$resolvedOutputDir = if ($OutputDir) { $OutputDir } else { getAutoDir $RepoRoot }
-if ($OutputDir -and !(Test-Path $resolvedOutputDir)) { New-Item $resolvedOutputDir -ItemType Directory | Out-Null }
+$resolvedOutputDir = if ($OutputDir) { $OutputDir } else { "$(getAutoDir $RepoRoot)/testRuns" }
+if (!(Test-Path $resolvedOutputDir)) { New-Item $resolvedOutputDir -ItemType Directory | Out-Null }
 $runDir = prepareRunDir $resolvedOutputDir
 $logFile = "$runDir/test-run.txt"
 @("RepoRoot: $RepoRoot", "TestArgs: $TestArgs", "") | Out-File $logFile -Encoding utf8NoBOM
@@ -138,6 +139,7 @@ $runState = @{
     inFailure    = $false
     pendingLine  = $null
     buildDone    = $false
+    exitCode     = 0
 }
 
 # Use -tl:off so we get parseable line-by-line output instead of terminal logger's progress UI.
@@ -146,23 +148,41 @@ $runState = @{
 $dotnetTestArgs = @("-tl:off", "-v:quiet") + $TestArgs
 if ($NoBuild) { $dotnetTestArgs += "--no-build" }
 
-$coverageDest = $null
-if (-not $NoCoverage) {
-    $coverageDest = "$runDir/coverage.xml"
-    $commandAndArgs = @("dotnet-coverage", "collect", ($dotnetTestArgs -join ' '), "-f", "cobertura", "-o", $coverageDest)
-} else {
-    $commandAndArgs = @("dotnet", "test") + $dotnetTestArgs
+if (-not $NoCoverage -and $CoverageCollector -eq "coverlet") {
+    $dotnetTestArgs += "--collect", "XPlat Code Coverage", "--results-directory", "$runDir/testresults"
 }
 
-# Build the command scriptblock. dotnet-coverage wraps "dotnet test" as a quoted command string;
-# plain dotnet test uses splatted args.
-if (-not $NoCoverage) {
+if (-not $NoCoverage -and $CoverageCollector -eq "dotnet-coverage") {
+    if (-not (Get-Command dotnet-coverage -ErrorAction SilentlyContinue)) {
+        throw "dotnet-coverage not found. Install it with: dotnet tool install --global dotnet-coverage"
+    }
+    $coverageDest = "$runDir/coverage.xml"
     $testCommand = {
-        $dtArgsString = $dotnetTestArgs -join ' '
-        dotnet-coverage collect "dotnet test $dtArgsString" -f cobertura -o $coverageDest 2>&1
+        $savedEncoding = [Console]::OutputEncoding
+        [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+        if ($WorkingDir) { Push-Location $WorkingDir }
+        try {
+            $dtArgsString = $dotnetTestArgs -join ' '
+            dotnet-coverage collect "dotnet test $dtArgsString" -f cobertura -o $coverageDest 2>&1
+        } finally {
+            $runState.exitCode = $LASTEXITCODE
+            if ($WorkingDir) { Pop-Location }
+            [Console]::OutputEncoding = $savedEncoding
+        }
     }
 } else {
-    $testCommand = { dotnet test @dotnetTestArgs 2>&1 }
+    $testCommand = {
+        $savedEncoding = [Console]::OutputEncoding
+        [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+        if ($WorkingDir) { Push-Location $WorkingDir }
+        try {
+            dotnet test @dotnetTestArgs 2>&1
+        } finally {
+            $runState.exitCode = $LASTEXITCODE
+            if ($WorkingDir) { Pop-Location }
+            [Console]::OutputEncoding = $savedEncoding
+        }
+    }
 }
 
 if ($Debugging) {
@@ -188,6 +208,11 @@ if ($Debugging) {
             if ($parsed) {
                 $state.result = $parsed
                 return $null  # we'll render our own summary
+            }
+
+            # Show warnings regardless of build phase
+            if ($line.line -match '^\s*warning') {
+                return ansiColor $line.line 93
             }
 
             # Suppress build output (restore, compile, publish lines)
@@ -230,12 +255,29 @@ if ($Debugging) {
         }
 }
 
+# Locate coverage file: dotnet-coverage writes directly to $coverageDest; coverlet puts it
+# under testresults/<guid>/coverage.cobertura.xml and needs discovery + copy.
+$coveragePath = $null
+if (-not $NoCoverage) {
+    if ($CoverageCollector -eq "dotnet-coverage") {
+        if (Test-Path $coverageDest) { $coveragePath = $coverageDest }
+    } else {
+        $coverageFile = Get-ChildItem "$runDir/testresults" -Filter "coverage.cobertura.xml" -Recurse -ErrorAction SilentlyContinue |
+                        Select-Object -First 1
+        if ($coverageFile) {
+            $coveragePath = "$runDir/coverage.xml"
+            Copy-Item $coverageFile.FullName $coveragePath
+        }
+    }
+}
+
 # Summary
 $result = $runState.result
 $elapsed = [DateTimeOffset]::UtcNow - $startTime
 $elapsedStr = " $(Format-Duration $elapsed.TotalSeconds)"
 
-$coverageSummary = getCoverageSummary $coverageDest
+$coverageUnit = if ($CoverageCollector -eq "dotnet-coverage") { "Blocks" } else { "Lines" }
+$coverageSummary = getCoverageSummary $coveragePath $coverageUnit
 
 if ($null -ne $result) {
     $components = @()
@@ -263,3 +305,5 @@ if (-not $Debugging -and $null -ne $result -and $result.Failed -gt 0) {
     }
     ansiColor $hint 93
 }
+
+if ($runState.exitCode -ne 0) { exit $runState.exitCode }
