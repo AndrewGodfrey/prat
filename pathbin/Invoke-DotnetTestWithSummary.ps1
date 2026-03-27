@@ -55,34 +55,6 @@ function getAutoDir($root) {
 }
 
 function getRetention() { & (Resolve-PratLibFile "lib/Get-TestRunRetention.ps1") }
-function getTimestamp() { Get-Date -Format "yyyy-MM-ddTHH-mm-ss-fff" }
-
-function prepareRunDir($outputDir) {
-    $ProgressPreference = 'SilentlyContinue'
-    $lastDir = "$outputDir/last"
-
-    if (Test-Path $lastDir) {
-        $timestamp = getTimestamp
-        Move-Item $lastDir "$outputDir/$timestamp"
-
-        $retention = getRetention
-        $oldDirs = Get-ChildItem $outputDir -Directory |
-            Where-Object { $_.Name -ne 'last' } |
-            Sort-Object CreationTime, Name
-        if ($oldDirs.Count -gt $retention) {
-            $oldDirs | Select-Object -First ($oldDirs.Count - $retention) | ForEach-Object {
-                [System.IO.Directory]::Delete($_.FullName, $true)
-            }
-        }
-    }
-
-    New-Item $lastDir -ItemType Directory -Force | Out-Null
-    $lastDir
-}
-
-function ansiColor($text, $colorCode) {
-    return "`e[$($colorCode)m$text`e[0m"
-}
 
 # Parse cobertura XML for a coverage summary line
 function getCoverageSummary($coveragePath, $unit) {
@@ -126,7 +98,7 @@ function parseTestResult($line) {
 
 $resolvedOutputDir = if ($OutputDir) { $OutputDir } else { "$(getAutoDir $RepoRoot)/testRuns" }
 if (!(Test-Path $resolvedOutputDir)) { New-Item $resolvedOutputDir -ItemType Directory | Out-Null }
-$runDir = prepareRunDir $resolvedOutputDir
+$runDir = Initialize-TestRunDir -OutputDir $resolvedOutputDir -Retention (getRetention)
 $logFile = "$runDir/test-run.txt"
 @("RepoRoot: $RepoRoot", "TestArgs: $TestArgs", "") | Out-File $logFile -Encoding utf8NoBOM
 
@@ -212,7 +184,7 @@ if ($Debugging) {
 
             # Show warnings regardless of build phase
             if ($line.line -match '^\s*warning') {
-                return ansiColor $line.line 93
+                return Format-AnsiText $line.line 93
             }
 
             # Suppress build output (restore, compile, publish lines)
@@ -228,7 +200,7 @@ if ($Debugging) {
                 if ($state.failuresSeen -lt $failureThreshold) {
                     $state.failuresSeen++
                     $state.inFailure = $true
-                    return ansiColor $line.line 91
+                    return Format-AnsiText $line.line 91
                 } else {
                     $state.inFailure = $false
                 }
@@ -240,7 +212,7 @@ if ($Debugging) {
                 if ($line.line -match '^\s*Passed|^\s*$' -or $line.line -match 'Test Run') {
                     $state.inFailure = $false
                 } else {
-                    return ansiColor $line.line 91
+                    return Format-AnsiText $line.line 91
                 }
             }
 
@@ -293,7 +265,7 @@ if ($null -ne $result) {
 }
 
 $summary | Out-File "$runDir/summary.txt" -Encoding utf8NoBOM
-ansiColor $summary $colorCode
+Format-AnsiText $summary $colorCode
 
 if (-not $Debugging -and $null -ne $result -and $result.Failed -gt 0) {
     $suppressed = $result.Failed - $runState.failuresSeen
@@ -303,7 +275,7 @@ if (-not $Debugging -and $null -ne $result -and $result.Failed -gt 0) {
     } else {
         "See $logFile"
     }
-    ansiColor $hint 93
+    Format-AnsiText $hint 93
 }
 
 if ($runState.exitCode -ne 0) { exit $runState.exitCode }

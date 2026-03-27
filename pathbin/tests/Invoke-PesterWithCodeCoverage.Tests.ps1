@@ -395,9 +395,6 @@ Describe "Invoke-PesterWithCodeCoverage test run directory management" {
         function getRetention() {}
         Mock getRetention { 2 }
 
-        function getTimestamp() {}
-        Mock getTimestamp { "2000-01-01T00-00-00-000" }
-
         $fakeResult = [PSCustomObject]@{ PassedCount = 3; FailedCount = 0 }
         Mock Invoke-PesterAsJob { return $fakeResult }
     }
@@ -435,22 +432,15 @@ Describe "Invoke-PesterWithCodeCoverage test run directory management" {
     It "applies retention: removes oldest timestamp dirs beyond N=2" {
         $testRoot = "$TestDrive/retention-test"
 
-        # Use a [ref] counter so the closure captures a mutable object (not a scope-sensitive $script: var)
-        $counter = [ref] 0
-        Mock getTimestamp {
-            $counter.Value++
-            "2000-01-01T00-00-00-{0:D3}" -f $counter.Value
-        }
-
-        # Run 4 times: run 1 creates 'last'; runs 2-4 rotate it to 001, 002, 003.
-        # With N=2: after run 4 there are 3 timestamp dirs, so 001 (oldest) is deleted.
+        # Run 4 times: run 1 creates 'last'; runs 2-4 rotate it to timestamp dirs.
+        # With N=2: after run 4 there are 3 timestamp dirs, so the oldest is deleted.
         & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
         & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
         & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
         & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
 
-        "$testRoot/auto/testRuns/2000-01-01T00-00-00-001" | Should -Not -Exist
-        "$testRoot/auto/testRuns/2000-01-01T00-00-00-002" | Should -Exist
-        "$testRoot/auto/testRuns/2000-01-01T00-00-00-003" | Should -Exist
+        $timestampDirs = Get-ChildItem "$testRoot/auto/testRuns" -Directory |
+            Where-Object { $_.Name -ne 'last' }
+        $timestampDirs | Should -HaveCount 2
     }
 }

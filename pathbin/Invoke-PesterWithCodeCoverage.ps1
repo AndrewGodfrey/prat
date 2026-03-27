@@ -90,32 +90,6 @@ function moveCoverageFile($tempFile, $coverageDest) {
 }
 
 function getRetention() { & (Resolve-PratLibFile "lib/Get-TestRunRetention.ps1") }
-function getTimestamp() { Get-Date -Format "yyyy-MM-ddTHH-mm-ss-fff" }
-
-function prepareRunDir($outputDir) {
-    $ProgressPreference = 'SilentlyContinue'  # suppress Remove-Item -Recurse internal progress bars
-    $lastDir = "$outputDir/last"
-
-    if (Test-Path $lastDir) {
-        # Rotate last → timestamp directory
-        $timestamp = getTimestamp
-        Move-Item $lastDir "$outputDir/$timestamp"
-
-        # Apply retention: keep only the N most recent timestamp dirs
-        $retention = getRetention
-        $oldDirs = Get-ChildItem $outputDir -Directory |
-            Where-Object { $_.Name -ne 'last' } |
-            Sort-Object CreationTime, Name
-        if ($oldDirs.Count -gt $retention) {
-            $oldDirs | Select-Object -First ($oldDirs.Count - $retention) | ForEach-Object {
-                [System.IO.Directory]::Delete($_.FullName, $true)
-            }
-        }
-    }
-
-    New-Item $lastDir -ItemType Directory -Force | Out-Null
-    $lastDir
-}
 
 $startTime = [DateTimeOffset]::UtcNow
 
@@ -150,13 +124,10 @@ if (!$NoCoverage) {
 
 $resolvedOutputDir = if ($OutputDir) { $OutputDir } else { "$(getAutoDir $RepoRoot)/testRuns" }
 if (!(Test-Path $resolvedOutputDir)) { New-Item $resolvedOutputDir -ItemType Directory | Out-Null }
-$runDir = prepareRunDir $resolvedOutputDir
+$runDir = Initialize-TestRunDir -OutputDir $resolvedOutputDir -Retention (getRetention)
 $logFile = "$runDir/test-run.txt"
 @("RepoRoot: $RepoRoot", "PathToTest: $PathToTest", "") | Out-File $logFile -Encoding utf8NoBOM
 
-function ansiColor($text, $colorCode) {
-    return "`e[$($colorCode)m$text`e[0m"
-}    
 
 $failureThreshold = 5
 
@@ -238,7 +209,7 @@ if ($Debugging) {
                 if ($state.failuresSeen -lt $failureThreshold) {
                     $state.failuresSeen++
                     $state.inFailure = $true
-                    return ansiColor $text 91
+                    return Format-AnsiText $text 91
                 } else {
                     $state.inFailure = $false
                 }
@@ -249,7 +220,7 @@ if ($Debugging) {
                     $state.inFailure = $false
                     # Fall through
                 } else {
-                    return ansiColor $text 91
+                    return Format-AnsiText $text 91
                 }
             }
             if ($text -match '^\s*\[\+\].*[\\/]([^\\/]+\.ps1) .*$') {
@@ -285,7 +256,7 @@ $testRunSummary | Out-File "$runDir/summary.txt" -Encoding utf8NoBOM
 $colorCode = if ($result.FailedCount -gt 0) {
     if ($result.FailedCount -ge $failureThreshold) { 91 } else { 93 }
 } else { 92 }
-ansiColor $testRunSummary $colorCode
+Format-AnsiText $testRunSummary $colorCode
 
 if (!$Debugging -and $null -ne $result -and $result.FailedCount -gt 0) {
     $suppressed = $result.FailedCount - $runState.failuresSeen
@@ -295,6 +266,6 @@ if (!$Debugging -and $null -ne $result -and $result.FailedCount -gt 0) {
     } else {
         "See $logFile"
     }
-    ansiColor $hint 93
+    Format-AnsiText $hint 93
 }
 
