@@ -77,6 +77,7 @@ FunctionsToExport = @(
 	'Install-RegistryKey', 'Install-RegistryDwordValue', 'Install-RegistryStringValue', 'Install-RegistryBinaryValue',
     'Install-DailyScheduledTask', 'Install-AtLogonScheduledTask',
 	'Install-InteractiveAlias',
+    'Get-DotnetSdkRequirement',
 	'Install-PratPackage',
 	'Install-WingetPackage',
 	'Install-NugetPackage', 'Add-NugetPackageType',

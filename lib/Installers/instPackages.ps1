@@ -39,6 +39,20 @@
 #       I'm not sure.
 
 
+function Get-DotnetSdkRequirement($globalJsonPath) {
+    $globalJson = Get-Content $globalJsonPath | ConvertFrom-Json
+    $parts      = $globalJson.sdk.version -split '\.'
+    $major      = $parts[0]
+    $minor      = $parts[1]
+    $pattern    = switch ($globalJson.sdk.rollForward) {
+        'latestFeature' { "$major.$minor.*" }
+        'latestMinor'   { "$major.*" }
+        'latestMajor'   { '*' }
+        default         { throw "Unsupported rollForward value in $($globalJsonPath): '$($globalJson.sdk.rollForward)'" }
+    }
+    @{ Major = $major; Pattern = $pattern }
+}
+
 # This is the 'spackle' mentioned in the file comment: Some packages emit "Path environment variable modified; restart your shell to use the new value.".
 # To avoid stopping the script at this point, we need to a) hope we can predict the new value, and b) add it to $env:path.
 # 
@@ -254,6 +268,33 @@ $pratPackages = @{
     ditto = @{
         install = { internal_installDitto $stage }
     }
+    dotnetSdk = @{
+        dependencies = @("sudo")
+        check = {
+            $req    = Get-DotnetSdkRequirement $packageArgs[0]
+            $sdkDir = "$env:programfiles/dotnet/sdk"
+            (Test-Path $sdkDir) -and [bool](Get-ChildItem $sdkDir -Directory -ErrorAction SilentlyContinue | Where-Object Name -like $req.Pattern)
+        }
+        install = {
+            $globalJsonFile = $packageArgs[0]
+            $installScript  = "$env:TEMP/dotnet-install.ps1"
+            $dotnetDir      = "$env:ProgramFiles/dotnet"
+            $stage.SetSubstage("downloading dotnet-install.ps1")
+            Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile $installScript
+            $stage.SetSubstage("running dotnet-install.ps1")
+            Invoke-Gsudo {
+                & $using:installScript -JsonFile $using:globalJsonFile -InstallDir $using:dotnetDir
+                $machinePath = [System.Environment]::GetEnvironmentVariable("PATH", "Machine")
+                if (($machinePath -split ';') -notcontains $using:dotnetDir) {
+                    [System.Environment]::SetEnvironmentVariable("PATH", "$machinePath;$using:dotnetDir", "Machine")
+                }
+            }
+            $stage.SetSubstage("updating PATH")
+            # Refresh current (non-elevated) process PATH
+            $machinePath = [System.Environment]::GetEnvironmentVariable("PATH", "Machine")
+            if (($env:PATH -split ';') -notcontains $dotnetDir) { $env:PATH = "$env:PATH;$dotnetDir" }
+        }
+    }
     dnspy = @{
         install = {
             Install-WingetPackage $stage "dnSpyEx.dnSpy" "$env:localappdata\Microsoft\WinGet\Packages\dnSpyEx.dnSpy_Microsoft.Winget.Source_8wekyb3d8bbwe"
@@ -388,15 +429,17 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
 
     # The package itself
     $installerVersion = if ($packageEntry.installerVersion) { $packageEntry.installerVersion } else { "1.0" }
-    $stepId = "pkg\$($packageId):$installerVersion"
-    if (!($stage.GetIsStepComplete($stepId))) {
+    $stepId           = "pkg\$($packageId):$installerVersion"
+    $isInstalled      = if ($packageEntry.check) { &($packageEntry.check) } else { $stage.GetIsStepComplete($stepId) }
+
+    if (-not $isInstalled) {
         $stage.SetSubstage($packageId)
         $stage.OnChange()
 
         $ErrorActionPreference = "stop"
         &($packageEntry.install) $stage
 
-        $stage.SetStepComplete($stepId)
+        if (-not $packageEntry.check) { $stage.SetStepComplete($stepId) }
     }
 }
 

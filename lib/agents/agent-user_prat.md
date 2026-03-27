@@ -172,6 +172,12 @@ skill discovery, settings, and conventions are all areas where you've been confi
 claims about what Claude Code does or doesn't support, consult the `claude-code-guide` agent. Don't answer
 authoritatively from model knowledge alone.
 
+## Installers framework conventions
+
+When writing `install` scriptblocks in `$pratPackages`, add `$stage.SetSubstage("description")`
+before each long-running operation (network downloads, elevated installs, etc.) to give the user
+progress visibility.
+
 ## Public repos (e.g. prat, prefs)
 
 Before finalizing a feature branch or committing directly to main in a public repo, run

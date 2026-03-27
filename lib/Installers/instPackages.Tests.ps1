@@ -105,6 +105,81 @@ Describe "Install-PratPackage" {
             InModuleScope Installers { $script:testInstallOrder.ToArray() } | Should -Be @("dep", "withDep")
         }
     }
+
+    Context "check scriptblock" {
+        BeforeEach {
+            InModuleScope Installers {
+                $script:checkResult = $false
+                $script:pratPackages["checkpkg"] = @{
+                    check   = { $script:checkResult }
+                    install = { $script:testInstallCount++ }
+                }
+            }
+        }
+
+        It "skips install when check returns true" {
+            InModuleScope Installers { $script:checkResult = $true }
+            $tracker = Start-Installation ([guid]::NewGuid().ToString()) -InstallationDatabaseLocation "TestDrive:\db-check-skip"
+            try { Install-PratPackage $tracker "checkpkg" }
+            finally { $tracker.StopInstallation() }
+
+            InModuleScope Installers { $script:testInstallCount } | Should -Be 0
+        }
+
+        It "runs install when check returns false" {
+            $tracker = Start-Installation ([guid]::NewGuid().ToString()) -InstallationDatabaseLocation "TestDrive:\db-check-run"
+            try { Install-PratPackage $tracker "checkpkg" }
+            finally { $tracker.StopInstallation() }
+
+            InModuleScope Installers { $script:testInstallCount } | Should -Be 1
+        }
+
+        It "re-runs install on repeated calls while check returns false" {
+            $name = [guid]::NewGuid().ToString()
+
+            $tracker = Start-Installation $name -InstallationDatabaseLocation "TestDrive:\db-check-repeat"
+            try { Install-PratPackage $tracker "checkpkg" }
+            finally { $tracker.StopInstallation() }
+
+            $tracker = Start-Installation $name -InstallationDatabaseLocation "TestDrive:\db-check-repeat"
+            try { Install-PratPackage $tracker "checkpkg" }
+            finally { $tracker.StopInstallation() }
+
+            InModuleScope Installers { $script:testInstallCount } | Should -Be 2
+        }
+    }
+}
+
+Describe "Get-DotnetSdkRequirement" {
+    BeforeAll {
+        Import-Module "$PSScriptRoot/Installers.psd1" -Force
+    }
+
+    It "latestFeature: Pattern is major.minor.*, Major is major version" {
+        Set-Content "TestDrive:\gj-lf.json" '{"sdk":{"version":"8.0.100","rollForward":"latestFeature"}}'
+        $result = InModuleScope Installers { Get-DotnetSdkRequirement "TestDrive:\gj-lf.json" }
+        $result.Major   | Should -Be '8'
+        $result.Pattern | Should -Be '8.0.*'
+    }
+
+    It "latestMinor: Pattern is major.*" {
+        Set-Content "TestDrive:\gj-lm.json" '{"sdk":{"version":"9.1.200","rollForward":"latestMinor"}}'
+        $result = InModuleScope Installers { Get-DotnetSdkRequirement "TestDrive:\gj-lm.json" }
+        $result.Major   | Should -Be '9'
+        $result.Pattern | Should -Be '9.*'
+    }
+
+    It "latestMajor: Pattern is *" {
+        Set-Content "TestDrive:\gj-lmaj.json" '{"sdk":{"version":"8.0.100","rollForward":"latestMajor"}}'
+        $result = InModuleScope Installers { Get-DotnetSdkRequirement "TestDrive:\gj-lmaj.json" }
+        $result.Major   | Should -Be '8'
+        $result.Pattern | Should -Be '*'
+    }
+
+    It "throws on unsupported rollForward value" {
+        Set-Content "TestDrive:\gj-bad.json" '{"sdk":{"version":"8.0.100","rollForward":"disable"}}'
+        { InModuleScope Installers { Get-DotnetSdkRequirement "TestDrive:\gj-bad.json" } } | Should -Throw "*disable*"
+    }
 }
 
 Describe "installPratWingetPackage" {
