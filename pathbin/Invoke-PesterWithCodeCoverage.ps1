@@ -12,8 +12,11 @@ param (
     $OutputDir = $null,
     [switch] $DisableFilter,
     [switch] $IncludeIntegrationTests,
-    [switch] $Integration
+    [switch] $Integration,
+    [switch] $UseAlternateCollector
 )
+
+if ($UseAlternateCollector) { Write-Warning "No alternate collector for Pester; continuing." }
 
 function getCoverageSummary($coverageSrc) {
     if (($null -eq $coverageSrc) -or !(Test-Path $coverageSrc)) { return $null }

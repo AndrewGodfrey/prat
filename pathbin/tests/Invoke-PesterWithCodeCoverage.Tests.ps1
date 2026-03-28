@@ -104,6 +104,14 @@ Describe "Invoke-PesterWithCodeCoverage" {
         $warnings | Should -Not -BeNullOrEmpty
         $outConf.Filter.Tag.Value | Should -Contain "Integration"
     }
+
+    It "-UseAlternateCollector emits a warning and continues" {
+        $warnings = & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -UseAlternateCollector 3>&1 |
+            Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
+
+        $warnings | Should -Not -BeNullOrEmpty
+        $warnings[0].Message | Should -Match "no alternate collector"
+    }
 }
 
 Describe "Invoke-PesterWithCodeCoverage summary file" {

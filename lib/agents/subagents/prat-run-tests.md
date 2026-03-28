@@ -44,6 +44,7 @@ t -RepoRoot ~/prat -Integration -NoCoverage                          # integrati
 | `-Integration` | Run only integration-tagged tests |
 | `-IncludeIntegrationTests` | Run unit tests AND integration tests |
 | `-DisableFilter` | Unfiltered diagnostic output — always pair with a tight `-Focus` |
+| `-UseAlternateCollector` | Use `dotnet-coverage` instead of `coverlet` (Pester: emits warning, continues) |
 | `-OutputDir <path>` | Direct parent of `last/` run dir (default: `auto/testRuns/`) |
 
 ### Cached summary vs. fresh run
@@ -66,7 +67,15 @@ Previous runs are rotated to `auto/testRuns/<timestamp>/`
 Runs by default. Scope is inferred: a directory covers itself; a `.Tests.ps1` file covers its
 corresponding production file. Use `-NoCoverage` during rapid iteration.
 
-To find uncovered lines for e.g. `lib/Installers/instClaude.ps1`:
+Use `Get-FileCoverage -FilePath "C:\path\to\File.ps1"` for a per-function summary.
+Use `Get-FileCoverage -Detailed -FilePath "C:\path\to\File.ps1"` for a line-range summary.
+
+Current limitations:
+- Get-FileCoverage defaults to the auto/testRuns/last coverage file.
+  For some repos that isn't the right file.
+- Get-FileCoverage only understands JaCoCo (e.g. output by Pester), not Cobertura (e.g. output by dotnet).
+
+Or, manually: to find uncovered lines for e.g. `lib/Installers/instClaude.ps1`:
 
 ```
 <package name="C:/Users/you/prat/lib/Installers">   ← absolute path of directory
@@ -74,7 +83,7 @@ To find uncovered lines for e.g. `lib/Installers/instClaude.ps1`:
     <line nr="5" mi="1" ci="0" .../>                 ← mi=missed, ci=covered
 ```
 
-Use `Get-FileCoverage -FilePath "C:\path\to\File.ps1"` for a per-function summary.
+
 
 ## Fixing failures
 

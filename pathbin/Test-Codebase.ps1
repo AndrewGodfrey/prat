@@ -17,7 +17,8 @@ param(
     [switch] $IncludeIntegrationTests,
     [switch] $Integration,
     $RepoRoot = $null,
-    $OutputDir = $null
+    $OutputDir = $null,
+    [switch] $UseAlternateCollector
 )
 
 if (-not $PSBoundParameters.ContainsKey('Focus') -and $PSBoundParameters.ContainsKey('RepoRoot')) {

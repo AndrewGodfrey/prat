@@ -38,8 +38,11 @@ param(
     [switch] $NoBuild,
     [ValidateSet("coverlet", "dotnet-coverage")] [string] $CoverageCollector = "coverlet",
     [string] $WorkspaceFile,
-    [switch] $DisableFilter
+    [switch] $DisableFilter,
+    [switch] $UseAlternateCollector
 )
+
+if ($UseAlternateCollector) { $CoverageCollector = "dotnet-coverage" }
 
 if (-not $RepoRoot) {
     $RepoRoot = (git rev-parse --show-toplevel 2>$null)

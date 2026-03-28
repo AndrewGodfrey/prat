@@ -48,4 +48,22 @@ exit /b 0
         # The 'Failed! - ...' line is parsed by parseTestResult and suppressed (we render our own summary)
         $output | Where-Object { $_ -match '^Failed!' } | Should -BeNullOrEmpty
     }
+
+    It "-UseAlternateCollector routes to dotnet-coverage collector" {
+        $repoRoot = Join-Path $TestDrive "repo-alt-collector"
+        New-Item $repoRoot -ItemType Directory | Out-Null
+        # Remove dotnet-coverage's directory from PATH so the script's "not found" check fires.
+        # Keeps git and other tools intact; only strips the one tool we're testing is absent.
+        $savedPath = $env:PATH
+        $dcSource = (Get-Command dotnet-coverage -ErrorAction SilentlyContinue)?.Source
+        $dcDir    = if ($dcSource) { Split-Path $dcSource -Parent } else { $null }
+        $filteredPath = (($savedPath -split ';') | Where-Object { $_ -ne $dcDir }) -join ';'
+        $env:PATH = "$script:fakeDotnetDir;$filteredPath"
+        try {
+            { & $script:dotnetScript -TestArgs @("fake.csproj") -RepoRoot $repoRoot -UseAlternateCollector } |
+                Should -Throw "*dotnet-coverage not found*"
+        } finally {
+            $env:PATH = $savedPath
+        }
+    }
 }
