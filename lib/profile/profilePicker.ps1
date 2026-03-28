@@ -11,6 +11,8 @@
 
 pratProfile_trace start "profilePicker.ps1"
 
+if ($PSVersionTable.PSEdition -eq 'Desktop') { return }
+
 &$PSScriptRoot\Add-PratBinPaths.ps1
 
 if ($false) {

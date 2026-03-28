@@ -69,7 +69,7 @@ function Write-TestRunResult {
         $suppressed = $failedCount - $FailuresSeen
         $logFile = ("$RunDir/test-run.txt") -replace '\\', '/'
         $hint = if ($suppressed -gt 0) {
-            "$suppressed failure$(if ($suppressed -ne 1) {'s'}) suppressed — see $logFile"
+            "$suppressed failure$(if ($suppressed -ne 1) {'s'}) suppressed - see $logFile"
         } else {
             "See $logFile"
         }
