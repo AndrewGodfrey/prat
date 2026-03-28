@@ -22,13 +22,23 @@
 #     Otherwise: The env-var is not part of the delta, meaning it should not be touched when this delta is applied/reverted.
 
 # Low-level function: Run a .bat or .cmd script, and capture all the environment variables afterwards.
-function runCmdAndCaptureEnv([string] $script, [string] $parameters, [bool] $checkExitCode, [scriptblock] $onOutput = $null) {
+function runCmdAndCaptureEnv([string] $script, [string] $parameters, [bool] $checkExitCode, [scriptblock] $onOutput = $null, [bool] $elevated = $false) {
     $tempFile = [IO.Path]::GetTempFileName()
 
     # Keys are case-insensitive, which matches how env-vars work.
     $result = @{}
     try {
-        cmd /c " `"$script`" $parameters && set > `"$tempFile`" " 2>&1 | ForEach-Object { if ($null -ne $onOutput) {&$onOutput $_} } # A mixture of type [string] and type [System.Management.Automation.ErrorRecord]
+        # A mixture of type [string] and type [System.Management.Automation.ErrorRecord]
+        & {
+            if ($elevated) {
+                # gsudo -d -- bypasses shell detection. Paths are unquoted because gsudo -d
+                # double-escapes embedded quotes; spaces in $script/$tempFile would need a
+                # different approach.
+                gsudo -d -- cmd /c "$script $parameters && set > $tempFile" 2>&1
+            } else {
+                cmd /c " `"$script`" $parameters && set > `"$tempFile`" " 2>&1
+            }
+        } | ForEach-Object { if ($null -ne $onOutput) {&$onOutput $_} }
         if ($checkExitCode -and ($LastExitCode -ne 0)) { throw "batch script failed: error code: $LastExitCode" }
 
         foreach ($line in (Get-Content $tempFile)) {
@@ -123,11 +133,11 @@ function Get-DefaultOnOutputBlock() {
 # .RETURNS
 # A hashtable with 'apply' and 'prev' keys, for use with Invoke-CommandWithEnvDelta. Each value is a hashtable of env-var name-value pairs.
 # The 'prev' key is just for information.
-function Export-EnvDeltaFromInvokedBatchScript([string] $script, [string] $parameters, [bool] $checkExitCode=$true, [scriptblock] $onOutput = $null) {
+function Export-EnvDeltaFromInvokedBatchScript([string] $script, [string] $parameters, [bool] $checkExitCode=$true, [scriptblock] $onOutput = $null, [bool] $elevated = $false) {
     $currentEnvironment = captureCurrentEnv
     # Write-Debug-SimpleHashtable $currentEnvironment "current environment"
 
-    $newEnvironment = runCmdAndCaptureEnv $script $parameters $checkExitCode $onOutput
+    $newEnvironment = runCmdAndCaptureEnv $script $parameters $checkExitCode $onOutput $elevated
     # Write-Debug-SimpleHashtable $newEnvironment "new environment"
 
     # We add -MissingInAfterMeansDeletion because: In this case, if the new environment is missing an item, we believe the script we just ran deleted it, on purpose.

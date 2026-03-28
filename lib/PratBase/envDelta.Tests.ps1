@@ -1,6 +1,8 @@
 BeforeAll {
     . $PSCommandPath.Replace('.Tests.ps1','.ps1')
 
+    function gsudo { throw "gsudo not installed" }  # stub so Pester can Mock it
+
     [int] $testFileNum = 0
     function createTestFile($data, $extension) {
         $testFileNum += 1
@@ -217,6 +219,12 @@ Describe "Export-EnvDeltaFromInvokedBatchScript" {
         } finally {
             popTestEnvironment $prev
         }
+    }
+    It "invokes gsudo when elevated" {
+        $fn = createTestFile "exit /b 0" ".bat"
+        Mock gsudo { }
+        Export-EnvDeltaFromInvokedBatchScript $fn -elevated $true -checkExitCode $false
+        Should -Invoke gsudo -Times 1
     }
     It "Throws on script failure, unless told otherwise" {
         $prev = pushTestEnvironment
