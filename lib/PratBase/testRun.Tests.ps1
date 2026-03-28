@@ -163,6 +163,126 @@ Describe "Write-TestRunResult" {
     }
 }
 
+Describe "Convert-CoberturaXmlFile" {
+    BeforeAll {
+        function makeCoberturaFile($path, $sources, $filenames) {
+            $sourcesXml = if ($sources) {
+                $inner = ($sources | ForEach-Object { "<source>$_</source>" }) -join ''
+                "<sources>$inner</sources>"
+            } else { "" }
+            $classesXml = ($filenames | ForEach-Object {
+                $fn = $_
+                "<class filename=""$fn"" />"
+            }) -join ''
+            @"
+<?xml version="1.0"?>
+<coverage line-rate="0.8" lines-covered="8" lines-valid="10">
+  $sourcesXml
+  <packages><package name="p"><classes>$classesXml</classes></package></packages>
+</coverage>
+"@ | Set-Content $path -Encoding utf8NoBOM
+        }
+    }
+
+    It "adds a sources element pointing to '.' when missing" {
+        $f = "$TestDrive/cov-nosources.xml"
+        makeCoberturaFile $f $null @("Q:/src/Foo/Bar.cs")
+
+        Convert-CoberturaXmlFile -Path $f
+
+        [xml]$xml = Get-Content $f
+        $xml.coverage.sources.source | Should -Be "."
+    }
+
+    It "does not modify existing <sources> element" {
+        $f = "$TestDrive/cov-hassources.xml"
+        makeCoberturaFile $f @("Q:/") @("src/Foo/Bar.cs")
+
+        Convert-CoberturaXmlFile -Path $f
+
+        [xml]$xml = Get-Content $f
+        $xml.coverage.sources.source | Should -Be "Q:/"
+    }
+
+    It "strips matching path prefix from filename attributes" {
+        $f = "$TestDrive/cov-prefix.xml"
+        makeCoberturaFile $f $null @("Q:/src/MyProject/Foo/Bar.cs", "Q:/src/MyProject/Baz/Qux.cs")
+
+        Convert-CoberturaXmlFile -Path $f -PathPrefixes @("Q:/src/MyProject")
+
+        [xml]$xml = Get-Content $f
+        $classes = $xml.coverage.packages.package.classes.class
+        $classes[0].filename | Should -Be "Foo/Bar.cs"
+        $classes[1].filename | Should -Be "Baz/Qux.cs"
+    }
+
+    It "strips prefix from relative filenames by joining with source element (coverlet case)" {
+        $f = "$TestDrive/cov-coverlet.xml"
+        makeCoberturaFile $f @("Q:/") @("src/MyProject/Foo/Bar.cs", "src/MyProject/Baz/Qux.cs")
+
+        Convert-CoberturaXmlFile -Path $f -PathPrefixes @("Q:/src/MyProject")
+
+        [xml]$xml = Get-Content $f
+        $classes = $xml.coverage.packages.package.classes.class
+        $classes[0].filename | Should -Be "Foo/Bar.cs"
+        $classes[1].filename | Should -Be "Baz/Qux.cs"
+    }
+
+    It "throws when multiple source elements are present" {
+        $f = "$TestDrive/cov-multisource.xml"
+        makeCoberturaFile $f @("Q:/", "C:/") @("src/Foo.cs")
+
+        { Convert-CoberturaXmlFile -Path $f } | Should -Throw -ExpectedMessage "*multiple*"
+    }
+
+    It "leaves filenames that don't match any prefix unchanged" {
+        $f = "$TestDrive/cov-nomatch.xml"
+        makeCoberturaFile $f $null @("Q:/src/Other/Foo.cs")
+
+        Convert-CoberturaXmlFile -Path $f -PathPrefixes @("Q:/src/MyProject")
+
+        [xml]$xml = Get-Content $f
+        $xml.coverage.packages.package.classes.class.filename | Should -Be "Q:/src/Other/Foo.cs"
+    }
+}
+
+Describe "Get-PathPrefixesFromWorkspace" {
+    It "returns absolute folder paths from a .code-workspace file" {
+        $dir1 = "$TestDrive/ws-abs1"; New-Item $dir1 -ItemType Directory | Out-Null
+        $dir2 = "$TestDrive/ws-abs2"; New-Item $dir2 -ItemType Directory | Out-Null
+        $f = "$TestDrive/test.code-workspace"
+        $p1 = $dir1 -replace '\\', '/'; $p2 = $dir2 -replace '\\', '/'
+        "{ `"folders`": [{ `"path`": `"$p1`" }, { `"path`": `"$p2`" }] }" | Set-Content $f -Encoding utf8NoBOM
+
+        $result = Get-PathPrefixesFromWorkspace -WorkspaceFile $f
+
+        $result[0] | Should -Be ((Resolve-Path $dir1).Path -replace '\\', '/')
+        $result[1] | Should -Be ((Resolve-Path $dir2).Path -replace '\\', '/')
+    }
+
+    It "returns empty array when folders is empty" {
+        $f = "$TestDrive/empty.code-workspace"
+        '{ "folders": [] }' | Set-Content $f -Encoding utf8NoBOM
+
+        $result = Get-PathPrefixesFromWorkspace -WorkspaceFile $f
+
+        $result | Should -BeNullOrEmpty
+    }
+
+    It "resolves relative folder paths to absolute using the workspace file's location" {
+        $dir = "$TestDrive/ws"
+        New-Item $dir -ItemType Directory | Out-Null
+        New-Item "$TestDrive/sibling" -ItemType Directory | Out-Null
+        $f = "$dir/my.code-workspace"
+        '{ "folders": [{ "path": "." }, { "path": "../sibling" }] }' | Set-Content $f -Encoding utf8NoBOM
+
+        $result = Get-PathPrefixesFromWorkspace -WorkspaceFile $f
+
+        $result[0] | Should -Be ((Resolve-Path "$dir").Path -replace '\\', '/')
+        $result[1] | Should -Be ((Resolve-Path "$TestDrive/sibling").Path -replace '\\', '/')
+    }
+}
+
 Describe "Format-AnsiText" {
     It "wraps text in ANSI escape codes" {
         Format-AnsiText -Text "hello" -ColorCode 92 | Should -Be "`e[92mhello`e[0m"

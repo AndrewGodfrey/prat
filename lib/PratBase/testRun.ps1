@@ -87,6 +87,70 @@ function Write-TestRunResult {
     }
 }
 
+# .SYNOPSIS
+# Post-processes a Cobertura XML coverage file for Coverage Gutters compatibility:
+# - Adds <sources><source>.</source></sources> if missing (prevents parser crash)
+# - Strips given path prefixes from filename attributes (enables workspace-relative matching)
+function Convert-CoberturaXmlFile {
+    param(
+        [string] $Path,
+        [string[]] $PathPrefixes = @()
+    )
+    [xml]$xml = Get-Content $Path -Raw
+
+    # Resolve source root and ensure <sources> element is present
+    $sourceNodes = $xml.SelectNodes("/coverage/sources/source")
+    if ($sourceNodes.Count -gt 1) {
+        throw "Convert-CoberturaXmlFile: multiple <source> elements are not supported (found $($sourceNodes.Count))"
+    }
+    if ($sourceNodes.Count -eq 0) {
+        # dotnet-coverage case: no <sources>, filenames are already absolute.
+        # Add placeholder source so Coverage Gutters doesn't crash.
+        $sources = $xml.CreateElement("sources")
+        $source  = $xml.CreateElement("source")
+        $source.InnerText = "."
+        $sources.AppendChild($source) | Out-Null
+        $xml.coverage.PrependChild($sources) | Out-Null
+        $sourceRoot = $null
+    } else {
+        # coverlet case: one <source>, filenames are relative to it.
+        $sourceRoot = ($sourceNodes[0].InnerText -replace '\\', '/').TrimEnd('/')
+    }
+
+    foreach ($node in $xml.SelectNodes("//*[@filename]")) {
+        $filename = $node.GetAttribute("filename") -replace '\\', '/'
+        $absolutePath = if ($sourceRoot) { "$sourceRoot/$filename" } else { $filename }
+        foreach ($prefix in $PathPrefixes) {
+            $normalizedPrefix = ($prefix.TrimEnd('/\') -replace '\\', '/') + '/'
+            if ($absolutePath.StartsWith($normalizedPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+                $node.SetAttribute("filename", $absolutePath.Substring($normalizedPrefix.Length))
+                break
+            }
+        }
+    }
+
+    $xml.Save($Path)
+}
+
+# .SYNOPSIS
+# Returns the absolute folder paths from a VS Code .code-workspace file, for use as
+# PathPrefixes with Convert-CoberturaXmlFile.
+#
+# Workspace files commonly use relative folder paths (e.g. "." or "../sibling"). These must
+# be resolved to absolute paths before they can be used as prefixes to strip from coverage
+# filenames — coverage tools emit absolute paths, so the prefix must also be absolute.
+function Get-PathPrefixesFromWorkspace {
+    param([string] $WorkspaceFile)
+    $workspace = Get-Content $WorkspaceFile -Raw | ConvertFrom-Json
+    $workspaceDir = Split-Path $WorkspaceFile -Parent
+    return $workspace.folders | ForEach-Object {
+        # GetFullPath handles both absolute paths and relative ones (resolved against workspaceDir).
+        # Join-Path is not used because it doesn't treat forward-slash absolute paths (e.g. "C:/foo")
+        # as rooted on Windows, causing them to be joined as if relative.
+        [System.IO.Path]::GetFullPath($_.path, $workspaceDir) -replace '\\', '/'
+    }
+}
+
 function Format-AnsiText {
     param(
         [string] $Text,

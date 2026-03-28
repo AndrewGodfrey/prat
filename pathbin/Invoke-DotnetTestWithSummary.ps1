@@ -37,6 +37,7 @@ param(
     [switch] $NoCoverage,
     [switch] $NoBuild,
     [ValidateSet("coverlet", "dotnet-coverage")] [string] $CoverageCollector = "coverlet",
+    [string] $WorkspaceFile,
     [switch] $Debugging
 )
 
@@ -241,6 +242,11 @@ if (-not $NoCoverage) {
             Copy-Item $coverageFile.FullName $coveragePath
         }
     }
+}
+
+if ($coveragePath) {
+    $pathPrefixes = if ($WorkspaceFile) { Get-PathPrefixesFromWorkspace -WorkspaceFile $WorkspaceFile } else { @() }
+    Convert-CoberturaXmlFile -Path $coveragePath -PathPrefixes $pathPrefixes
 }
 
 if (-not $NoCoverage -and -not $coveragePath) {
