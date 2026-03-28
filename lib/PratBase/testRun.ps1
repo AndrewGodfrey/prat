@@ -117,6 +117,7 @@ function Convert-CoberturaXmlFile {
         $sourceRoot = ($sourceNodes[0].InnerText -replace '\\', '/').TrimEnd('/')
     }
 
+    $anyStripped = $false
     foreach ($node in $xml.SelectNodes("//*[@filename]")) {
         $filename = $node.GetAttribute("filename") -replace '\\', '/'
         $absolutePath = if ($sourceRoot) { "$sourceRoot/$filename" } else { $filename }
@@ -124,9 +125,17 @@ function Convert-CoberturaXmlFile {
             $normalizedPrefix = ($prefix.TrimEnd('/\') -replace '\\', '/') + '/'
             if ($absolutePath.StartsWith($normalizedPrefix, [StringComparison]::OrdinalIgnoreCase)) {
                 $node.SetAttribute("filename", $absolutePath.Substring($normalizedPrefix.Length))
+                $anyStripped = $true
                 break
             }
         }
+    }
+
+    # When filenames have been made workspace-relative, update <source> to "." so that
+    # Coverage Gutters doesn't re-join the old source root with the now-relative filenames,
+    # producing a wrong absolute path.
+    if ($anyStripped) {
+        $xml.SelectNodes("/coverage/sources/source") | ForEach-Object { $_.InnerText = "." }
     }
 
     $xml.Save($Path)

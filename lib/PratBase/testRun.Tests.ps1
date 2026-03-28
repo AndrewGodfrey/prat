@@ -226,6 +226,9 @@ Describe "Convert-CoberturaXmlFile" {
         $classes = $xml.coverage.packages.package.classes.class
         $classes[0].filename | Should -Be "Foo/Bar.cs"
         $classes[1].filename | Should -Be "Baz/Qux.cs"
+        # Source must be updated to "." so Coverage Gutters doesn't re-join the old source root
+        # with the now-workspace-relative filenames, producing a wrong path.
+        $xml.coverage.sources.source | Should -Be "."
     }
 
     It "throws when multiple source elements are present" {
