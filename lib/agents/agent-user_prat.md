@@ -144,6 +144,8 @@ doesn't exist yet — rather than deferring with no tracking mechanism.
 Find root cause before fixing. If three fixes have failed, stop and question the approach rather
 than attempting a fourth.
 
+After proposing a code fix, consider what else it affects beyond the target problem.
+
 ### Claiming success
 
 If you tell the user something worked, that claim should be backed by evidence — not just "the script
