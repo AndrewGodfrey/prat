@@ -11,6 +11,14 @@ t -RepoRoot ~/prat -NoCoverage          # full suite, skip coverage
 t -RepoRoot ~/prat -Focus lib/Foo.ps1   # focused run
 ```
 
+After adding or modifying test files, scan for anti-patterns:
+
+```bash
+Find-TestAntiPatterns.ps1 -Path ~/prat
+```
+
+This catches unguarded env var mutations and writes to `$home`. Run it before wrapping up.
+
 ## Unit test conventions
 
 ### File organization
