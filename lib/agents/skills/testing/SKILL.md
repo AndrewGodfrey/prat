@@ -77,6 +77,10 @@ needs a resolved real path: `(Get-Item "TestDrive:\subpath").FullName` or `Resol
 subdirectory paths per test (e.g. `"TestDrive:\db-test1"`, `"TestDrive:\db-test2"`) to avoid
 cross-test contamination when multiple tests in the same `Context` write to the filesystem.
 
+**`Should -Invoke X -Times 0`**: the mock must still be defined in scope — Pester cannot track
+calls to an un-mocked command. Add `Mock X { }` in `BeforeEach` even when the test only verifies
+the command was never called.
+
 **`InModuleScope` + `-Focus`**: `InModuleScope` is evaluated at discovery time, but `BeforeAll` runs
 at execution time. When the focused file is the first to be discovered, the module isn't loaded yet
 and discovery fails. Fix: add a `BeforeDiscovery` block (in addition to `BeforeAll`) to load the
