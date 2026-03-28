@@ -18,21 +18,6 @@ param (
 
 if ($UseAlternateCollector) { Write-Warning "No alternate collector for Pester; continuing." }
 
-function getCoverageSummary($coverageSrc) {
-    if (($null -eq $coverageSrc) -or !(Test-Path $coverageSrc)) { return $null }
-
-    [xml]$xml = Get-Content $coverageSrc
-    $instr = $xml.report.counter | Where-Object { $_.type -eq "INSTRUCTION" }
-    $cls = $xml.report.counter | Where-Object { $_.type -eq "CLASS" }
-    $covered = [int]$instr.covered
-    $total = [int]$instr.missed + $covered
-    $files = [int]$cls.missed + [int]$cls.covered
-    $pct = if ($total -gt 0) { [int][math]::Round($covered * 10000.0 / $total)/100 } else { 0 }
-    $target = & (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1")
-
-    "Covered $pct% / $target%. $covered/$total Commands in $files Files."
-}
-
 
 function getAutoDir($repoRoot) {
     # TODO: Also check if .gitignore is set up to ignore it.
@@ -225,7 +210,7 @@ if (!$NoCoverage) {
 $passed = if ($null -ne $result) { $result.PassedCount } else { $null }
 $failed = if ($null -ne $result) { $result.FailedCount } else { $null }
 $failuresSeen = if ($DisableFilter) { 0 } else { $runState.failuresSeen }
-Write-TestRunResult -CoverageSummary (getCoverageSummary $coverageDest) `
+Write-TestRunResult -CoverageSummary (Get-CoverageSummary -Path $coverageDest -Unit "Commands") `
     -Passed $passed -Failed $failed -Elapsed ([DateTimeOffset]::UtcNow - $startTime) `
     -FailuresSeen $failuresSeen -FailureThreshold $failureThreshold `
     -RunDir $runDir -DisableFilter:$DisableFilter

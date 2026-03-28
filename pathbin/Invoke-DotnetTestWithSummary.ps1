@@ -60,20 +60,6 @@ function getAutoDir($root) {
 
 function getRetention() { & (Resolve-PratLibFile "lib/Get-TestRunRetention.ps1") }
 
-# Parse cobertura XML for a coverage summary line
-function getCoverageSummary($coveragePath, $unit) {
-    if (-not $coveragePath -or -not (Test-Path $coveragePath)) { return $null }
-
-    [xml]$xml = Get-Content $coveragePath
-    $covered   = [int]$xml.coverage.'lines-covered'
-    $total     = [int]$xml.coverage.'lines-valid'
-    if ($total -eq 0) { return $null }
-    $pct       = [math]::Round([double]$xml.coverage.'line-rate' * 100, 1)
-    $fileCount = ($xml.coverage.packages.package.classes.class | Measure-Object).Count
-    $target    = & (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1")
-
-    "Covered $pct% / $target%. $covered/$total $unit in $fileCount Files."
-}
 
 # Parse dotnet test summary line. Handles both terminal logger and classic formats:
 #   "Test summary: total: 197, failed: 0, succeeded: 197, skipped: 0, duration: 1.7s"
@@ -264,7 +250,7 @@ $passed = if ($null -ne $result) { $result.Passed } else { $null }
 $failed = if ($null -ne $result) { $result.Failed } else { $null }
 $failedTool = if ($CoverageCollector -eq "dotnet-coverage") { "dotnet-coverage" } else { "dotnet test" }
 $fatalError = if ($null -eq $result -and $runState.exitCode -ne 0) { "$failedTool exit code: $($runState.exitCode)" } else { $null }
-Write-TestRunResult -CoverageSummary (getCoverageSummary $coveragePath $coverageUnit) `
+Write-TestRunResult -CoverageSummary (Get-CoverageSummary -Path $coveragePath -Unit $coverageUnit) `
     -Passed $passed -Failed $failed -Elapsed ([DateTimeOffset]::UtcNow - $startTime) `
     -FailuresSeen $runState.failuresSeen -FailureThreshold $failureThreshold `
     -RunDir $runDir -DisableFilter:$DisableFilter -FatalError $fatalError

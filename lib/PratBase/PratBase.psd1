@@ -76,7 +76,8 @@ FunctionsToExport = @('Get-CurrentUserIsElevated', 'Get-RelativePath', 'Import-P
                       'Get-PratRepo', 'Get-PratProject', 'Find-ProjectShortcut', 'Resolve-JunctionInPath',
                       'Format-Duration',
                       'Initialize-TestRunDir', 'Format-AnsiText', 'Write-TestRunResult',
-                      'Convert-CoberturaXmlFile', 'Get-PathPrefixesFromWorkspace')
+                      'Convert-CoberturaXmlFile', 'Get-PathPrefixesFromWorkspace',
+                      'Get-CoverageSummary')
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
