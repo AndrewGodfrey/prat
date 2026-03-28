@@ -243,6 +243,11 @@ if (-not $NoCoverage) {
     }
 }
 
+if (-not $NoCoverage -and -not $coveragePath) {
+    $reason = if ($CoverageCollector -eq "coverlet") { " Is coverlet.collector installed in the test project?" } else { "" }
+    Write-Warning "Coverage was requested but no coverage file was produced.$reason"
+}
+
 # Summary
 $result = $runState.result
 $coverageUnit = if ($CoverageCollector -eq "dotnet-coverage") { "Blocks" } else { "Lines" }
