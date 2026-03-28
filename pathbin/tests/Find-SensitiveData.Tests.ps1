@@ -27,6 +27,23 @@ Describe "Find-SensitiveDataInContent" {
             $result[0] | Should -Match "hardcoded home path"
         }
 
+        It "includes the line number in the finding" {
+            $content = "clean line" + [Environment]::NewLine + "C:\Users\alice\prat"
+            $result = @(Find-SensitiveDataInContent -Content $content -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
+
+            $result[0] | Should -Match 'line 2'
+        }
+
+        It "shows 'and N more' when hits exceed MaxFoundLines" {
+            $nl = [Environment]::NewLine
+            $hit = "C:\Users\alice\prat"
+            $content = $hit + $nl + "ok" + $nl + $hit + $nl + "ok" + $nl + $hit
+            $result = @(Find-SensitiveDataInContent -Content $content -RelPath "foo.ps1" -HomeDir "C:\Users\alice" -MaxFoundLines 2)
+
+            $result[0] | Should -Match 'line 1, 3'
+            $result[0] | Should -Match 'and 1 more'
+        }
+
         It "does not flag a different user's path" {
             $result = @(Find-SensitiveDataInContent -Content "C:\Users\bob\prat" -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
 

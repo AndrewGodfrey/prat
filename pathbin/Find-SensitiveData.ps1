@@ -12,34 +12,57 @@
 # Root of the git repo to scan. Defaults to current directory.
 
 param (
-    [string] $Path = (Get-Location).Path
+    [string] $Path = (Get-Location).Path,
+    [int]    $MaxFoundLines = 3
 )
 
 function Find-SensitiveDataInContent {
     param (
         [string] $Content,
         [string] $RelPath,
-        [string] $HomeDir
+        [string] $HomeDir,
+        [int]    $MaxFoundLines = 3
     )
 
     $findings = [System.Collections.Generic.List[string]]::new()
+    $lines = $Content -split '\r?\n'
 
-    if ($Content -match [regex]::Escape($HomeDir)) {
-        $findings.Add("hardcoded home path: $RelPath")
+    function fmtLines($nums) {
+        $shown = @($nums | Select-Object -First $MaxFoundLines)
+        $extra = $nums.Count - $shown.Count
+        $suffix = if ($extra -gt 0) { " and $extra more" } else { "" }
+        "(line $(($shown) -join ', ')$suffix)"
     }
-    if ($Content -match '([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})') {
-        if (!($matches[0].EndsWith("@example.com"))) {
-            $findings.Add("email address: $RelPath")
+
+    $homeNums = [System.Collections.Generic.List[int]]::new()
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match [regex]::Escape($HomeDir)) { $homeNums.Add($i + 1) }
+    }
+    if ($homeNums.Count -gt 0) { $findings.Add("hardcoded home path $(fmtLines $homeNums): $RelPath") }
+
+    $emailPat = '([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})'
+    $emailNums = [System.Collections.Generic.List[int]]::new()
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match $emailPat -and -not $Matches[1].EndsWith("@example.com")) {
+            $emailNums.Add($i + 1)
         }
     }
-    if ($Content -match '\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b') {
-        if ($matches[0] -notin @("127.0.0.1", "1.1.1.1")) {
-            $findings.Add("IP address: $RelPath")
+    if ($emailNums.Count -gt 0) { $findings.Add("email address $(fmtLines $emailNums): $RelPath") }
+
+    $ipPat = '\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b'
+    $ipNums = [System.Collections.Generic.List[int]]::new()
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match $ipPat -and $Matches[1] -notin @("127.0.0.1", "1.1.1.1")) {
+            $ipNums.Add($i + 1)
         }
     }
-    if ($Content -match '[\\/]de[\\/]plans') {
-        $findings.Add("de/plans reference (private repo path): $RelPath")
+    if ($ipNums.Count -gt 0) { $findings.Add("IP address $(fmtLines $ipNums): $RelPath") }
+
+    $dePlansNums = [System.Collections.Generic.List[int]]::new()
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match '[\\/]de[\\/]plans') { $dePlansNums.Add($i + 1) }
     }
+    if ($dePlansNums.Count -gt 0) { $findings.Add("de/plans reference (private repo path) $(fmtLines $dePlansNums): $RelPath") }
 
     return $findings
 }
@@ -47,7 +70,8 @@ function Find-SensitiveDataInContent {
 function Get-SensitiveDataFindings {
     param(
         [string] $Path,
-        [string] $HomeDir = (Get-Item $home).FullName
+        [string] $HomeDir = (Get-Item $home).FullName,
+        [int]    $MaxFoundLines = 3
     )
 
     $textExtensions = 'ps1|md|txt|json|yaml|yml|ini|cfg|sh|bat|cmd'
@@ -57,7 +81,7 @@ function Get-SensitiveDataFindings {
         $content = Get-Content $Path -Raw -ErrorAction SilentlyContinue
         if ($null -ne $content) {
             $rel = Split-Path $Path -Leaf
-            foreach ($f in (Find-SensitiveDataInContent -Content $content -RelPath $rel -HomeDir $HomeDir)) {
+            foreach ($f in (Find-SensitiveDataInContent -Content $content -RelPath $rel -HomeDir $HomeDir -MaxFoundLines $MaxFoundLines)) {
                 $allFindings.Add($f)
             }
         }
@@ -77,7 +101,7 @@ function Get-SensitiveDataFindings {
             foreach ($rel in $files) {
                 $content = Get-Content $rel -Raw -ErrorAction SilentlyContinue
                 if ($null -eq $content) { continue }
-                foreach ($f in (Find-SensitiveDataInContent -Content $content -RelPath $rel -HomeDir $HomeDir)) {
+                foreach ($f in (Find-SensitiveDataInContent -Content $content -RelPath $rel -HomeDir $HomeDir -MaxFoundLines $MaxFoundLines)) {
                     $allFindings.Add($f)
                 }
             }
@@ -92,7 +116,7 @@ function Get-SensitiveDataFindings {
 # Only run main logic when invoked directly (not dot-sourced for testing)
 if ($MyInvocation.InvocationName -ne '.') {
     $homeDir = (Get-Item $home).FullName  # normalize to real path, no trailing slash
-    $allFindings = Get-SensitiveDataFindings -Path $Path -HomeDir $homeDir
+    $allFindings = Get-SensitiveDataFindings -Path $Path -HomeDir $homeDir -MaxFoundLines $MaxFoundLines
 
     if ($allFindings.Count -eq 0) {
         Write-Host "Clean: no sensitive data found in $Path"
