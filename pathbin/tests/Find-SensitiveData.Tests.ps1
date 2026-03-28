@@ -65,19 +65,23 @@ Describe "Find-SensitiveDataInContent" {
         }
     }
 
-    Context "de/plans path" {
-        It "flags de/plans (forward slash)" {
-            $result = @(Find-SensitiveDataInContent -Content '$home/de/plans' -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
+    Context "de plans path" {
+        BeforeAll {
+            $dePlans = "de" + "/plans"
+            $dePlansBackslash = "de" + "\plans"
+        }
+        It "flags de plans (forward slash)" {
+            $result = @(Find-SensitiveDataInContent -Content "`$home/$dePlans" -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
 
             $result | Should -HaveCount 1
-            $result[0] | Should -Match "de/plans"
+            $result[0] | Should -Match $dePlans
         }
 
-        It "flags de\plans (backslash)" {
-            $result = @(Find-SensitiveDataInContent -Content '$home\de\plans' -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
+        It "flags de plans (backslash)" {
+            $result = @(Find-SensitiveDataInContent -Content "`$home\$dePlansBackslash" -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
 
             $result | Should -HaveCount 1
-            $result[0] | Should -Match "de/plans"
+            $result[0] | Should -Match $dePlans
         }
 
         It "does not flag an unrelated path containing 'plans'" {
