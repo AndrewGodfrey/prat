@@ -118,6 +118,22 @@ Describe "Write-TestRunResult" {
         $output | Where-Object { $_ -match 'suppressed' } | Should -BeNullOrEmpty
     }
 
+    It "emits red, fatal error in summary.txt, log tail, and See-logfile hint when FatalError is set" {
+        $runDir = "$TestDrive/wr-fatal"
+        New-Item $runDir -ItemType Directory | Out-Null
+        1..30 | ForEach-Object { "line $_" } | Set-Content "$runDir/test-run.txt" -Encoding utf8NoBOM
+
+        $output = Write-TestRunResult -FatalError "exit code: 1" -RunDir $runDir
+
+        $output | Select-Object -First 1 | Should -Match '^\x1b\[91m'
+        $summary = Get-Content "$runDir/summary.txt"
+        $summary | Should -Match "exit code: 1"
+        $summary | Should -Match "no result parsed"
+        $output | Where-Object { $_ -match 'line 30' } | Should -Not -BeNullOrEmpty
+        $output | Where-Object { $_ -match 'line 10$' } | Should -BeNullOrEmpty  # beyond tail -20
+        $output | Where-Object { $_ -match 'test-run\.txt' } | Should -Not -BeNullOrEmpty
+    }
+
     It "emits no hint when Failed is 0" {
         $runDir = "$TestDrive/wr-no-hint"
         New-Item $runDir -ItemType Directory | Out-Null

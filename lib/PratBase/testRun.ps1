@@ -44,7 +44,8 @@ function Write-TestRunResult {
         [int] $FailuresSeen = 0,
         [string] $RunDir,
         [switch] $Debugging,
-        [int] $FailureThreshold = 5
+        [int] $FailureThreshold = 5,
+        [string] $FatalError = $null
     )
     $failedCount = if ($null -ne $Failed) { [int]$Failed } else { 0 }
     $durationStr = Format-Duration $Elapsed.TotalSeconds
@@ -53,19 +54,28 @@ function Write-TestRunResult {
     if ($CoverageSummary) { $components += $CoverageSummary }
     if ($null -ne $Passed -and $null -ne $Failed) {
         $components += "Passed: $Passed, Failed: $Failed. $durationStr"
+    } elseif ($FatalError) {
+        $components += "Test run failed ($FatalError, no result parsed). $durationStr"
     } else {
         $components += "Test run completed (no result parsed). $durationStr"
     }
     $summary = $components -join " "
 
-    $colorCode = if ($null -eq $Failed) { 93 }
+    $colorCode = if ($FatalError) { 91 }
+                 elseif ($null -eq $Failed) { 93 }
                  elseif ($failedCount -gt 0) { if ($failedCount -ge $FailureThreshold) { 91 } else { 93 } }
                  else { 92 }
 
     $summary | Out-File "$RunDir/summary.txt" -Encoding utf8NoBOM
     Format-AnsiText $summary $colorCode
 
-    if (-not $Debugging -and $failedCount -gt 0) {
+    if ($FatalError) {
+        $logFile = ("$RunDir/test-run.txt") -replace '\\', '/'
+        if (Test-Path $logFile) {
+            Get-Content $logFile -Tail 20 | ForEach-Object { Format-AnsiText $_ 91 }
+        }
+        Format-AnsiText "See $logFile" 93
+    } elseif (-not $Debugging -and $failedCount -gt 0) {
         $suppressed = $failedCount - $FailuresSeen
         $logFile = ("$RunDir/test-run.txt") -replace '\\', '/'
         $hint = if ($suppressed -gt 0) {
