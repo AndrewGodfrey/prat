@@ -42,8 +42,14 @@ sound (e.g. behavior will be tested manually; e.g. consequences of failure are s
 to change" is not sufficient on its own. To refactor a high-stakes area, one approach is: write pinning
 tests; refactor; cover with unit tests; remove the pinning tests.
 
-See the `testing` skill for more detail. Use the `test-and-fix` agent to delegate test-fixing to a
-subagent.
+See the `testing` skill for more detail. Use the `prat-run-tests` agent to delegate test runs to a
+subagent (pratified codebases); use `run-tests` for other codebases.
+
+When a subagent's summary doesn't have enough detail, three recovery paths:
+- Resume the subagent via SendMessage with its agent ID (returned in the Agent tool result)
+- Full transcript: `~/.claude/projects/{project}/{sessionId}/subagents/agent-{id}.jsonl`
+- Improve the agent instructions to request more detail in the summary, then redo (may not be
+  practical if the work was expensive or has side effects)
 
 When /compact summarizes a session, record the state of each test run (not yet run / verified red /
 verified green) alongside file changes. These are distinct states with different implications.

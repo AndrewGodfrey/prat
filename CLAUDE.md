@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Running tests
 
-Use the `prat-run-unit-tests` skill. Key invocations:
+Use the `prat-run-tests` agent (for delegation) or `t` directly. Key invocations:
 
 ```bash
 t -RepoRoot ~/prat -NoCoverage          # full suite, skip coverage
