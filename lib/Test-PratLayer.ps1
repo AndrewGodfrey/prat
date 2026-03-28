@@ -10,7 +10,7 @@ Invoke-PesterWithCodeCoverage `
     -NoCoverage:$CommandParameters['NoCoverage'] `
     -PathToTest $pathToTest `
     -RepoRoot $repoRoot `
-    -Debugging:$CommandParameters['Debugging'] `
+    -DisableFilter:$CommandParameters['DisableFilter'] `
     -OutputDir $CommandParameters['OutputDir'] `
     -IncludeIntegrationTests:$CommandParameters['IncludeIntegrationTests'] `
     -Integration:$CommandParameters['Integration']

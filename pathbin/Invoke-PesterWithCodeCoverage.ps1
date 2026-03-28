@@ -3,19 +3,6 @@
 # Coverage scope is inferred from PathToTest: directories cover themselves,
 # single test files cover their corresponding production file (or fall back to RepoRoot).
 #
-# .PARAMETER CoverageFormat
-# Controls the XML format written to auto/coverage.xml.
-#
-# CoverageGutters (default): package and class names are absolute paths; sourcefilename is leaf-only.
-#   The VS Code Coverage Gutters extension detects format by content (DOCTYPE contains "JACOCO"), then
-#   resolves source files by joining the absolute package path with the leaf sourcefilename. This is
-#   why absolute paths are required — relative paths (as in JaCoCo format) cannot be anchored to disk.
-#
-# JaCoCo: package and class names are relative (e.g. "prat/lib/Foo"); sourcefilename is a relative
-#   path (e.g. "lib/Foo.ps1"). This makes the sourcefile directly searchable by relative path, which
-#   is easier for agents. However, Coverage Gutters cannot resolve files from these relative paths and
-#   reports no coverage — so JaCoCo is only useful when the output is consumed by agents, not the IDE.
-#
 
 [CmdletBinding()]
 param (
@@ -23,8 +10,7 @@ param (
     $PathToTest = ".",
     $RepoRoot = (Resolve-Path "$PSScriptRoot\.."),
     $OutputDir = $null,
-    [ValidateSet("CoverageGutters", "JaCoCo")] [string] $CoverageFormat = "CoverageGutters",
-    [switch] $Debugging,
+    [switch] $DisableFilter,
     [switch] $IncludeIntegrationTests,
     [switch] $Integration
 )
@@ -81,7 +67,7 @@ if ($VerbosePreference -ne "SilentlyContinue") { $VerbosePreference = "SilentlyC
     Import-Module Pester
 $VerbosePreference = $savedVerbosePreference
 
-$pesterVerbosity = if ($Debugging) { "Diagnostic" } elseif ($VerbosePreference -ne "SilentlyContinue") { "Detailed" } else { "Normal" }
+$pesterVerbosity = if ($DisableFilter) { "Diagnostic" } else { "Normal" }
 
 $Configuration = [PesterConfiguration]::Default
 $Configuration.Run.PassThru = [bool] $true
@@ -100,7 +86,7 @@ if (!$NoCoverage) {
     $tempFile = [IO.Path]::GetTempFileName()
     $Configuration.CodeCoverage.OutputPath = $tempFile
     $Configuration.CodeCoverage.Enabled = [bool] $true
-    $Configuration.CodeCoverage.OutputFormat = $CoverageFormat
+    $Configuration.CodeCoverage.OutputFormat = 'CoverageGutters'  # This is a flavor of JaCoCo that CoverageGutters prefers.
     $Configuration.CodeCoverage.Path = & "$PSScriptRoot/../lib/Get-CoverageScope" -PathToTest $PathToTest -RepoRoot $RepoRoot
     $Configuration.CodeCoverage.CoveragePercentTarget = & (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1")
 }
@@ -114,7 +100,7 @@ $logFile = "$runDir/test-run.txt"
 
 $failureThreshold = 5
 
-if ($Debugging) {
+if ($DisableFilter) {
     # Bypass filter: stream everything directly to the host (full Pester diagnostic output).
     # Note: Invoke-PesterAsJob emits InformationRecords on stream 1 (via ReadAll()), not stream 6,
     # so -InformationVariable cannot capture them. Process each item explicitly instead.
@@ -235,9 +221,9 @@ if (!$NoCoverage) {
 
 $passed = if ($null -ne $result) { $result.PassedCount } else { $null }
 $failed = if ($null -ne $result) { $result.FailedCount } else { $null }
-$failuresSeen = if ($Debugging) { 0 } else { $runState.failuresSeen }
+$failuresSeen = if ($DisableFilter) { 0 } else { $runState.failuresSeen }
 Write-TestRunResult -CoverageSummary (getCoverageSummary $coverageDest) `
     -Passed $passed -Failed $failed -Elapsed ([DateTimeOffset]::UtcNow - $startTime) `
     -FailuresSeen $failuresSeen -FailureThreshold $failureThreshold `
-    -RunDir $runDir -Debugging:$Debugging
+    -RunDir $runDir -DisableFilter:$DisableFilter
 

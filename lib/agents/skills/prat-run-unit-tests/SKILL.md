@@ -14,12 +14,12 @@ Permission is granted as `Bash(t *)`.
 ## Common Invocations
 
 ```bash
-t -RepoRoot ~/prat                                                   # full suite, with coverage
-t -RepoRoot ~/prat -NoCoverage                                       # full suite, skip coverage
-t -RepoRoot ~/prat -Focus lib/Something                              # focus on a directory
-t -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1                          # focus on a test file
-t -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1 -NoCoverage -Debugging   # debug a failing test
-t -RepoRoot ~/prat -Integration -NoCoverage                          # run only integration-tagged tests
+t -RepoRoot ~/prat                                                       # full suite, with coverage
+t -RepoRoot ~/prat -NoCoverage                                           # full suite, skip coverage
+t -RepoRoot ~/prat -Focus lib/Something                                  # focus on a directory
+t -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1                              # focus on a test file
+t -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1 -NoCoverage -DisableFilter   # debug a failing test
+t -RepoRoot ~/prat -Integration -NoCoverage                              # run only integration-tagged tests
 ```
 
 ## Parameters
@@ -31,7 +31,7 @@ t -RepoRoot ~/prat -Integration -NoCoverage                          # run only 
 | `-NoCoverage` | Skip coverage (faster for rapid iteration) |
 | `-Integration` | Run only integration-tagged tests (skips unit tests) |
 | `-IncludeIntegrationTests` | Run unit tests AND integration tests |
-| `-Debugging` | Full Pester diagnostic output, no filtering — always pair with a tight `-Focus` |
+| `-DisableFilter` | Full diagnostic output, no filtering — always pair with a tight `-Focus` |
 | `-OutputDir <path>` | Direct parent of the `last/` run directory (default: `auto/testRuns/`) |
 
 ## Output modes
@@ -39,7 +39,7 @@ t -RepoRoot ~/prat -Integration -NoCoverage                          # run only 
 Default (no switches): smart filter — `[+]` file lines shown live; failure blocks and summary shown
 after the run. Quick to scan; full details in `auto/testRuns/last/test-run.txt` if needed.
 
-`-Debugging`: unfiltered Pester Diagnostic output. Use when diagnosing a tricky failure; always
+`-DisableFilter`: unfiltered diagnostic output. Use when diagnosing a tricky failure; always
 pair with `-Focus` to avoid overwhelming output.
 
 ## Cached Summary vs. Fresh Run

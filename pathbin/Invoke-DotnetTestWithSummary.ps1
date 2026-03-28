@@ -23,7 +23,7 @@
 # coverlet.collector NuGet package in the test project). Use `dotnet-coverage` to match CI
 # pipelines that use `dotnet-coverage collect` (requires the dotnet-coverage global tool).
 #
-# .PARAMETER Debugging
+# .PARAMETER DisableFilter
 # Show all output unfiltered (for diagnosing build/test issues).
 
 [CmdletBinding()]
@@ -38,7 +38,7 @@ param(
     [switch] $NoBuild,
     [ValidateSet("coverlet", "dotnet-coverage")] [string] $CoverageCollector = "coverlet",
     [string] $WorkspaceFile,
-    [switch] $Debugging
+    [switch] $DisableFilter
 )
 
 if (-not $RepoRoot) {
@@ -158,7 +158,7 @@ if (-not $NoCoverage -and $CoverageCollector -eq "dotnet-coverage") {
     }
 }
 
-if ($Debugging) {
+if ($DisableFilter) {
     & $testCommand | ForEach-Object {
         $text = "$_"
         $text | Add-Content $logFile -Encoding utf8NoBOM
@@ -264,6 +264,6 @@ $fatalError = if ($null -eq $result -and $runState.exitCode -ne 0) { "$failedToo
 Write-TestRunResult -CoverageSummary (getCoverageSummary $coveragePath $coverageUnit) `
     -Passed $passed -Failed $failed -Elapsed ([DateTimeOffset]::UtcNow - $startTime) `
     -FailuresSeen $runState.failuresSeen -FailureThreshold $failureThreshold `
-    -RunDir $runDir -Debugging:$Debugging -FatalError $fatalError
+    -RunDir $runDir -DisableFilter:$DisableFilter -FatalError $fatalError
 
 if ($runState.exitCode -ne 0) { exit $runState.exitCode }

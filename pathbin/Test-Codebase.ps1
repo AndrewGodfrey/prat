@@ -13,7 +13,7 @@ param(
     [string] $Focus,
     [switch] $NoCoverage,
     [switch] $NoBuild,
-    [switch] $Debugging,
+    [switch] $DisableFilter,
     [switch] $IncludeIntegrationTests,
     [switch] $Integration,
     $RepoRoot = $null,

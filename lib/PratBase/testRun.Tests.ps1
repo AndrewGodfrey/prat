@@ -143,11 +143,11 @@ Describe "Write-TestRunResult" {
         $output | Where-Object { $_ -match 'test-run\.txt' } | Should -BeNullOrEmpty
     }
 
-    It "emits no hint when -Debugging" {
+    It "emits no hint when -DisableFilter" {
         $runDir = "$TestDrive/wr-debug"
         New-Item $runDir -ItemType Directory | Out-Null
 
-        $output = Write-TestRunResult -Passed 0 -Failed 3 -FailuresSeen 3 -RunDir $runDir -Debugging
+        $output = Write-TestRunResult -Passed 0 -Failed 3 -FailuresSeen 3 -RunDir $runDir -DisableFilter
 
         $output | Where-Object { $_ -match 'test-run\.txt' } | Should -BeNullOrEmpty
     }

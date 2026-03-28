@@ -32,13 +32,6 @@ Describe "Invoke-PesterWithCodeCoverage" {
         $outConf.Run.Path.Value | Should -Be @($repoRoot)
         $outConf.Run.PassThru.Value | Should -Be $true
         $outConf.CodeCoverage.Enabled.Value | Should -Be $false
-        $outConf.Output.Verbosity.Value | Should -Not -Be "Detailed"
-    }
-
-    It "supports -Verbose" {
-        & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -Verbose
-
-        $outConf.Output.Verbosity.Value | Should -Be "Detailed"
     }
 
     It "supports code coverage by default" {
@@ -72,8 +65,8 @@ Describe "Invoke-PesterWithCodeCoverage" {
         $outConf.Output.Verbosity.Value | Should -Be "Normal"
     }
 
-    It "-Debugging uses Pester Diagnostic verbosity" {
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $repoRoot -Debugging
+    It "-DisableFilter uses Pester Diagnostic verbosity" {
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $repoRoot -DisableFilter
 
         $outConf.Output.Verbosity.Value | Should -Be "Diagnostic"
     }
@@ -325,7 +318,7 @@ Describe "Invoke-PesterWithCodeCoverage smart filter" {
     }
 }
 
-Describe "Invoke-PesterWithCodeCoverage -Debugging" {
+Describe "Invoke-PesterWithCodeCoverage -DisableFilter" {
     BeforeAll {
         function moveCoverageFile($tempFile, $coverageDest) {}
         Mock moveCoverageFile {}
@@ -346,7 +339,7 @@ Describe "Invoke-PesterWithCodeCoverage -Debugging" {
             [PSCustomObject]@{ PassedCount = 1; FailedCount = 0 }
         }
 
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -Debugging
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -DisableFilter
 
         Should -Invoke -CommandName Write-Host -ParameterFilter { "$Object" -match '\[\+\].*\d+' }
     }
@@ -371,7 +364,7 @@ Describe "Invoke-PesterWithCodeCoverage integration" -Tag Integration {
         $scriptPath = (Resolve-Path "$PSScriptRoot\..\Invoke-PesterWithCodeCoverage.ps1").Path
         $modulePath = (Resolve-Path "$PSScriptRoot\..\..\lib\PratBase\PratBase.psm1").Path
 
-        $pwshCmd = "Import-Module $modulePath; & $scriptPath -Debugging -NoCoverage -PathToTest $td -RepoRoot $td"
+        $pwshCmd = "Import-Module $modulePath; & $scriptPath -DisableFilter -NoCoverage -PathToTest $td -RepoRoot $td"
         wsl bash -lc "script -q -c 'pwsh.exe -NonInteractive -Command ""$pwshCmd""' $tsWsl"
 
         $lines = @(

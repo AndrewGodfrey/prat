@@ -1,7 +1,7 @@
 BeforeAll {
     $scriptToTest = "$PSScriptRoot/Test-PratLayer.ps1"
     function Invoke-PesterWithCodeCoverage(
-        $NoCoverage, $PathToTest, $RepoRoot, $Debugging, $OutputDir, $IncludeIntegrationTests, $Integration) {}
+        $NoCoverage, $PathToTest, $RepoRoot, $DisableFilter, $OutputDir, $IncludeIntegrationTests, $Integration) {}
 }
 
 Describe "Test-PratLayer.ps1" {
