@@ -75,7 +75,7 @@ Describe "Find-SensitiveDataInContent" {
 
     Context "IP addresses" {
         It "flags a dotted-quad IP address" {
-            $result = @(Find-SensitiveDataInContent -Content ("server at 192.168" + ".1.10") -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
+            $result = @(Find-SensitiveDataInContent -Content ("server at 190.200" + ".1.10") -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
 
             $result | Should -HaveCount 1
             $result[0] | Should -Match "IP address"
@@ -118,7 +118,7 @@ Describe "Find-SensitiveDataInContent" {
         }
 
         It "returns one finding per pattern type when multiple types match" {
-            $content = "C:\Users\alice\prat and $sampleEmail and 10.0" + ".0.1"
+            $content = "C:\Users\alice\prat and $sampleEmail and 20.0" + ".0.1"
             $result = @(Find-SensitiveDataInContent -Content $content -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
 
             $result | Should -HaveCount 3
