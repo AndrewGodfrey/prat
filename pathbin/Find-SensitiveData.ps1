@@ -16,6 +16,14 @@ param (
     [int]    $MaxFoundLines = 3
 )
 
+function safeIpAddress($ipString) {
+    if ($ipString -in @("127.0.0.1", "1.1.1.1")) { return $true }
+    if ($ipString.StartsWith("192.168.") -or $ipString.StartsWith("10.")) { return $true }
+    [int] $first = [int] ($ipString -split '\.')[0]
+    if ($first -lt 10) { return $true }
+    return $false
+}
+
 function Find-SensitiveDataInContent {
     param (
         [string] $Content,
@@ -52,7 +60,7 @@ function Find-SensitiveDataInContent {
     $ipPat = '\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b'
     $ipNums = [System.Collections.Generic.List[int]]::new()
     for ($i = 0; $i -lt $lines.Count; $i++) {
-        if ($lines[$i] -match $ipPat -and $Matches[1] -notin @("127.0.0.1", "1.1.1.1")) {
+        if ($lines[$i] -match $ipPat -and -not (safeIpAddress $Matches[1])) {
             $ipNums.Add($i + 1)
         }
     }
