@@ -102,6 +102,28 @@ Describe "Install-ClaudeSkillSet" {
 
         "$destDir\my-skill" | Should -Exist
     }
+
+    It "removes a stale skill dir from dest when not in the set" {
+        mkdir "$srcDir\current-skill" | Out-Null
+        "current" | Out-File "$srcDir\current-skill\SKILL.md" -Encoding utf8NoBOM
+        mkdir "$destDir\stale-skill" | Out-Null
+        "stale" | Out-File "$destDir\stale-skill\SKILL.md" -Encoding utf8NoBOM
+        mkdir $destDir -ErrorAction SilentlyContinue | Out-Null
+
+        Install-ClaudeSkillSet $stage @("current-skill") $srcDir $destDir
+
+        "$destDir\stale-skill" | Should -Not -Exist
+    }
+
+    It "does not remove a deployed skill dir that is still in the set" {
+        mkdir "$srcDir\my-skill" | Out-Null
+        "content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
+        mkdir $destDir -ErrorAction SilentlyContinue | Out-Null
+
+        Install-ClaudeSkillSet $stage @("my-skill") $srcDir $destDir
+
+        "$destDir\my-skill" | Should -Exist
+    }
 }
 
 Describe "Install-ClaudeMarkdownFiles" {
@@ -160,6 +182,24 @@ Describe "Install-ClaudeMarkdownFiles" {
         $deployed | Should -BeLike "---*"
         $deployed | Should -BeLike "*<!-- Auto-generated*"
         $deployed.IndexOf("---") | Should -BeLessThan ($deployed.IndexOf("<!-- Auto-generated"))
+    }
+
+    It "with -Cleanup, removes a deployed file when its source no longer exists" {
+        "new content" | Out-File "$srcDir\agent.md" -Encoding utf8NoBOM
+        "stale content" | Out-File "$destDir\old-agent.md" -Encoding utf8NoBOM
+
+        Install-ClaudeMarkdownFiles $stage $srcDir $destDir -Cleanup
+
+        "$destDir\old-agent.md" | Should -Not -Exist
+    }
+
+    It "without -Cleanup, retains a deployed file even when its source no longer exists" {
+        "new content" | Out-File "$srcDir\agent.md" -Encoding utf8NoBOM
+        "stale content" | Out-File "$destDir\old-agent.md" -Encoding utf8NoBOM
+
+        Install-ClaudeMarkdownFiles $stage $srcDir $destDir
+
+        "$destDir\old-agent.md" | Should -Exist
     }
 }
 

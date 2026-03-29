@@ -42,8 +42,8 @@ sound (e.g. behavior will be tested manually; e.g. consequences of failure are s
 to change" is not sufficient on its own. To refactor a high-stakes area, one approach is: write pinning
 tests; refactor; cover with unit tests; remove the pinning tests.
 
-See the `testing` skill for more detail. Use the `prat-run-tests` agent to delegate test runs to a
-subagent (pratified codebases); use `run-tests` for other codebases.
+See the `testing` skill for more detail. Use the `prat-run-tests` skill for running tests in
+pratified codebases; use the `run-tests` skill for other codebases.
 
 When a subagent's summary doesn't have enough detail, three recovery paths:
 - Resume the subagent via SendMessage with its agent ID (returned in the Agent tool result)
