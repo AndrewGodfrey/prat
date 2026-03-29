@@ -32,7 +32,7 @@ function Initialize-TestRunDir {
 }
 
 # Write-TestRunResult: Builds the summary line, writes summary.txt, emits it colored,
-# and (unless -DisableFilter) emits a suppressed-hint when failures exceed the shown count.
+# and emits a hint (log file path, suppression count) when there are failures.
 #
 # $Passed/$Failed accept $null to signal "no result parsed" (yellow summary, fallback text).
 function Write-TestRunResult {
@@ -43,7 +43,6 @@ function Write-TestRunResult {
         [TimeSpan] $Elapsed = [TimeSpan]::Zero,
         [int] $FailuresSeen = 0,
         [string] $RunDir,
-        [switch] $DisableFilter,
         [int] $FailureThreshold = 5,
         [string] $FatalError = $null
     )
@@ -75,9 +74,9 @@ function Write-TestRunResult {
             Get-Content $logFile -Tail 20 | ForEach-Object { Format-AnsiText $_ 91 }
         }
         Format-AnsiText "See $logFile" 93
-    } elseif (-not $DisableFilter -and $failedCount -gt 0) {
-        $suppressed = $failedCount - $FailuresSeen
+    } elseif ($failedCount -gt 0) {
         $logFile = ("$RunDir/test-run.txt") -replace '\\', '/'
+        $suppressed = $failedCount - $FailuresSeen
         $hint = if ($suppressed -gt 0) {
             "$suppressed failure$(if ($suppressed -ne 1) {'s'}) suppressed - see $logFile"
         } else {

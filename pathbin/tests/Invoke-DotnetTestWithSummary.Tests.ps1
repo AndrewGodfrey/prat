@@ -49,6 +49,22 @@ exit /b 0
         $output | Where-Object { $_ -match '^Failed!' } | Should -BeNullOrEmpty
     }
 
+    It "warns when coverage is requested but no coverage file is produced" {
+        $repoRoot = Join-Path $TestDrive "repo-coverage-warn"
+        New-Item $repoRoot -ItemType Directory | Out-Null
+        $savedPath = $env:PATH
+        $env:PATH = "$script:fakeDotnetDir;$env:PATH"
+        try {
+            $warnings = & $script:dotnetScript -TestArgs @("fake.csproj") -RepoRoot $repoRoot 3>&1 |
+                Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
+        } finally {
+            $env:PATH = $savedPath
+        }
+
+        $warnings | Should -Not -BeNullOrEmpty
+        $warnings[0].Message | Should -Match "coverlet"
+    }
+
     It "-UseAlternateCollector routes to dotnet-coverage collector" {
         $repoRoot = Join-Path $TestDrive "repo-alt-collector"
         New-Item $repoRoot -ItemType Directory | Out-Null

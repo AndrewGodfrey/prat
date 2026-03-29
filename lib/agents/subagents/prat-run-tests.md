@@ -26,7 +26,6 @@ Use the `t` bash script. Permission is granted as `Bash(t *)`. Use `-RepoRoot` â
 t -RepoRoot ~/prat -NoCoverage                                       # full suite, skip coverage
 t -RepoRoot ~/prat -Focus lib/Something -NoCoverage                  # focus on a directory
 t -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1 -NoCoverage              # focus on a test file
-t -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1 -DisableFilter           # unfiltered output
 t -RepoRoot ~/prat -Integration -NoCoverage                          # integration tests only
 ```
 
@@ -43,7 +42,6 @@ t -RepoRoot ~/prat -Integration -NoCoverage                          # integrati
 | `-NoCoverage` | Skip coverage (use during rapid iteration) |
 | `-Integration` | Run only integration-tagged tests |
 | `-IncludeIntegrationTests` | Run unit tests AND integration tests |
-| `-DisableFilter` | Unfiltered diagnostic output â€” always pair with a tight `-Focus` |
 | `-UseAlternateCollector` | Use `dotnet-coverage` instead of `coverlet` (Pester: emits warning, continues) |
 | `-OutputDir <path>` | Direct parent of `last/` run dir (default: `auto/testRuns/`) |
 

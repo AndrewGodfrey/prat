@@ -1,5 +1,6 @@
 /**/*.ex
 /auto/*
+/pathbin/tests/testCb/auto/*
 !/auto/Readme.txt
 /**/*.vtg
 /**/*.vpwhist

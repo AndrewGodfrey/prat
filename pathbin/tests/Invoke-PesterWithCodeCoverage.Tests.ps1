@@ -9,24 +9,19 @@ Describe "Invoke-PesterWithCodeCoverage" {
         function moveCoverageFile($tempFile, $coverageDest) {}
         Mock moveCoverageFile {}
 
-        function writeTestRunSummary($result, $coverageSrc, $summaryDest) {}
-        Mock writeTestRunSummary {}
-
-        function getAutoDir($repoRoot) {}
-        Mock getAutoDir { "$TestDrive" }
-
-        function prepareRunDir($outputDir) {}
-        Mock prepareRunDir { New-Item "$TestDrive/run" -ItemType Directory -Force | Out-Null; "$TestDrive/run" }
+        function getRetention() {}
+        Mock getRetention { 5 }
 
         $script:outConf = $null
         $refOutConf = [ref] $script:outConf
         Mock Invoke-PesterAsJob { $refOutConf.Value = $Configuration }
 
         $repoRoot = (Resolve-Path "$PSScriptRoot/../../pathbin/tests/testCb").Path
+        $script:outputDir = "$TestDrive/runs"
     }
 
     It "calls Invoke-PesterAsJob" {
-        & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot
+        & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -OutputDir $script:outputDir
 
         Should -Invoke Invoke-PesterAsJob -Times 1
         $outConf.Run.Path.Value | Should -Be @($repoRoot)
@@ -35,7 +30,7 @@ Describe "Invoke-PesterWithCodeCoverage" {
     }
 
     It "supports code coverage by default" {
-        & $coverageScript -PathToTest $repoRoot -RepoRoot $repoRoot
+        & $coverageScript -PathToTest $repoRoot -RepoRoot $repoRoot -OutputDir $script:outputDir
 
         $outConf.Run.Path.Value | Should -Be @($repoRoot)
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
@@ -44,7 +39,7 @@ Describe "Invoke-PesterWithCodeCoverage" {
     }
 
     It "supports coverage with a subset" {
-        & $coverageScript -PathToTest "$repoRoot/subdir" -RepoRoot $repoRoot
+        & $coverageScript -PathToTest "$repoRoot/subdir" -RepoRoot $repoRoot -OutputDir $script:outputDir
 
         $outConf.Run.Path.Value | Should -Be @("$repoRoot/subdir")
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
@@ -52,7 +47,7 @@ Describe "Invoke-PesterWithCodeCoverage" {
     }
 
     It "scopes coverage to inferred production file when PathToTest is a test file" {
-        & $coverageScript -PathToTest "$repoRoot/testCb_fileWithTests.Tests.ps1" -RepoRoot $repoRoot
+        & $coverageScript -PathToTest "$repoRoot/testCb_fileWithTests.Tests.ps1" -RepoRoot $repoRoot -OutputDir $script:outputDir
 
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
         $outConf.CodeCoverage.Path.Value[0] | Should -BeLike "*testCb_fileWithTests.ps1*"
@@ -60,45 +55,39 @@ Describe "Invoke-PesterWithCodeCoverage" {
     }
 
     It "default mode uses Pester Normal verbosity" {
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $repoRoot
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $repoRoot -OutputDir $script:outputDir
 
         $outConf.Output.Verbosity.Value | Should -Be "Normal"
     }
 
-    It "-DisableFilter uses Pester Diagnostic verbosity" {
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $repoRoot -DisableFilter
-
-        $outConf.Output.Verbosity.Value | Should -Be "Diagnostic"
-    }
-
     It "defaults coverage scope to repo, if inferred production file is not found" {
-        & $coverageScript -PathToTest "$repoRoot/testCb_noMatchingProfFile.tests.ps1" -RepoRoot $repoRoot
+        & $coverageScript -PathToTest "$repoRoot/testCb_noMatchingProfFile.tests.ps1" -RepoRoot $repoRoot -OutputDir $script:outputDir
 
         $outConf.CodeCoverage.Enabled.Value | Should -Be $true
         $outConf.CodeCoverage.Path.Value | Should -Be @($repoRoot)
     }
 
     It "excludes Integration-tagged tests by default" {
-        & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot
+        & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -OutputDir $script:outputDir
 
         $outConf.Filter.ExcludeTag.Value | Should -Contain "Integration"
     }
 
     It "includes Integration-tagged tests with -IncludeIntegrationTests" {
-        & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -IncludeIntegrationTests
+        & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -IncludeIntegrationTests -OutputDir $script:outputDir
 
         $outConf.Filter.ExcludeTag.Value | Should -Not -Contain "Integration"
     }
 
     It "-Integration runs only Integration-tagged tests" {
-        & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -Integration
+        & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -Integration -OutputDir $script:outputDir
 
         $outConf.Filter.Tag.Value | Should -Contain "Integration"
         $outConf.Filter.ExcludeTag.Value | Should -Not -Contain "Integration"
     }
 
     It "-Integration and -IncludeIntegrationTests together warns and -Integration wins" {
-        $warnings = & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -Integration -IncludeIntegrationTests 3>&1 |
+        $warnings = & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -Integration -IncludeIntegrationTests -OutputDir $script:outputDir 3>&1 |
             Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
 
         $warnings | Should -Not -BeNullOrEmpty
@@ -106,7 +95,7 @@ Describe "Invoke-PesterWithCodeCoverage" {
     }
 
     It "-UseAlternateCollector emits a warning and continues" {
-        $warnings = & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -UseAlternateCollector 3>&1 |
+        $warnings = & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -UseAlternateCollector -OutputDir $script:outputDir 3>&1 |
             Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
 
         $warnings | Should -Not -BeNullOrEmpty
@@ -118,6 +107,9 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
     BeforeAll {
         function moveCoverageFile($tempFile, $coverageDest) {}
         Mock moveCoverageFile {}
+
+        function getRetention() {}
+        Mock getRetention { 5 }
 
         $fakeResult = [PSCustomObject]@{ PassedCount = 5; FailedCount = 2 }
 
@@ -186,6 +178,9 @@ Describe "Invoke-PesterWithCodeCoverage smart filter" {
     BeforeAll {
         function moveCoverageFile($tempFile, $coverageDest) {}
         Mock moveCoverageFile {}
+
+        function getRetention() {}
+        Mock getRetention { 5 }
 
         Mock Invoke-PesterAsJob {
             "[+] some/test.Tests.ps1 1.23s"
@@ -326,67 +321,6 @@ Describe "Invoke-PesterWithCodeCoverage smart filter" {
     }
 }
 
-Describe "Invoke-PesterWithCodeCoverage -DisableFilter" {
-    BeforeAll {
-        function moveCoverageFile($tempFile, $coverageDest) {}
-        Mock moveCoverageFile {}
-
-        function New-PesterInfoRecord($message, $noNewLine) {
-            $him = [System.Management.Automation.HostInformationMessage]::new()
-            $him.Message = $message
-            $him.NoNewLine = $noNewLine
-            [System.Management.Automation.InformationRecord]::new($him, "Pester")
-        }
-    }
-
-    It "writes InformationRecord content to host (not silently consumed via -InformationVariable)" {
-        $testRoot = "$TestDrive/debug-host"
-        Mock Write-Host {}
-        Mock Invoke-PesterAsJob {
-            New-PesterInfoRecord "[+] passes 1ms" $false
-            [PSCustomObject]@{ PassedCount = 1; FailedCount = 0 }
-        }
-
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -DisableFilter
-
-        Should -Invoke -CommandName Write-Host -ParameterFilter { "$Object" -match '\[\+\].*\d+' }
-    }
-}
-
-Describe "Invoke-PesterWithCodeCoverage integration" -Tag Integration {
-    # Requirements:
-    #   - wsl (Windows Subsystem for Linux)
-    #   - 'script' utility (present in Ubuntu by default)
-    #   - pwsh installed in WSL (non-trivial; see the PowerShell docs for Ubuntu)
-    #   - Pester installed in that WSL pwsh
-    #
-    # Caveat: paths with spaces will break $pwshCmd string interpolation below.
-
-    It "emits each [+] line exactly once (no direct-host write duplication)" {
-        Set-Content "$TestDrive\sample.Tests.ps1" `
-            'Describe "x" { It "passes" { $true | Should -Be $true } }'
-
-        $td         = $TestDrive.TrimEnd('\')
-        $wslTd      = (wsl wslpath ($td -replace '\\', '/')).Trim()
-        $tsWsl      = "$wslTd/typescript"
-        $scriptPath = (Resolve-Path "$PSScriptRoot\..\Invoke-PesterWithCodeCoverage.ps1").Path
-        $modulePath = (Resolve-Path "$PSScriptRoot\..\..\lib\PratBase\PratBase.psm1").Path
-
-        $pwshCmd = "Import-Module $modulePath; & $scriptPath -DisableFilter -NoCoverage -PathToTest $td -RepoRoot $td"
-        wsl bash -lc "script -q -c 'pwsh.exe -NonInteractive -Command ""$pwshCmd""' $tsWsl"
-
-        $lines = @(
-            (Get-Content "$TestDrive\typescript" -Raw) `
-                -replace '\x1B\[[0-9;]*[mGKHFABCDJr]', '' `
-                -replace '\x1B\[[\?][0-9;]*[hl]', '' `
-                -split '\r?\n' |
-                Where-Object { $_ -match '\[\+\]' }
-        )
-
-        $lines | Should -HaveCount 1
-        $lines[0] | Should -Match '\[\+\].*\d+(\.\d+)?(ms|s)'
-    }
-}
 
 Describe "Invoke-PesterWithCodeCoverage test run directory management" {
     BeforeAll {
