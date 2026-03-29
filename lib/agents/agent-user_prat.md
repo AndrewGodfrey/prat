@@ -76,19 +76,17 @@ CC is not well-designed for Windows. Review this section when CC improves Window
   a **bash** variable into the command. PowerShell variables (`$home`, `$env:USERNAME`, etc.) must
   stay in single quotes — bash expands them to empty. ❌ `pwsh -c "... $home ..."` silently passes
   an empty string.
-- For multi-statement scripts or anything complex, use a single-quoted heredoc — no escaping needed:
-  ```bash
-  pwsh -File - <<'PWSH'
-  $var = $env:USERNAME
-  Write-Host "Hello $var"
-  PWSH
-  ```
-  The single-quoted delimiter `<<'PWSH'` is what prevents bash interpolation inside the heredoc.
+- For multi-statement scripts or anything complex, write to a temp file with the Write tool and run
+  `pwsh -File <path>`. The `pwsh -File - <<'PWSH'` heredoc approach is unreliable — pwsh can treat
+  stdin as interactive and print prompts instead of running the script.
 
 ### Editing files
 
 Re-read a file whenever it may have changed since you last read it — e.g. the user has edited it,
 or time has passed. Don't rely on a stale read.
+
+To undo a bad edit, re-edit the file directly. Don't use `git checkout <file>` — it can wipe
+accumulated work even on files that appear untracked.
 
 For renaming a token across multiple files, use multiple Edit `replace_all` calls rather than a
 single pwsh heredoc with `-replace` + `Set-Content`. The pwsh approach can silently produce no
@@ -104,18 +102,11 @@ Workaround for large deletions:
 1. Insert marker comments using small targeted Edits (short unique strings match reliably):
    - Before the block: `<!-- DELETE_FROM_HERE -->`
    - After the block: `<!-- DELETE_TO_HERE -->`
-2. Use a pwsh script to splice between the markers:
+2. Run the helper script:
    ```bash
-   pwsh -File - <<'PWSH'
-   $path = 'C:/path/to/file.md'
-   $c = Get-Content $path -Raw
-   $a = $c.IndexOf('<!-- DELETE_FROM_HERE -->')
-   $b = $c.IndexOf('<!-- DELETE_TO_HERE -->') + '<!-- DELETE_TO_HERE -->'.Length
-   if ($c[$b] -eq "`r") { $b++ }
-   if ($c[$b] -eq "`n") { $b++ }
-   Set-Content $path ($c.Substring(0, $a) + $c.Substring($b)) -NoNewline -Encoding UTF8
-   PWSH
+   pwsh -File ~/prat/lib/agents/Remove-MarkedBlock.ps1 -Path 'C:/path/to/file.md'
    ```
+   Custom markers: add `-From '<!-- MY_START -->' -To '<!-- MY_END -->'`.
 
 ---
 
