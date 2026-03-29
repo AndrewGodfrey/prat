@@ -76,7 +76,7 @@ the same machine without interfering. This is not about security, it is about:
 
 - Writing to the registry, if the tool is designed to coexist with other versions
 - Installing files to `Program Files`, if the tool supports side-by-side versions
-- A **global muxer** on PATH (see below)
+- A **global dispatcher** on PATH (see below)
 
 **What's not acceptable:**
 
@@ -116,7 +116,7 @@ it only re-runs when the project's git branch diverges from the last captured po
 
 `Export-EnvDeltaFromInvokedBatchScript` and `Install-CachedEnvDelta` are exported from `PratBase`.
 
-#### Pattern B: Global muxer (e.g. .NET SDK)
+#### Pattern B: Global dispatcher (e.g. .NET SDK)
 
 Used when the tool installs a single dispatcher binary on PATH that reads a project-local config
 file to select the right version at runtime. No env delta is needed — the muxer handles version
