@@ -6,13 +6,13 @@ Describe "up" {
     It "traverses upwards to find a match" {
         pushd $PSScriptRoot\testCb
 
-        up "up.ps1" | Should -Be (Resolve-JunctionInPath (Get-Command up).Source)
+        up "up.ps1" | Should -Be (Resolve-Path "$PSScriptRoot/../up.ps1").Path
         popd
     }
     It "supports wildcards" {
         pushd $PSScriptRoot\testCb
 
-        up "up.*.ps1" | Should -Be (Resolve-JunctionInPath $PSCommandPath)
+        up "up.*.ps1" | Should -Be $PSCommandPath
         popd
     }
     It "returns null when no match" {
@@ -21,7 +21,7 @@ Describe "up" {
         up "notexists.*.nosuchthing" | Should -Be $null
         popd
     }
-    It "resolves junctions in the starting directory" {
+    It "returns junction path (not real path) when starting directory contains a junction" {
         $r = (Get-Item "TestDrive:\").FullName.TrimEnd('\')
         New-Item -ItemType Directory "$r\up-real\subdir" -Force | Out-Null
         New-Item -ItemType Junction  "$r\up-jlink" -Target "$r\up-real" | Out-Null
@@ -31,7 +31,7 @@ Describe "up" {
         $result = up "sentinel.txt"
         popd
 
-        $result | Should -Be "$r\up-real\sentinel.txt"
+        $result | Should -Be "$r\up-jlink\sentinel.txt"
     }
     It "can return multiple results" {
         pushd $PSScriptRoot

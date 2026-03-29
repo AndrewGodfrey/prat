@@ -86,10 +86,10 @@ Describe "Get-PratProject" {
     }
 
     Context "Windows junction resolution" {
-        It "finds the project when given a junction path pointing to the registered root" {
+        It "same-island junction navigation works" {
             New-Item -ItemType Directory "$root/realrepo" -Force | Out-Null
             New-Item -ItemType Junction  "$root/junction" -Target "$root/realrepo" | Out-Null
-            makeTestProfile "@{ root = '$root/realrepo' }"
+            makeTestProfile "@{ root = '$root/junction' }"
 
             $result = Get-PratProject -Location "$root/junction"
 
@@ -98,44 +98,12 @@ Describe "Get-PratProject" {
             $result.subdir | Should -Be ''
         }
 
-        It "finds the project when given a path inside a junction" {
-            New-Item -ItemType Directory "$root/realrepo/src" -Force | Out-Null
-            New-Item -ItemType Junction  "$root/junction2" -Target "$root/realrepo" | Out-Null
-            makeTestProfile "@{ root = '$root/realrepo' }"
+        It "cross-island returns null" {
+            New-Item -ItemType Directory "$root/realrepo" -Force | Out-Null
+            New-Item -ItemType Junction  "$root/junction" -Target "$root/realrepo" | Out-Null
+            makeTestProfile "@{ root = '$root/junction' }"
 
-            $result = Get-PratProject -Location "$root/junction2/src"
-
-            $result        | Should -Not -BeNullOrEmpty
-            $result.id     | Should -Be "repo"
-            $result.subdir | Should -Be "src"
-        }
-
-        It "finds the project when the repoProfile registers an absolute junction-based root" {
-            New-Item -ItemType Directory "$root/realrepo2" -Force | Out-Null
-            New-Item -ItemType Junction  "$root/jlink3" -Target "$root/realrepo2" | Out-Null
-
-            # Profile has an ABSOLUTE junction-based root (as when testCbDir is junction-based)
-            "@{ '.' = @{ repos = @{ myrepo2 = @{ root = '$root/jlink3' } } } }" | Out-File "$root/abs-root-profile.ps1"
-            Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$root/abs-root-profile.ps1") }
-
-            $result = Get-PratProject -Location "$root/realrepo2"
-
-            $result     | Should -Not -BeNullOrEmpty
-            $result.id  | Should -Be "myrepo2"
-        }
-
-        It "finds the project when the repoProfile file is loaded via a junction path" {
-            New-Item -ItemType Directory "$root/realsrc/myrepo" -Force | Out-Null
-            New-Item -ItemType Junction  "$root/jlink" -Target "$root/realsrc" | Out-Null
-
-            # Profile with a RELATIVE root — so sectionRoot (derived from fileDir) matters
-            "@{ '.' = @{ repos = @{ myrepo = @{ root = 'myrepo' } } } }" | Out-File "$root/realsrc/rp.ps1"
-            Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$root/jlink/rp.ps1") }
-
-            $result = Get-PratProject -Location "$root/realsrc/myrepo"
-
-            $result     | Should -Not -BeNullOrEmpty
-            $result.id  | Should -Be "myrepo"
+            (Get-PratProject -Location "$root/realrepo") | Should -BeNull
         }
     }
 }

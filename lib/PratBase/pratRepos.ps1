@@ -61,6 +61,11 @@ function Get-RepoProfileFiles {
 #   - implicit shortcut <id> -> <repo.root> unless defined explicitly
 #
 # When the same shortcut name appears in multiple files, the first file wins.
+#
+# Junction restriction: all repos registered in a codebaseProfile file must be in the same NTFS
+# junction island as the locations passed to Get-PratRepo/Get-PratProject. Cross-island references
+# (e.g. a profile accessed via junction A registering a root accessible via junction B) silently
+# return null — "Unknown project" when t/d are run from that island.
 function Get-PratRepoIndex {
     param([string[]] $Files)
 
@@ -136,7 +141,6 @@ function Get-PratRepoIndex {
     $allShortcutSources = @{}
 
     foreach ($file in $Files) {
-        $file        = Resolve-JunctionInPath $file
         $fileItem    = Get-Item $file
         $fileDir     = $fileItem.DirectoryName.Replace('\', '/')
         $profileData = Import-Scriptblock $file
@@ -160,7 +164,7 @@ function Get-PratRepoIndex {
                     } else {
                         $repoDef.root
                     }
-                    $root = Resolve-JunctionInPath $root.TrimEnd('\', '/')
+                    $root = $root.TrimEnd('\', '/')
                     Register-Node $id $repoDef $root $fileDir $null $null $file
                 }
             }
@@ -184,6 +188,18 @@ function Get-PratRepoIndex {
 
 # Resolve-JunctionInPath: if $path itself or any ancestor is a Windows NTFS junction,
 # returns the path with that junction replaced by its target. Otherwise returns $path.
+#
+# Junction islands: two paths that refer to the same file via different junctions are in
+# different "islands" — string comparison treats them as unrelated even though they resolve
+# to the same real location. Calling this function on both sides of a comparison bridges
+# islands by reducing all paths to their real targets.
+#
+# Prat's project system deliberately does NOT call this: repos are registered and locations
+# are looked up in whatever island the caller naturally inhabits, so same-island comparisons
+# just work. Cross-island references silently return null (see Get-PratRepoIndex).
+#
+# Use this explicitly when you need to compare paths that may arrive from different islands,
+# or when a downstream tool requires a real (non-junction) path.
 function Resolve-JunctionInPath([string]$path) {
     $suffix  = [System.Collections.Generic.List[string]]::new()
     $current = $path
@@ -235,7 +251,7 @@ function Get-PratRepo {
     [CmdletBinding()]
     param([string] $Location = $pwd)
 
-    $Location = Resolve-JunctionInPath (Resolve-Path $Location).ProviderPath
+    $Location = (Resolve-Path $Location).ProviderPath
 
     $index = Get-PratRepoIndex (Get-RepoProfileFiles)
     if ($null -eq $index) { return $null }
@@ -259,7 +275,7 @@ function Get-PratProject {
     [CmdletBinding()]
     param([string] $Location = $pwd)
 
-    $Location = Resolve-JunctionInPath (Resolve-Path $Location).ProviderPath
+    $Location = (Resolve-Path $Location).ProviderPath
 
     $index = Get-PratRepoIndex (Get-RepoProfileFiles)
     if ($null -eq $index) { return $null }
