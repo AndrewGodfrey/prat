@@ -26,6 +26,15 @@ unclear.
   detail — enough that a fresh Claude starting with "do the next step of this plan" can proceed
   without ambiguity.
 
+- **Decide whether to apply /review-changes at the end of the next step.** Subagents are particularly
+  expensive in token costs - they seem to cause extra main-agent turns and also waste time regaining context
+  the main agent already had. The /review-changes subagent is worth it for complex changes that could benefit
+  from an independent review. And doing that before the user's turn really increases our throughput.
+  But we don't want to do it after small, well-planned steps with little ambiguity.
+
+  If you decide it's worth it, conclude the plan step with:
+    - Run `/review-changes`, and address its feedback. If there's a lot of ambiguity left, consider running it **one** more time.
+
 ## 3. Reflect
 
 Invoke `/reflect`.
