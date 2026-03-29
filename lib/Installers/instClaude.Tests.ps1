@@ -124,6 +124,14 @@ Describe "Install-ClaudeSkillSet" {
 
         "$destDir\my-skill" | Should -Exist
     }
+
+    It "throws if a skill in the set does not exist in srcDir" {
+        mkdir "$srcDir\real-skill" | Out-Null
+        "content" | Out-File "$srcDir\real-skill\SKILL.md" -Encoding utf8NoBOM
+        mkdir $destDir | Out-Null
+
+        { Install-ClaudeSkillSet $stage @("real-skill", "missing-skill") $srcDir $destDir } | Should -Throw
+    }
 }
 
 Describe "Install-ClaudeMarkdownFiles" {
