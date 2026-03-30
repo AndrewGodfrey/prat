@@ -52,7 +52,7 @@ function Get-UncommittedFileHashes($repoPath, $files) {
     $hashes = @{}
     if ($files.Count -eq 0) { return $hashes }
 
-    if ($files.Count -le 5) {
+    if ($files.Count -le 50) {
         foreach ($f in $files) {
             $fullPath = Join-Path $repoPath $f
             if (Test-Path $fullPath) {
@@ -73,7 +73,8 @@ function Get-UncommittedFileHashes($repoPath, $files) {
 }
 
 function Get-SnapshotPath($snapshotDir, $sessionId, $cwd) {
-    $bytes   = [System.Text.Encoding]::UTF8.GetBytes($cwd)
+    $normalizedCwd = ($cwd -replace '\\', '/').TrimEnd('/')
+    $bytes   = [System.Text.Encoding]::UTF8.GetBytes($normalizedCwd)
     $md5     = [System.Security.Cryptography.MD5]::Create().ComputeHash($bytes)
     $cwdHash = ([System.BitConverter]::ToString($md5) -replace '-', '').ToLower().Substring(0, 8)
     return "$snapshotDir/${sessionId}_${cwdHash}.json"
@@ -82,5 +83,5 @@ function Get-SnapshotPath($snapshotDir, $sessionId, $cwd) {
 function Invoke-GitOutput($repoPath, [string[]]$gitArgs) {
     $output = & git -C $repoPath @gitArgs 2>$null
     if ($LASTEXITCODE -ne 0) { return $null }
-    return ($output -join "`n").Trim()
+    return ($output -join "`n").TrimEnd()
 }

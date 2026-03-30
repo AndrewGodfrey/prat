@@ -59,6 +59,10 @@ Describe 'Parse-StatusFiles' {
         $files = Parse-StatusFiles 'R  old.ps1 -> new.ps1'
         $files | Should -Be @('new.ps1')
     }
+    It 'handles unstaged modification (leading space preserved)' {
+        $files = Parse-StatusFiles ' M lib/foo.ps1'
+        $files | Should -Be @('lib/foo.ps1')
+    }
 }
 
 Describe 'Get-GitRepoState' {
@@ -114,16 +118,16 @@ Describe 'Get-GitRepoState' {
         }
     }
 
-    Context 'many uncommitted files (>5)' {
+    Context 'many uncommitted files (>50)' {
         BeforeAll {
             $repoPath = (New-Item -ItemType Directory 'TestDrive:/repo-many').FullName
-            1..6 | ForEach-Object { Set-Content "$repoPath/file$_.txt" "content$_" }
+            1..51 | ForEach-Object { Set-Content "$repoPath/file$_.txt" "content$_" }
 
             Mock Invoke-GitOutput {
                 switch ($gitArgs[0]) {
                     'branch' { 'main' }
                     'log'    { '' }
-                    'status' { (1..6 | ForEach-Object { "?? file$_.txt" }) -join "`n" }
+                    'status' { (1..51 | ForEach-Object { "?? file$_.txt" }) -join "`n" }
                 }
             }
         }
@@ -138,6 +142,19 @@ Describe 'Get-GitRepoState' {
             $hash2 = (Get-GitRepoState $repoPath).uncommittedHashes['__all__']
             $hash1 | Should -Not -Be $hash2
         }
+    }
+}
+
+Describe 'Get-SnapshotPath' {
+    It 'produces same hash for forward-slash and backslash cwd' {
+        $fwd  = Get-SnapshotPath 'C:/snaps' 'sess1' 'C:/Users/andrew/de'
+        $back = Get-SnapshotPath 'C:/snaps' 'sess1' 'C:\Users\andrew\de'
+        $fwd | Should -Be $back
+    }
+    It 'produces same hash regardless of trailing slash' {
+        $a = Get-SnapshotPath 'C:/snaps' 'sess1' 'C:/Users/andrew/de'
+        $b = Get-SnapshotPath 'C:/snaps' 'sess1' 'C:/Users/andrew/de/'
+        $a | Should -Be $b
     }
 }
 
