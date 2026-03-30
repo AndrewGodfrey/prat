@@ -70,3 +70,54 @@ Describe "Get-SessionName" {
         Get-SessionName @{transcript_path = $f} | Should -BeNullOrEmpty
     }
 }
+
+Describe 'Save-GitStateSnapshot' {
+    Context 'skips when hook data is incomplete' {
+        BeforeEach {
+            Mock Get-GitCwdState { @{'C:/repo' = @{branch='main'; log=''; status=''; uncommittedHashes=@{}}} }
+        }
+
+        It 'skips when session_id is empty' {
+            $dir = (New-Item -ItemType Directory 'TestDrive:/snap-skip1').FullName
+            Save-GitStateSnapshot @{session_id=''; cwd='C:/repo'} $dir
+            (Get-ChildItem $dir).Count | Should -Be 0
+        }
+        It 'skips when cwd is empty' {
+            $dir = (New-Item -ItemType Directory 'TestDrive:/snap-skip2').FullName
+            Save-GitStateSnapshot @{session_id='sess123'; cwd=''} $dir
+            (Get-ChildItem $dir).Count | Should -Be 0
+        }
+    }
+
+    Context 'skips when cwd is not a git repo' {
+        BeforeEach { Mock Get-GitCwdState { $null } }
+
+        It 'skips when Get-GitCwdState returns null' {
+            $dir = (New-Item -ItemType Directory 'TestDrive:/snap-skip3').FullName
+            Save-GitStateSnapshot @{session_id='sess123'; cwd='C:/notgit'} $dir
+            (Get-ChildItem $dir).Count | Should -Be 0
+        }
+    }
+
+    Context 'writes snapshot for valid git state' {
+        BeforeEach {
+            Mock Get-GitCwdState { @{'C:/repo' = @{branch='feature'; log='abc commit'; status='M foo.ps1'; uncommittedHashes=@{}}} }
+        }
+
+        It 'creates file named with session_id prefix' {
+            $dir = (New-Item -ItemType Directory 'TestDrive:/snap-write1').FullName
+            Save-GitStateSnapshot @{session_id='sess123'; cwd='C:/repo'} $dir
+            $files = Get-ChildItem $dir
+            $files | Should -HaveCount 1
+            $files[0].Name | Should -BeLike 'sess123_*.json'
+        }
+        It 'file contains correct git state' {
+            $dir = (New-Item -ItemType Directory 'TestDrive:/snap-write2').FullName
+            Save-GitStateSnapshot @{session_id='sess456'; cwd='C:/repo'} $dir
+            $file    = Get-ChildItem $dir | Select-Object -First 1
+            $content = Get-Content $file.FullName -Raw | ConvertFrom-Json -AsHashtable
+            $content['C:/repo'].branch | Should -Be 'feature'
+            $content['C:/repo'].status | Should -Be 'M foo.ps1'
+        }
+    }
+}

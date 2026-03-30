@@ -1,3 +1,5 @@
+. "$PSScriptRoot/Get-GitCwdState.ps1"
+
 # .SYNOPSIS
 # A 'Stop' hook function for agents, currently only designed for Claude Code.
 #
@@ -18,7 +20,19 @@ function Get-SessionName($hookData) {
     return $(if ($customTitle) { $customTitle } else { $slug })
 }
 
-function main($hookData) {
+function Save-GitStateSnapshot($hookData, $snapshotDir = "$home/prat/auto/context/gitStateSnapshot") {
+    $sessionId = $hookData.session_id
+    $cwd       = $hookData.cwd
+    if (-not $sessionId -or -not $cwd) { return }
+
+    $state = Get-GitCwdState $cwd
+    if ($null -eq $state) { return }
+
+    $null = New-Item -ItemType Directory -Path $snapshotDir -Force
+    $state | ConvertTo-Json -Depth 5 | Set-Content (Get-SnapshotPath $snapshotDir $sessionId $cwd) -Encoding UTF8
+}
+
+function Send-TurnNotification($hookData) {
     if (!(Get-Command 'Send-UserNotification' -ErrorAction SilentlyContinue)) { return }
 
     $userIdleTime = Get-UserIdleTimeInSeconds
@@ -27,6 +41,11 @@ function main($hookData) {
     $name = Get-SessionName $hookData
     $message = if ($name) { "$($name): done" } else { 'agent turn completed' }
     Send-UserNotification $message 'prat'
+}
+
+function main($hookData) {
+    Save-GitStateSnapshot $hookData
+    Send-TurnNotification $hookData
 }
 
 if ($MyInvocation.InvocationName -ne '.') {
