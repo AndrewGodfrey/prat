@@ -1,21 +1,21 @@
-# Captures git state for a cwd and all related repos.
+# Captures git state for a directory and all related repos.
 # Related repos are discovered via pathbin/Get-CodebaseLayers.ps1 if present in the git root.
 
-function Get-GitCwdState($cwd) {
-    $repoPaths = Get-WatchedRepoPaths $cwd
+function Get-GitRepoState($repoSubdir) {
+    $repoPaths = Get-WatchedRepoPaths $repoSubdir
     if ($repoPaths.Count -eq 0) { return $null }
 
     $state = @{}
     foreach ($path in $repoPaths) {
         if ($null -ne (Invoke-GitOutput $path @('rev-parse', '--git-dir'))) {
-            $state[$path] = Get-GitRepoState $path
+            $state[$path] = Get-SingleRepoState $path
         }
     }
     if ($state.Count -gt 0) { return $state }
 }
 
-function Get-WatchedRepoPaths($cwd) {
-    $gitRoot = Invoke-GitOutput $cwd @('rev-parse', '--show-toplevel')
+function Get-WatchedRepoPaths($repoSubdir) {
+    $gitRoot = Invoke-GitOutput $repoSubdir @('rev-parse', '--show-toplevel')
     if ($null -eq $gitRoot) { return @() }
     $gitRoot = ($gitRoot -replace '\\', '/').TrimEnd('/')
 
@@ -27,7 +27,7 @@ function Get-WatchedRepoPaths($cwd) {
     return @($gitRoot)
 }
 
-function Get-GitRepoState($repoPath) {
+function Get-SingleRepoState($repoPath) {
     $branch    = Invoke-GitOutput $repoPath @('branch', '--show-current')
     $log       = Invoke-GitOutput $repoPath @('log', '--oneline', '-3')
     $statusRaw = Invoke-GitOutput $repoPath @('status', '--short')

@@ -3,16 +3,20 @@
 #
 # Output: additionalContext JSON on stdout when git state changed; nothing otherwise.
 
-. "$PSScriptRoot/../Get-GitCwdState.ps1"
+. "$PSScriptRoot/../Get-GitRepoState.ps1"
 
 function main($hookData) {
     Invoke-UserPromptSubmitCompanion $hookData
     Emit-GitStateDiff $hookData
 }
 
-function Invoke-UserPromptSubmitCompanion($hookData, $companionPath = "$home/prefs/lib/claude/On-UserPromptSubmit.ps1") {
-    if (-not (Test-Path $companionPath)) { return }
-    ($hookData | ConvertTo-Json -Compress) | pwsh -File $companionPath | Out-Null
+function Invoke-UserPromptSubmitCompanion($hookData, $companionPaths = $null) {
+    if ($null -eq $companionPaths) {
+        $companionPaths = @(Resolve-PratLibFile "lib/claude/On-UserPromptSubmit.ps1" -ListAll)
+    }
+    foreach ($path in $companionPaths) {
+        ($hookData | ConvertTo-Json -Compress) | pwsh -File $path | Out-Null
+    }
 }
 
 function Emit-GitStateDiff($hookData, $snapshotDir = "$home/prat/auto/context/gitStateSnapshot") {
@@ -24,7 +28,7 @@ function Emit-GitStateDiff($hookData, $snapshotDir = "$home/prat/auto/context/gi
     if (-not (Test-Path $snapFile)) { return }
 
     $oldState = Get-Content $snapFile -Raw | ConvertFrom-Json -AsHashtable
-    $newState = Get-GitCwdState $cwd
+    $newState = Get-GitRepoState $cwd
     if ($null -eq $newState) { return }
 
     # Update snapshot before comparing so next prompt sees fresh baseline

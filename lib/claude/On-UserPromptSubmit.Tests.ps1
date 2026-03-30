@@ -155,13 +155,13 @@ Describe 'Get-StatusDelta' {
 
 Describe 'Invoke-UserPromptSubmitCompanion' {
     It 'does nothing when companion does not exist' {
-        { Invoke-UserPromptSubmitCompanion @{session_id='s'; cwd='C:/x'} 'TestDrive:/nonexistent.ps1' } | Should -Not -Throw
+        { Invoke-UserPromptSubmitCompanion @{session_id='s'; cwd='C:/x'} @('TestDrive:/nonexistent.ps1') } | Should -Not -Throw
     }
     It 'calls companion and passes hookData via stdin' {
         $markerFile = (Join-Path $TestDrive 'companion-ran.txt') -replace '\\', '/'
         $companionScript = (New-Item (Join-Path $TestDrive 'companion.ps1') -ItemType File -Force).FullName
         Set-Content $companionScript "`$h = ([Console]::In.ReadToEnd()) | ConvertFrom-Json; Set-Content '$markerFile' `$h.session_id"
-        Invoke-UserPromptSubmitCompanion @{session_id='test-id'; cwd='C:/test'} $companionScript
+        Invoke-UserPromptSubmitCompanion @{session_id='test-id'; cwd='C:/test'} @($companionScript)
         Get-Content $markerFile | Should -Be 'test-id'
     }
 }
@@ -172,7 +172,7 @@ Describe 'Emit-GitStateDiff' {
     }
 
     It 'emits nothing when no snapshot file exists' {
-        Mock Get-GitCwdState { @{'C:/repo' = @{branch='main'; log=''; status=''; uncommittedHashes=@{}}} }
+        Mock Get-GitRepoState { @{'C:/repo' = @{branch='main'; log=''; status=''; uncommittedHashes=@{}}} }
         $dir    = (New-Item -ItemType Directory 'TestDrive:/emit-snaps/no-snap').FullName
         $output = Emit-GitStateDiff @{session_id='s1'; cwd='C:/repo'} $dir
         $output | Should -BeNullOrEmpty
@@ -180,7 +180,7 @@ Describe 'Emit-GitStateDiff' {
 
     It 'emits nothing when state is unchanged' {
         $state = @{'C:/repo' = @{branch='main'; log='abc'; status=''; uncommittedHashes=@{}}}
-        Mock Get-GitCwdState { $state }
+        Mock Get-GitRepoState { $state }
         $dir  = (New-Item -ItemType Directory 'TestDrive:/emit-snaps/unchanged').FullName
         $snap = Get-SnapshotPath $dir 's2' 'C:/repo'
         $state | ConvertTo-Json -Depth 5 | Set-Content $snap
@@ -190,7 +190,7 @@ Describe 'Emit-GitStateDiff' {
     It 'emits plain text when state changed' {
         $old = @{'C:/repo' = @{branch='main';    log='abc'; status=''; uncommittedHashes=@{}}}
         $new = @{'C:/repo' = @{branch='feature'; log='abc'; status=''; uncommittedHashes=@{}}}
-        Mock Get-GitCwdState { $new }
+        Mock Get-GitRepoState { $new }
         $dir  = (New-Item -ItemType Directory 'TestDrive:/emit-snaps/changed').FullName
         $snap = Get-SnapshotPath $dir 's3' 'C:/repo'
         $old | ConvertTo-Json -Depth 5 | Set-Content $snap
@@ -201,7 +201,7 @@ Describe 'Emit-GitStateDiff' {
     It 'updates snapshot after emitting' {
         $old = @{'C:/repo' = @{branch='main';    log='old'; status=''; uncommittedHashes=@{}}}
         $new = @{'C:/repo' = @{branch='feature'; log='new'; status=''; uncommittedHashes=@{}}}
-        Mock Get-GitCwdState { $new }
+        Mock Get-GitRepoState { $new }
         $dir  = (New-Item -ItemType Directory 'TestDrive:/emit-snaps/update').FullName
         $snap = Get-SnapshotPath $dir 's4' 'C:/repo'
         $old | ConvertTo-Json -Depth 5 | Set-Content $snap

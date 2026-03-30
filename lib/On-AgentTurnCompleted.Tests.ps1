@@ -74,7 +74,7 @@ Describe "Get-SessionName" {
 Describe 'Save-GitStateSnapshot' {
     Context 'skips when hook data is incomplete' {
         BeforeEach {
-            Mock Get-GitCwdState { @{'C:/repo' = @{branch='main'; log=''; status=''; uncommittedHashes=@{}}} }
+            Mock Get-GitRepoState { @{'C:/repo' = @{branch='main'; log=''; status=''; uncommittedHashes=@{}}} }
         }
 
         It 'skips when session_id is empty' {
@@ -90,9 +90,9 @@ Describe 'Save-GitStateSnapshot' {
     }
 
     Context 'skips when cwd is not a git repo' {
-        BeforeEach { Mock Get-GitCwdState { $null } }
+        BeforeEach { Mock Get-GitRepoState { $null } }
 
-        It 'skips when Get-GitCwdState returns null' {
+        It 'skips when Get-GitRepoState returns null' {
             $dir = (New-Item -ItemType Directory 'TestDrive:/snap-skip3').FullName
             Save-GitStateSnapshot @{session_id='sess123'; cwd='C:/notgit'} $dir
             (Get-ChildItem $dir).Count | Should -Be 0
@@ -101,7 +101,7 @@ Describe 'Save-GitStateSnapshot' {
 
     Context 'writes snapshot for valid git state' {
         BeforeEach {
-            Mock Get-GitCwdState { @{'C:/repo' = @{branch='feature'; log='abc commit'; status='M foo.ps1'; uncommittedHashes=@{}}} }
+            Mock Get-GitRepoState { @{'C:/repo' = @{branch='feature'; log='abc commit'; status='M foo.ps1'; uncommittedHashes=@{}}} }
         }
 
         It 'creates file named with session_id prefix' {

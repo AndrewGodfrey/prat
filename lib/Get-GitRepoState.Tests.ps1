@@ -1,5 +1,5 @@
 BeforeAll {
-    . "$PSScriptRoot/Get-GitCwdState.ps1"
+    . "$PSScriptRoot/Get-GitRepoState.ps1"
 }
 
 Describe 'Get-WatchedRepoPaths' {
@@ -65,7 +65,7 @@ Describe 'Parse-StatusFiles' {
     }
 }
 
-Describe 'Get-GitRepoState' {
+Describe 'Get-SingleRepoState' {
     Context 'basic state capture with no uncommitted files' {
         BeforeAll {
             Mock Invoke-GitOutput {
@@ -77,11 +77,11 @@ Describe 'Get-GitRepoState' {
             }
         }
 
-        It 'returns branch'  { (Get-GitRepoState 'C:/repo').branch | Should -Be 'main' }
-        It 'returns log'     { (Get-GitRepoState 'C:/repo').log    | Should -Be "abc1234 commit one`ndef5678 commit two`nghi9012 commit three" }
-        It 'returns status'  { (Get-GitRepoState 'C:/repo').status | Should -Be '' }
+        It 'returns branch'  { (Get-SingleRepoState 'C:/repo').branch | Should -Be 'main' }
+        It 'returns log'     { (Get-SingleRepoState 'C:/repo').log    | Should -Be "abc1234 commit one`ndef5678 commit two`nghi9012 commit three" }
+        It 'returns status'  { (Get-SingleRepoState 'C:/repo').status | Should -Be '' }
         It 'returns empty uncommittedHashes' {
-            (Get-GitRepoState 'C:/repo').uncommittedHashes | Should -BeNullOrEmpty
+            (Get-SingleRepoState 'C:/repo').uncommittedHashes | Should -BeNullOrEmpty
         }
     }
 
@@ -101,19 +101,19 @@ Describe 'Get-GitRepoState' {
         }
 
         It 'stores one hash per file' {
-            $state = Get-GitRepoState $repoPath
+            $state = Get-SingleRepoState $repoPath
             $state.uncommittedHashes.Count | Should -Be 2
             $state.uncommittedHashes['file1.txt'] | Should -Not -BeNullOrEmpty
             $state.uncommittedHashes['file2.txt'] | Should -Not -BeNullOrEmpty
         }
         It 'hashes differ for different file content' {
-            $state = Get-GitRepoState $repoPath
+            $state = Get-SingleRepoState $repoPath
             $state.uncommittedHashes['file1.txt'] | Should -Not -Be $state.uncommittedHashes['file2.txt']
         }
         It 'hash changes when file content changes' {
-            $hash1 = (Get-GitRepoState $repoPath).uncommittedHashes['file1.txt']
+            $hash1 = (Get-SingleRepoState $repoPath).uncommittedHashes['file1.txt']
             Set-Content "$repoPath/file1.txt" 'different content'
-            $hash2 = (Get-GitRepoState $repoPath).uncommittedHashes['file1.txt']
+            $hash2 = (Get-SingleRepoState $repoPath).uncommittedHashes['file1.txt']
             $hash1 | Should -Not -Be $hash2
         }
     }
@@ -133,13 +133,13 @@ Describe 'Get-GitRepoState' {
         }
 
         It 'stores consolidated hash under __all__ key' {
-            $state = Get-GitRepoState $repoPath
+            $state = Get-SingleRepoState $repoPath
             @($state.uncommittedHashes.Keys) | Should -Be @('__all__')
         }
         It 'consolidated hash changes when a file changes' {
-            $hash1 = (Get-GitRepoState $repoPath).uncommittedHashes['__all__']
+            $hash1 = (Get-SingleRepoState $repoPath).uncommittedHashes['__all__']
             Set-Content "$repoPath/file1.txt" 'different'
-            $hash2 = (Get-GitRepoState $repoPath).uncommittedHashes['__all__']
+            $hash2 = (Get-SingleRepoState $repoPath).uncommittedHashes['__all__']
             $hash1 | Should -Not -Be $hash2
         }
     }
@@ -158,12 +158,12 @@ Describe 'Get-SnapshotPath' {
     }
 }
 
-Describe 'Get-GitCwdState' {
-    Context 'cwd is not a git repo' {
+Describe 'Get-GitRepoState' {
+    Context 'repoSubdir is not a git repo' {
         BeforeAll { Mock Invoke-GitOutput { $null } }
 
         It 'returns null' {
-            Get-GitCwdState 'C:/notgit' | Should -BeNullOrEmpty
+            Get-GitRepoState 'C:/notgit' | Should -BeNullOrEmpty
         }
     }
 
@@ -181,11 +181,11 @@ Describe 'Get-GitCwdState' {
         }
 
         It 'returns state keyed by repo path' {
-            $state = Get-GitCwdState 'C:/repos/foo'
+            $state = Get-GitRepoState 'C:/repos/foo'
             $state.Keys | Should -Contain 'C:/repos/foo'
         }
         It 'state contains branch' {
-            (Get-GitCwdState 'C:/repos/foo')['C:/repos/foo'].branch | Should -Be 'main'
+            (Get-GitRepoState 'C:/repos/foo')['C:/repos/foo'].branch | Should -Be 'main'
         }
     }
 }

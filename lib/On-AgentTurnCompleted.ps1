@@ -1,4 +1,4 @@
-. "$PSScriptRoot/Get-GitCwdState.ps1"
+. "$PSScriptRoot/Get-GitRepoState.ps1"
 
 # .SYNOPSIS
 # A 'Stop' hook function for agents, currently only designed for Claude Code.
@@ -25,7 +25,7 @@ function Save-GitStateSnapshot($hookData, $snapshotDir = "$home/prat/auto/contex
     $cwd       = $hookData.cwd
     if (-not $sessionId -or -not $cwd) { return }
 
-    $state = Get-GitCwdState $cwd
+    $state = Get-GitRepoState $cwd
     if ($null -eq $state) { return }
 
     $null = New-Item -ItemType Directory -Path $snapshotDir -Force
