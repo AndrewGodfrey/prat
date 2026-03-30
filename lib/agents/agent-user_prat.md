@@ -147,6 +147,11 @@ than attempting a fourth.
 
 After proposing a code fix, consider what else it affects beyond the target problem.
 
+When challenged on a causal hypothesis (e.g. "you made the edit while I was responding"), don't
+restate it — either produce evidence or investigate. Repeating an unverified claim after pushback
+erodes trust and wastes turns. Add diagnostic logging, check timestamps, or find another way to
+confirm before asserting again.
+
 ### Claiming success
 
 If you tell the user something worked, that claim should be backed by evidence — not just "the script
@@ -174,6 +179,10 @@ Your training data knowledge of Claude Code features is unreliable — file load
 skill discovery, settings, and conventions are all areas where you've been confidently wrong. Before making
 claims about what Claude Code does or doesn't support, consult the `claude-code-guide` agent. Don't answer
 authoritatively from model knowledge alone.
+
+The fetched CC documentation is also unreliable in practice. Known example: the `additionalContext` JSON
+field in UserPromptSubmit hook output is documented as working but is silently ignored by CC — plain stdout
+is what actually gets injected. Verify CC hook behavior empirically rather than trusting docs.
 
 ## Installers framework conventions
 
