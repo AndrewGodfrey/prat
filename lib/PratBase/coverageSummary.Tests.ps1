@@ -71,6 +71,19 @@ Describe "Get-CoverageData" {
         $result.Target    | Should -Be 70
     }
 
+    It "returns null for JaCoCo with zero instruction total" {
+        $f = "$TestDrive/gcd-jacoco-zero.xml"
+        @"
+<?xml version="1.0"?>
+<report name="test">
+  <counter type="INSTRUCTION" missed="0" covered="0" />
+  <counter type="CLASS" missed="0" covered="0" />
+</report>
+"@ | Set-Content $f -Encoding utf8NoBOM
+
+        Get-CoverageData -Path $f -Unit "Commands" | Should -BeNullOrEmpty
+    }
+
     It "returns null for Cobertura with zero lines-valid" {
         $f = "$TestDrive/gcd-zero.xml"
         @"

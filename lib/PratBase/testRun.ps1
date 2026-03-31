@@ -96,7 +96,8 @@ function Merge-TestSummary {
         [TimeSpan]  $Elapsed
     )
 
-    $fatalError = $A.FatalError ?? $B.FatalError
+    $errors = @($A.FatalError, $B.FatalError) | Where-Object { $_ }
+    $fatalError = if ($errors) { $errors -join '; ' } else { $null }
     $passed = if ($fatalError) { $null } else { ($A.Passed ?? 0) + ($B.Passed ?? 0) }
     $failed = if ($fatalError) { $null } else { ($A.Failed ?? 0) + ($B.Failed ?? 0) }
 
@@ -118,7 +119,7 @@ function Merge-TestSummary {
     }
 
     $failuresSeen     = ($A.FailuresSeen ?? 0) + ($B.FailuresSeen ?? 0)
-    $failureThreshold = $A.FailureThreshold ?? $B.FailureThreshold ?? 5
+    $failureThreshold = ($A.FailureThreshold ?? 0) + ($B.FailureThreshold ?? 0)
     $runDir           = $A.RunDir ?? $B.RunDir
 
     Write-TestRunResult `

@@ -22,8 +22,9 @@ function Get-CoverageData {
         $cls   = $xml.report.counter | Where-Object { $_.type -eq "CLASS" }
         $covered   = [int]$instr.covered
         $total     = [int]$instr.missed + $covered
+        if ($total -eq 0) { return $null }
         $fileCount = [int]$cls.missed + [int]$cls.covered
-        $pct = if ($total -gt 0) { [int][math]::Round($covered * 10000.0 / $total) / 100 } else { 0 }
+        $pct = [math]::Round($covered * 100.0 / $total, 1)
     } elseif ($xml.DocumentElement.LocalName -eq 'coverage') {
         # Cobertura format
         $covered   = [int]$xml.coverage.'lines-covered'

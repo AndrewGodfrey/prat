@@ -323,6 +323,41 @@ Describe "Merge-TestSummary" {
         $summary = Get-Content "$runDir/summary.txt"
         $summary | Should -Match "exit code: 1"
     }
+
+    It "includes both error messages when both results have FatalError" {
+        $runDir = "$TestDrive/ms-dual-fatal"; New-Item $runDir -ItemType Directory | Out-Null
+        $a = @{
+            CoverageData = $null; Passed = $null; Failed = $null
+            FatalError = "pester exit: 1"; FailuresSeen = 0; FailureThreshold = 5; RunDir = $runDir
+        }
+        $b = @{
+            CoverageData = $null; Passed = $null; Failed = $null
+            FatalError = "dotnet exit: 2"; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-dual-fatal-b"
+        }
+
+        Merge-TestSummary $a $b ([TimeSpan]::Zero)
+
+        $summary = Get-Content "$runDir/summary.txt"
+        $summary | Should -Match "pester exit: 1"
+        $summary | Should -Match "dotnet exit: 2"
+    }
+
+    It "sums FailureThreshold from both results" {
+        $runDir = "$TestDrive/ms-threshold"; New-Item $runDir -ItemType Directory | Out-Null
+        $a = @{
+            CoverageData = $null; Passed = 0; Failed = 12
+            FatalError = $null; FailuresSeen = 5; FailureThreshold = 5; RunDir = $runDir
+        }
+        $b = @{
+            CoverageData = $null; Passed = 0; Failed = 0
+            FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-threshold-b"
+        }
+
+        $output = Merge-TestSummary $a $b ([TimeSpan]::Zero)
+
+        # 12 failures >= summed threshold 10 → red (91)
+        $output | Select-Object -First 1 | Should -Match '^\x1b\[91m'
+    }
 }
 
 Describe "Format-AnsiText" {
