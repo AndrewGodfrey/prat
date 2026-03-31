@@ -35,7 +35,8 @@ param(
     [switch] $NoBuild,
     [ValidateSet("coverlet", "dotnet-coverage")] [string] $CoverageCollector = "coverlet",
     [string] $WorkspaceFile,
-    [switch] $UseAlternateCollector
+    [switch] $UseAlternateCollector,
+    [switch] $PassThru
 )
 
 $startTime = [DateTimeOffset]::UtcNow
@@ -134,6 +135,7 @@ $testCommand = if (-not $NoCoverage -and $coverageCollectorLocal -eq "dotnet-cov
     -CoverageUnit  ($coverageCollectorLocal -eq "dotnet-coverage" ? "Blocks" : "Lines") `
     -InitialState  $runState `
     -LogHeader     @("RepoRoot: $RepoRoot", "TestArgs: $TestArgs", "") `
+    -PassThru:$PassThru `
     -TestCommand   $testCommand `
     -ProcessLine {
         param($line, $state)

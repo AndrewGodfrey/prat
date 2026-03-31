@@ -1,7 +1,8 @@
 BeforeAll {
     $scriptToTest = "$PSScriptRoot/Test-PratLayer.ps1"
     function Invoke-PesterWithCodeCoverage(
-        $NoCoverage, $PathToTest, $RepoRoot, $OutputDir, $IncludeIntegrationTests, $Integration) {}
+        $NoCoverage, $PathToTest, $RepoRoot, $OutputDir, $IncludeIntegrationTests, $Integration,
+        [switch] $PassThru) {}
 }
 
 Describe "Test-PratLayer.ps1" {
@@ -38,6 +39,13 @@ Describe "Test-PratLayer.ps1" {
     It "forwards -Integration" {
         & $scriptToTest $project -CommandParameters @{Integration = $true}
         Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $Integration }
+    }
+
+    It "forwards -PassThru and returns result" {
+        Mock Invoke-PesterWithCodeCoverage { @{ Passed = 5; Failed = 0 } }
+        $result = & $scriptToTest $project -CommandParameters @{PassThru = $true}
+        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PassThru -eq $true }
+        $result.Passed | Should -Be 5
     }
 }
 

@@ -2,21 +2,32 @@ BeforeAll {
     Import-Module "$PSScriptRoot/PratBase.psd1" -Force
 }
 
-Describe "Get-CoverageSummary" {
+Describe "Format-CoverageData" {
+    It "returns null for null data" {
+        Format-CoverageData $null | Should -BeNullOrEmpty
+    }
+
+    It "formats a coverage data hashtable as a summary string" {
+        $data = @{ Pct = 75; Target = 70; Covered = 150; Total = 200; Unit = "Commands"; FileCount = 10 }
+        Format-CoverageData $data | Should -Be "Covered 75% / 70%. 150/200 Commands in 10 Files."
+    }
+}
+
+Describe "Get-CoverageData" {
     BeforeAll {
         Mock Get-CoveragePercentTarget -ModuleName PratBase { return 70 }
     }
 
     It "returns null for null path" {
-        Get-CoverageSummary -Path $null -Unit "Commands" | Should -BeNullOrEmpty
+        Get-CoverageData -Path $null -Unit "Commands" | Should -BeNullOrEmpty
     }
 
     It "returns null for non-existent file" {
-        Get-CoverageSummary -Path "$TestDrive/nonexistent.xml" -Unit "Commands" | Should -BeNullOrEmpty
+        Get-CoverageData -Path "$TestDrive/nonexistent.xml" -Unit "Commands" | Should -BeNullOrEmpty
     }
 
-    It "parses JaCoCo format (report root)" {
-        $f = "$TestDrive/jacoco.xml"
+    It "parses JaCoCo format: returns Covered, Total, FileCount, Pct, Unit, Target" {
+        $f = "$TestDrive/gcd-jacoco.xml"
         @"
 <?xml version="1.0"?>
 <report name="test">
@@ -25,12 +36,18 @@ Describe "Get-CoverageSummary" {
 </report>
 "@ | Set-Content $f -Encoding utf8NoBOM
 
-        Get-CoverageSummary -Path $f -Unit "Commands" |
-            Should -Be "Covered 75% / 70%. 150/200 Commands in 10 Files."
+        $result = Get-CoverageData -Path $f -Unit "Commands"
+
+        $result.Covered   | Should -Be 150
+        $result.Total     | Should -Be 200
+        $result.FileCount | Should -Be 10
+        $result.Pct       | Should -Be 75.0
+        $result.Unit      | Should -Be "Commands"
+        $result.Target    | Should -Be 70
     }
 
-    It "parses Cobertura format (coverage root)" {
-        $f = "$TestDrive/cobertura.xml"
+    It "parses Cobertura format: returns Covered, Total, FileCount, Pct, Unit, Target" {
+        $f = "$TestDrive/gcd-cobertura.xml"
         @"
 <?xml version="1.0"?>
 <coverage line-rate="0.85" lines-covered="85" lines-valid="100">
@@ -44,12 +61,18 @@ Describe "Get-CoverageSummary" {
 </coverage>
 "@ | Set-Content $f -Encoding utf8NoBOM
 
-        Get-CoverageSummary -Path $f -Unit "Lines" |
-            Should -Be "Covered 85% / 70%. 85/100 Lines in 3 Files."
+        $result = Get-CoverageData -Path $f -Unit "Lines"
+
+        $result.Covered   | Should -Be 85
+        $result.Total     | Should -Be 100
+        $result.FileCount | Should -Be 3
+        $result.Pct       | Should -Be 85.0
+        $result.Unit      | Should -Be "Lines"
+        $result.Target    | Should -Be 70
     }
 
     It "returns null for Cobertura with zero lines-valid" {
-        $f = "$TestDrive/cobertura-zero.xml"
+        $f = "$TestDrive/gcd-zero.xml"
         @"
 <?xml version="1.0"?>
 <coverage line-rate="0" lines-covered="0" lines-valid="0">
@@ -57,16 +80,16 @@ Describe "Get-CoverageSummary" {
 </coverage>
 "@ | Set-Content $f -Encoding utf8NoBOM
 
-        Get-CoverageSummary -Path $f -Unit "Lines" | Should -BeNullOrEmpty
+        Get-CoverageData -Path $f -Unit "Lines" | Should -BeNullOrEmpty
     }
 
     It "throws for unrecognized XML root element" {
-        $f = "$TestDrive/unknown.xml"
+        $f = "$TestDrive/gcd-unknown.xml"
         @"
 <?xml version="1.0"?>
 <summary foo="bar" />
 "@ | Set-Content $f -Encoding utf8NoBOM
 
-        { Get-CoverageSummary -Path $f -Unit "Lines" } | Should -Throw -ExpectedMessage "*unrecognized*"
+        { Get-CoverageData -Path $f -Unit "Lines" } | Should -Throw -ExpectedMessage "*unrecognized*"
     }
 }

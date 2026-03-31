@@ -28,7 +28,8 @@ param(
     [Parameter(Mandatory)] [DateTimeOffset] $StartTime,
     [hashtable]   $InitialState = @{},
     [string]      $OutputDir    = $null,
-    [string[]]    $LogHeader    = @()
+    [string[]]    $LogHeader    = @(),
+    [switch]      $PassThru
 )
 
 function getAutoDir($root) {
@@ -71,8 +72,21 @@ $coveragePath = & $GetCoverageFile $runDir
 $testResult   = & $GetTestResult $runState
 
 $failuresSeen = $runState.failuresSeen ?? 0
+$coverageData = Get-CoverageData -Path $coveragePath -Unit $CoverageUnit
+if ($PassThru) {
+    return @{
+        CoverageData     = $coverageData
+        Passed           = $testResult.Passed
+        Failed           = $testResult.Failed
+        FatalError       = $testResult.FatalError
+        FailuresSeen     = $failuresSeen
+        FailureThreshold = $failureThreshold
+        RunDir           = $runDir
+    }
+}
+
 Write-TestRunResult `
-    -CoverageSummary (Get-CoverageSummary -Path $coveragePath -Unit $CoverageUnit) `
+    -CoverageSummary (Format-CoverageData $coverageData) `
     -Passed      $testResult.Passed `
     -Failed      $testResult.Failed `
     -Elapsed     ([DateTimeOffset]::UtcNow - $StartTime) `

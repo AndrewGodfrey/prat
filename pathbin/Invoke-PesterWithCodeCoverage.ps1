@@ -12,7 +12,8 @@ param (
     $OutputDir = $null,
     [switch] $IncludeIntegrationTests,
     [switch] $Integration,
-    [switch] $UseAlternateCollector
+    [switch] $UseAlternateCollector,
+    [switch] $PassThru
 )
 
 $startTime = [DateTimeOffset]::UtcNow
@@ -76,6 +77,7 @@ $runState = @{
     -CoverageUnit  "Commands" `
     -InitialState  $runState `
     -LogHeader     @("RepoRoot: $RepoRoot", "PathToTest: $PathToTest", "") `
+    -PassThru:$PassThru `
     -TestCommand {
         $InformationPreference = 'SilentlyContinue'
         # Extract the Pester.Run result before it reaches the filter.

@@ -277,6 +277,54 @@ Describe "Get-PathPrefixesFromWorkspace" {
     }
 }
 
+Describe "Merge-TestSummary" {
+    BeforeAll {
+        Mock Get-CoveragePercentTarget -ModuleName PratBase { 70 }
+    }
+
+    It "sums Passed/Failed and computes weighted Thingies coverage" {
+        # A: 10 Commands covered out of 100, 5 files, 5 passed
+        # B: 2 Lines covered out of 4, 2 files, 3 passed
+        # Weights: Commands=1, Lines=3
+        # Thingies: A = 10/100; B = 6/12 => combined 16/112, pct = round(16*10000/112)/100 = 14.29%
+        $runDirA = "$TestDrive/ms-a"; New-Item $runDirA -ItemType Directory | Out-Null
+        $runDirB = "$TestDrive/ms-b"; New-Item $runDirB -ItemType Directory | Out-Null
+
+        $a = @{
+            CoverageData     = @{ Covered = 10; Total = 100; FileCount = 5; Pct = 10.0; Unit = "Commands"; Target = 70 }
+            Passed = 5; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = $runDirA
+        }
+        $b = @{
+            CoverageData     = @{ Covered = 2; Total = 4; FileCount = 2; Pct = 50.0; Unit = "Lines"; Target = 70 }
+            Passed = 3; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = $runDirB
+        }
+
+        Merge-TestSummary $a $b ([TimeSpan]::FromSeconds(10))
+
+        $summary = Get-Content "$runDirA/summary.txt"
+        $summary | Should -Match "16/112 Thingies in 7 Files"
+        $summary | Should -Match "14\.29%"
+        $summary | Should -Match "Passed: 8, Failed: 0"
+    }
+
+    It "propagates FatalError from either result" {
+        $runDir = "$TestDrive/ms-fatal"; New-Item $runDir -ItemType Directory | Out-Null
+        $a = @{
+            CoverageData = $null; Passed = $null; Failed = $null
+            FatalError = "exit code: 1"; FailuresSeen = 0; FailureThreshold = 5; RunDir = $runDir
+        }
+        $b = @{
+            CoverageData = $null; Passed = 3; Failed = 0
+            FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-fatal-b"
+        }
+
+        Merge-TestSummary $a $b ([TimeSpan]::Zero)
+
+        $summary = Get-Content "$runDir/summary.txt"
+        $summary | Should -Match "exit code: 1"
+    }
+}
+
 Describe "Format-AnsiText" {
     It "wraps text in ANSI escape codes" {
         Format-AnsiText -Text "hello" -ColorCode 92 | Should -Be "`e[92mhello`e[0m"

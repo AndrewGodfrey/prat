@@ -86,6 +86,52 @@ function Write-TestRunResult {
     }
 }
 
+# Merge-TestSummary: Combines two PassThru result objects (from Invoke-TestWithSummary) into a
+# single summary line. Coverage counts are merged using unit weighting: 1 Command = 1 Thingy,
+# 1 Line|Block = 3 Thingies. "Thingy" is a placeholder name until a better one emerges.
+function Merge-TestSummary {
+    param(
+        [hashtable] $A,
+        [hashtable] $B,
+        [TimeSpan]  $Elapsed
+    )
+
+    $fatalError = $A.FatalError ?? $B.FatalError
+    $passed = if ($fatalError) { $null } else { ($A.Passed ?? 0) + ($B.Passed ?? 0) }
+    $failed = if ($fatalError) { $null } else { ($A.Failed ?? 0) + ($B.Failed ?? 0) }
+
+    $unitWeight = @{ Commands = 1; Lines = 3; Blocks = 3 }
+    $covSummary = $null
+    $aData = $A.CoverageData
+    $bData = $B.CoverageData
+    if ($aData -or $bData) {
+        $aW = if ($aData) { $unitWeight[$aData.Unit] ?? 1 } else { 0 }
+        $bW = if ($bData) { $unitWeight[$bData.Unit] ?? 1 } else { 0 }
+        $coveredThingies = ($aData ? ($aData.Covered * $aW) : 0) + ($bData ? ($bData.Covered * $bW) : 0)
+        $totalThingies   = ($aData ? ($aData.Total   * $aW) : 0) + ($bData ? ($bData.Total   * $bW) : 0)
+        $fileCount = ($aData ? $aData.FileCount : 0) + ($bData ? $bData.FileCount : 0)
+        $target = if ($aData) { $aData.Target } else { $bData.Target }
+        if ($totalThingies -gt 0) {
+            $pct = [int][math]::Round($coveredThingies * 10000.0 / $totalThingies) / 100
+            $covSummary = Format-CoverageData @{ Pct = $pct; Target = $target; Covered = $coveredThingies; Total = $totalThingies; Unit = "Thingies"; FileCount = $fileCount }
+        }
+    }
+
+    $failuresSeen     = ($A.FailuresSeen ?? 0) + ($B.FailuresSeen ?? 0)
+    $failureThreshold = $A.FailureThreshold ?? $B.FailureThreshold ?? 5
+    $runDir           = $A.RunDir ?? $B.RunDir
+
+    Write-TestRunResult `
+        -CoverageSummary  $covSummary `
+        -Passed           $passed `
+        -Failed           $failed `
+        -Elapsed          $Elapsed `
+        -FailuresSeen     $failuresSeen `
+        -FailureThreshold $failureThreshold `
+        -RunDir           $runDir `
+        -FatalError       $fatalError
+}
+
 # .SYNOPSIS
 # Post-processes a Cobertura XML coverage file for Coverage Gutters compatibility:
 # - Adds <sources><source>.</source></sources> if missing (prevents parser crash)

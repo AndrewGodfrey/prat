@@ -18,6 +18,7 @@ BeforeAll {
         }
         if ($extra.ContainsKey('LogHeader'))     { $p.LogHeader     = $extra.LogHeader }
         if ($extra.ContainsKey('OutputDir'))     { $p.OutputDir     = $extra.OutputDir }
+        if ($extra.ContainsKey('PassThru'))      { $p.PassThru      = $extra.PassThru }
         & $script:harness @p
     }
 }
@@ -95,5 +96,30 @@ Describe "Invoke-TestWithSummary" {
         New-Item $customDir -ItemType Directory | Out-Null
         invokeHarness @{ OutputDir = $customDir }
         "$customDir/last" | Should -Exist
+    }
+
+    It "returns result object and skips Write-TestRunResult when -PassThru is set" {
+        $covXml = "$TestDrive/cov-passthru.xml"
+        @'
+<?xml version="1.0"?>
+<coverage line-rate="0.5" lines-covered="5" lines-valid="10">
+  <packages><package name="p"><classes><class filename="F.cs"/></classes></package></packages>
+</coverage>
+'@ | Set-Content $covXml -Encoding utf8NoBOM
+
+        $result = invokeHarness @{
+            CoverageUnit    = "Lines"
+            GetCoverageFile = { param($rd) $covXml }
+            GetTestResult   = { param($s) @{ Passed = 3; Failed = 1; FatalError = $null } }
+            PassThru        = $true
+        }
+
+        Should -Invoke Write-TestRunResult -Times 0
+        $result.Passed           | Should -Be 3
+        $result.Failed           | Should -Be 1
+        $result.CoverageData.Covered   | Should -Be 5
+        $result.CoverageData.Total     | Should -Be 10
+        $result.CoverageData.Unit      | Should -Be "Lines"
+        $result.RunDir           | Should -Not -BeNullOrEmpty
     }
 }

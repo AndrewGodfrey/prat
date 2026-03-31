@@ -4,10 +4,11 @@ function Get-CoveragePercentTarget {
 }
 
 # .SYNOPSIS
-# Parses a coverage XML file and returns a summary string.
+# Parses a coverage XML file and returns a data hashtable.
 # Auto-detects JaCoCo (root <report>) and Cobertura (root <coverage>) formats.
-# Returns null if $Path is null or the file does not exist.
-function Get-CoverageSummary {
+# Returns null if $Path is null, the file does not exist, or total count is zero.
+# Keys: Covered, Total, FileCount, Pct, Unit, Target
+function Get-CoverageData {
     param($Path, [Parameter(Mandatory)] [string] $Unit)
 
     if (-not $Path -or !(Test-Path $Path)) { return $null }
@@ -31,8 +32,17 @@ function Get-CoverageSummary {
         $pct       = [math]::Round([double]$xml.coverage.'line-rate' * 100, 1)
         $fileCount = ($xml.coverage.packages.package.classes.class | Measure-Object).Count
     } else {
-        throw "Get-CoverageSummary: unrecognized XML root element '$($xml.DocumentElement.LocalName)'"
+        throw "Get-CoverageData: unrecognized XML root element '$($xml.DocumentElement.LocalName)'"
     }
 
-    "Covered $pct% / $target%. $covered/$total $Unit in $fileCount Files."
+    @{ Covered = $covered; Total = $total; FileCount = $fileCount; Pct = $pct; Unit = $Unit; Target = $target }
+}
+
+# .SYNOPSIS
+# Formats a CoverageData hashtable (from Get-CoverageData) as a human-readable summary string.
+# Returns null if $Data is null.
+function Format-CoverageData {
+    param($Data)
+    if (-not $Data) { return $null }
+    "Covered $($Data.Pct)% / $($Data.Target)%. $($Data.Covered)/$($Data.Total) $($Data.Unit) in $($Data.FileCount) Files."
 }

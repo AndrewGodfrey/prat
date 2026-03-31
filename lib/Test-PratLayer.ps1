@@ -13,4 +13,5 @@ Invoke-PesterWithCodeCoverage `
     -OutputDir $CommandParameters['OutputDir'] `
     -IncludeIntegrationTests:$CommandParameters['IncludeIntegrationTests'] `
     -Integration:$CommandParameters['Integration'] `
-    -UseAlternateCollector:$CommandParameters['UseAlternateCollector']
+    -UseAlternateCollector:$CommandParameters['UseAlternateCollector'] `
+    -PassThru:$CommandParameters['PassThru']
