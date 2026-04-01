@@ -29,7 +29,7 @@ Describe "Install-ClaudeSkillSet" {
         "skill content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
         mkdir $destDir | Out-Null  # pre-create so Install-Folder skips the mkdir+ACL path
 
-        Install-ClaudeSkillSet $stage @("my-skill") $srcDir $destDir
+        Install-ClaudeSkillSet $stage @(@{ set = @("my-skill"); srcDir = $srcDir }) $destDir
 
         "$destDir\my-skill\SKILL.md" | Should -Exist
     }
@@ -41,7 +41,7 @@ Describe "Install-ClaudeSkillSet" {
         "unwanted" | Out-File "$srcDir\unwanted\SKILL.md" -Encoding utf8NoBOM
         mkdir $destDir | Out-Null
 
-        Install-ClaudeSkillSet $stage @("wanted") $srcDir $destDir
+        Install-ClaudeSkillSet $stage @(@{ set = @("wanted"); srcDir = $srcDir }) $destDir
 
         "$destDir\wanted\SKILL.md"   | Should -Exist
         "$destDir\unwanted\SKILL.md" | Should -Not -Exist
@@ -52,7 +52,7 @@ Describe "Install-ClaudeSkillSet" {
         "skill content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
         mkdir $destDir | Out-Null
 
-        Install-ClaudeSkillSet $stage @("my-skill") $srcDir $destDir
+        Install-ClaudeSkillSet $stage @(@{ set = @("my-skill"); srcDir = $srcDir }) $destDir
 
         Get-Content "$destDir\my-skill\SKILL.md" -Raw | Should -BeLike "<!-- Auto-generated*"
     }
@@ -63,7 +63,7 @@ Describe "Install-ClaudeSkillSet" {
         [System.IO.File]::WriteAllText("$srcDir\my-skill\SKILL.md", $content, [System.Text.Encoding]::UTF8)
         mkdir $destDir | Out-Null
 
-        Install-ClaudeSkillSet $stage @("my-skill") $srcDir $destDir
+        Install-ClaudeSkillSet $stage @(@{ set = @("my-skill"); srcDir = $srcDir }) $destDir
 
         $deployed = Get-Content "$destDir\my-skill\SKILL.md" -Raw
         $deployed | Should -BeLike "---*"
@@ -75,7 +75,7 @@ Describe "Install-ClaudeSkillSet" {
         "skill content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
         mkdir $destDir | Out-Null
 
-        Install-ClaudeSkillSet $stage @("my-skill") $srcDir $destDir
+        Install-ClaudeSkillSet $stage @(@{ set = @("my-skill"); srcDir = $srcDir }) $destDir
 
         (Get-ItemProperty "$destDir\my-skill\SKILL.md").IsReadOnly | Should -BeTrue
     }
@@ -87,7 +87,7 @@ Describe "Install-ClaudeSkillSet" {
         "b" | Out-File "$srcDir\skill-b\SKILL.md" -Encoding utf8NoBOM
         mkdir $destDir | Out-Null  # pre-create so Install-Folder skips the mkdir+ACL path
 
-        Install-ClaudeSkillSet $stage @("skill-a", "skill-b") $srcDir $destDir
+        Install-ClaudeSkillSet $stage @(@{ set = @("skill-a", "skill-b"); srcDir = $srcDir }) $destDir
 
         "$destDir\skill-a\SKILL.md" | Should -Exist
         "$destDir\skill-b\SKILL.md" | Should -Exist
@@ -98,7 +98,7 @@ Describe "Install-ClaudeSkillSet" {
         "skill content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
         # $destDir intentionally not pre-created
 
-        Install-ClaudeSkillSet $stage @("my-skill") $srcDir $destDir
+        Install-ClaudeSkillSet $stage @(@{ set = @("my-skill"); srcDir = $srcDir }) $destDir
 
         "$destDir\my-skill" | Should -Exist
     }
@@ -110,7 +110,7 @@ Describe "Install-ClaudeSkillSet" {
         "stale" | Out-File "$destDir\stale-skill\SKILL.md" -Encoding utf8NoBOM
         mkdir $destDir -ErrorAction SilentlyContinue | Out-Null
 
-        Install-ClaudeSkillSet $stage @("current-skill") $srcDir $destDir
+        Install-ClaudeSkillSet $stage @(@{ set = @("current-skill"); srcDir = $srcDir }) $destDir
 
         "$destDir\stale-skill" | Should -Not -Exist
     }
@@ -120,7 +120,7 @@ Describe "Install-ClaudeSkillSet" {
         "content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
         mkdir $destDir -ErrorAction SilentlyContinue | Out-Null
 
-        Install-ClaudeSkillSet $stage @("my-skill") $srcDir $destDir
+        Install-ClaudeSkillSet $stage @(@{ set = @("my-skill"); srcDir = $srcDir }) $destDir
 
         "$destDir\my-skill" | Should -Exist
     }
@@ -130,7 +130,71 @@ Describe "Install-ClaudeSkillSet" {
         "content" | Out-File "$srcDir\real-skill\SKILL.md" -Encoding utf8NoBOM
         mkdir $destDir | Out-Null
 
-        { Install-ClaudeSkillSet $stage @("real-skill", "missing-skill") $srcDir $destDir } | Should -Throw
+        { Install-ClaudeSkillSet $stage @(@{ set = @("real-skill", "missing-skill"); srcDir = $srcDir }) $destDir } | Should -Throw
+    }
+
+    It "deploys skills from multiple source directories" {
+        $srcDir2 = "$testDir\skills-src2"
+        mkdir "$srcDir\skill-a" | Out-Null
+        "a" | Out-File "$srcDir\skill-a\SKILL.md" -Encoding utf8NoBOM
+        mkdir "$srcDir2\skill-b" | Out-Null
+        "b" | Out-File "$srcDir2\skill-b\SKILL.md" -Encoding utf8NoBOM
+        mkdir $destDir | Out-Null
+
+        Install-ClaudeSkillSet $stage @(
+            @{ set = @("skill-a"); srcDir = $srcDir }
+            @{ set = @("skill-b"); srcDir = $srcDir2 }
+        ) $destDir
+
+        "$destDir\skill-a\SKILL.md" | Should -Exist
+        "$destDir\skill-b\SKILL.md" | Should -Exist
+    }
+
+    It "cleanup with multiple sources removes skills not in any set" {
+        $srcDir2 = "$testDir\skills-src2"
+        mkdir "$srcDir\skill-a" | Out-Null
+        "a" | Out-File "$srcDir\skill-a\SKILL.md" -Encoding utf8NoBOM
+        mkdir "$srcDir2\skill-b" | Out-Null
+        "b" | Out-File "$srcDir2\skill-b\SKILL.md" -Encoding utf8NoBOM
+        mkdir "$destDir\stale-skill" | Out-Null
+        "stale" | Out-File "$destDir\stale-skill\SKILL.md" -Encoding utf8NoBOM
+
+        Install-ClaudeSkillSet $stage @(
+            @{ set = @("skill-a"); srcDir = $srcDir }
+            @{ set = @("skill-b"); srcDir = $srcDir2 }
+        ) $destDir
+
+        "$destDir\stale-skill" | Should -Not -Exist
+    }
+
+    It "cleanup with multiple sources preserves skills from all sources" {
+        $srcDir2 = "$testDir\skills-src2"
+        mkdir "$srcDir\skill-a" | Out-Null
+        "a" | Out-File "$srcDir\skill-a\SKILL.md" -Encoding utf8NoBOM
+        mkdir "$srcDir2\skill-b" | Out-Null
+        "b" | Out-File "$srcDir2\skill-b\SKILL.md" -Encoding utf8NoBOM
+        mkdir $destDir | Out-Null
+
+        Install-ClaudeSkillSet $stage @(
+            @{ set = @("skill-a"); srcDir = $srcDir }
+            @{ set = @("skill-b"); srcDir = $srcDir2 }
+        ) $destDir
+
+        "$destDir\skill-a\SKILL.md" | Should -Exist
+        "$destDir\skill-b\SKILL.md" | Should -Exist
+    }
+
+    It "throws if a skill in any source set does not exist" {
+        $srcDir2 = "$testDir\skills-src2"
+        mkdir "$srcDir\skill-a" | Out-Null
+        "a" | Out-File "$srcDir\skill-a\SKILL.md" -Encoding utf8NoBOM
+        mkdir $srcDir2 | Out-Null
+        mkdir $destDir | Out-Null
+
+        { Install-ClaudeSkillSet $stage @(
+            @{ set = @("skill-a"); srcDir = $srcDir }
+            @{ set = @("missing"); srcDir = $srcDir2 }
+        ) $destDir } | Should -Throw
     }
 }
 
