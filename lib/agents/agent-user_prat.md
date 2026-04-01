@@ -147,6 +147,11 @@ than attempting a fourth.
 
 After proposing a code fix, consider what else it affects beyond the target problem.
 
+When investigating whether your changes caused pipeline failures, enumerate all non-feature-gated
+changes (DI registrations, constructor params, interface additions, config) before concluding
+failures are unrelated. Feature-gate reasoning alone is insufficient — startup and wiring changes
+affect every code path.
+
 When challenged on a causal hypothesis (e.g. "you made the edit while I was responding"), don't
 restate it — either produce evidence or investigate. Repeating an unverified claim after pushback
 erodes trust and wastes turns. Add diagnostic logging, check timestamps, or find another way to
