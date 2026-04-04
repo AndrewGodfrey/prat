@@ -262,3 +262,5 @@ function Invoke-PesterAsJob {
 . $PSScriptRoot\testRun.ps1
 . $PSScriptRoot\coverageSummary.ps1
 
+try { & { . "$PSScriptRoot/../moduleHashes.ps1"; pratWriteModuleHash 'PratBase' $PSScriptRoot } } catch {}
+

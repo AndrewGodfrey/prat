@@ -24,6 +24,17 @@ function main($Force) {
     } finally {
         if ($null -ne $it) { $it.StopInstallation() }
     }
+
+    updateModuleHashes
+}
+
+function updateModuleHashes {
+    # Update hash files so open sessions detect that their loaded modules are stale.
+    # Must run after a successful deploy (not in finally) so we don't signal staleness on a failed deploy.
+    . "$PSScriptRoot/moduleHashes.ps1"
+    pratWriteModuleHash 'PratBase'       "$PSScriptRoot/PratBase"
+    pratWriteModuleHash 'TextFileEditor' "$PSScriptRoot/TextFileEditor"
+    pratWriteModuleHash 'Installers'     "$PSScriptRoot/Installers"
 }
 
 function instSchTasks($it) {
@@ -68,6 +79,7 @@ function instInteractiveAliases($it) {
     Install-InteractiveAlias $stage 'rppr' 'Remove-PratPackageRecord'
     Install-InteractiveAlias $stage 'spfc' 'Save-PngFromClipboard'
     Install-InteractiveAlias $stage 'ude' 'Update-DevEnvironment'
+    Install-InteractiveAlias $stage 'rs' 'Restart-Shell'
     $it.EndStage($stage)
 }
 

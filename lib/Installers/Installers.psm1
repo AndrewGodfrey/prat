@@ -345,3 +345,5 @@ function Start-Installation([Parameter(Position=0)] [string] $InstallerName, [Pa
 . $PSScriptRoot\instLocalAgentSandbox.ps1
 
 . $PSScriptRoot\detectAgents.ps1
+
+try { & { . "$PSScriptRoot/../moduleHashes.ps1"; pratWriteModuleHash 'Installers' $PSScriptRoot } } catch {}

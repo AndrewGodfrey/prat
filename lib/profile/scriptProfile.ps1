@@ -1,5 +1,18 @@
 using module ..\PratBase\PratBase.psd1
 
+# Snapshot module hashes at session start for stale-module detection
+. "$PSScriptRoot/../moduleHashes.ps1"
+$global:__prat_moduleHashesAtStart = pratGetModuleHashSnapshot
+
+# If we were spawned by something other than the loop controller (e.g. Enter-Codebase),
+# reset depth so 'rs' works correctly in this shell.
+if ($env:__prat_shellDepth -eq '1' -and $null -ne $env:__prat_loopControllerPid) {
+    $parentPid = (Get-Process -Id $pid -ErrorAction SilentlyContinue)?.Parent?.Id
+    if ($env:__prat_loopControllerPid -ne "$parentPid") {
+        $env:__prat_shellDepth = $null
+    }
+}
+
 . $PSScriptRoot\initProfileTracing.ps1
 
 pratProfile_trace start "scriptProfile.ps1"

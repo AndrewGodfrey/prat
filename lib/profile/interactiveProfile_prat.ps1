@@ -57,6 +57,18 @@ function pratDetectLocationChange {
 
 . $PSScriptRoot\slowCommandFunctions.ps1
 
+function pratCheckStaleModules {
+    if (pratTestModulesStale $global:__prat_moduleHashesAtStart) {
+        $global:__prat_notifications = "[stale modules - run 'rs' to refresh] "
+    } else {
+        # Clear if previously set. Note: clears the whole string — would need
+        # revisiting if other notification types are added.
+        if ($global:__prat_notifications -like "*stale modules*") {
+            $global:__prat_notifications = ""
+        }
+    }
+}
+
 function contextPath {
     if ($null -eq $env:__prat_contextPath) { return "" }
     if ("" -eq $env:__prat_contextPath) { return "" }
@@ -92,6 +104,7 @@ if ($env:TERM_PROGRAM -ne "vscode") {
             reportOnSlowCommands $duration $historyInfo $lastCommandErrorStatus
 
             pratDetectLocationChange
+            pratCheckStaleModules
             $ver = getPsversionString
             $user = getUserString
         } catch { Write-Warning ("Exception during prompt: " + $Error[0] + "`n" + (stack)) }
@@ -99,6 +112,35 @@ if ($env:TERM_PROGRAM -ne "vscode") {
         # $global:__prat_currentLocation is maintained by On-PromptLocationChanged.ps1
         return $global:__prat_notifications + $user + (contextPath) + $ver + $global:__prat_currentLocation + "`n> "
     }
+}
+
+<#
+.SYNOPSIS
+    Simulates restarting the shell by replacing it with a fresh one.
+.DESCRIPTION
+    Effectively: Exits the current shell and opens a new one in its place, so profile changes and updated
+    modules take effect without closing the terminal window. The working directory and window
+    are preserved; unsaved in-memory state (variables, loaded modules) is not.
+
+    In reality: On the first invocation for a given shell, simply starts a new 'inner one', inside a loop which
+    will exit the outer shell, if the user exits the inner one.
+
+    Then, subsequent invocations do actually "exit the current shell and open a new one".
+#>
+function global:Restart-Shell {
+    # Exit-199 protocol: depth-1 shells signal their parent (the loop controller) to restart them.
+    # The loop controller records its PID so nested shells spawned by things like Enter-Codebase
+    # (which inherit depth=1 but have no loop controller above them) can detect the mismatch at
+    # startup and reset their depth, becoming independent loop controllers if rs is invoked.
+    if ($env:__prat_shellDepth -eq '1') {
+        exit 199
+    }
+    $env:__prat_shellDepth = '1'
+    $env:__prat_loopControllerPid = $pid
+    do {
+        pwsh -NoLogo
+    } while ($LASTEXITCODE -eq 199)
+    exit
 }
 
 . $PSScriptRoot\Define-ShortcutFunctions.ps1

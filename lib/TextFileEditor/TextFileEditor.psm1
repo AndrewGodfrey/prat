@@ -152,4 +152,6 @@ function Add-Lines($data, $idxLine, $newText) {
 
 . $PSScriptRoot\editPowershellScript.ps1
 
+try { & { . "$PSScriptRoot/../moduleHashes.ps1"; pratWriteModuleHash 'TextFileEditor' $PSScriptRoot } } catch {}
+
 
