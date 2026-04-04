@@ -59,7 +59,7 @@ if (!$NoCoverage) {
     $Configuration.CodeCoverage.OutputPath = $tempFile
     $Configuration.CodeCoverage.Enabled = [bool] $true
     $Configuration.CodeCoverage.OutputFormat = 'CoverageGutters'  # This is a flavor of JaCoCo that CoverageGutters prefers.
-    $Configuration.CodeCoverage.Path = & "$PSScriptRoot/../lib/Get-CoverageScope" -PathToTest $PathToTest -RepoRoot $RepoRoot
+    $Configuration.CodeCoverage.Path = & "$PSScriptRoot/Get-CoverageScope" -PathToTest $PathToTest -RepoRoot $RepoRoot
     $Configuration.CodeCoverage.CoveragePercentTarget = & (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1")
 }
 
@@ -70,7 +70,7 @@ $runState = @{
     pendingLine = $null
 }
 
-& "$PSScriptRoot/../lib/Invoke-TestWithSummary.ps1" `
+& "$PSScriptRoot/Invoke-TestWithSummary.ps1" `
     -StartTime     $startTime `
     -RepoRoot      $RepoRoot `
     -OutputDir     $OutputDir `

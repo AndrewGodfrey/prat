@@ -1,6 +1,6 @@
 BeforeAll {
-    Import-Module "$PSScriptRoot/../../lib/PratBase/PratBase.psd1" -Force
-    $script:dotnetScript = "$PSScriptRoot/../Invoke-DotnetTestWithSummary.ps1"
+    Import-Module "$PSScriptRoot/PratBase/PratBase.psd1" -Force
+    $script:dotnetScript = "$PSScriptRoot/Invoke-DotnetTestWithSummary.ps1"
 }
 
 Describe "Invoke-DotnetTestWithSummary filter" {

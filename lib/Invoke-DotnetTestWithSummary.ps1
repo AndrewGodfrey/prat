@@ -1,7 +1,7 @@
 # .SYNOPSIS
 # Runs dotnet test with output filtering, log capture, and a colored summary line.
 #
-# Parallels Invoke-PesterWithCodeCoverage for .NET test projects.
+# Parallels Invoke-PesterWithSummary for .NET test projects.
 #
 # .PARAMETER TestArgs
 # Arguments to pass to `dotnet test` (project path, filters, etc.).
@@ -128,7 +128,7 @@ $testCommand = if (-not $NoCoverage -and $coverageCollectorLocal -eq "dotnet-cov
     }
 }
 
-& "$PSScriptRoot/../lib/Invoke-TestWithSummary.ps1" `
+& "$PSScriptRoot/Invoke-TestWithSummary.ps1" `
     -StartTime     $startTime `
     -RepoRoot      $RepoRoot `
     -OutputDir     $OutputDir `

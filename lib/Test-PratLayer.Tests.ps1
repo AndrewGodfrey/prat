@@ -1,50 +1,50 @@
 BeforeAll {
     $scriptToTest = "$PSScriptRoot/Test-PratLayer.ps1"
-    function Invoke-PesterWithCodeCoverage(
+    function Invoke-PesterWithSummary(
         $NoCoverage, $PathToTest, $RepoRoot, $OutputDir, $IncludeIntegrationTests, $Integration,
         [switch] $PassThru) {}
 }
 
 Describe "Test-PratLayer.ps1" {
     BeforeAll {
-        Mock Invoke-PesterWithCodeCoverage {}
+        Mock Invoke-PesterWithSummary {}
         $project = @{ root = "C:/test/repo" }
     }
 
     It "runs coverage by default" {
         & $scriptToTest $project -CommandParameters @{}
-        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { !$NoCoverage }
+        Should -Invoke Invoke-PesterWithSummary -ParameterFilter { !$NoCoverage }
     }
 
     It "supports -NoCoverage" {
         & $scriptToTest $project -CommandParameters @{NoCoverage = $true}
-        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $NoCoverage -eq $true }
+        Should -Invoke Invoke-PesterWithSummary -ParameterFilter { $NoCoverage -eq $true }
     }
 
     It "uses project root when RepoRoot not specified" {
         & $scriptToTest $project -CommandParameters @{}
-        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $RepoRoot -eq "C:/test/repo" }
+        Should -Invoke Invoke-PesterWithSummary -ParameterFilter { $RepoRoot -eq "C:/test/repo" }
     }
 
     It "forwards an explicit -RepoRoot" {
         & $scriptToTest $project -CommandParameters @{RepoRoot = "customRoot"}
-        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $RepoRoot -eq "customRoot" }
+        Should -Invoke Invoke-PesterWithSummary -ParameterFilter { $RepoRoot -eq "customRoot" }
     }
 
     It "forwards -IncludeIntegrationTests" {
         & $scriptToTest $project -CommandParameters @{IncludeIntegrationTests = $true}
-        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $IncludeIntegrationTests }
+        Should -Invoke Invoke-PesterWithSummary -ParameterFilter { $IncludeIntegrationTests }
     }
 
     It "forwards -Integration" {
         & $scriptToTest $project -CommandParameters @{Integration = $true}
-        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $Integration }
+        Should -Invoke Invoke-PesterWithSummary -ParameterFilter { $Integration }
     }
 
     It "forwards -PassThru and returns result" {
-        Mock Invoke-PesterWithCodeCoverage { @{ Passed = 5; Failed = 0 } }
+        Mock Invoke-PesterWithSummary { @{ Passed = 5; Failed = 0 } }
         $result = & $scriptToTest $project -CommandParameters @{PassThru = $true}
-        Should -Invoke Invoke-PesterWithCodeCoverage -ParameterFilter { $PassThru -eq $true }
+        Should -Invoke Invoke-PesterWithSummary -ParameterFilter { $PassThru -eq $true }
         $result.Passed | Should -Be 5
     }
 }

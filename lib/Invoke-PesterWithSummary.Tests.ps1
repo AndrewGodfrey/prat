@@ -1,10 +1,10 @@
 BeforeAll {
-    Import-Module "$PSScriptRoot/../../lib/PratBase/PratBase.psd1"
+    Import-Module "$PSScriptRoot/PratBase/PratBase.psd1"
 
-    $coverageScript = "$PSScriptRoot/../Invoke-PesterWithCodeCoverage.ps1"
+    $coverageScript = "$PSScriptRoot/Invoke-PesterWithSummary.ps1"
 }
 
-Describe "Invoke-PesterWithCodeCoverage" {
+Describe "Invoke-PesterWithSummary" {
     BeforeAll {
         function moveCoverageFile($tempFile, $coverageDest) {}
         Mock moveCoverageFile {}
@@ -16,7 +16,7 @@ Describe "Invoke-PesterWithCodeCoverage" {
         $refOutConf = [ref] $script:outConf
         Mock Invoke-PesterAsJob { $refOutConf.Value = $Configuration }
 
-        $repoRoot = (Resolve-Path "$PSScriptRoot/../../pathbin/tests/testCb").Path
+        $repoRoot = (Resolve-Path "$PSScriptRoot/../pathbin/tests/testCb").Path
         $script:outputDir = "$TestDrive/runs"
     }
 
@@ -103,7 +103,7 @@ Describe "Invoke-PesterWithCodeCoverage" {
     }
 }
 
-Describe "Invoke-PesterWithCodeCoverage summary file" {
+Describe "Invoke-PesterWithSummary summary file" {
     BeforeAll {
         function moveCoverageFile($tempFile, $coverageDest) {}
         Mock moveCoverageFile {}
@@ -174,7 +174,7 @@ Describe "Invoke-PesterWithCodeCoverage summary file" {
     }
 }
 
-Describe "Invoke-PesterWithCodeCoverage smart filter" {
+Describe "Invoke-PesterWithSummary smart filter" {
     BeforeAll {
         function moveCoverageFile($tempFile, $coverageDest) {}
         Mock moveCoverageFile {}
@@ -322,7 +322,7 @@ Describe "Invoke-PesterWithCodeCoverage smart filter" {
 }
 
 
-Describe "Invoke-PesterWithCodeCoverage test run directory management" {
+Describe "Invoke-PesterWithSummary test run directory management" {
     BeforeAll {
         function moveCoverageFile($tempFile, $coverageDest) {}
         Mock moveCoverageFile {}

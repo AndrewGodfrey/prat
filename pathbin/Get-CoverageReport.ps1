@@ -1,6 +1,6 @@
 # Get-CoverageReport (alias: gcr)
 #
-# Gets a simple code-coverage report from the result of Invoke-PesterWithCodeCoverage.ps1
+# Gets a simple code-coverage report from the result of Invoke-PesterWithSummary.ps1
 # This is useful to find files that need more coverage.
 #
 # Expects a Pester-generated coverage XML file in JaCoCo or Coverage Gutters formats.
