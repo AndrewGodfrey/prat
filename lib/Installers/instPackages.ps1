@@ -305,6 +305,9 @@ $pratPackages = @{
     forkGitClient = @{
         install = { installForkGitClient $stage }
     }
+    gh = @{
+        install = { installPratWingetPackage "GitHub.cli" -NoScope }
+    }
     nuget = @{
         install = {
             $dest = "$env:localappdata\Microsoft\WinGet\Packages\Microsoft.NuGet_Microsoft.Winget.Source_8wekyb3d8bbwe"
@@ -374,6 +377,11 @@ $pratPackages = @{
     }
     sysinternals = @{
         install = { installPratWingetPackage "9P7KNL5RWT25"}
+    }
+    marktext = @{
+        install = {
+            installPratWingetPackage "MarkText.MarkText" -NoScope
+        }
     }
     windbg = @{
         install = {
