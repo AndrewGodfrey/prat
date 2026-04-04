@@ -27,4 +27,8 @@ $format = if ($uniformAuthor) {
 
 $extraFlags = if ((-not $userWantsGraph) -and $hasMerges) { @('--graph') } else { @() }
 
+if ($uniformAuthor -and $authors.Count -eq 1) {
+    Write-Host "Author: $($authors[0])"
+}
+
 git log "--pretty=$format" $extraFlags @args
