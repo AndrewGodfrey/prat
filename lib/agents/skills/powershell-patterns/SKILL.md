@@ -1,0 +1,36 @@
+---
+name: powershell-patterns
+description: Use when writing PowerShell functions, scripts, or parameter-forwarding wrappers. Covers
+  gotchas with argument passing, string handling, and common patterns in this codebase.
+---
+
+# Parameter forwarding in wrapper functions
+
+When writing a thin wrapper function that forwards all arguments to a script or another function,
+use `param()` + `@PSBoundParameters` — **not** bare `@args`:
+
+```powershell
+# Correct
+function Invoke-Something {
+    param([switch]$NoCoverage, $PathToTest, $RepoRoot, [switch]$PassThru)
+    & "$PSScriptRoot/Invoke-Something.ps1" @PSBoundParameters
+}
+
+# Broken — @args splits -Switch:$false into a flag and a positional 'False'
+function Invoke-Something { & "$PSScriptRoot/Invoke-Something.ps1" @args }
+```
+
+**Why `@args` breaks:** callers often use `:$value` syntax for switches (e.g.
+`-NoCoverage:$CommandParameters['NoCoverage']`). PowerShell splits `-NoCoverage:$false` into the
+flag `-NoCoverage:` and a separate positional argument `False`. The called script then errors:
+"A positional parameter cannot be found that accepts argument 'False'."
+
+`@PSBoundParameters` forwards named parameters correctly, including switches with explicit values.
+
+# $PSScriptRoot-relative paths when moving a script
+
+Before writing a moved script to its new location, audit every `$PSScriptRoot`-relative path —
+they resolve relative to where the file lives, so a path correct in `pathbin/` is wrong in `lib/`.
+
+Example: `pathbin/Foo.ps1` uses `"$PSScriptRoot/../lib/Bar.ps1"` → resolves to `lib/Bar.ps1`.
+After moving to `lib/Foo.ps1`, the correct path is `"$PSScriptRoot/Bar.ps1"`.

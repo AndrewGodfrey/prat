@@ -119,12 +119,6 @@ Compensate for model reasoning/behavior tendencies. Review when upgrading Claude
 Before implementing a plan step, cross-check it against CLAUDE.md and done files for contradictions —
 plans can go stale.
 
-### `$PSScriptRoot` when merging scripts
-
-When merging scripts that run from different locations (e.g. a distributed OneDrive copy vs. its source
-in a repo), audit all `$PSScriptRoot`-relative paths — they may be correct in one location but broken
-in the other.
-
 ### Reasoning
 
 Don't borrow justifications from adjacent contexts. A fact about one thing ("this sandbox's goal is
@@ -188,12 +182,6 @@ authoritatively from model knowledge alone.
 The fetched CC documentation is also unreliable in practice. Known example: the `additionalContext` JSON
 field in UserPromptSubmit hook output is documented as working but is silently ignored by CC — plain stdout
 is what actually gets injected. Verify CC hook behavior empirically rather than trusting docs.
-
-## Installers framework conventions
-
-When writing `install` scriptblocks in `$pratPackages`, add `$stage.SetSubstage("description")`
-before each long-running operation (network downloads, elevated installs, etc.) to give the user
-progress visibility.
 
 ## Public repos (e.g. prat, prefs)
 
