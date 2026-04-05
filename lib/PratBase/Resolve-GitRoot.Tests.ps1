@@ -18,6 +18,12 @@ Describe "Resolve-GitRoot" {
         $startDir = "$realTestDrive/start"
         New-Item -ItemType Directory $startDir | Out-Null
         Push-Location $startDir
+
+        # Guard: "not a repo" tests require TestDrive to be outside any git repo.
+        # If this fires, the test environment is unusually configured.
+        if (git -C $realTestDrive rev-parse --show-toplevel 2>$null) {
+            throw "TestDrive ($realTestDrive) is inside a git repo — cannot test the null-return cases"
+        }
     }
     AfterAll {
         Pop-Location
