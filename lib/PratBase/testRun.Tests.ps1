@@ -342,6 +342,42 @@ Describe "Merge-TestSummary" {
         $summary | Should -Match "dotnet exit: 2"
     }
 
+    It "uses the common unit name when both sides have the same unit" {
+        $runDirA = "$TestDrive/ms-same-a"; New-Item $runDirA -ItemType Directory | Out-Null
+        $a = @{
+            CoverageData = @{ Covered = 10; Total = 100; FileCount = 5; Pct = 10.0; Unit = "Commands"; Target = 70 }
+            Passed = 5; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = $runDirA
+        }
+        $b = @{
+            CoverageData = @{ Covered = 5; Total = 50; FileCount = 3; Pct = 10.0; Unit = "Commands"; Target = 70 }
+            Passed = 3; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-same-b"
+        }
+
+        Merge-TestSummary $a $b ([TimeSpan]::Zero)
+
+        $summary = Get-Content "$runDirA/summary.txt"
+        $summary | Should -Match "Commands"
+        $summary | Should -Not -Match "Thingies"
+    }
+
+    It "uses unit from the side that has coverage data when the other side has none" {
+        $runDirA = "$TestDrive/ms-one-sided"; New-Item $runDirA -ItemType Directory | Out-Null
+        $a = @{
+            CoverageData = @{ Covered = 10; Total = 20; FileCount = 3; Pct = 50.0; Unit = "Lines"; Target = 70 }
+            Passed = 5; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = $runDirA
+        }
+        $b = @{
+            CoverageData = $null
+            Passed = 2; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-one-sided-b"
+        }
+
+        Merge-TestSummary $a $b ([TimeSpan]::Zero)
+
+        $summary = Get-Content "$runDirA/summary.txt"
+        $summary | Should -Match "Lines"
+        $summary | Should -Not -Match "Thingies"
+    }
+
     It "sums FailureThreshold from both results" {
         $runDir = "$TestDrive/ms-threshold"; New-Item $runDir -ItemType Directory | Out-Null
         $a = @{

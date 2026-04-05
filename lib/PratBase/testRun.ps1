@@ -88,7 +88,8 @@ function Write-TestRunResult {
 
 # Merge-TestSummary: Combines two PassThru result objects (from Invoke-TestWithSummary) into a
 # single summary line. Coverage counts are merged using unit weighting: 1 Command = 1 Thingy,
-# 1 Line|Block = 3 Thingies. "Thingy" is a placeholder name until a better one emerges.
+# 1 Line|Block = 3 Thingies. Unit name is preserved when both sides share the same unit;
+# "Thingies" is used only when mixing different units.
 function Merge-TestSummary {
     param(
         [hashtable] $A,
@@ -112,9 +113,13 @@ function Merge-TestSummary {
         $totalThingies   = ($aData ? ($aData.Total   * $aW) : 0) + ($bData ? ($bData.Total   * $bW) : 0)
         $fileCount = ($aData ? $aData.FileCount : 0) + ($bData ? $bData.FileCount : 0)
         $target = if ($aData) { $aData.Target } else { $bData.Target }
+        $unit = if (-not $aData)                     { $bData.Unit }
+                elseif (-not $bData)                 { $aData.Unit }
+                elseif ($aData.Unit -eq $bData.Unit) { $aData.Unit }
+                else                                 { 'Thingies' }
         if ($totalThingies -gt 0) {
             $pct = [int][math]::Round($coveredThingies * 10000.0 / $totalThingies) / 100
-            $covSummary = Format-CoverageData @{ Pct = $pct; Target = $target; Covered = $coveredThingies; Total = $totalThingies; Unit = "Thingies"; FileCount = $fileCount }
+            $covSummary = Format-CoverageData @{ Pct = $pct; Target = $target; Covered = $coveredThingies; Total = $totalThingies; Unit = $unit; FileCount = $fileCount }
         }
     }
 

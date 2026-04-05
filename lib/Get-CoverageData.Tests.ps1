@@ -540,6 +540,94 @@ Describe "Get-CoverageData" {
             $result.perFileLineData["C:/repo/Empty.cs"] | Should -HaveCount 0
         }
 
+        It "uses branch condition-coverage as proxy for INSTRUCTION on branching lines" {
+            $branchXml = @'
+<coverage>
+  <packages>
+    <package name="MyPackage">
+      <classes>
+        <class filename="C:/repo/src/Branches.cs">
+          <methods>
+            <method name="Run" signature="()">
+              <lines>
+                <line number="5"  hits="1"  branch="False" />
+                <line number="6"  hits="0"  branch="False" />
+                <line number="9"  hits="2"  branch="True" condition-coverage="50% (1/2)" />
+                <line number="12" hits="3"  branch="True" condition-coverage="100% (2/2)" />
+                <line number="15" hits="0"  branch="True" condition-coverage="0% (0/2)" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="5"  hits="1"  branch="False" />
+            <line number="6"  hits="0"  branch="False" />
+            <line number="9"  hits="2"  branch="True" condition-coverage="50% (1/2)" />
+            <line number="12" hits="3"  branch="True" condition-coverage="100% (2/2)" />
+            <line number="15" hits="0"  branch="True" condition-coverage="0% (0/2)" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $f = "$TestDrive/cobertura-branch.xml"
+            $branchXml | Set-Content $f
+
+            $result = & $script -CoverageFile $f
+
+            # LINE: lines with hits>0 are covered (5, 9, 12), line 6 and 15 are missed
+            $result.perFileReport["C:/repo/src/Branches.cs"].LINE.covered | Should -Be 3
+            $result.perFileReport["C:/repo/src/Branches.cs"].LINE.missed  | Should -Be 2
+            # INSTRUCTION uses branch proxy:
+            #   line 5  (non-branch, hit)    → 1 covered
+            #   line 6  (non-branch, missed) → 1 missed
+            #   line 9  (50%: 1/2)           → 1 covered + 1 missed
+            #   line 12 (100%: 2/2)          → 2 covered + 0 missed
+            #   line 15 (0%: 0/2)            → 0 covered + 2 missed
+            $result.perFileReport["C:/repo/src/Branches.cs"].INSTRUCTION.covered | Should -Be 4
+            $result.perFileReport["C:/repo/src/Branches.cs"].INSTRUCTION.missed  | Should -Be 4
+        }
+
+        It "falls back to hit-based counting when branch line has no (n/m) in condition-coverage" {
+            $xml = @'
+<coverage>
+  <packages>
+    <package name="MyPackage">
+      <classes>
+        <class filename="C:/repo/src/Fallback.cs">
+          <methods>
+            <method name="Run" signature="()">
+              <lines>
+                <line number="1" hits="2" branch="True" condition-coverage="100%" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="1" hits="2" branch="True" condition-coverage="100%" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $f = "$TestDrive/cobertura-branch-fallback.xml"
+            $xml | Set-Content $f
+
+            $result = & $script -CoverageFile $f
+
+            # Falls back to hit-based: hits=2 > 0 → 1 covered, 0 missed
+            $result.perFileReport["C:/repo/src/Fallback.cs"].INSTRUCTION.covered | Should -Be 1
+            $result.perFileReport["C:/repo/src/Fallback.cs"].INSTRUCTION.missed  | Should -Be 0
+        }
+
+        It "returns instructionUnit = 'Branches' for Cobertura format" {
+            $result = & $script -CoverageFile $coberturaFile
+
+            $result.instructionUnit | Should -Be "Branches"
+        }
+
         It "accumulates classes from multiple packages" {
             $xml = @'
 <coverage>
@@ -589,5 +677,27 @@ Describe "Get-CoverageData" {
             $result.totals.LINE.covered | Should -Be 1
             $result.totals.LINE.missed  | Should -Be 1
         }
+    }
+
+    It "returns instructionUnit = 'Instructions' for JaCoCo/CoverageGutters format" {
+        $xml = @'
+<report name="test">
+<package name="C:/repo/pathbin">
+  <class name="C:/repo/pathbin/Foo" sourcefilename="Foo.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="5" covered="10" />
+      <counter type="LINE" missed="2" covered="8" />
+      <counter type="METHOD" missed="1" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+'@
+        $f = "$TestDrive/iu-jacoco.xml"
+        $xml | Set-Content $f
+
+        $result = & $script -CoverageFile $f
+
+        $result.instructionUnit | Should -Be "Instructions"
     }
 }

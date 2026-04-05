@@ -26,6 +26,8 @@ unclear.
   detail — enough that a fresh Claude starting with "do the next step of this plan" can proceed
   without ambiguity.
 
+- **Add a step to check test coverage for modified lines**
+
 - **Decide whether to apply /review-changes at the end of the next step.** Subagents are particularly
   expensive in token costs - they seem to cause extra main-agent turns and also waste time regaining context
   the main agent already had. The /review-changes subagent is worth it for complex changes that could benefit

@@ -92,6 +92,10 @@ For renaming a token across multiple files, use multiple Edit `replace_all` call
 single pwsh heredoc with `-replace` + `Set-Content`. The pwsh approach can silently produce no
 change on some files (likely CRLF/encoding interaction); Edit is reliable.
 
+Before using `replace_all`, scan the file and confirm every occurrence should be replaced —
+string literals, `Describe`/`Context` labels, and comments can all contain the token without
+being targets. If any occurrence should be left untouched, use targeted individual Edits instead.
+
 For multi-line string replacements in pwsh scripts, use `.IndexOf()` + `.Substring()` rather than
 `.Replace()` with multi-line literals. Single-quoted PS strings don't expand `` `r`n ``, so `.Replace()`
 silently fails on CRLF content. Index-based splicing is reliable regardless of line endings.

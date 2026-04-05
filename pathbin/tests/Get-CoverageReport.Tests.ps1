@@ -1,5 +1,6 @@
 BeforeAll {
     . $PSScriptRoot\cbTest.common.ps1
+    $script = "$PSScriptRoot/../Get-CoverageReport.ps1"
 
     # shouldMatchRow: Once Pester 6 releases, we can hopefully remove this in favor of "Should-BeEquivalent"
     function shouldMatchRow($actual, $expected) {
@@ -77,7 +78,7 @@ Describe "Get-CoverageReport" {
         $fn = createTestFile $coverageFile.Trim() ".xml"
 
         # Act
-        $result = Get-CoverageReport $fn -ShowAll -CoverageGoalPercent 70 -Unformatted -Ignore_OmitFromCoverageReport
+        $result = & $script $fn -ShowAll -CoverageGoalPercent 70 -Unformatted -Ignore_OmitFromCoverageReport
 
         # Assert
         shouldMatchRow $result[0] @{File='Add-Utf8Bom.ps1'; Methods=0; Lines=0; Instructions=0}
@@ -113,7 +114,7 @@ Describe "default coverageFile inference" {
 
         Push-Location $repoDir
         try {
-            $result = Get-CoverageReport -ShowAll -CoverageGoalPercent 0 -Unformatted -Ignore_OmitFromCoverageReport
+            $result = & $script -ShowAll -CoverageGoalPercent 0 -Unformatted -Ignore_OmitFromCoverageReport
         } finally {
             Pop-Location
         }
@@ -147,7 +148,7 @@ Describe "default coverageFile inference" {
 
         Push-Location $repoDir
         try {
-            $result = Get-CoverageReport -Project myproject -ShowAll -CoverageGoalPercent 0 -Unformatted -Ignore_OmitFromCoverageReport
+            $result = & $script -Project myproject -ShowAll -CoverageGoalPercent 0 -Unformatted -Ignore_OmitFromCoverageReport
         } finally {
             Pop-Location
         }
@@ -162,7 +163,8 @@ Describe "default coverageFile inference" {
 
         Push-Location $nonRepoDir
         try {
-            { Get-CoverageReport } | Should -Throw "*not in a git repo*"
+            $s = $script
+            { & $s } | Should -Throw "*not in a git repo*"
         } finally {
             Pop-Location
         }
@@ -203,12 +205,54 @@ Describe "Per-file suppression" {
         $coverageFile = createTestFile $coverageFile.Trim() ".xml"
 
         # Act
-        $result = Get-CoverageReport $coverageFile -ShowAll -CoverageGoalPercent 70 -Unformatted
+        $result = & $script $coverageFile -ShowAll -CoverageGoalPercent 70 -Unformatted
 
         # Assert
         $result[3] | Should -Be 'Files meeting goal: 1'
         
         shouldMatchRow $result[0] @{File='UnitTestFile1.ps1'; Methods=0; Lines=0; Instructions=0}
         shouldMatchRow $result[1] @{File='UnitTestFile2.ps1'; Methods=0; Lines=0; Instructions=0}
+    }
+}
+
+Describe "Cobertura instruction-unit column naming" {
+    It "names the instruction column 'Branches' for Cobertura input" {
+        $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+        $coberturaFile = "$realTestDrive/gcr-cobertura.xml"
+        @'
+<coverage>
+  <packages>
+    <package name="MyPackage">
+      <classes>
+        <class filename="C:/repo/src/Foo.cs">
+          <methods>
+            <method name="Run" signature="()">
+              <lines>
+                <line number="1" hits="1" />
+                <line number="2" hits="0" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="1" hits="1" />
+            <line number="2" hits="0" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@ | Set-Content $coberturaFile
+
+        $result = & $script $coberturaFile -ShowAll -CoverageGoalPercent 0 -Unformatted -Ignore_OmitFromCoverageReport
+
+        $fileRow = $result | Where-Object { $_.PSObject.Properties['File'] }
+        $fileRow | Should -Not -BeNullOrEmpty
+        $fileRow.PSObject.Properties['Branches'] | Should -Not -BeNullOrEmpty
+        $fileRow.PSObject.Properties['Instructions'] | Should -BeNullOrEmpty
+
+        $totalsRow = $result | Where-Object { -not $_.PSObject.Properties['File'] -and $_.PSObject.Properties['Lines'] }
+        $totalsRow.PSObject.Properties['Branches'] | Should -Not -BeNullOrEmpty
+        $totalsRow.PSObject.Properties['Instructions'] | Should -BeNullOrEmpty
     }
 }

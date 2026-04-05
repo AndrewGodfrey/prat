@@ -35,22 +35,57 @@ Describe "Get-FileCoverage" {
         $result = & $script -FilePath "C:/repo/pathbin/Foo.ps1" -CoverageFile $coverageFile
 
         $result | Should -HaveCount 3
-        $result[0].Function    | Should -Be "<script>"
-        $result[0].Line        | Should -Be 1
-        $result[0].Covered     | Should -Be 10
-        $result[0].Missed      | Should -Be 0
-        $result[1].Function    | Should -Be "Get-Something"
-        $result[1].Line        | Should -Be 20
-        $result[1].Covered     | Should -Be 2
-        $result[1].Missed      | Should -Be 8
-        $result[2].Function    | Should -Be "Set-Something"
-        $result[2].Missed      | Should -Be 6
+        $result[0].Function      | Should -Be "<script>"
+        $result[0].Line          | Should -Be 1
+        $result[0].Instructions  | Should -Be 10
+        $result[0].Missed        | Should -Be 0
+        $result[1].Function      | Should -Be "Get-Something"
+        $result[1].Line          | Should -Be 20
+        $result[1].Instructions  | Should -Be 2
+        $result[1].Missed        | Should -Be 8
+        $result[2].Function      | Should -Be "Set-Something"
+        $result[2].Missed        | Should -Be 6
     }
 
     It "returns empty when file is not in coverage data" {
         $result = & $script -FilePath "C:/repo/pathbin/NotInReport.ps1" -CoverageFile $coverageFile
 
         $result | Should -HaveCount 0
+    }
+
+    It "names the instruction column 'Branches' for Cobertura input" {
+        $coberturaXml = @'
+<coverage>
+  <packages>
+    <package name="MyPackage">
+      <classes>
+        <class filename="C:/repo/src/Foo.cs">
+          <methods>
+            <method name="Greet" signature="(string)">
+              <lines>
+                <line number="5" hits="1" />
+                <line number="6" hits="0" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="5" hits="1" />
+            <line number="6" hits="0" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+        $coberturaFile = "$TestDrive/fcov-cobertura.xml"
+        $coberturaXml | Set-Content $coberturaFile
+
+        $result = & $script -FilePath "C:/repo/src/Foo.cs" -CoverageFile $coberturaFile
+
+        $result | Should -HaveCount 1
+        $result[0].Branches | Should -Be 1
+        $result[0].Missed   | Should -Be 1
     }
 
     Context "-Detail" {
@@ -138,7 +173,7 @@ Describe "Get-FileCoverage" {
         }
 
         $result | Should -HaveCount 1
-        $result[0].Covered | Should -Be 9
+        $result[0].Instructions | Should -Be 9
     }
 
     Context "default CoverageFile inference" {
@@ -174,7 +209,7 @@ Describe "Get-FileCoverage" {
             $result = & $script -FilePath "$repoDir/src/Bar.ps1"
 
             $result | Should -HaveCount 1
-            $result[0].Covered | Should -Be 7
+            $result[0].Instructions | Should -Be 7
         }
 
         It "uses project subdirectory when -Project is specified" {
@@ -197,7 +232,7 @@ Describe "Get-FileCoverage" {
             $result = & $script -FilePath "$repoDir/src/Bar.ps1" -Project "myproject"
 
             $result | Should -HaveCount 1
-            $result[0].Covered | Should -Be 5  # 5 from project file, not 7 from default
+            $result[0].Instructions | Should -Be 5  # 5 from project file, not 7 from default
         }
 
         It "throws when FilePath is not in a git repo" {

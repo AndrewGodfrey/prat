@@ -27,6 +27,7 @@ if ($null -eq $CoverageFile) {
 }
 
 $data = & "$PSScriptRoot/../lib/Get-CoverageData.ps1" -CoverageFile $CoverageFile
+$unitName = $data.instructionUnit ?? "Instructions"
 
 $resolved = Resolve-Path $FilePath -ErrorAction SilentlyContinue
 $normalizedPath = ($resolved ? $resolved.Path : $FilePath).Replace('\', '/')
@@ -38,10 +39,10 @@ if ($Function) { $methods = $methods | Where-Object { $_.name -eq $Function } }
 if (-not $Detail) {
     $methods | ForEach-Object {
         [pscustomobject] @{
-            Function = $_.name
-            Line     = $_.startLine
-            Covered  = $_.INSTRUCTION.covered
-            Missed   = $_.INSTRUCTION.missed
+            Function  = $_.name
+            Line      = $_.startLine
+            $unitName = $_.INSTRUCTION.covered
+            Missed    = $_.INSTRUCTION.missed
         }
     }
     return

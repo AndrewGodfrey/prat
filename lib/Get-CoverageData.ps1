@@ -1,14 +1,16 @@
 # .SYNOPSIS
 # Parses a coverage XML file (CoverageGutters/JaCoCo or Cobertura format).
 #
-# Returns @{ totals; perFileReport; perFileMethodData }:
+# Returns @{ totals; perFileReport; perFileMethodData; instructionUnit }:
 #   totals            - @{ INSTRUCTION; LINE; METHOD } aggregated across all files
 #   perFileReport     - hashtable keyed by absolute file path → @{ INSTRUCTION; LINE; METHOD }
 #   perFileMethodData - hashtable keyed by absolute file path → list of
 #                       @{ name; startLine; INSTRUCTION=@{missed;covered}; LINE=@{missed;covered} }
+#   instructionUnit   - "Instructions" for JaCoCo/CoverageGutters; "Branches" for Cobertura
 #
-# Cobertura: LINE is used as a proxy for INSTRUCTION; METHOD is derived from per-method line
-# coverage (a method is covered if it has at least one hit > 0).
+# Cobertura: INSTRUCTION uses branch condition-coverage as a proxy (counting branch outcomes
+# rather than instructions); for non-branching lines, 1 covered/missed per line as before.
+# METHOD is derived from per-method line coverage (a method is covered if it has ≥1 hit > 0).
 #
 # .PARAMETER CoverageFile
 # Path to the coverage XML file. Auto-detects format from the root element.
@@ -135,33 +137,43 @@ if ($format -eq 'report') {
 
             foreach ($method in $class.methods.method) {
                 $methodLines = @($method.lines.line | Where-Object { $_ })
-                $covered  = ($methodLines | Where-Object { [int]$_.hits -gt 0 }).Count
-                $missed   = $methodLines.Count - $covered
+                $lineCovered = ($methodLines | Where-Object { [int]$_.hits -gt 0 }).Count
+                $lineMissed  = $methodLines.Count - $lineCovered
                 $startLine = if ($methodLines.Count -gt 0) {
                     [int]($methodLines | ForEach-Object { [int]$_.number } | Measure-Object -Minimum).Minimum
                 } else { 0 }
 
-                $methodCovered = if ($covered -gt 0) { 1 } else { 0 }
+                $instrCovered = 0; $instrMissed = 0
+                foreach ($line in $methodLines) {
+                    if ($line.branch -eq 'True' -and $line.'condition-coverage' -match '\((\d+)/(\d+)\)') {
+                        $instrCovered += [int]$Matches[1]
+                        $instrMissed  += [int]$Matches[2] - [int]$Matches[1]
+                    } else {
+                        if ([int]$line.hits -gt 0) { $instrCovered++ } else { $instrMissed++ }
+                    }
+                }
+
+                $methodCovered = if ($lineCovered -gt 0) { 1 } else { 0 }
                 $methodMissed  = 1 - $methodCovered
 
-                $perFileReport[$filePath].LINE.covered        += $covered
-                $perFileReport[$filePath].LINE.missed         += $missed
-                $perFileReport[$filePath].INSTRUCTION.covered += $covered
-                $perFileReport[$filePath].INSTRUCTION.missed  += $missed
+                $perFileReport[$filePath].LINE.covered        += $lineCovered
+                $perFileReport[$filePath].LINE.missed         += $lineMissed
+                $perFileReport[$filePath].INSTRUCTION.covered += $instrCovered
+                $perFileReport[$filePath].INSTRUCTION.missed  += $instrMissed
                 $perFileReport[$filePath].METHOD.covered      += $methodCovered
                 $perFileReport[$filePath].METHOD.missed       += $methodMissed
-                $totals.LINE.covered        += $covered
-                $totals.LINE.missed         += $missed
-                $totals.INSTRUCTION.covered += $covered
-                $totals.INSTRUCTION.missed  += $missed
+                $totals.LINE.covered        += $lineCovered
+                $totals.LINE.missed         += $lineMissed
+                $totals.INSTRUCTION.covered += $instrCovered
+                $totals.INSTRUCTION.missed  += $instrMissed
                 $totals.METHOD.covered      += $methodCovered
                 $totals.METHOD.missed       += $methodMissed
 
                 [void]$perFileMethodData[$filePath].Add(@{
                     name        = $method.name
                     startLine   = $startLine
-                    INSTRUCTION = @{missed=$missed; covered=$covered}
-                    LINE        = @{missed=$missed; covered=$covered}
+                    INSTRUCTION = @{missed=$instrMissed; covered=$instrCovered}
+                    LINE        = @{missed=$lineMissed;  covered=$lineCovered}
                 })
             }
 
@@ -177,4 +189,5 @@ if ($format -eq 'report') {
     perFileReport     = $perFileReport
     perFileMethodData = $perFileMethodData
     perFileLineData   = $perFileLineData
+    instructionUnit   = if ($format -eq 'report') { "Instructions" } else { "Branches" }
 }

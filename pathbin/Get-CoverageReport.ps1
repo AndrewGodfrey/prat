@@ -109,6 +109,7 @@ function IsFileOmitted($filename) {
 $report = LoadCoverageReport $coverageFile $repoRoot
 # return $report.GetEnumerator() | Sort-Object Name
 $filesMeetingGoal = 0
+$instrUnit = $report.instructionUnit ?? "Instructions"
 
 $mungedPerFileReport = @($report.perFileReport.GetEnumerator() | Sort-Object Name | ForEach-Object {
     $name = $_.Name
@@ -130,10 +131,10 @@ $mungedPerFileReport = @($report.perFileReport.GetEnumerator() | Sort-Object Nam
 
     if ($ShowAll -or !$fileMeetsGoal) {
         return [pscustomobject] @{
-            File = $name
-            Methods = CalculateCoverage $data.METHOD
-            Lines = CalculateCoverage $data.LINE
-            Instructions = CalculateCoverage $data.INSTRUCTION
+            File      = $name
+            Methods   = CalculateCoverage $data.METHOD
+            Lines     = CalculateCoverage $data.LINE
+            $instrUnit = CalculateCoverage $data.INSTRUCTION
         }
     }
 })
@@ -173,9 +174,9 @@ emitRows $mungedPerFileReport $Unformatted
 
 $totals = @(
     [pscustomobject] @{
-        Methods = CalculateCoverage $report.totals.METHOD
-        Lines = CalculateCoverage $report.totals.LINE
-        Instructions = CalculateCoverage $report.totals.INSTRUCTION
+        Methods    = CalculateCoverage $report.totals.METHOD
+        Lines      = CalculateCoverage $report.totals.LINE
+        $instrUnit = CalculateCoverage $report.totals.INSTRUCTION
 })
 
 emitRows $totals $Unformatted
