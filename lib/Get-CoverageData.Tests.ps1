@@ -236,4 +236,358 @@ Describe "Get-CoverageData" {
         $result.totals.INSTRUCTION.covered | Should -Be 20
         $result.totals.INSTRUCTION.missed  | Should -Be 9
     }
+
+    Context "Cobertura format" {
+        BeforeAll {
+            # Absolute filenames (dotnet-coverage style: no <sources> element)
+            $coberturaXml = @'
+<coverage line-rate="0.75" lines-covered="3" lines-valid="4">
+  <packages>
+    <package name="MyPackage">
+      <classes>
+        <class filename="C:/repo/src/Foo.cs">
+          <methods>
+            <method name="Greet" signature="(string)">
+              <lines>
+                <line number="5" hits="1" />
+                <line number="6" hits="0" />
+              </lines>
+            </method>
+            <method name="GreetFormal" signature="(string, string)">
+              <lines>
+                <line number="10" hits="1" />
+                <line number="11" hits="1" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="5"  hits="1" />
+            <line number="6"  hits="0" />
+            <line number="10" hits="1" />
+            <line number="11" hits="1" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $coberturaFile = "$TestDrive/cobertura.xml"
+            $coberturaXml | Set-Content $coberturaFile
+        }
+
+        It "parses Cobertura format: perFileReport with LINE coverage from hits" {
+            $result = & $script -CoverageFile $coberturaFile
+
+            $result.perFileReport.Keys | Should -Contain "C:/repo/src/Foo.cs"
+            $result.perFileReport["C:/repo/src/Foo.cs"].LINE.covered | Should -Be 3
+            $result.perFileReport["C:/repo/src/Foo.cs"].LINE.missed  | Should -Be 1
+        }
+
+        It "uses LINE as proxy for INSTRUCTION" {
+            $result = & $script -CoverageFile $coberturaFile
+
+            $result.perFileReport["C:/repo/src/Foo.cs"].INSTRUCTION.covered | Should -Be 3
+            $result.perFileReport["C:/repo/src/Foo.cs"].INSTRUCTION.missed  | Should -Be 1
+        }
+
+        It "builds per-file method data with name, startLine inferred from first line, and LINE/INSTRUCTION coverage" {
+            $result = & $script -CoverageFile $coberturaFile
+
+            $methods = $result.perFileMethodData["C:/repo/src/Foo.cs"]
+            $methods | Should -HaveCount 2
+            $methods[0].name                | Should -Be "Greet"
+            $methods[0].startLine           | Should -Be 5
+            $methods[0].startLine           | Should -BeOfType [int]
+            $methods[0].LINE.covered        | Should -Be 1
+            $methods[0].LINE.missed         | Should -Be 1
+            $methods[0].INSTRUCTION.covered | Should -Be 1
+            $methods[0].INSTRUCTION.missed  | Should -Be 1
+            $methods[1].name                | Should -Be "GreetFormal"
+            $methods[1].startLine           | Should -Be 10
+            $methods[1].LINE.covered        | Should -Be 2
+            $methods[1].LINE.missed         | Should -Be 0
+        }
+
+        It "populates perFileLineData from class-level lines" {
+            $result = & $script -CoverageFile $coberturaFile
+
+            $lines = $result.perFileLineData["C:/repo/src/Foo.cs"]
+            $lines | Should -HaveCount 4
+            $lines[0].nr      | Should -Be 5
+            $lines[0].covered | Should -Be $true
+            $lines[1].nr      | Should -Be 6
+            $lines[1].covered | Should -Be $false
+            $lines[2].nr      | Should -Be 10
+            $lines[2].covered | Should -Be $true
+        }
+
+        It "accumulates totals across all methods" {
+            $result = & $script -CoverageFile $coberturaFile
+
+            $result.totals.LINE.covered   | Should -Be 3
+            $result.totals.LINE.missed    | Should -Be 1
+            $result.totals.METHOD.covered | Should -Be 2  # both methods have at least one covered line
+            $result.totals.METHOD.missed  | Should -Be 0
+        }
+
+        It "derives METHOD coverage: covered if any line hit, missed if all lines missed" {
+            $xml = @'
+<coverage>
+  <packages>
+    <package name="MyPackage">
+      <classes>
+        <class filename="C:/repo/src/Mixed.cs">
+          <methods>
+            <method name="HitMethod" signature="()">
+              <lines>
+                <line number="1" hits="1" />
+                <line number="2" hits="0" />
+              </lines>
+            </method>
+            <method name="MissedMethod" signature="()">
+              <lines>
+                <line number="5" hits="0" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="1" hits="1" />
+            <line number="2" hits="0" />
+            <line number="5" hits="0" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $f = "$TestDrive/cobertura-method-cov.xml"
+            $xml | Set-Content $f
+
+            $result = & $script -CoverageFile $f
+
+            $result.perFileReport["C:/repo/src/Mixed.cs"].METHOD.covered | Should -Be 1
+            $result.perFileReport["C:/repo/src/Mixed.cs"].METHOD.missed  | Should -Be 1
+            $result.totals.METHOD.covered | Should -Be 1
+            $result.totals.METHOD.missed  | Should -Be 1
+        }
+
+        It "absolutizes workspace-relative filenames using RepoRoot when no source root" {
+            $relXml = @'
+<coverage>
+  <packages>
+    <package name="MyPackage">
+      <classes>
+        <class filename="src/Foo.cs">
+          <methods>
+            <method name="Greet" signature="(string)">
+              <lines>
+                <line number="5" hits="1" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="5" hits="1" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $relFile = "$TestDrive/cobertura-rel.xml"
+            $relXml | Set-Content $relFile
+
+            $result = & $script -CoverageFile $relFile -RepoRoot "C:/myrepo"
+
+            $result.perFileReport.Keys | Should -Contain "C:/myrepo/src/Foo.cs"
+            $result.perFileReport["C:/myrepo/src/Foo.cs"].LINE.covered | Should -Be 1
+        }
+
+        It "absolutizes filenames using source root from sources element" {
+            $sourceXml = @'
+<coverage>
+  <sources>
+    <source>C:/myrepo</source>
+  </sources>
+  <packages>
+    <package name="MyPackage">
+      <classes>
+        <class filename="src/Bar.cs">
+          <methods>
+            <method name="Run" signature="()">
+              <lines>
+                <line number="3" hits="0" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="3" hits="0" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $sourceFile = "$TestDrive/cobertura-source.xml"
+            $sourceXml | Set-Content $sourceFile
+
+            $result = & $script -CoverageFile $sourceFile
+
+            $result.perFileReport.Keys | Should -Contain "C:/myrepo/src/Bar.cs"
+            $result.perFileReport["C:/myrepo/src/Bar.cs"].LINE.missed | Should -Be 1
+        }
+
+        It "ignores source element when it is '.'" {
+            $dotSourceXml = @'
+<coverage>
+  <sources>
+    <source>.</source>
+  </sources>
+  <packages>
+    <package name="MyPackage">
+      <classes>
+        <class filename="C:/repo/src/Baz.cs">
+          <methods>
+            <method name="Run" signature="()">
+              <lines>
+                <line number="1" hits="1" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="1" hits="1" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $dotSourceFile = "$TestDrive/cobertura-dot-source.xml"
+            $dotSourceXml | Set-Content $dotSourceFile
+
+            $result = & $script -CoverageFile $dotSourceFile
+
+            # absolute filename preserved as-is (source "." is ignored)
+            $result.perFileReport.Keys | Should -Contain "C:/repo/src/Baz.cs"
+        }
+
+        It "absolute filename takes priority over source root" {
+            $xml = @'
+<coverage>
+  <sources>
+    <source>C:/myrepo</source>
+  </sources>
+  <packages>
+    <package name="MyPackage">
+      <classes>
+        <class filename="C:/other/place/Abs.cs">
+          <methods>
+            <method name="Run" signature="()">
+              <lines>
+                <line number="1" hits="1" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="1" hits="1" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $f = "$TestDrive/cobertura-abs-priority.xml"
+            $xml | Set-Content $f
+
+            $result = & $script -CoverageFile $f
+
+            # absolute filename wins; source root not prepended
+            $result.perFileReport.Keys | Should -Contain "C:/other/place/Abs.cs"
+            $result.perFileReport.Keys | Should -Not -Contain "C:/myrepo/C:/other/place/Abs.cs"
+        }
+
+        It "handles method with missing lines element without phantom missed entries" {
+            $xml = @'
+<coverage>
+  <packages>
+    <package name="MyPackage">
+      <classes>
+        <class filename="C:/repo/Empty.cs">
+          <methods>
+            <method name="Abstract" signature="()">
+              <lines></lines>
+            </method>
+          </methods>
+          <lines></lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $f = "$TestDrive/cobertura-empty-lines.xml"
+            $xml | Set-Content $f
+
+            $result = & $script -CoverageFile $f
+
+            $result.totals.LINE.covered | Should -Be 0
+            $result.totals.LINE.missed  | Should -Be 0
+            $result.perFileLineData["C:/repo/Empty.cs"] | Should -HaveCount 0
+        }
+
+        It "accumulates classes from multiple packages" {
+            $xml = @'
+<coverage>
+  <packages>
+    <package name="PkgA">
+      <classes>
+        <class filename="C:/repo/A.cs">
+          <methods>
+            <method name="Run" signature="()">
+              <lines>
+                <line number="1" hits="1" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="1" hits="1" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+    <package name="PkgB">
+      <classes>
+        <class filename="C:/repo/B.cs">
+          <methods>
+            <method name="Run" signature="()">
+              <lines>
+                <line number="5" hits="0" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="5" hits="0" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $f = "$TestDrive/cobertura-multi-pkg.xml"
+            $xml | Set-Content $f
+
+            $result = & $script -CoverageFile $f
+
+            $result.perFileReport.Keys | Should -Contain "C:/repo/A.cs"
+            $result.perFileReport.Keys | Should -Contain "C:/repo/B.cs"
+            $result.totals.LINE.covered | Should -Be 1
+            $result.totals.LINE.missed  | Should -Be 1
+        }
+    }
 }

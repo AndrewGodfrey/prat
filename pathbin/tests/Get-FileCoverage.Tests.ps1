@@ -140,4 +140,68 @@ Describe "Get-FileCoverage" {
         $result | Should -HaveCount 1
         $result[0].Covered | Should -Be 9
     }
+
+    Context "default CoverageFile inference" {
+        BeforeAll {
+            # git init requires a real path, not a PSDrive path
+            $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+            $repoDir = "$realTestDrive/inferrepo"
+            New-Item -ItemType Directory -Path $repoDir | Out-Null
+            git init $repoDir --quiet | Out-Null
+
+            $srcDir = "$repoDir/src"
+            New-Item -ItemType Directory -Path $srcDir | Out-Null
+            "content" | Set-Content "$srcDir/Bar.ps1"
+
+            $coverageDir = "$repoDir/auto/testRuns/last"
+            New-Item -ItemType Directory -Path $coverageDir -Force | Out-Null
+            @"
+<report name="test">
+<package name="$srcDir">
+  <class name="$srcDir/Bar" sourcefilename="Bar.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="0" covered="7" />
+      <counter type="LINE" missed="0" covered="3" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+"@ | Set-Content "$coverageDir/coverage.xml"
+        }
+
+        It "infers coverage file from FilePath's git repo root when CoverageFile is not supplied" {
+            $result = & $script -FilePath "$repoDir/src/Bar.ps1"
+
+            $result | Should -HaveCount 1
+            $result[0].Covered | Should -Be 7
+        }
+
+        It "uses project subdirectory when -Project is specified" {
+            $projectCoverageDir = "$repoDir/auto/testRuns/myproject/last"
+            New-Item -ItemType Directory -Path $projectCoverageDir -Force | Out-Null
+            @"
+<report name="test">
+<package name="$srcDir">
+  <class name="$srcDir/Bar" sourcefilename="Bar.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="2" covered="5" />
+      <counter type="LINE" missed="0" covered="3" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+"@ | Set-Content "$projectCoverageDir/coverage.xml"
+
+            $result = & $script -FilePath "$repoDir/src/Bar.ps1" -Project "myproject"
+
+            $result | Should -HaveCount 1
+            $result[0].Covered | Should -Be 5  # 5 from project file, not 7 from default
+        }
+
+        It "throws when FilePath is not in a git repo" {
+            { & $script -FilePath "/no-git-repo-here/SomeFile.ps1" } | Should -Throw "*not in a git repo*"
+        }
+    }
 }

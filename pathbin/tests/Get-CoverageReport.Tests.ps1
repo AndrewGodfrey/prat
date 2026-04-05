@@ -88,6 +88,87 @@ Describe "Get-CoverageReport" {
     }
 }
 
+Describe "default coverageFile inference" {
+    It "infers coverage file from cwd's git repo root when coverageFile is not supplied" {
+        $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+        $repoDir = "$realTestDrive/gcr-inferrepo"
+        New-Item -ItemType Directory -Path $repoDir | Out-Null
+        git init $repoDir --quiet | Out-Null
+
+        $coverageDir = "$repoDir/auto/testRuns/last"
+        New-Item -ItemType Directory -Path $coverageDir -Force | Out-Null
+        @"
+<report name="test">
+<package name="$repoDir/src">
+  <class name="$repoDir/src/Foo" sourcefilename="Foo.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="3" covered="7" />
+      <counter type="LINE" missed="0" covered="1" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+"@ | Set-Content "$coverageDir/coverage.xml"
+
+        Push-Location $repoDir
+        try {
+            $result = Get-CoverageReport -ShowAll -CoverageGoalPercent 0 -Unformatted -Ignore_OmitFromCoverageReport
+        } finally {
+            Pop-Location
+        }
+
+        # The report row (not the totals row) should contain Foo.ps1
+        $fileRow = $result | Where-Object { $_.PSObject.Properties['File'] -and $_.File -like '*Foo.ps1' }
+        $fileRow | Should -Not -BeNullOrEmpty
+    }
+
+    It "uses project subdirectory when -Project is specified" {
+        $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+        $repoDir = "$realTestDrive/gcr-projectrepo"
+        New-Item -ItemType Directory -Path $repoDir | Out-Null
+        git init $repoDir --quiet | Out-Null
+
+        $projectDir = "$repoDir/auto/testRuns/myproject/last"
+        New-Item -ItemType Directory -Path $projectDir -Force | Out-Null
+        @"
+<report name="test">
+<package name="$repoDir/src">
+  <class name="$repoDir/src/Bar" sourcefilename="Bar.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="1" covered="4" />
+      <counter type="LINE" missed="0" covered="1" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+"@ | Set-Content "$projectDir/coverage.xml"
+
+        Push-Location $repoDir
+        try {
+            $result = Get-CoverageReport -Project myproject -ShowAll -CoverageGoalPercent 0 -Unformatted -Ignore_OmitFromCoverageReport
+        } finally {
+            Pop-Location
+        }
+
+        $fileRow = $result | Where-Object { $_.PSObject.Properties['File'] -and $_.File -like '*Bar.ps1' }
+        $fileRow | Should -Not -BeNullOrEmpty
+    }
+
+    It "throws when not in a git repo" {
+        $nonRepoDir = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/') + "/nonrepo"
+        New-Item -ItemType Directory -Path $nonRepoDir | Out-Null
+
+        Push-Location $nonRepoDir
+        try {
+            { Get-CoverageReport } | Should -Throw "*not in a git repo*"
+        } finally {
+            Pop-Location
+        }
+    }
+}
+
 Describe "Per-file suppression" {
     It "Omits 'OmitFromCoverageReport' files from the goal count, but still displays them" {
         $sourceFileText = @"

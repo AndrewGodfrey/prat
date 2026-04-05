@@ -6,14 +6,25 @@
 # Absolute path to the source file to query.
 #
 # .PARAMETER CoverageFile
-# Path to the coverage XML file. Supports both JaCoCo and Coverage Gutters formats.
+# Path to the coverage XML file. Supports JaCoCo, CoverageGutters, and Cobertura formats.
+# Defaults to <FilePath's git repo root>/auto/testRuns/last/coverage.xml.
 
 param (
     [Parameter(Mandatory)] $FilePath,
-    $CoverageFile = "$PSScriptRoot/../auto/testRuns/last/coverage.xml",
+    $CoverageFile = $null,
+    [string] $Project = $null,
     [switch] $Detail,
     [string] $Function
 )
+
+if ($null -eq $CoverageFile) {
+    $fileDir = Split-Path $FilePath
+    if (-not $fileDir) { $fileDir = '.' }
+    $repoRoot = (git -C $fileDir rev-parse --show-toplevel 2>$null) -replace '\\', '/'
+    if (-not $repoRoot) { throw "Cannot infer coverage file: not in a git repo." }
+    $subDir = if ($Project) { "$Project/" } else { '' }
+    $CoverageFile = "$repoRoot/auto/testRuns/$($subDir)last/coverage.xml"
+}
 
 $data = & "$PSScriptRoot/../lib/Get-CoverageData.ps1" -CoverageFile $CoverageFile
 

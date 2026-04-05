@@ -81,6 +81,11 @@ cross-test contamination when multiple tests in the same `Context` write to the 
 calls to an un-mocked command. Add `Mock X { }` in `BeforeEach` even when the test only verifies
 the command was never called.
 
+**`(Get-Item "TestDrive:\").FullName` has a trailing backslash.** After replacing `\\` with `/` you
+get a trailing `/`, so `"$realTestDrive/subdir"` becomes `...//subdir`. This silently breaks path
+matching when other tools (git, `Resolve-Path`) normalize to single slashes. Always trim:
+`((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')`.
+
 **`InModuleScope` + `-Focus`**: `InModuleScope` is evaluated at discovery time, but `BeforeAll` runs
 at execution time. When the focused file is the first to be discovered, the module isn't loaded yet
 and discovery fails. Fix: add a `BeforeDiscovery` block (in addition to `BeforeAll`) to load the

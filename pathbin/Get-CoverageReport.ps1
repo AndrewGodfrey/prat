@@ -3,18 +3,31 @@
 # Gets a simple code-coverage report from the result of Invoke-PesterWithSummary.ps1
 # This is useful to find files that need more coverage.
 #
-# Expects a Pester-generated coverage XML file in JaCoCo or Coverage Gutters formats.
+# Expects a coverage XML file in JaCoCo, CoverageGutters, or Cobertura formats.
 
 using namespace System.Diagnostics.CodeAnalysis
 
-param ($coverageFile = "$PSScriptRoot/../auto/testRuns/last/coverage.xml",
-    $repoRoot = (Resolve-Path "$PSScriptRoot\.."),
+param ($coverageFile = $null,
+    $repoRoot = $null,
+    [string] $Project = $null,
     [switch] $ShowAll, 
     [switch] $FullPaths,
     [switch] $Unformatted,
     [switch] $Ignore_OmitFromCoverageReport,
     $CoverageGoalPercent = $(& (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1"))
     )
+
+if ($null -eq $coverageFile -or $null -eq $repoRoot) {
+    $cwdRepoRoot = (git rev-parse --show-toplevel 2>$null) -replace '\\', '/'
+    if ($null -eq $coverageFile) {
+        if (-not $cwdRepoRoot) { throw "Cannot infer coverage file: not in a git repo." }
+        $subDir = if ($Project) { "$Project/" } else { '' }
+        $coverageFile = "$cwdRepoRoot/auto/testRuns/$($subDir)last/coverage.xml"
+    }
+    if ($null -eq $repoRoot) {
+        $repoRoot = if ($cwdRepoRoot) { $cwdRepoRoot } else { (Resolve-Path "$PSScriptRoot\..").Path -replace '\\', '/' }
+    }
+}
 
 $exclusionFilter = & (Resolve-PratLibFile "lib/Get-CoverageExclusionFilter.ps1")
 
