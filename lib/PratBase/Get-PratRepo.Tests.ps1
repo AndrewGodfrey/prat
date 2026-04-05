@@ -7,8 +7,9 @@ BeforeAll {
 
 Describe "Get-PratRepo" {
     BeforeEach {
-        $root = (Get-Item "TestDrive:\").FullName.TrimEnd('\')
-        $testProfilePath = "$root\codebaseProfile_test.ps1"
+        $root = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+        $testProfilePath = "$root/codebaseProfile_test.ps1"
+        git -C $root init -q 2>$null
         Mock Get-RepoProfileFiles -ModuleName PratBase { return @($testProfilePath) }
     }
 
@@ -30,6 +31,13 @@ Describe "Get-PratRepo" {
         (Get-PratRepo -Location $root).id | Should -Be 'myrepo'
     }
 
+    It "Returns the matching repo when the registered root uses backslashes (e.g. from PSScriptRoot)" {
+        $backslashRoot = $root -replace '/', '\'
+        makeProfile "@{ myrepo = @{ root = '$backslashRoot' } }"
+
+        (Get-PratRepo -Location $root).id | Should -Be 'myrepo'
+    }
+
     It "Sets subdir as path relative to repo root" {
         New-Item -ItemType Directory "TestDrive:\sub" -Force | Out-Null
         makeProfile "@{ r = @{ root = '$root' } }"
@@ -43,11 +51,11 @@ Describe "Get-PratRepo" {
         { Get-PratRepo -Location $root } | Should -Throw "Found too many matches"
     }
 
-    It "Returns the most-specific (deepest) repo when nested repos both match" {
+    It "Returns the git-root repo (parent), not the nested registration (child), when inside a nested root" {
         New-Item -ItemType Directory "TestDrive:\sub" -Force | Out-Null
         makeProfile "@{ parent = @{ root = '$root' }; child = @{ root = '$root/sub' } }"
 
-        (Get-PratRepo -Location "$root/sub").id | Should -Be 'child'
+        (Get-PratRepo -Location "$root/sub").id | Should -Be 'parent'
     }
 
     It "Does not match a sibling directory that shares a name prefix" {
@@ -60,6 +68,7 @@ Describe "Get-PratRepo" {
 
     It "Returns the top-level repo, not the subproject, when location is inside a subproject" {
         New-Item -ItemType Directory "TestDrive:\r\lib\sub" -Force | Out-Null
+        git -C "$root/r" init -q 2>$null
         makeProfile "@{ r = @{ root = '$root/r'; subprojects = @{ sub = @{ path = 'lib/sub' } } } }"
 
         $result = Get-PratRepo -Location "$root/r/lib/sub"

@@ -256,9 +256,14 @@ function Get-PratRepo {
     $index = Get-PratRepoIndex (Get-RepoProfileFiles)
     if ($null -eq $index) { return $null }
 
+    $gitRoot = Resolve-GitRoot $Location
+    if (-not $gitRoot) { return $null }
+
     $topLevel = @($index.repos.Values | Where-Object { -not $_.ContainsKey('parentId') })
-    $item = Find-BestMatch $topLevel $Location
-    if ($null -eq $item) { return $null }
+    $matches = @($topLevel | Where-Object { ($_.root -replace '\\', '/') -ieq $gitRoot })
+    if ($matches.Count -eq 0) { return $null }
+    if ($matches.Count -gt 1) { throw "Found too many matches" }
+    $item = $matches[0]
 
     $item.subdir = Get-RelativePath $item.root $Location
     return $item

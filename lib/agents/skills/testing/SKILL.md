@@ -100,6 +100,13 @@ BeforeAll {
 }
 ```
 
+### Environment preconditions
+
+When a test relies on a property of the environment it can't control (e.g. TestDrive not being inside
+a git repo, a specific tool being absent from PATH), add an explicit guard in `BeforeAll` that throws
+a descriptive error if the assumption is violated — rather than having the test pass vacuously or fail
+confusingly.
+
 ## Writing tests
 
 If a test is hard to write, that's feedback: the design may be too complex. Consider simplifying the
