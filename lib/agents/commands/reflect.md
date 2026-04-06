@@ -2,10 +2,14 @@
 description: End-of-session self-improvement sweep. User-invocable only — do not trigger autonomously.
 ---
 
-Review this session for behavioral mistakes worth capturing — things where a fresh Claude would have
-made the same error without additional direction.
+Review this session for improvements worth capturing. Two categories:
 
-This includes tool errors that claude automatically worked around.
+1. **Behavioral mistakes** — things where a fresh Claude would have made the same error without
+   additional direction. This includes tool errors that Claude automatically worked around.
+2. **Discovered context** — things you had to explore or look up that a fresh Claude would also
+   have to rediscover. Even in smooth executions, there may be non-obvious facts (API quirks,
+   column names, indirection patterns) that cost investigation time and could be pre-loaded in
+   a skill or CLAUDE.md for next time.
 
 For each candidate: describe the mistake briefly, propose the specific addition or edit (consult
 the `remember` skill for where to save and how to write entries), then wait for confirmation before

@@ -164,6 +164,12 @@ match), or you checked the result. If you haven't checked, don't claim success.
 For performance comparisons ("X is faster"), measure both before and after from the same execution
 path. Don't use failure-path timings as a proxy.
 
+When explaining *why* a pattern exists in data, present competing hypotheses — don't assert one.
+The data shows what happened; the cause is a separate claim that needs its own evidence.
+
+When claiming a trend from time-series data, normalize against volume first. A declining count
+may just mean less activity — show the *rate* before calling it a signal.
+
 ### Surfacing documented constraints
 
 If you've written a comment or note encoding a constraint or dependency, surface it when given an
