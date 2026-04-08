@@ -10,6 +10,7 @@
 
 [CmdletBinding()]
 param(
+    [Parameter(Position=0)]
     [string] $Focus,
     [switch] $NoCoverage,
     [switch] $NoBuild,
@@ -20,7 +21,8 @@ param(
     [switch] $UseAlternateCollector
 )
 
-if (-not $PSBoundParameters.ContainsKey('Focus') -and $PSBoundParameters.ContainsKey('RepoRoot')) {
-    $PSBoundParameters['Focus'] = $RepoRoot
+if ($Focus -and [System.IO.Path]::IsPathRooted($Focus) -and -not $PSBoundParameters.ContainsKey('RepoRoot')) {
+    $project = Get-PratProject -Location $Focus
+    if ($project) { $PSBoundParameters['RepoRoot'] = $project.root }
 }
 &$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "test" -CommandParameters:$PSBoundParameters

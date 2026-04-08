@@ -121,7 +121,8 @@ Compensate for model reasoning/behavior tendencies. Review when upgrading Claude
 ### Plan vs. context contradictions
 
 Before implementing a plan step, cross-check it against CLAUDE.md and done files for contradictions —
-plans can go stale.
+plans can go stale. Also cross-check the step spec against the plan's own design discussion: if the
+discussion flags an edge case as unresolved or awkward, verify the step actually handles it.
 
 ### Reasoning
 
