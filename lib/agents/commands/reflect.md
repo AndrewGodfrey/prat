@@ -21,3 +21,8 @@ locally small to it, so it evaluates it on its own and often concludes "the risk
 The always-loaded context budget is tight and contested — many things seem worth adding individually,
 but the cumulative effect degrades the quality of Claude's work. Contradictory instructions are
 especially costly: even a few force mid-task conflict resolution and quality drops sharply.
+
+When drafting proposed additions to instructions or rules, don't tack on a closing explanatory
+sentence unless it heads off a specific competing interpretation. If the rule's reasoning is
+obvious from the rule itself, the closer is filler. Watch for this pattern: if the user asks
+"does that last sentence add anything?" and you immediately agree to remove it, it was filler.

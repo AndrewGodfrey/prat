@@ -71,6 +71,26 @@ cleanup and uniqueness, not deep isolation.
 Note: Pester's `TestDrive:` is a PS provider path. Anything that doesn't accept PS provider notation
 needs a resolved real path: `(Get-Item "TestDrive:\subpath").FullName` or `Resolve-Path`.
 
+### Pester 5: shadowing module functions for standalone scripts
+
+Pester's `Mock` only works for module-exported functions called within a module scope — it cannot
+intercept calls made by a standalone `.ps1` script invoked with `& $script`. To fake a dependency
+for those scripts, define a plain function with the same name in a `BeforeAll` or `It` block:
+
+```powershell
+Context "subproject path inference" {
+    BeforeAll {
+        function Get-PratProject { param($Location) @{ id = 'myproject'; parentId = 'parent' } }
+        # ...setup fixtures...
+    }
+    It "..." { $result = & $script -FilePath $path; ... }
+}
+```
+
+PowerShell's scope chain makes the locally-defined function visible inside `& $script` calls, and it
+shadows the module-exported function of the same name. Confirmed empirically in Pester v5 — a function
+defined in `Context BeforeAll` shadows the module export for `It` blocks within that context.
+
 ### Pester 5 gotchas
 
 **`TestDrive:` is shared within a `Context` block** — it is NOT reset between `It` blocks. Use distinct

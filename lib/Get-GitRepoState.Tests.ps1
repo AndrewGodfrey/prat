@@ -147,13 +147,13 @@ Describe 'Get-SingleRepoState' {
 
 Describe 'Get-SnapshotPath' {
     It 'produces same hash for forward-slash and backslash cwd' {
-        $fwd  = Get-SnapshotPath 'C:/snaps' 'sess1' 'C:/Users/andrew/de'
-        $back = Get-SnapshotPath 'C:/snaps' 'sess1' 'C:\Users\andrew\de'
+        $fwd  = Get-SnapshotPath 'C:/snaps' 'sess1' 'C:/Users/someUser/de'
+        $back = Get-SnapshotPath 'C:/snaps' 'sess1' 'C:\Users\someUser\de'
         $fwd | Should -Be $back
     }
     It 'produces same hash regardless of trailing slash' {
-        $a = Get-SnapshotPath 'C:/snaps' 'sess1' 'C:/Users/andrew/de'
-        $b = Get-SnapshotPath 'C:/snaps' 'sess1' 'C:/Users/andrew/de/'
+        $a = Get-SnapshotPath 'C:/snaps' 'sess1' 'C:/Users/someUser/de'
+        $b = Get-SnapshotPath 'C:/snaps' 'sess1' 'C:/Users/someUser/de/'
         $a | Should -Be $b
     }
 }
