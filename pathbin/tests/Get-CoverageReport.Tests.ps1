@@ -124,9 +124,11 @@ Describe "default coverageFile inference" {
         $fileRow | Should -Not -BeNullOrEmpty
     }
 
-    It "uses project subdirectory when -Project is specified" {
+    It "uses project subdirectory when Get-PratProject returns a subproject" {
+        function Get-PratProject { param($Location) @{ id = 'myproject'; parentId = 'parent' } }
+
         $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
-        $repoDir = "$realTestDrive/gcr-projectrepo"
+        $repoDir = "$realTestDrive/gcr-subprojrepo"
         New-Item -ItemType Directory -Path $repoDir | Out-Null
         git init $repoDir --quiet | Out-Null
 
@@ -146,14 +148,40 @@ Describe "default coverageFile inference" {
 </report>
 "@ | Set-Content "$projectDir/coverage.xml"
 
-        Push-Location $repoDir
-        try {
-            $result = & $script -Project myproject -ShowAll -CoverageGoalPercent 0 -Unformatted -Ignore_OmitFromCoverageReport
-        } finally {
-            Pop-Location
-        }
+        $result = & $script -Path $repoDir -ShowAll -CoverageGoalPercent 0 -Unformatted -Ignore_OmitFromCoverageReport
 
         $fileRow = $result | Where-Object { $_.PSObject.Properties['File'] -and $_.File -like '*Bar.ps1' }
+        $fileRow | Should -Not -BeNullOrEmpty
+    }
+
+    It "uses project subdirectory when project root is nested inside git root (cssample pattern)" {
+        $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+        $repoDir   = "$realTestDrive/gcr-cssamplerepo"
+        $nestedDir = "$repoDir/lib/projects/cssample"
+        New-Item -ItemType Directory -Path $nestedDir -Force | Out-Null
+        git init $repoDir --quiet | Out-Null
+
+        function Get-PratProject { param($Location) @{ id = 'cssample'; root = $nestedDir } }
+
+        $projectDir = "$repoDir/auto/testRuns/cssample/last"
+        New-Item -ItemType Directory -Path $projectDir -Force | Out-Null
+        @"
+<report name="test">
+<package name="$nestedDir/src">
+  <class name="$nestedDir/src/Greeter" sourcefilename="Greeter.cs">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="0" covered="6" />
+      <counter type="LINE" missed="0" covered="2" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+"@ | Set-Content "$projectDir/coverage.xml"
+
+        $result = & $script -Path $nestedDir -ShowAll -CoverageGoalPercent 0 -Unformatted -Ignore_OmitFromCoverageReport
+
+        $fileRow = $result | Where-Object { $_.PSObject.Properties['File'] -and $_.File -like '*Greeter.cs' }
         $fileRow | Should -Not -BeNullOrEmpty
     }
 

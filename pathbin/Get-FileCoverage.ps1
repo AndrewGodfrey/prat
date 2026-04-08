@@ -7,22 +7,25 @@
 #
 # .PARAMETER CoverageFile
 # Path to the coverage XML file. Supports JaCoCo, CoverageGutters, and Cobertura formats.
-# Defaults to <FilePath's git repo root>/auto/testRuns/last/coverage.xml.
+# Defaults to <git repo root>/auto/testRuns/[<subproject>/]last/coverage.xml, inferred via
+# Get-PratProject and Resolve-GitRoot.
 
 param (
     [Parameter(Mandatory)] $FilePath,
     $CoverageFile = $null,
-    [string] $Project = $null,
     [switch] $Detail,
     [string] $Function
 )
 
 if ($null -eq $CoverageFile) {
-    $fileDir = Split-Path $FilePath
-    if (-not $fileDir) { $fileDir = '.' }
-    $repoRoot = (git -C $fileDir rev-parse --show-toplevel 2>$null) -replace '\\', '/'
+    $repoRoot = Resolve-GitRoot $FilePath
     if (-not $repoRoot) { throw "Cannot infer coverage file: not in a git repo." }
-    $subDir = if ($Project) { "$Project/" } else { '' }
+    $project  = try { Get-PratProject -Location $FilePath } catch { $null }
+    $isNested = $project -and (
+        $project.ContainsKey('parentId') -or
+        ($project.root -replace '\\', '/') -ine $repoRoot
+    )
+    $subDir = if ($isNested) { "$($project.id)/" } else { '' }
     $CoverageFile = "$repoRoot/auto/testRuns/$($subDir)last/coverage.xml"
 }
 

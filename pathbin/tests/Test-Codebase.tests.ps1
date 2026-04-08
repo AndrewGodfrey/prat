@@ -1,48 +1,35 @@
-using module ../../lib/PratBase/PratBase.psd1
-
 BeforeAll {
-    . $PSScriptRoot\cbTest.common.ps1
+    Import-Module "$PSScriptRoot/../../lib/PratBase/PratBase.psd1" -Force
+    $script    = (Resolve-Path "$PSScriptRoot\..\Test-Codebase.ps1").Path
+    $testCbDir = (Resolve-Path "$PSScriptRoot\testCb").Path
+    $pratRoot  = (Resolve-Path "$PSScriptRoot\..\..").Path
 }
 
 Describe "Test-Codebase" {
-    It "includes coverage suffix by default" {
-        $prev = pushTestEnvironment
-        try {
-            $result = Test-Codebase
-            $result | Should -Be "testCb: test: bar"
-        } finally {
-            popTestEnvironment $prev
-        }
+    BeforeEach {
+        Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$pratRoot/codebaseProfile_prat.ps1") }
+    }
+    AfterEach { Pop-Location }
+
+    It "Derives RepoRoot from absolute Focus path, without requiring -RepoRoot" {
+        $absoluteTestCbFile = "$testCbDir\testCb_fileWithTests.ps1"
+        New-Item -Type Directory "TestDrive:\abs-focus-test" | Out-Null
+        Push-Location "TestDrive:\abs-focus-test"
+        $result = & $script $absoluteTestCbFile -NoCoverage
+        $result | Should -Be "testCb: test: bar: Focus=$absoluteTestCbFile NoCoverage=True RepoRoot=$testCbDir"
     }
 
-    It "skips coverage suffix with -NoCoverage" {
-        $prev = pushTestEnvironment
-        try {
-            $result = Test-Codebase -NoCoverage
-            $result | Should -Be "testCb: test: bar: NoCoverage=True"
-        } finally {
-            popTestEnvironment $prev
-        }
+    It "Accepts relative Focus with explicit -RepoRoot" {
+        New-Item -Type Directory "TestDrive:\rel-focus-test" | Out-Null
+        Push-Location "TestDrive:\rel-focus-test"
+        $result = & $script "testCb_fileWithTests.ps1" -RepoRoot $testCbDir -NoCoverage
+        $result | Should -Be "testCb: test: bar: Focus=testCb_fileWithTests.ps1 NoCoverage=True RepoRoot=$testCbDir"
     }
 
-    It "passes -Focus to the codebase script" {
-        $prev = pushTestEnvironment
-        try {
-            $result = Test-Codebase -Focus "lib/foo"
-            $result | Should -Be "testCb: test: bar: Focus=lib/foo"
-        } finally {
-            popTestEnvironment $prev
-        }
-    }
-
-    It "defaults -Focus to -RepoRoot when -Focus is not specified" {
-        $prev = pushTestEnvironment
-        try {
-            $testCbPath = (Get-Location).Path
-            $result = Test-Codebase -RepoRoot $testCbPath
-            $result | Should -Be "testCb: test: bar: Focus=$testCbPath RepoRoot=$testCbPath"
-        } finally {
-            popTestEnvironment $prev
-        }
+    It "Runs full suite when only -RepoRoot is given (no Focus)" {
+        New-Item -Type Directory "TestDrive:\no-focus-test" | Out-Null
+        Push-Location "TestDrive:\no-focus-test"
+        $result = & $script -RepoRoot $testCbDir -NoCoverage
+        $result | Should -Be "testCb: test: bar: NoCoverage=True RepoRoot=$testCbDir"
     }
 }

@@ -9,8 +9,8 @@ using namespace System.Diagnostics.CodeAnalysis
 
 param ($coverageFile = $null,
     $repoRoot = $null,
-    [string] $Project = $null,
-    [switch] $ShowAll, 
+    [string] $Path = $null,
+    [switch] $ShowAll,
     [switch] $FullPaths,
     [switch] $Unformatted,
     [switch] $Ignore_OmitFromCoverageReport,
@@ -18,14 +18,20 @@ param ($coverageFile = $null,
     )
 
 if ($null -eq $coverageFile -or $null -eq $repoRoot) {
-    $cwdRepoRoot = (git rev-parse --show-toplevel 2>$null) -replace '\\', '/'
+    $resolvedPath = if ($Path) { $Path } else { (Get-Location).Path }
+    $project      = try { Get-PratProject -Location $resolvedPath } catch { $null }
+    $inferredRoot = Resolve-GitRoot $resolvedPath
     if ($null -eq $coverageFile) {
-        if (-not $cwdRepoRoot) { throw "Cannot infer coverage file: not in a git repo." }
-        $subDir = if ($Project) { "$Project/" } else { '' }
-        $coverageFile = "$cwdRepoRoot/auto/testRuns/$($subDir)last/coverage.xml"
+        if (-not $inferredRoot) { throw "Cannot infer coverage file: not in a git repo." }
+        $isNested = $project -and (
+            $project.ContainsKey('parentId') -or
+            ($project.root -replace '\\', '/') -ine $inferredRoot
+        )
+        $subDir = if ($isNested) { "$($project.id)/" } else { '' }
+        $coverageFile = "$inferredRoot/auto/testRuns/$($subDir)last/coverage.xml"
     }
     if ($null -eq $repoRoot) {
-        $repoRoot = if ($cwdRepoRoot) { $cwdRepoRoot } else { (Resolve-Path "$PSScriptRoot\..").Path -replace '\\', '/' }
+        $repoRoot = if ($inferredRoot) { $inferredRoot } else { (Resolve-Path "$PSScriptRoot\..").Path -replace '\\', '/' }
     }
 }
 

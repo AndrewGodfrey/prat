@@ -1,4 +1,5 @@
 BeforeAll {
+    Import-Module "$PSScriptRoot/../../lib/PratBase/PratBase.psd1" -Force
     $script = "$PSScriptRoot/../Get-FileCoverage.ps1"
 }
 
@@ -212,9 +213,26 @@ Describe "Get-FileCoverage" {
             $result[0].Instructions | Should -Be 7
         }
 
-        It "uses project subdirectory when -Project is specified" {
-            $projectCoverageDir = "$repoDir/auto/testRuns/myproject/last"
-            New-Item -ItemType Directory -Path $projectCoverageDir -Force | Out-Null
+        It "throws when FilePath is not in a git repo" {
+            { & $script -FilePath "/no-git-repo-here/SomeFile.ps1" } | Should -Throw "*not in a git repo*"
+        }
+    }
+
+    Context "subproject coverage path inference - parentId" {
+        BeforeAll {
+            function Get-PratProject { param($Location) @{ id = 'myproject'; parentId = 'parent' } }
+
+            $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+            $repoDir = "$realTestDrive/subprojrepo"
+            New-Item -ItemType Directory -Path $repoDir | Out-Null
+            git init $repoDir --quiet | Out-Null
+
+            $srcDir = "$repoDir/src"
+            New-Item -ItemType Directory -Path $srcDir | Out-Null
+            "content" | Set-Content "$srcDir/Bar.ps1"
+
+            $coverageDir = "$repoDir/auto/testRuns/myproject/last"
+            New-Item -ItemType Directory -Path $coverageDir -Force | Out-Null
             @"
 <report name="test">
 <package name="$srcDir">
@@ -227,16 +245,54 @@ Describe "Get-FileCoverage" {
   </class>
 </package>
 </report>
-"@ | Set-Content "$projectCoverageDir/coverage.xml"
-
-            $result = & $script -FilePath "$repoDir/src/Bar.ps1" -Project "myproject"
-
-            $result | Should -HaveCount 1
-            $result[0].Instructions | Should -Be 5  # 5 from project file, not 7 from default
+"@ | Set-Content "$coverageDir/coverage.xml"
         }
 
-        It "throws when FilePath is not in a git repo" {
-            { & $script -FilePath "/no-git-repo-here/SomeFile.ps1" } | Should -Throw "*not in a git repo*"
+        It "infers subproject subdirectory from Get-PratProject" {
+            $result = & $script -FilePath "$repoDir/src/Bar.ps1"
+
+            $result | Should -HaveCount 1
+            $result[0].Instructions | Should -Be 5
+        }
+    }
+
+    Context "subproject coverage path inference - root outside git root (cssample pattern)" {
+        BeforeAll {
+            $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+            $repoDir   = "$realTestDrive/cssample-gitrepo"
+            $nestedDir = "$repoDir/lib/projects/cssample"
+            New-Item -ItemType Directory -Path $nestedDir -Force | Out-Null
+            git init $repoDir --quiet | Out-Null
+
+            $srcDir = "$nestedDir/src"
+            New-Item -ItemType Directory -Path $srcDir | Out-Null
+            "content" | Set-Content "$srcDir/Greeter.cs"
+
+            # Shadow Get-PratProject: returns a top-level registration whose root is nested inside the git repo
+            function Get-PratProject { param($Location) @{ id = 'cssample'; root = $nestedDir } }
+
+            $coverageDir = "$repoDir/auto/testRuns/cssample/last"
+            New-Item -ItemType Directory -Path $coverageDir -Force | Out-Null
+            @"
+<report name="test">
+<package name="$srcDir">
+  <class name="$srcDir/Greeter" sourcefilename="Greeter.cs">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="0" covered="3" />
+      <counter type="LINE" missed="0" covered="2" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+"@ | Set-Content "$coverageDir/coverage.xml"
+        }
+
+        It "infers project subdirectory when project root is nested inside git root" {
+            $result = & $script -FilePath "$srcDir/Greeter.cs"
+
+            $result | Should -HaveCount 1
+            $result[0].Instructions | Should -Be 3
         }
     }
 }
