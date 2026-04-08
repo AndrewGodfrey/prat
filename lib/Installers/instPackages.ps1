@@ -208,38 +208,28 @@ function getInstalledClaudeVersion() {
     return $matches[1]
 }
 
-function getClaudeVersionInfo() {
-    try {
-        $installed = getInstalledClaudeVersion
-        if (-not $installed) { return $null }
-        $latest = (Invoke-RestMethod "$script:claudeGcsBucketUrl/latest").Trim()
-        return @{ installed = $installed; latest = $latest }
-    } catch {
-        return $null
-    }
+function invokeClaudeInstaller($targetVersion) {
+    $sb = [scriptblock]::Create((Invoke-RestMethod https://claude.ai/install.ps1))
+    if ($targetVersion) { & $sb $targetVersion } else { & $sb }
 }
 
-function invokeClaudeInstaller() {
-    irm https://claude.ai/install.ps1 | iex
-}
-
-function installClaude($stage) {
+function installClaude($stage, $targetVersion) {
     # Use the native installer, because:
     # - the winget installer lags behind the latest version
     # - the npm installer depends on the system-installed node.js, causing conflicts when working
     #   on code that requires an old version).
 
     if (isClaudeRunning) {
-        $versionInfo = getClaudeVersionInfo
+        $installed = getInstalledClaudeVersion
         $msg = "Claude is running"
-        if ($versionInfo) { $msg += " ($($versionInfo.installed) → $($versionInfo.latest))" }
+        if ($installed -and $targetVersion) { $msg += " ($installed → $targetVersion)" }
         Write-Warning "$msg — close it to install the update."
         Write-Host -F Blue "Hit 'Enter' to skip, or close Claude and type 'd' when done."
         $result = Read-Host
         if ($result -ne 'd') { return }
     }
 
-    invokeClaudeInstaller
+    invokeClaudeInstaller $targetVersion
 
     $localBin = "$home/.local/bin"
     $destFile = "$localBin/claude.exe"
@@ -252,16 +242,24 @@ function installClaude($stage) {
     Install-UserPathEntry $stage ($localBin -replace '/', '\')
 }
 
+function getClaudeInstaller() {
+    return @{
+        getLatestVersion = {
+            try { (Invoke-RestMethod "$script:claudeGcsBucketUrl/latest").Trim() }
+            catch { $null }
+        }
+        check   = { param($stage, $targetVersion) $targetVersion -and ((getInstalledClaudeVersion) -eq $targetVersion) }
+        install = { param($stage, $targetVersion) installClaude $stage $targetVersion }
+    }
+}
+
 $pratPackages = @{
     autohotkey = @{
         install = {
             Install-WingetPackage $stage "AutoHotkey.AutoHotkey" "$env:localAppData\programs\AutoHotKey"
         }
     }
-    claude = @{
-        installerVersion = "1.1"  # 1.0 used winget; now using the native installer
-        install = { installClaude $stage }
-    }
+    claude = getClaudeInstaller
     df = @{
         install = { Install-InteractiveAlias $stage 'df' 'Get-DiskFreeSpace' }
     }
@@ -438,14 +436,18 @@ function internal_installPratPackage($stage, [string] $packageId, [array] $packa
     # The package itself
     $installerVersion = if ($packageEntry.installerVersion) { $packageEntry.installerVersion } else { "1.0" }
     $stepId           = "pkg\$($packageId):$installerVersion"
-    $isInstalled      = if ($packageEntry.check) { &($packageEntry.check) } else { $stage.GetIsStepComplete($stepId) }
+
+    $targetVersion = $null
+    if ($packageEntry.getLatestVersion) { $targetVersion = &($packageEntry.getLatestVersion) }
+
+    $isInstalled      = if ($packageEntry.check) { &($packageEntry.check) $stage $targetVersion } else { $stage.GetIsStepComplete($stepId) }
 
     if (-not $isInstalled) {
         $stage.SetSubstage($packageId)
         $stage.OnChange()
 
         $ErrorActionPreference = "stop"
-        &($packageEntry.install) $stage
+        &($packageEntry.install) $stage $targetVersion
 
         if (-not $packageEntry.check) { $stage.SetStepComplete($stepId) }
     }

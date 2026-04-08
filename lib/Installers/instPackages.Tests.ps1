@@ -106,6 +106,40 @@ Describe "Install-PratPackage" {
         }
     }
 
+    Context "getLatestVersion" {
+        BeforeEach {
+            InModuleScope Installers {
+                $script:capturedTargetVersion = $null
+                $script:pratPackages["versionpkg"] = @{
+                    getLatestVersion = { "1.2.3" }
+                    check            = { param($stage, $targetVersion) $script:capturedTargetVersion = $targetVersion; $false }
+                    install          = { param($stage, $targetVersion) $script:testInstallCount++ }
+                }
+            }
+        }
+
+        It "threads resolved version to check" {
+            $tracker = Start-Installation ([guid]::NewGuid().ToString()) -InstallationDatabaseLocation "TestDrive:\db-ver1"
+            try { Install-PratPackage $tracker "versionpkg" }
+            finally { $tracker.StopInstallation() }
+
+            InModuleScope Installers { $script:capturedTargetVersion } | Should -Be "1.2.3"
+        }
+
+        It "threads resolved version to install" {
+            InModuleScope Installers {
+                $script:pratPackages["versionpkg"].install = { param($stage, $targetVersion) $script:capturedTargetVersion = $targetVersion }
+                $script:pratPackages["versionpkg"].check   = { param($stage, $targetVersion) $false }
+            }
+
+            $tracker = Start-Installation ([guid]::NewGuid().ToString()) -InstallationDatabaseLocation "TestDrive:\db-ver2"
+            try { Install-PratPackage $tracker "versionpkg" }
+            finally { $tracker.StopInstallation() }
+
+            InModuleScope Installers { $script:capturedTargetVersion } | Should -Be "1.2.3"
+        }
+    }
+
     Context "check scriptblock" {
         BeforeEach {
             InModuleScope Installers {
@@ -205,39 +239,27 @@ Describe "installPratWingetPackage" {
     }
 }
 
-Describe "getClaudeVersionInfo" {
-    BeforeDiscovery {
-        Import-Module "$PSScriptRoot/Installers.psd1" -Force
-    }
+Describe "getClaudeInstaller" {
     BeforeAll {
         Import-Module "$PSScriptRoot/Installers.psd1" -Force
     }
 
-    It "returns null when installed version cannot be determined" {
-        Mock -ModuleName Installers getInstalledClaudeVersion { return $null }
+    Context "getLatestVersion" {
+        It "returns latest version from GCS" {
+            Mock -ModuleName Installers Invoke-RestMethod { return "1.3.0`n" }
 
-        $result = InModuleScope Installers { getClaudeVersionInfo }
+            $result = InModuleScope Installers { &((getClaudeInstaller).getLatestVersion) }
 
-        $result | Should -BeNullOrEmpty
-    }
+            $result | Should -Be "1.3.0"
+        }
 
-    It "returns null when network call fails" {
-        Mock -ModuleName Installers getInstalledClaudeVersion { return "1.2.3" }
-        Mock -ModuleName Installers Invoke-RestMethod { throw "network error" }
+        It "returns null on network failure" {
+            Mock -ModuleName Installers Invoke-RestMethod { throw "network error" }
 
-        $result = InModuleScope Installers { getClaudeVersionInfo }
+            $result = InModuleScope Installers { &((getClaudeInstaller).getLatestVersion) }
 
-        $result | Should -BeNullOrEmpty
-    }
-
-    It "returns installed and latest versions" {
-        Mock -ModuleName Installers getInstalledClaudeVersion { return "1.2.3" }
-        Mock -ModuleName Installers Invoke-RestMethod { return "1.3.0`n" }
-
-        $result = InModuleScope Installers { getClaudeVersionInfo }
-
-        $result.installed | Should -Be "1.2.3"
-        $result.latest    | Should -Be "1.3.0"
+            $result | Should -BeNullOrEmpty
+        }
     }
 }
 
@@ -247,14 +269,14 @@ Describe "installClaude" {
         Mock -ModuleName Installers invokeClaudeInstaller {}
         Mock -ModuleName Installers Install-UserPathEntry {}
         Mock -ModuleName Installers Write-Host {}
-        Mock -ModuleName Installers getClaudeVersionInfo { return $null }
+        Mock -ModuleName Installers getInstalledClaudeVersion { return $null }
     }
 
     It "warns and skips when Claude is running and user presses Enter" {
         Mock -ModuleName Installers isClaudeRunning { return $true }
         Mock -ModuleName Installers Read-Host { return '' }
 
-        $warnings = InModuleScope Installers { installClaude $null } 3>&1 |
+        $warnings = InModuleScope Installers { installClaude $null $null } 3>&1 |
             Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
 
         $warnings | Should -Not -BeNullOrEmpty
@@ -266,7 +288,7 @@ Describe "installClaude" {
         Mock -ModuleName Installers Read-Host { return 'd' }
         Mock -ModuleName Installers Test-Path { return $true } -ParameterFilter { $Path -like "*claude.exe" }
 
-        InModuleScope Installers { installClaude $null }
+        InModuleScope Installers { installClaude $null $null }
 
         Should -Invoke invokeClaudeInstaller -ModuleName Installers -Times 1
     }
@@ -274,20 +296,29 @@ Describe "installClaude" {
     It "includes version info in warning when available" {
         Mock -ModuleName Installers isClaudeRunning { return $true }
         Mock -ModuleName Installers Read-Host { return '' }
-        Mock -ModuleName Installers getClaudeVersionInfo { return @{ installed = "1.2.3"; latest = "1.3.0" } }
+        Mock -ModuleName Installers getInstalledClaudeVersion { return "1.2.3" }
 
-        $warnings = InModuleScope Installers { installClaude $null } 3>&1 |
+        $warnings = InModuleScope Installers { installClaude $null "1.3.0" } 3>&1 |
             Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
 
         $warnings.Message | Should -Match "1\.2\.3"
         $warnings.Message | Should -Match "1\.3\.0"
     }
 
+    It "passes targetVersion to invokeClaudeInstaller" {
+        Mock -ModuleName Installers isClaudeRunning { return $false }
+        Mock -ModuleName Installers Test-Path { return $true } -ParameterFilter { $Path -like "*claude.exe" }
+
+        InModuleScope Installers { installClaude $null "1.3.0" }
+
+        Should -Invoke invokeClaudeInstaller -ModuleName Installers -Times 1 -ParameterFilter { $targetVersion -eq "1.3.0" }
+    }
+
     It "runs installer when Claude is not running" {
         Mock -ModuleName Installers isClaudeRunning { return $false }
         Mock -ModuleName Installers Test-Path { return $true } -ParameterFilter { $Path -like "*claude.exe" }
 
-        InModuleScope Installers { installClaude $null }
+        InModuleScope Installers { installClaude $null $null }
 
         Should -Invoke invokeClaudeInstaller -ModuleName Installers -Times 1
     }
