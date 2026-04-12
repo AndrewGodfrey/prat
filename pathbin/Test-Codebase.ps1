@@ -16,7 +16,6 @@ param(
     [switch] $NoBuild,
     [switch] $IncludeIntegrationTests,
     [switch] $Integration,
-    $RepoRoot = $null,
     $OutputDir = $null,
     [switch] $UseAlternateCollector
 )

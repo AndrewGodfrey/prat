@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Use the `prat-run-tests` agent (for delegation) or `t` directly. Key invocations:
 
 ```bash
-t -RepoRoot ~/prat -NoCoverage          # full suite, skip coverage
-t -RepoRoot ~/prat -Focus lib/Foo.ps1   # focused run
+t ~/prat -NoCoverage                    # full suite, skip coverage
+t ~/prat/lib/Foo.ps1 -NoCoverage        # focused run (absolute path auto-derives repo)
 t C:/abs/path/to/File.ps1 -NoCoverage   # absolute path: auto-derives RepoRoot
 ```
 

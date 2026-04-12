@@ -5,22 +5,21 @@ description: Use in any pratified codebase, when doing TDD, running tests after 
 
 # Running tests
 
-Use the `t` bash script with `-RepoRoot` — no `cd` required.
+Use the `t` bash script with an absolute path — no `cd` required.
 Permission is granted as `Bash(t *)`.
 
 ```bash
-t -RepoRoot ~/prat                                        # full suite, with coverage
-t -RepoRoot ~/prat -Focus lib/Something -NoCoverage       # focus on a directory
-t -RepoRoot ~/prat -Focus lib/Foo.Tests.ps1 -NoCoverage   # focus on a test file
-t -RepoRoot ~/prat -Integration -NoCoverage               # run only integration-tagged tests
+t ~/prat                                        # full suite, with coverage
+t ~/prat/lib/Something -NoCoverage              # focus on a directory
+t ~/prat/lib/Foo.Tests.ps1 -NoCoverage          # focus on a test file
+t ~/prat -Integration -NoCoverage               # run only integration-tagged tests
 ```
 
 ## Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-RepoRoot <path>` | Codebase to test; also sets default scope when `-Focus` is omitted |
-| `-Focus <path>` | File or directory relative to repo root; coverage scope derived automatically |
+| `-Focus <path>` | File or directory; if absolute, repo is auto-derived; if relative, uses CWD |
 | `-NoCoverage` | Skip coverage (faster for rapid iteration) |
 | `-NoBuild` | Skip build step |
 | `-Integration` | Run only integration-tagged tests |

@@ -19,17 +19,16 @@ Describe "Test-Codebase" {
         $result | Should -Be "testCb: test: bar: Focus=$absoluteTestCbFile NoCoverage=True RepoRoot=$testCbDir"
     }
 
-    It "Accepts relative Focus with explicit -RepoRoot" {
-        New-Item -Type Directory "TestDrive:\rel-focus-test" | Out-Null
-        Push-Location "TestDrive:\rel-focus-test"
-        $result = & $script "testCb_fileWithTests.ps1" -RepoRoot $testCbDir -NoCoverage
-        $result | Should -Be "testCb: test: bar: Focus=testCb_fileWithTests.ps1 NoCoverage=True RepoRoot=$testCbDir"
+    It "Relative Focus uses CWD for project detection" {
+        Push-Location $testCbDir
+        $result = & $script "testCb_fileWithTests.ps1" -NoCoverage
+        $result | Should -Be "testCb: test: bar: Focus=testCb_fileWithTests.ps1 NoCoverage=True"
     }
 
-    It "Runs full suite when only -RepoRoot is given (no Focus)" {
-        New-Item -Type Directory "TestDrive:\no-focus-test" | Out-Null
-        Push-Location "TestDrive:\no-focus-test"
-        $result = & $script -RepoRoot $testCbDir -NoCoverage
-        $result | Should -Be "testCb: test: bar: NoCoverage=True RepoRoot=$testCbDir"
+    It "Absolute directory Focus runs full suite" {
+        New-Item -Type Directory "TestDrive:\abs-dir-test" | Out-Null
+        Push-Location "TestDrive:\abs-dir-test"
+        $result = & $script $testCbDir -NoCoverage
+        $result | Should -Be "testCb: test: bar: Focus=$testCbDir NoCoverage=True RepoRoot=$testCbDir"
     }
 }
