@@ -255,6 +255,7 @@ function Invoke-PesterAsJob {
     }
 }
 
+. $PSScriptRoot\Expand-TildePath.ps1
 . $PSScriptRoot\Resolve-GitRoot.ps1
 . $PSScriptRoot\Format-Duration.ps1
 . $PSScriptRoot\envDelta.ps1

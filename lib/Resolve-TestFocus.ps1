@@ -9,9 +9,8 @@ param([string] $Focus, $RepoRoot)
 
 if (!$Focus) { return "." }
 
-# Expand ~ to home directory before IsPathRooted (which doesn't understand ~)
-if ($Focus    -like '~*') { $Focus    = $home + $Focus.Substring(1) }
-if ($RepoRoot -like '~*') { $RepoRoot = $home + $RepoRoot.Substring(1) }
+$Focus    = Expand-TildePath $Focus
+$RepoRoot = Expand-TildePath $RepoRoot
 
 function findPath {
     $resolved = if ([System.IO.Path]::IsPathRooted($Focus)) { $Focus } else { Join-Path $RepoRoot $Focus }

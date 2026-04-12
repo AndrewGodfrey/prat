@@ -31,4 +31,12 @@ Describe "Test-Codebase" {
         $result = & $script $testCbDir -NoCoverage
         $result | Should -Be "testCb: test: bar: Focus=$testCbDir NoCoverage=True RepoRoot=$testCbDir"
     }
+
+    It "Tilde-prefixed Focus is expanded to absolute path for project detection" {
+        $tildeFocusFile = "~" + "$testCbDir\testCb_fileWithTests.ps1".Substring($home.Length)
+        New-Item -Type Directory "TestDrive:\tilde-test" | Out-Null
+        Push-Location "TestDrive:\tilde-test"
+        $result = & $script $tildeFocusFile -NoCoverage
+        $result | Should -Be "testCb: test: bar: Focus=$tildeFocusFile NoCoverage=True RepoRoot=$testCbDir"
+    }
 }

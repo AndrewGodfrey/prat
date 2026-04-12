@@ -1,4 +1,5 @@
 BeforeAll {
+    Import-Module "$PSScriptRoot/PratBase/PratBase.psd1" -Force
     $scriptToTest = $PSCommandPath.Replace('.Tests.ps1', '.ps1')
 }
 

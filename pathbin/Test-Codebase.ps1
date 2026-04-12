@@ -20,8 +20,10 @@ param(
     [switch] $UseAlternateCollector
 )
 
-if ($Focus -and [System.IO.Path]::IsPathRooted($Focus) -and -not $PSBoundParameters.ContainsKey('RepoRoot')) {
-    $project = Get-PratProject -Location $Focus
+if ($Focus) { $Focus = Expand-TildePath $Focus }
+if ($Focus -and [System.IO.Path]::IsPathRooted($Focus)) {
+    $focusBase = if (Test-Path $Focus -PathType Container) { $Focus } else { Split-Path $Focus -Parent }
+        $project = Get-PratProject -Location $Focus
     if ($project) { $PSBoundParameters['RepoRoot'] = $project.root }
 }
 &$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "test" -CommandParameters:$PSBoundParameters

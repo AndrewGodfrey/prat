@@ -74,6 +74,7 @@ FunctionsToExport = @('Get-CurrentUserIsElevated', 'Get-RelativePath', 'Import-P
                       'Get-CurrentGitForkpoint', 'Get-ForkpointCacheIsValid', 'Set-ForkpointCache', 'Get-ForkpointRelationship',
                       'New-Subfolder', 'New-FolderAndParents', 'Get-HtmlFromClipboard', 'Invoke-PesterAsJob',
                       'Get-PratRepo', 'Get-PratProject', 'Find-ProjectShortcut', 'Resolve-JunctionInPath',
+                      'Expand-TildePath',
                       'Resolve-GitRoot',
                       'Format-Duration',
                       'Initialize-TestRunDir', 'Format-AnsiText', 'Write-TestRunResult',
