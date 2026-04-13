@@ -27,6 +27,17 @@ flag `-NoCoverage:` and a separate positional argument `False`. The called scrip
 
 `@PSBoundParameters` forwards named parameters correctly, including switches with explicit values.
 
+# Checking whether a path is absolute
+
+Call `Expand-TildePath $path` before `[System.IO.Path]::IsPathRooted` — .NET doesn't understand
+PowerShell's `~`, so `IsPathRooted("~/prat")` returns `$false`. `Expand-TildePath` (in PratBase)
+uses `GetUnresolvedProviderPathFromPSPath` and works on paths that don't exist yet.
+
+```powershell
+if ($Path) { $Path = Expand-TildePath $Path }
+if ([System.IO.Path]::IsPathRooted($Path)) { ... }
+```
+
 # $PSScriptRoot-relative paths when moving a script
 
 Before writing a moved script to its new location, audit every `$PSScriptRoot`-relative path —
