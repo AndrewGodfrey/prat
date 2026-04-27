@@ -344,7 +344,7 @@ $pratPackages = @{
     }
     python = @{
         install = {
-            installPratWingetPackage "Python.PythonInstallManager"
+            installPratWingetPackage "Python.PythonInstallManager" -NoScope
 
             # This is a rare case where I don't need to fix up PATH, not even in the current instance.
             # The reason is that PythonInstallManager overwrites the existing link at $env:LocalAppData\Microsoft\WindowsApps\python.exe, 
