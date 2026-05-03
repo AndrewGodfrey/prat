@@ -196,6 +196,30 @@ Describe "Install-ClaudeSkillSet" {
             @{ set = @("missing"); srcDir = $srcDir2 }
         ) $destDir } | Should -Throw
     }
+
+    It "uses # comment header for .ps1 files" {
+        mkdir "$srcDir\my-skill" | Out-Null
+        "Get-Item ." | Out-File "$srcDir\my-skill\Helper.ps1" -Encoding utf8NoBOM
+        mkdir $destDir | Out-Null
+
+        Install-ClaudeSkillSet $stage @(@{ set = @("my-skill"); srcDir = $srcDir }) $destDir
+
+        $deployed = Get-Content "$destDir\my-skill\Helper.ps1" -Raw
+        $deployed | Should -BeLike "# Auto-generated*"
+        $deployed | Should -Not -Match "<!--"
+    }
+
+    It "skips *.Tests.ps1 files" {
+        mkdir "$srcDir\my-skill" | Out-Null
+        "Get-Item ." | Out-File "$srcDir\my-skill\Helper.ps1" -Encoding utf8NoBOM
+        "Describe 'foo' {}" | Out-File "$srcDir\my-skill\Helper.Tests.ps1" -Encoding utf8NoBOM
+        mkdir $destDir | Out-Null
+
+        Install-ClaudeSkillSet $stage @(@{ set = @("my-skill"); srcDir = $srcDir }) $destDir
+
+        "$destDir\my-skill\Helper.ps1"       | Should -Exist
+        "$destDir\my-skill\Helper.Tests.ps1" | Should -Not -Exist
+    }
 }
 
 Describe "Install-ClaudeMarkdownFiles" {
