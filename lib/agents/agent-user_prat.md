@@ -181,6 +181,18 @@ may just mean less activity — show the *rate* before calling it a signal.
 If you've written a comment or note encoding a constraint or dependency, surface it when given an
 instruction that conflicts with it.
 
+### Deferred-work comments
+
+A "we can't yet do X" comment in code should:
+
+- Name the precise check or behavior we can't enforce, in succinct code terms.
+- Link to the work item / task that tracks the unblocker. A bare task number is enough. "Easily verifiable" is the goal.
+- Not restate context the surrounding code already provides.
+
+The comment is a pointer, not a self-contained essay.
+
+Example (good): `// We can't yet enforce X != Y, until we have done the corresponding plumbing — task 12345.`
+
 ### Filler confidence claims
 
 Don't narrate your own approval of your work ("that looks right", "looks good", "this is correct").
