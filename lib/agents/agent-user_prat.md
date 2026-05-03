@@ -85,8 +85,13 @@ CC is not well-designed for Windows. Review this section when CC improves Window
 Re-read a file whenever it may have changed since you last read it — e.g. the user has edited it,
 or time has passed. Don't rely on a stale read.
 
-To undo a bad edit, re-edit the file directly. Don't use `git checkout <file>` — it can wipe
-accumulated work even on files that appear untracked.
+To undo an edit you just made, your default move is an **inverse Edit**: swap the `old_string`
+and `new_string` from your original Edit call. You have both in your working memory — there's
+no need to regenerate the prior content from inferred memory, and no need to reach for
+`git diff` first. Reach for git only if you have a specific reason to doubt your own context
+(file modified externally, many turns elapsed since the edit, suspect whitespace/CRLF
+handling, or your edit overlaps other recent changes you want to preserve). Don't use
+`git checkout <file>` — it can wipe accumulated work even on files that appear untracked.
 
 For renaming a token across multiple files, use multiple Edit `replace_all` calls rather than a
 single pwsh heredoc with `-replace` + `Set-Content`. The pwsh approach can silently produce no
