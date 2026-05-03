@@ -25,18 +25,6 @@
 #      - The "obvious" deal-breaker: They don't know how to integrate themselves with Prat, so that they get installed on every dev-environment machine.
 #      - Just noting: Some packages update PATH in the registry, but not in the current environment. Some don't update PATH at all (or maybe try and silently fail).
 #
-# Thoughts:
-#   - I'm aware that Powershell already has a "package manager manager" in Install-Package. Based on past experience, I expect this code to use 
-#     winget directly, and nuget directly, and occasionally Install-Package. If Install-Package were to improve to meet all the requirements,
-#     I wouldn't complain! But that seems like a tall order - much more work than I have to do here (because I can ignore packages I don't use).
-#
-#   - Local caching of packages is highly desirable, but NYI. I had a look at winget's support for caching, and it seems unduly complicated. I expect to need caching
-#     eventually. Here are some reasons it's so desirable:
-#     - Another 'availability' risk is that a version you depend on could be removed from the repository, or the repository could go down for a while.
-#     - A local cache helps with speed, and reducing internet bandwidth load/congestion/costs. Especially so, considering the 'cattle not pets' philosophy,
-#       and the desire to automate testing of the 'new machine' scenario. (e.g. How many times can I download the Git package before someone complains?)
-#     - A local cache might also give an opportunity to simplify - if we only add a package to the cache after it has passed (some version of) our tests.
-#       I'm not sure.
 
 
 function Get-DotnetSdkRequirement($globalJsonPath) {
