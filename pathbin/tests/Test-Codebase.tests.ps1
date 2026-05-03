@@ -39,4 +39,15 @@ Describe "Test-Codebase" {
         $result = & $script $tildeFocusFile -NoCoverage
         $result | Should -Be "testCb: test: bar: Focus=$tildeFocusFile NoCoverage=True RepoRoot=$testCbDir"
     }
+
+    It "Warns when absolute Focus path is not in a registered project" {
+        New-Item -Type Directory "TestDrive:\unknown-project" | Out-Null
+        Push-Location "TestDrive:\unknown-project"
+        $unknownFile = (Get-Item "TestDrive:\unknown-project").FullName + "\file.ps1"
+        New-Item -Path $unknownFile -ItemType File | Out-Null
+
+        try { & $script $unknownFile -NoCoverage -WarningVariable warnings 2>$null } catch {}
+
+        $warnings | Should -Match "No registered project"
+    }
 }

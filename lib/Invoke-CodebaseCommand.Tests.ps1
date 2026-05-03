@@ -23,6 +23,17 @@ Describe "Invoke-CodebaseCommand" {
         $result | Should -Be "testCb: test: bar: NoCoverage=True"
     }
 
+    It "Does not apply cachedEnvDelta for prebuild" {
+        Push-Location $testCbDir
+        $env:testenvvar = 'original'
+        try {
+            $result = &$scriptToTest "prebuild"
+            $result | Should -Be "testCb: prebuild: original"
+        } finally {
+            $env:testenvvar = $null
+        }
+    }
+
     It "uses -RepoRoot from CommandParameters for project detection instead of pwd" {
         New-Item -Type Directory "TestDrive:\someOtherDir" | Out-Null
         Push-Location "TestDrive:\someOtherDir"

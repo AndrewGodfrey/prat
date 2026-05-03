@@ -1,25 +1,8 @@
-# Test helpers for use in testing codebase-related functions.
-
-Import-Module "$PSScriptRoot/../../lib/PratBase/PratBase.psd1" -Force
-
+# Test helper: creates a temp file on TestDrive with the given content and extension.
 [int] $testFileNum = 0
 function createTestFile($data, $extension) {
     $testFileNum += 1
     $tempFile = "$TestDrive\test.$testFileNum$extension"
     $data | Out-File -Encoding ASCII $tempFile
     return $tempFile
-}
-function pushTestEnvironment {
-    $prev = @{
-        testEnvvar = $env:testEnvvar
-        pwd = $pwd
-    }
-    $env:testEnvvar = "testEnvvar"
-    Set-Location $PSScriptRoot/testCb
-    return $prev
-}
-
-function popTestEnvironment($prev) {
-    $env:testEnvvar = $prev.testEnvvar
-    set-location $prev.pwd
 }
