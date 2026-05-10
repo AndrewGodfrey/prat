@@ -20,27 +20,25 @@ function Build-PrefsEffectiveConfig($prefsConfig, $deConfig) {
 function Invoke-FindSensitiveData($path) { Find-SensitiveData -Path $path }
 
 function Invoke-CheckPratLayers($pratRoot, $prefsRoot, $deRoot) {
-    . "$pratRoot/lib/layerViolationsConfig_prat.ps1"
+    $pratConfig = & "$pratRoot/lib/Get-LayerViolationsConfig_prat.ps1"
 
     $prefsConfig = $null
     if ($prefsRoot) {
-        $f = "$prefsRoot/lib/layerViolationsConfig_prefs.ps1"
+        $f = "$prefsRoot/lib/Get-LayerViolationsConfig_prefs.ps1"
         if (Test-Path $f) {
-            . $f
-            $prefsConfig = $prefsLayerViolationsConfig
+            $prefsConfig = & $f
         }
     }
 
     $deConfig = $null
     if ($deRoot) {
-        $f = "$deRoot/lib/layerViolationsConfig_de.ps1"
+        $f = "$deRoot/lib/Get-LayerViolationsConfig_de.ps1"
         if (Test-Path $f) {
-            . $f
-            $deConfig = $deLayerViolationsConfig
+            $deConfig = & $f
         }
     }
 
-    $pratEffective = Build-PratEffectiveConfig $pratLayerViolationsConfig $deConfig
+    $pratEffective = Build-PratEffectiveConfig $pratConfig $deConfig
 
     Write-Host "=== prat ==="
     Invoke-FindSensitiveData $pratRoot

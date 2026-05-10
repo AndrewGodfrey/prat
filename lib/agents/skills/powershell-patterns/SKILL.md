@@ -1,8 +1,14 @@
 ---
 name: powershell-patterns
-description: Use when writing PowerShell functions, scripts, or parameter-forwarding wrappers. Covers
-  gotchas with argument passing, string handling, and common patterns in this codebase.
+description: Use when writing PowerShell code. Covers gotchas with arrays, argument passing, string
+  handling, and common patterns in this codebase.
 ---
+
+# Accumulating into an array
+
+Start with `$x = @()` and use `$x +=` to add elements. Do not use `[array]$source` when `$source`
+might come from an `if`/`else` expression — PowerShell's pipeline can collapse an empty `@()` to
+`$null`, so `[array]$null` gives `@($null)` (one null element) instead of an empty array.
 
 # Parameter forwarding in wrapper functions
 

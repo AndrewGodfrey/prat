@@ -115,19 +115,19 @@ Describe 'Invoke-CheckPratLayers' {
 
         New-Item -ItemType Directory "$script:td/prat/lib"     -Force | Out-Null
         New-Item -ItemType Directory "$script:td/prat/pathbin" -Force | Out-Null
-        Set-Content "$script:td/prat/lib/layerViolationsConfig_prat.ps1" `
-            '$pratLayerViolationsConfig = @{ bannedPatterns = @(@{ pattern = "prat-rule"; description = "prat" }) }'
+        Set-Content "$script:td/prat/lib/Get-LayerViolationsConfig_prat.ps1" `
+            '@{ bannedPatterns = @(@{ pattern = "prat-rule"; description = "prat" }) }'
         Set-Content "$script:td/prat/pathbin/Find-LayerViolations.ps1" 'param($Path, $Config)'
 
         New-Item -ItemType Directory "$script:td/prefs/lib" -Force | Out-Null
-        Set-Content "$script:td/prefs/lib/layerViolationsConfig_prefs.ps1" `
-            '$prefsLayerViolationsConfig = @{ bannedPatterns = @(@{ pattern = "prefs-rule"; description = "prefs" }) }'
+        Set-Content "$script:td/prefs/lib/Get-LayerViolationsConfig_prefs.ps1" `
+            '@{ bannedPatterns = @(@{ pattern = "prefs-rule"; description = "prefs" }) }'
 
         New-Item -ItemType Directory "$script:td/prefs-noconfig/lib" -Force | Out-Null
 
         New-Item -ItemType Directory "$script:td/de/lib" -Force | Out-Null
-        Set-Content "$script:td/de/lib/layerViolationsConfig_de.ps1" @'
-$deLayerViolationsConfig = @{
+        Set-Content "$script:td/de/lib/Get-LayerViolationsConfig_de.ps1" @'
+@{
     augmentPrat  = @{ bannedPatterns = @(@{ pattern = "de-prat";  description = "de prat"  }) }
     augmentPrefs = @{ bannedPatterns = @(@{ pattern = "de-prefs"; description = "de prefs" }) }
 }

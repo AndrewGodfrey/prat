@@ -20,9 +20,9 @@ param (
     [hashtable] $Config
 )
 
-. "$PSScriptRoot/../lib/layerViolationsConfig_prat.ps1"
+$defaultPratConfig = & "$PSScriptRoot/../lib/Get-LayerViolationsConfig_prat.ps1"
 
-if (-not $Config) { $Config = $pratLayerViolationsConfig }
+if (-not $Config) { $Config = $defaultPratConfig }
 
 function Find-LayerViolationsInContent {
     param (
@@ -53,7 +53,7 @@ function Find-LayerViolationsInContent {
 function Get-LayerViolationFindings {
     param(
         [string]    $Path,
-        [hashtable] $Config = $pratLayerViolationsConfig
+        [hashtable] $Config = $defaultPratConfig
     )
 
     $allFindings = [System.Collections.Generic.List[string]]::new()
