@@ -32,6 +32,11 @@ Some deploy stages track state in instDb files. For those, to force a re-run:
 
 Write the test first, and run it to verify it fails in the expected way. Only implement after that.
 
+The criterion for whether something needs tests is whether it contains non-trivial logic — not its
+file extension or container. Logic embedded e.g. in a markdown skill file, or a config, is still source code,
+and is still subject to the same TDD discipline. If this means it's difficult to test where it currently is - address
+that. (Which could be by moving it, or by making it testable in place).
+
 Run tests after any fix, even when confident. Reasons: catches unknown unknowns, and gives the user
 evidence rather than just your assurance.
 
@@ -230,19 +235,6 @@ is what actually gets injected. Verify CC hook behavior empirically rather than 
 
 ## Public repos (e.g. prat, prefs)
 
-Before finalizing a feature branch or committing directly to main in a public repo, run
-`Find-SensitiveData` and remind the user to do this if they haven't mentioned it:
-
-```powershell
-Find-SensitiveData -Path ~/prat  # for example
-```
-
-The tool auto-detects hardcoded home paths, email addresses, and IP addresses. Also manually
-verify the file contains none of:
-
-- Full paths with username (`C:\Users\<username>\...`) — replace with `$home\...`
-- Account usernames (GitHub, work accounts, etc.)
-- User email addresses
-- Machine names, hostnames
-- Internal URLs, site names, channel/team names, email DLs, IP addresses
-- Tokens, passwords, API keys, SSH private keys
+Before finalizing a feature branch or committing directly to main in a public repo,
+invoke `/check-prat-layers`. This runs `Find-SensitiveData` and `Find-LayerViolations`
+across all installed prat-ecosystem repos with the appropriate merged config for each.

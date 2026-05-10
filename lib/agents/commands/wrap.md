@@ -10,9 +10,8 @@ unclear.
 - **Check the wrap list.** Look for a "## Wrap list" section near the top of the active plan
   (typically just after the "## Next step" line). If present, work through each item in it.
 
-- **Public repo check.** If any changes in this step touch a public repo (prefs, prat), run
-  `Find-SensitiveData` against each affected repo and verify the results against the checklist in
-  `prat/lib/agents/agent-user.md`.
+- **Public repo check.** If any changes in this step touch a public repo (prefs, prat),
+  invoke `/check-prat-layers`.
 
 ## 2. Update plan
 

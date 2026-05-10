@@ -15,8 +15,8 @@ Mechanisms are provided so that you can 'override' various things in Prat:
 It's logical to have distinct dev envs for different machines - e.g. personal, school, work, test machine.
 This design supports that.
 
-I still recommend sharing "your" customization between these environments, as much as you can.
-e.g. My 'personal' environment installs an "Install-MyPrat.ps1" script somewhere I can use from all of them.
+It's recommended to share customization between these environments as much as possible.
+e.g. a personal prefs repo can install a shared script accessible from all of them.
 
 
 ### Multiple dev envs on a single machine
@@ -35,8 +35,8 @@ need to be sandboxed.)
 
 So then (returning to the previous section) if you do have different dev envs on different machines - 
 they should still try to use the same human-computer interface as much as possible.
-e.g. I arrange for "b" to build on all of them (as much as possible - yes I still live with some edge cases,
-but the cognitive load is still much lower).
+e.g. arranging for "b" to build on all of them (with some edge cases accepted)
+keeps cognitive load much lower.
 
 
 ### Nested dev envs
@@ -44,5 +44,5 @@ I could also imagine someone wanting it to be nestable. This makes sense:
 - instead of customizing Prat, you might piggyback on someone else's customization.
 - or, you could have some common customization, and then on a work machine some work-specific customization
 
-I've started in that direction by making Get-CodebaseLayers.ps1 return an array. (i.e. a 'stack' of devenvs).
-But more work is needed.
+`Get-CodebaseLayers.ps1` returns an array (i.e. a 'stack' of devenvs) to support this,
+but more work is needed.

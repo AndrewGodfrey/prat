@@ -7,10 +7,13 @@ description: Use when the user asks Claude to remember or note something for fut
 
 ## Where to save
 
-- **Dev-environment-wide** (applies to any repo in this environment) → `prat/lib/agents/agent-user.md`
+- **Truly universal** (any prat user on any machine) → `prat/lib/agents/agent-user_prat.md`
+  Note: this file loads in **every session**, not just when working in prat/prefs/de. Don't put
+  guidance here that's only relevant when editing those repos — it will pollute unrelated sessions.
 - **Repo-specific facts** → that repo's `CLAUDE.md`
-- **User-specific, dev-env-specific preferences** → the user's own dev-env repro, if they have one.
-- **User-specific preferences** → the user's own prefs repo, if they have one.
+- **User-specific preferences** → the user's prefs repo (`prefs/lib/agents/agent-user_prefs.md`), if they have one
+- **User-specific, or only relevant when editing prat/prefs/de** → the user's de repo
+  (`de/lib/agents/agent-user_de.md`), if they have one
 - **Triggerable procedures** → create or modify a command, agent, or skill
 
 ## What to capture

@@ -6,11 +6,12 @@ This file is read-only. Save memories by editing the correct source files:
 - Project-specific repo facts → edit the project repo's `CLAUDE.md`, e.g. `prat/CLAUDE.md`
   - Use for: repo structure, key file paths, build/test commands, project conventions
   - If it doesn't already exist, tell the user you're creating a new one.
-- Cross-repo guidelines that apply broadly (no special trigger needed) → `prat/lib/agents/agent-user.md`
-  - User-specific variant → the user's `de/lib/agents/agent-user.md` (though they might manage it differently)
+- Cross-repo guidelines that apply broadly (no special trigger needed) → `prat/lib/agents/agent-user_prat.md`
+  - User-specific variant → the user's `de/lib/agents/agent-user_de.md` (if they have a de repo)
+  - Preferences shared across environments → the user's `prefs/lib/agents/agent-user_prefs.md` (if they have a prefs repo)
 - Context-specific patterns (can be reliably triggered when relevant) → create/update a skill in `prat/lib/agents/skills/`
-  - skills are deployed to `de/.claude/skills/` — always edit the source, never the deployed copy
-  - skills are opt-in — the user's `de` deploys none/some/all of them
+  - skills are deployed to `.claude/skills/` by the user's de or prefs deploy — always edit the source, never the deployed copy
+  - skills are opt-in — the user's de/prefs deploys none/some/all of them
 - If none of these fit - ask the user. Do not edit `~/.claude/projects/*/memory/` files - those are deployed by `d`.
 
 These are in git repos — edits are visible and reviewable. No need to wait for confirmation.
