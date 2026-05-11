@@ -1,19 +1,47 @@
 BeforeAll {
     . "$PSScriptRoot/check-prat-layers.ps1"
 
-    $script:pratBase  = @{ bannedPatterns = @(@{ pattern = 'prat-rule';  description = 'prat rule'  }) }
-    $script:prefsBase = @{ bannedPatterns = @(@{ pattern = 'prefs-rule'; description = 'prefs rule' }) }
-    $script:augPrat   = @{ bannedPatterns = @(@{ pattern = 'de-prat-rule';  description = 'de prat rule'  }) }
-    $script:augPrefs  = @{ bannedPatterns = @(@{ pattern = 'de-prefs-rule'; description = 'de prefs rule' }) }
+    $script:pratBase      = @{ bannedPatterns = @(@{ pattern = 'prat-rule';       description = 'prat rule'       }) }
+    $script:prefsBase     = @{ bannedPatterns = @(@{ pattern = 'prefs-rule';      description = 'prefs rule'      }) }
+    $script:augPrat       = @{ bannedPatterns = @(@{ pattern = 'de-prat-rule';    description = 'de prat rule'    }) }
+    $script:augPrefs      = @{ bannedPatterns = @(@{ pattern = 'de-prefs-rule';   description = 'de prefs rule'   }) }
+    $script:prefsAugPrat  = @{ bannedPatterns = @(@{ pattern = 'prefs-prat-rule'; description = 'prefs prat rule' }) }
 }
 
 Describe 'Build-PratEffectiveConfig' {
-    Context 'no de config' {
+    Context 'no prefs or de config' {
         It 'returns prat patterns unchanged' {
-            $result = Build-PratEffectiveConfig $script:pratBase $null
+            $result = Build-PratEffectiveConfig $script:pratBase $null $null
 
             $result.bannedPatterns | Should -HaveCount 1
             $result.bannedPatterns[0].pattern | Should -Be 'prat-rule'
+        }
+    }
+
+    Context 'prefs config with augmentPrat' {
+        It 'merges prefs augment patterns into prat config' {
+            $prefsConfig = @{ augmentPrat = $script:prefsAugPrat }
+
+            $result = Build-PratEffectiveConfig $script:pratBase $prefsConfig $null
+
+            $result.bannedPatterns | Should -HaveCount 2
+            $result.bannedPatterns[1].pattern | Should -Be 'prefs-prat-rule'
+        }
+    }
+
+    Context 'prefs config without augmentPrat key' {
+        It 'returns prat patterns unchanged' {
+            $result = Build-PratEffectiveConfig $script:pratBase @{ } $null
+
+            $result.bannedPatterns | Should -HaveCount 1
+        }
+    }
+
+    Context 'prefs config with augmentPrat but no bannedPatterns key' {
+        It 'does not add null entries' {
+            $result = Build-PratEffectiveConfig $script:pratBase @{ augmentPrat = @{ } } $null
+
+            $result.bannedPatterns | Should -HaveCount 1
         }
     }
 
@@ -21,7 +49,7 @@ Describe 'Build-PratEffectiveConfig' {
         It 'merges de augment patterns into prat config' {
             $deConfig = @{ augmentPrat = $script:augPrat }
 
-            $result = Build-PratEffectiveConfig $script:pratBase $deConfig
+            $result = Build-PratEffectiveConfig $script:pratBase $null $deConfig
 
             $result.bannedPatterns | Should -HaveCount 2
             $result.bannedPatterns[1].pattern | Should -Be 'de-prat-rule'
@@ -30,7 +58,7 @@ Describe 'Build-PratEffectiveConfig' {
 
     Context 'de config without augmentPrat key' {
         It 'returns prat patterns unchanged' {
-            $result = Build-PratEffectiveConfig $script:pratBase @{ }
+            $result = Build-PratEffectiveConfig $script:pratBase $null @{ }
 
             $result.bannedPatterns | Should -HaveCount 1
         }
@@ -38,9 +66,20 @@ Describe 'Build-PratEffectiveConfig' {
 
     Context 'de config with augmentPrat but no bannedPatterns key' {
         It 'does not add null entries' {
-            $result = Build-PratEffectiveConfig $script:pratBase @{ augmentPrat = @{ } }
+            $result = Build-PratEffectiveConfig $script:pratBase $null @{ augmentPrat = @{ } }
 
             $result.bannedPatterns | Should -HaveCount 1
+        }
+    }
+
+    Context 'prefs and de both with augmentPrat' {
+        It 'merges both augment patterns into prat config' {
+            $prefsConfig = @{ augmentPrat = $script:prefsAugPrat }
+            $deConfig    = @{ augmentPrat = $script:augPrat }
+
+            $result = Build-PratEffectiveConfig $script:pratBase $prefsConfig $deConfig
+
+            $result.bannedPatterns | Should -HaveCount 3
         }
     }
 }

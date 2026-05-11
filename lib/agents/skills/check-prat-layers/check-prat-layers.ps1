@@ -1,5 +1,8 @@
-function Build-PratEffectiveConfig($pratConfig, $deConfig) {
+function Build-PratEffectiveConfig($pratConfig, $prefsConfig, $deConfig) {
     $eff = @{ bannedPatterns = [array]$pratConfig.bannedPatterns }
+    if ($null -ne $prefsConfig -and $prefsConfig.augmentPrat.bannedPatterns) {
+        $eff.bannedPatterns += $prefsConfig.augmentPrat.bannedPatterns
+    }
     if ($null -ne $deConfig -and $deConfig.augmentPrat.bannedPatterns) {
         $eff.bannedPatterns += $deConfig.augmentPrat.bannedPatterns
     }
@@ -38,7 +41,7 @@ function Invoke-CheckPratLayers($pratRoot, $prefsRoot, $deRoot) {
         }
     }
 
-    $pratEffective = Build-PratEffectiveConfig $pratConfig $deConfig
+    $pratEffective = Build-PratEffectiveConfig $pratConfig $prefsConfig $deConfig
 
     Write-Host "=== prat ==="
     Invoke-FindSensitiveData $pratRoot
