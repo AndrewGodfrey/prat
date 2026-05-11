@@ -74,8 +74,9 @@ CC is not well-designed for Windows. Review this section when CC improves Window
 
 - Always use forward slashes in paths, e.g. `C:/Users/foo` not `C:\Users\foo`. Backslashes will be
   misinterpreted.
-- `~` only expands in pwsh. Most external programs on Windows (including git) don't understand it —
-  use `$home/prefs` or the full path instead. In pwsh you can freely use `~/prefs`, `cd ~/prat`, etc.
+- `~` in the Bash tool expands to a POSIX path (`/c/Users/...`). Windows-native programs (including
+  git) reject it. Use `pwsh -c '...'` (where `~` expands to a Windows path), or a full `C:/...`
+  path. In pwsh you can freely use `~/prefs`, `cd ~/prat`, etc.
 - For PowerShell one-liners, use single quotes: `pwsh -c '...'` — bash won't interpolate `$` or
   backticks, so PowerShell receives them as-is. Only use double quotes if you need bash to expand
   a **bash** variable into the command. PowerShell variables (`$home`, `$env:USERNAME`, etc.) must

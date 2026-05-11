@@ -4,6 +4,12 @@ description: Use when writing PowerShell code. Covers gotchas with arrays, argum
   handling, and common patterns in this codebase.
 ---
 
+# Calling a script for its return value
+
+Use `& $file` not `. $file`. Dot-source runs the script in the current scope and imports its
+definitions — only use it when you need that (e.g. loading helper functions). For a script that
+returns data, `& $file` is correct.
+
 # Accumulating into an array
 
 Start with `$x = @()` and use `$x +=` to add elements. Do not use `[array]$source` when `$source`
