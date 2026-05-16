@@ -57,4 +57,3 @@ When adding an exported function to a prat module (Installers, PratBase, TextFil
 1. Create/edit the `.ps1` file
 2. Dot-source it in the `.psm1`
 3. Add the function name to `FunctionsToExport` in the `.psd1` ← easy to forget
-
