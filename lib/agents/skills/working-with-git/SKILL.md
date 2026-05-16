@@ -57,6 +57,19 @@ into smaller, more focused commits. If retrospectively splitting already-written
 okay to do that without running tests on each individual commit — provided tests pass after the final
 split.
 
+## When content moves from one file to another
+
+When you create file B whose content comes substantially from existing file A, and A is being
+replaced with new content: git can preserve B's history (tracing it back through A) if you
+commit this as a rename — even if you wouldn't naturally call it one.
+
+1. `git mv A B` with no content edits and commit it immediately — do this regardless of branch,
+   since a pure rename is trivially reviewable and the user can amend it.
+2. Content changes (edits to B, new A content, related changes) go in a second commit,
+   following the normal rules above for who commits.
+
+## Commit message format
+
 A commit in the same area as the previous one, should omit the prefix. Example sequence (from oldest to newest):
 ```
 `instPackages`: Move `forkGitClient` to `$pratPackages` table
