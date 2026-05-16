@@ -7,6 +7,9 @@
 # .NOTES
 # What this does, depends on the codebase. It might do nothing.
 # The purpose of this is to provide a consistent dev inner loop. I alias 't' to run this directly, or 'x' to run it as part of a larger loop.
+#
+# Coverage output: when coverage is enabled (the default), writes cobertura XML to
+# auto/testRuns/last/coverage.xml.
 
 [CmdletBinding()]
 param(

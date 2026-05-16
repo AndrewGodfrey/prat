@@ -8,11 +8,15 @@ description: Use in any pratified codebase, when doing TDD, running tests after 
 Use the `t` bash script with an absolute path — no `cd` required.
 Permission is granted as `Bash(t *)`.
 
+`t` works for any pratified codebase. It dispatches to the appropriate runner
+(Pester for `.Tests.ps1`, `dotnet test` for `.csproj`) based on the target.
+
 ```bash
-t ~/prat                                        # full suite, with coverage
-t ~/prat/lib/Something -NoCoverage              # focus on a directory
-t ~/prat/lib/Foo.Tests.ps1 -NoCoverage          # focus on a test file
-t ~/prat -Integration -NoCoverage               # run only integration-tagged tests
+t ~/prat                                            # full Pester suite, with coverage
+t ~/prat/lib/Something -NoCoverage                  # focus on a directory
+t ~/prat/lib/Foo.Tests.ps1 -NoCoverage              # focus on a test file
+t ~/prat -Integration -NoCoverage                   # run only integration-tagged tests
+t foo/myproject                                     # .NET (csproj directory)
 ```
 
 ## Parameters
