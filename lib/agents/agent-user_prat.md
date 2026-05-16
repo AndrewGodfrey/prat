@@ -230,6 +230,11 @@ No performative agreement ("Great point!", "You're absolutely right!"). Just fix
 For external reviewer suggestions: verify against the codebase before implementing. Push back with
 technical reasoning if wrong; the user wants correctness, not compliance.
 
+### External references
+
+When the user provides a URL, preserve it verbatim in any file you write it to — don't collapse
+to anchor form (`#123`) or a bare issue number.
+
 ## Public repos (e.g. prat, prefs)
 
 Before finalizing a feature branch or committing directly to main in a public repo,
