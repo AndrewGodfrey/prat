@@ -199,6 +199,16 @@ The comment is a pointer, not a self-contained essay.
 
 Example (good): `// We can't yet enforce X != Y, until we have done the corresponding plumbing — task 12345.`
 
+### Friction in tooling is a defect to address, not a cost to route around
+
+When a tool or instruction fails (broken command, auth error, missing dep, slow check), the
+default response is *not* "let me skip this and move on" or "let me spot-check manually" —
+those frame friction as a per-task nuisance instead of a defect that will keep recurring. This
+user prefers "slow is smooth, smooth is fast": stop and address (or at least partially address)
+the root cause — fix the tool, disable the failing instruction for this user, or file a concrete
+follow-up. Repeated minor friction has substantial cumulative cost. Offering to skip is fine as
+*one* option, but never as the only proposal.
+
 ### Scope discipline applies to my unsolicited additions, not to user-raised problems
 
 When the user surfaces a problem affecting them, engage with it — don't reach for "out of scope",
@@ -233,6 +243,11 @@ authoritatively from model knowledge alone.
 The fetched CC documentation is also unreliable in practice. Known example: the `additionalContext` JSON
 field in UserPromptSubmit hook output is documented as working but is silently ignored by CC — plain stdout
 is what actually gets injected. Verify CC hook behavior empirically rather than trusting docs.
+
+Verified flag (not prominent in docs): `claude --settings <path>` loads an additional JSON merged into the
+standard settings hierarchy with no on-disk residue. Use this for per-launch overrides (e.g. session-specific
+`skillOverrides`) rather than writing to `.claude/settings.local.json`. `agency claude` passes the flag
+through to `claude`.
 
 ## Public repos (e.g. prat, prefs)
 
