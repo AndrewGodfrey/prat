@@ -63,11 +63,9 @@ verified green) alongside file changes. These are distinct states with different
 
 ---
 
-## Claude Code / tool workarounds (Windows)
+## agent harness workarounds for Windows
 
-CC is not well-designed for Windows. Review this section when CC improves Windows support.
-
-### Bash tool
+### Harnesses that use Bash
 
 - Always use forward slashes in paths, e.g. `C:/Users/foo` not `C:\Users\foo`. Backslashes will be
   misinterpreted.
@@ -84,17 +82,21 @@ CC is not well-designed for Windows. Review this section when CC improves Window
   stdin as interactive and print prompts instead of running the script.
 
 ### Editing files
+(Particularly bad on Windows because of CRLF vs LF)
+
+To undo an edit you just made: make ONE Edit call, with `old_string` and `new_string` literally
+swapped from your prior Edit call as stored in working memory. Do not re-read the file. Do not
+reconstruct content from memory. Do not make multiple approximating edits. Reach for git only when
+you have specific reason to distrust your working memory (file externally modified, many turns
+elapsed, suspect CRLF handling, or your prior edit overlapped other changes you need to preserve).
+Don't use `git checkout <file>` — it can wipe accumulated work.
+
+When inserting content, anchor on the **smallest unique string** at the insertion point. Don't pull
+surrounding unchanged content into `old_string` — it causes a noisier diff and is more likely to
+fail on CRLF files.
 
 Re-read a file whenever it may have changed since you last read it — e.g. the user has edited it,
 or time has passed. Don't rely on a stale read.
-
-To undo an edit you just made, your default move is an **inverse Edit**: swap the `old_string`
-and `new_string` from your original Edit call. You have both in your working memory — there's
-no need to regenerate the prior content from inferred memory, and no need to reach for
-`git diff` first. Reach for git only if you have a specific reason to doubt your own context
-(file modified externally, many turns elapsed since the edit, suspect whitespace/CRLF
-handling, or your edit overlaps other recent changes you want to preserve). Don't use
-`git checkout <file>` — it can wipe accumulated work even on files that appear untracked.
 
 For renaming a token across multiple files, use multiple Edit `replace_all` calls rather than a
 single pwsh heredoc with `-replace` + `Set-Content`. The pwsh approach can silently produce no
@@ -124,7 +126,7 @@ Workaround for large deletions:
 
 ## Model workarounds
 
-Compensate for model reasoning/behavior tendencies. Review when upgrading Claude model versions.
+Compensate for model reasoning/behavior tendencies. Review when upgrading agent model versions.
 
 ### Plan vs. context contradictions
 
