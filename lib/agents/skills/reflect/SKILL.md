@@ -1,4 +1,5 @@
 ---
+name: reflect
 description: End-of-session self-improvement sweep. User-invocable only — do not trigger autonomously.
 ---
 

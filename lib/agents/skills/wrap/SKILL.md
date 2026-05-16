@@ -1,4 +1,5 @@
 ---
+name: wrap
 description: Finalize the completed plan step and set up the next one. User-invocable only — do not trigger autonomously.
 ---
 

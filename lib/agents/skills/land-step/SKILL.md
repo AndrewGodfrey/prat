@@ -1,4 +1,5 @@
 ---
+name: land-step
 description: Part of the pr-workflow skill. Moves a landed "In review" step to the done file.
   User-invocable only — do not trigger autonomously.
 ---
