@@ -12,7 +12,7 @@ function main($hookData) {
 
 function Invoke-UserPromptSubmitCompanion($hookData, $companionPaths = $null) {
     if ($null -eq $companionPaths) {
-        $companionPaths = @(Resolve-PratLibFile "lib/claude/On-UserPromptSubmit.ps1" -ListAll)
+        $companionPaths = @(Resolve-PratLibFile "lib/agents/On-UserPromptSubmit.ps1" -ListAll)
     }
     foreach ($path in $companionPaths) {
         ($hookData | ConvertTo-Json -Compress) | pwsh -File $path | Out-Null
