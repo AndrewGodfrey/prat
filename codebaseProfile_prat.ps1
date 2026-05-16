@@ -41,6 +41,7 @@ function makeTestCommand([string]$cmd) {
             plog     = "auto/log"
             plib     = "lib"
             ptestrun = "auto/testRuns/last"
+            pag      = "lib/agents"
 
             # Global shortcuts
             appdata   = $env:appdata
