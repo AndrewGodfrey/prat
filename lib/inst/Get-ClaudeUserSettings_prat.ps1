@@ -9,7 +9,7 @@ return @{
             @{hooks = @(@{type = "command"; command = 'pwsh -c ''& "$home/prat/lib/On-AgentTurnCompleted.ps1"'''})}
         )
         UserPromptSubmit = @(
-            @{hooks = @(@{type = "command"; command = 'pwsh -c ''& "$home/prat/lib/claude/On-UserPromptSubmit.ps1"'''})}
+            @{hooks = @(@{type = "command"; command = 'pwsh -c ''& "$home/prat/lib/agents/On-UserPromptSubmit.ps1"'''})}
         )
     }
 }
