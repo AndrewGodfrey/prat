@@ -67,19 +67,32 @@ verified green) alongside file changes. These are distinct states with different
 
 ### Harnesses that use Bash
 
-- Always use forward slashes in paths, e.g. `C:/Users/foo` not `C:\Users\foo`. Backslashes will be
-  misinterpreted.
-- `~` in the Bash tool expands to a POSIX path (`/c/Users/...`). Windows-native programs (including
-  git) reject it. Use `pwsh -c '...'` (where `~` expands to a Windows path), or a full `C:/...`
-  path. In pwsh you can freely use `~/prefs`, `cd ~/prat`, etc.
-- For PowerShell one-liners, use single quotes: `pwsh -c '...'` — bash won't interpolate `$` or
-  backticks, so PowerShell receives them as-is. Only use double quotes if you need bash to expand
-  a **bash** variable into the command. PowerShell variables (`$home`, `$env:USERNAME`, etc.) must
-  stay in single quotes — bash expands them to empty. ❌ `pwsh -c "... $home ..."` silently passes
-  an empty string.
-- For multi-statement scripts or anything complex, write to a temp file with the Write tool and run
-  `pwsh -File <path>`. The `pwsh -File - <<'PWSH'` heredoc approach is unreliable — pwsh can treat
-  stdin as interactive and print prompts instead of running the script.
+**Bash-vs-PowerShell confusion** is a persistent, recurring problem — e.g. passing `C:\` paths to
+bash, or `/c/` paths to PowerShell, which occurs especially often with `~` or `$HOME`.
+
+In Git bash:
+- `~` and `$HOME` expand to `/c/...` (POSIX) forms. Git bash converts those to Windows paths only in
+  some contexts (bare command parameters) but not inside strings; Windows-native programs (including
+  git) reject POSIX forms. Use `pwsh -c '...'` (where `~` expands to a Windows path), or a full
+  `C:/...` path. In pwsh you can freely use `~/prefs`, `cd ~/prat`, etc.
+- `\` is bash's escape character, so use forward slashes everywhere: `~/prat` not `~\prat`.
+- Double quotes do not protect against interpolation. This pattern fails:
+  ```
+  pwsh -c "Get-Item '$HOME/foo'"
+  ```
+  `$HOME` expands to a POSIX form bash can't convert inside the string. Use single quotes instead:
+  `pwsh -c '...'`. PowerShell variables (`$home`, `$env:USERNAME`, etc.) must stay in single quotes —
+  bash expands them to empty.
+
+In Pwsh:
+- `/c/...` paths aren't recognized.
+- `~` is supported internally, but .NET and most external programs don't understand it. This is mostly
+  hidden by a patchwork — `Resolve-Path` translates it (but can't be used on non-existent paths);
+  sometimes we spackle it using `Expand-TildePath`.
+
+For multi-statement scripts or anything complex, write to a temp file with the Write tool and run
+`pwsh -File <path>`. The `pwsh -File - <<'PWSH'` heredoc approach is unreliable — pwsh can treat
+stdin as interactive and print prompts instead of running the script.
 
 ### Editing files
 (Particularly bad on Windows because of CRLF vs LF)
