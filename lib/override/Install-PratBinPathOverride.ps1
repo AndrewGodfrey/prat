@@ -11,7 +11,7 @@
 param($installationTracker, [string] $overrideBinPaths)
 
 $stage = $installationTracker.StartStage("Install-PratBinPathOverride.ps1")
-# Install a file "Get-OverrideBinPaths.ps1", which Add-PratBinPaths looks for.
+# Install a file "Get-OverrideBinPaths.ps1", which Set-PratBinPaths looks for.
 Install-TextToFile $stage "$home\prat\auto\profile\Get-OverrideBinPaths.ps1" (ConvertTo-Expression $overrideBinPaths)
 $installationTracker.EndStage($stage)
 

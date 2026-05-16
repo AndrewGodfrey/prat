@@ -1,20 +1,30 @@
+using module ..\PratBase\PratBase.psd1
+
 # SYNOPSIS
-#   Add Prat's binpaths to $env:Path if they have not been added already in this session.
+#   Set Prat's binpaths in $env:Path — idempotent. Removes inherited real-path equivalents of
+#   junction paths before adding them, so the junction-island version takes precedence.
 
-function addPath($path) {
-    # I find that some packages - like gsudo - leave $env:path with a trailing ';'. So I won't assume there isn't one.
-    if (!$env:Path.EndsWith(";")) {
-        $env:Path += ";"
-    }
-    $env:Path += $path
+function addJunctionPath($path) {
+    $realTarget = Resolve-JunctionInPath $path
+    $entries = @(($env:Path -split ';') | Where-Object { $_ -ne '' } | Where-Object {
+        (Resolve-JunctionInPath $_) -ine $realTarget
+    })
+    $env:Path = ($entries + $path) -join ';'
 }
 
-if (-not $global:__prat_binPathsSet) {
+function Set-PratBinPaths {
     if (Test-Path $home\prat\auto\profile\Get-OverrideBinPaths.ps1) {
-        addPath (&$home\prat\auto\profile\Get-OverrideBinPaths.ps1)
+        foreach ($p in ((&$home\prat\auto\profile\Get-OverrideBinPaths.ps1) -split ';' | Where-Object { $_ -ne '' })) {
+            addJunctionPath $p
+        }
     }
-    addPath (Resolve-Path "$PSScriptRoot\..\..\pathbin").Path 
-    addPath "$home\prat\auto\pathbin"
-    $global:__prat_binPathsSet = $true
+    addJunctionPath (Resolve-Path "$PSScriptRoot\..\..\pathbin").Path
+    addJunctionPath "$home\prat\auto\pathbin"
 }
 
+if ($MyInvocation.InvocationName -ne '.') {
+    if (-not $global:__prat_binPathsSet) {
+        Set-PratBinPaths
+        $global:__prat_binPathsSet = $true
+    }
+}
