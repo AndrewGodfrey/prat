@@ -170,5 +170,35 @@ Describe "Get-LayerViolationFindings" {
 
             $result | Should -HaveCount 0
         }
+
+        It "skips files under an excluded path" {
+            New-Item -ItemType Directory -Path "$script:testDir/auto" | Out-Null
+            "see $($script:dePattern)lib/foo.ps1" | Set-Content "$script:testDir/auto/generated.ps1" -Encoding utf8NoBOM
+
+            $config = @{
+                bannedPatterns = @(@{ pattern = $script:dePattern; description = "$($script:dePattern) reference" })
+                excludedPaths  = @('auto/')
+            }
+
+            $result = @(Get-LayerViolationFindings -Path $script:testDir -Config $config)
+
+            $result | Should -HaveCount 0
+        }
+
+        It "still finds violations outside excluded paths" {
+            New-Item -ItemType Directory -Path "$script:testDir/auto" | Out-Null
+            "see $($script:dePattern)lib/foo.ps1" | Set-Content "$script:testDir/auto/generated.ps1" -Encoding utf8NoBOM
+            "see $($script:dePattern)lib/foo.ps1" | Set-Content "$script:testDir/normal.ps1" -Encoding utf8NoBOM
+
+            $config = @{
+                bannedPatterns = @(@{ pattern = $script:dePattern; description = "$($script:dePattern) reference" })
+                excludedPaths  = @('auto/')
+            }
+
+            $result = @(Get-LayerViolationFindings -Path $script:testDir -Config $config)
+
+            $result | Should -HaveCount 1
+            $result[0] | Should -Match 'normal\.ps1'
+        }
     }
 }

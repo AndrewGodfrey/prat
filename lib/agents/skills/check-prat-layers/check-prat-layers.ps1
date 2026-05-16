@@ -1,5 +1,8 @@
 function Build-PratEffectiveConfig($pratConfig, $prefsConfig, $deConfig) {
-    $eff = @{ bannedPatterns = [array]$pratConfig.bannedPatterns }
+    $eff = @{
+        bannedPatterns = [array]$pratConfig.bannedPatterns
+        excludedPaths  = if ($pratConfig.excludedPaths) { $pratConfig.excludedPaths } else { @() }
+    }
     if ($null -ne $prefsConfig -and $prefsConfig.augmentPrat.bannedPatterns) {
         $eff.bannedPatterns += $prefsConfig.augmentPrat.bannedPatterns
     }

@@ -23,4 +23,10 @@ Describe "Get-LayerViolationsConfig_prat" {
 
         $result.bannedPatterns | Should -HaveCount 0
     }
+
+    It "excludedPaths contains 'auto/'" {
+        $result = & $script:configFile
+
+        $result.excludedPaths | Should -Contain 'auto/'
+    }
 }

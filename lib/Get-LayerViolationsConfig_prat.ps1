@@ -4,4 +4,5 @@
 
 @{
     bannedPatterns = @()
+    excludedPaths  = @('auto/')
 }

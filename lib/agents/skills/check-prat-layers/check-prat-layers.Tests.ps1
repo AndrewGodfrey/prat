@@ -82,6 +82,16 @@ Describe 'Build-PratEffectiveConfig' {
             $result.bannedPatterns | Should -HaveCount 3
         }
     }
+
+    Context 'prat config with excludedPaths' {
+        It 'propagates excludedPaths from prat config' {
+            $pratWithExclusions = @{ bannedPatterns = @(); excludedPaths = @('auto/') }
+
+            $result = Build-PratEffectiveConfig $pratWithExclusions $null $null
+
+            $result.excludedPaths | Should -Contain 'auto/'
+        }
+    }
 }
 
 Describe 'Build-PrefsEffectiveConfig' {

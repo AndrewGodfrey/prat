@@ -56,6 +56,7 @@ function Get-LayerViolationFindings {
         [hashtable] $Config = $defaultPratConfig
     )
 
+    $excludedPaths = if ($Config.excludedPaths) { [array]$Config.excludedPaths } else { @() }
     $allFindings = [System.Collections.Generic.List[string]]::new()
 
     if (Test-Path $Path -PathType Leaf) {
@@ -79,6 +80,13 @@ function Get-LayerViolationFindings {
             $files = Get-ChildItem -Recurse |
                 Where-Object { $_.Name -match '\.(ps1|md)$' } |
                 ForEach-Object { $_.FullName.Substring($Path.Length + 1) -replace '\\', '/' }
+        }
+
+        if ($excludedPaths.Count -gt 0) {
+            $files = $files | Where-Object {
+                $rel = $_
+                -not ($excludedPaths | Where-Object { $rel.StartsWith($_) })
+            }
         }
 
         foreach ($rel in $files) {
