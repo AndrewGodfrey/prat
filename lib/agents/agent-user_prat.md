@@ -239,3 +239,11 @@ is what actually gets injected. Verify CC hook behavior empirically rather than 
 Before finalizing a feature branch or committing directly to main in a public repo,
 invoke `/check-prat-layers`. This runs `Find-SensitiveData` and `Find-LayerViolations`
 across all installed prat-ecosystem repos with the appropriate merged config for each.
+
+## Layer conventions
+
+When writing examples or prose in prat (or any public layer):
+- Use generic placeholder names (`myproject`, `myrepo`, `myfunction`) — never real names from
+  private layers (like the user's `de` repo)
+- Don't reference identifiers that don't exist in prat itself
+
