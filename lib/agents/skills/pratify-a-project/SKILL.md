@@ -16,7 +16,7 @@ Otherwise — for external projects, put prat configuration in another repo:
 - `de/codebaseProfile_de.ps1` — environment-specific (for projects tied to one dev environment e.g. school / personal / work)
 - `prefs/codebaseProfile_prefs.ps1` — user-global (for projects shared across all the user's environments)
 
-For projects whose source lives *inside* `prefs` or `de` (e.g. `de/lib/projects/cssample`), register them
+For projects whose source lives *inside* `prefs` or `de` (e.g. `de/lib/projects/myproject`), register them
 under a relative section key like `"lib/projects"` rather than `"C:/git"` or a hardcoded absolute
 path. The section key is resolved relative to the codebaseProfile file's directory, so the project
 root ends up as `<de-root>/lib/projects/<id>`.
@@ -39,7 +39,7 @@ which repos live. Each repo's root defaults to `<sectionRoot>/<id>`.
     }
     "lib/projects" = @{
         repos = @{
-            cssample = @{}   # root resolves to <de-root>/lib/projects/cssample
+            myproject = @{}   # root resolves to <de-root>/lib/projects/myproject
         }
     }
 }

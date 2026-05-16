@@ -63,11 +63,11 @@ Use `Get-FileCoverage -FilePath "C:\path\to\File.ps1"` for a per-function summar
 Use `Get-FileCoverage -Detail -FilePath "C:\path\to\File.ps1"` for a line-range summary.
 
 Both `Get-FileCoverage` and `gcr` infer the coverage file from the git repo root: `<repoRoot>/auto/testRuns/last/coverage.xml`.
-For projects with a separate coverage subdirectory (e.g. cssample), use `-Project`:
+For projects with a separate coverage subdirectory (e.g. a subproject), use `-Project`:
 
 ```powershell
-gcr -Project cssample
-Get-FileCoverage -FilePath "C:\path\to\File.cs" -Project cssample
+gcr -Project myproject
+Get-FileCoverage -FilePath "C:\path\to\File.cs" -Project myproject
 ```
 
 `-Project <id>` resolves to `<repoRoot>/auto/testRuns/<id>/last/coverage.xml`.
