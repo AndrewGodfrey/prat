@@ -256,11 +256,11 @@ Describe "Get-FileCoverage" {
         }
     }
 
-    Context "subproject coverage path inference - root outside git root (cssample pattern)" {
+    Context "subproject coverage path inference - root outside git root" {
         BeforeAll {
             $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
-            $repoDir   = "$realTestDrive/cssample-gitrepo"
-            $nestedDir = "$repoDir/lib/projects/cssample"
+            $repoDir   = "$realTestDrive/testcsproject-gitrepo"
+            $nestedDir = "$repoDir/lib/projects/testcsproject"
             New-Item -ItemType Directory -Path $nestedDir -Force | Out-Null
             git init $repoDir --quiet | Out-Null
 
@@ -269,9 +269,9 @@ Describe "Get-FileCoverage" {
             "content" | Set-Content "$srcDir/Greeter.cs"
 
             # Shadow Get-PratProject: returns a top-level registration whose root is nested inside the git repo
-            function Get-PratProject { param($Location) @{ id = 'cssample'; root = $nestedDir } }
+            function Get-PratProject { param($Location) @{ id = 'testcsproject'; root = $nestedDir } }
 
-            $coverageDir = "$repoDir/auto/testRuns/cssample/last"
+            $coverageDir = "$repoDir/auto/testRuns/testcsproject/last"
             New-Item -ItemType Directory -Path $coverageDir -Force | Out-Null
             @"
 <report name="test">

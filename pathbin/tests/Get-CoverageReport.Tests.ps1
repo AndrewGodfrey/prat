@@ -154,16 +154,16 @@ Describe "default coverageFile inference" {
         $fileRow | Should -Not -BeNullOrEmpty
     }
 
-    It "uses project subdirectory when project root is nested inside git root (cssample pattern)" {
+    It "uses project subdirectory when project root is nested inside git root" {
         $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
-        $repoDir   = "$realTestDrive/gcr-cssamplerepo"
-        $nestedDir = "$repoDir/lib/projects/cssample"
+        $repoDir   = "$realTestDrive/gcr-testcsproject"
+        $nestedDir = "$repoDir/lib/projects/testcsproject"
         New-Item -ItemType Directory -Path $nestedDir -Force | Out-Null
         git init $repoDir --quiet | Out-Null
 
-        function Get-PratProject { param($Location) @{ id = 'cssample'; root = $nestedDir } }
+        function Get-PratProject { param($Location) @{ id = 'testcsproject'; root = $nestedDir } }
 
-        $projectDir = "$repoDir/auto/testRuns/cssample/last"
+        $projectDir = "$repoDir/auto/testRuns/testcsproject/last"
         New-Item -ItemType Directory -Path $projectDir -Force | Out-Null
         @"
 <report name="test">
