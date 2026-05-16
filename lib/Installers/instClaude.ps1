@@ -8,6 +8,12 @@ function Install-ClaudeUserConfig {
 
     $content += Import-TextFile "$PSScriptRoot\..\agents\agent-user_prat.md"
 
+    $ccSpecificFile = "$PSScriptRoot\..\agents\harness-specific\cc\prat-cc.md"
+    if (Test-Path $ccSpecificFile) {
+        $content += "`n`n"
+        $content += Import-TextFile $ccSpecificFile
+    }
+
     foreach ($path in $fragmentPaths) {
         $content += "`n`n"
         $content += Import-TextFile $path

@@ -11,7 +11,7 @@ These are stable — no periodic review needed.
 - `glp [range]` — compact git log (date, author, hash, message). Prefer over `git log --oneline`
   when reviewing history. Example: `glp main...localAgentSandbox`.
   Features: Omits author where irrelevant; automatically adds `--graph` where relevant.
-  **Note:** `glp` is a PowerShell function. In the bash tool, invoke it via `pwsh -c 'glp ...'`.  
+  **Note:** `glp` is a PowerShell function. In bash contexts, invoke it via `pwsh -c 'glp ...'`.  
 
 #### Interactive aliases (installed by prat into `~/prat/auto/profile/interactiveAliases.ps1`)
 
@@ -50,13 +50,10 @@ tests; refactor; cover with unit tests; remove the pinning tests.
 See the `testing` skill for more detail. Use the `prat-run-tests` skill for running tests in
 pratified codebases; use the `run-tests` skill for other codebases.
 
-When a subagent's summary doesn't have enough detail, three recovery paths:
-- Resume the subagent via SendMessage with its agent ID (returned in the Agent tool result)
-- Full transcript: `~/.claude/projects/{project}/{sessionId}/subagents/agent-{id}.jsonl`
-- Improve the agent instructions to request more detail in the summary, then redo (may not be
-  practical if the work was expensive or has side effects)
+When a subagent's summary doesn't have enough detail, have a way to recover — either by resuming
+the subagent or accessing its full output.
 
-When /compact summarizes a session, record the state of each test run (not yet run / verified red /
+When context is compacted/summarized, record the state of each test run (not yet run / verified red /
 verified green) alongside file changes. These are distinct states with different implications.
 
 ### Dev environment
@@ -131,7 +128,7 @@ Compensate for model reasoning/behavior tendencies. Review when upgrading Claude
 
 ### Plan vs. context contradictions
 
-Before implementing a plan step, cross-check it against CLAUDE.md and done files for contradictions —
+Before implementing a plan step, cross-check it against project instructions and done files for contradictions —
 plans can go stale. Also cross-check the step spec against the plan's own design discussion: if the
 discussion flags an edge case as unresolved or awkward, verify the step actually handles it.
 
@@ -232,22 +229,6 @@ No performative agreement ("Great point!", "You're absolutely right!"). Just fix
 
 For external reviewer suggestions: verify against the codebase before implementing. Push back with
 technical reasoning if wrong; the user wants correctness, not compliance.
-
-### Claude Code feature knowledge
-
-Your training data knowledge of Claude Code features is unreliable — file loading behavior, include syntax,
-skill discovery, settings, and conventions are all areas where you've been confidently wrong. Before making
-claims about what Claude Code does or doesn't support, consult the `claude-code-guide` agent. Don't answer
-authoritatively from model knowledge alone.
-
-The fetched CC documentation is also unreliable in practice. Known example: the `additionalContext` JSON
-field in UserPromptSubmit hook output is documented as working but is silently ignored by CC — plain stdout
-is what actually gets injected. Verify CC hook behavior empirically rather than trusting docs.
-
-Verified flag (not prominent in docs): `claude --settings <path>` loads an additional JSON merged into the
-standard settings hierarchy with no on-disk residue. Use this for per-launch overrides (e.g. session-specific
-`skillOverrides`) rather than writing to `.claude/settings.local.json`. `agency claude` passes the flag
-through to `claude`.
 
 ## Public repos (e.g. prat, prefs)
 
