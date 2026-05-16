@@ -51,11 +51,12 @@ function Install-ClaudeSkillSet($stage, $sources, [string] $destDir) {
                     # Skip test files; they're for source-side validation, not deployment.
                     if ($file.Name -like '*.Tests.ps1') { continue }
 
-                    # Pick comment syntax by extension. PowerShell needs `#`; markdown/HTML use `<!-- -->`.
+                    # Pick comment syntax by extension. PowerShell and Python need `#`; markdown/HTML use `<!-- -->`.
                     $header = switch -Wildcard ($file.Extension.ToLower()) {
                         '.ps1'  { $hashHeader }
                         '.psm1' { $hashHeader }
                         '.psd1' { $hashHeader }
+                        '.py'   { $hashHeader }
                         default { $htmlHeader }
                     }
 
