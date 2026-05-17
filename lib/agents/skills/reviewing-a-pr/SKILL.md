@@ -18,9 +18,9 @@ can be unavoidable — so any review workflow has to handle the merged-in case c
 
 # Context
 
-Written against Claude Code **v2.1.119**'s built-in `/review` skill, which tends to review base churn
-as well as feature work. If a future `/review` skill implementation handles this cleanly, 
-perhaps this skill can be retired.
+Some review workflows use two-dot diffs that include base churn; this skill picks ranges that
+stay clean even when the base has been merged in. If the tool being used already handles this
+correctly, this skill is not needed.
 
 # What to do instead
 

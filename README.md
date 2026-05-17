@@ -78,7 +78,7 @@ preserve those sections — don't default to "add it to our deploy layer".
 - **`pathbin/`** — ~46 utility scripts placed on PATH (navigation, git helpers, testing, dev env management).
 - **`lib/autoHotKey/`** — AutoHotKey v2 scripts for Windows automation (editor integration, web search,
   text manipulation).
-- **`lib/claude/`** — Fragments assembled into the user-level `~/.claude/CLAUDE.md` by `Install-ClaudeUserConfig`.
+- **`lib/agents/`** — Fragments assembled into the user-level agent instruction / skill files.
 - **`lib/schtasks/`** — Scheduled tasks (daily cleanup, on-logon scripts).
 - **`auto/`** — Generated artifacts (gitignored): instDb, logs, coverage, cached completions, profile state.
 

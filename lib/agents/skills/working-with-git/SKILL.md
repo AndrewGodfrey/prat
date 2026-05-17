@@ -42,7 +42,7 @@ Examples:
 extract script `GetCoverageScope`
 simplify `t.sh`
 remove `Test-Prat.sh`
-tweak `instClaude.ps1`
+tweak `instFoo.ps1`
 `prat-run-unit-tests` skill: update to use `t.sh`
 `t`/`b` etc: let `-RepoRoot` override the `Get-Location`
 `t`: don't require `-Focus` if you use `-RepoRoot`

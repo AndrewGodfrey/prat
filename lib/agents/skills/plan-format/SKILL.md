@@ -21,7 +21,7 @@ See `fooPlan_done.md` for completed phases and design rationale.
 **Wrap list** — small checklist of things to verify before marking a step done (e.g. "check
 changes don't reference private files"). Stays near the top so it's visible when finishing work.
 
-**Phases** — action steps. Label each sub-step `[CLAUDE]` or `[USER]`. Strike through completed
+**Phases** — action steps. Label each sub-step `[AGENT]` or `[USER]`. Strike through completed
 items inline (`~~item~~ ✓ Done`) rather than deleting them, until the phase is fully done —
 then move the whole phase to `_done.md`.
 

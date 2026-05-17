@@ -23,7 +23,7 @@ section in the active plan:
 - Delete inapplicable items. Check off any already done (e.g. if the PR was published during
   the coding step).
 
-The step stays in "In review" until the PR merges. Once it lands, tell Claude to run `/land-step`.
+The step stays in "In review" until the PR merges. Once it lands, tell the agent to run `/land-step`.
 
 ## Modification to `plan-format`
 

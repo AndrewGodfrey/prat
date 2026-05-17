@@ -23,7 +23,7 @@ unclear.
   it to the corresponding `*_done.md` file. Do not leave a copy in both files.
 
 - **Flesh out the next step.** Expand the next step entry from terse bullets into actionable
-  detail — enough that a fresh Claude starting with "do the next step of this plan" can proceed
+  detail — enough that a fresh agent session starting with "do the next step of this plan" can proceed
   without ambiguity.
 
 - **Add a step to check test coverage for modified lines**

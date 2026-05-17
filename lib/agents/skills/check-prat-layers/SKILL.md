@@ -11,7 +11,7 @@ data. Run before finalizing any feature branch or direct commit to a public repo
 ## How to run
 
 ```bash
-pwsh -c '& "$home/.claude/skills/check-prat-layers/check-prat-layers.ps1"'
+pwsh -c '& "$home/prat/lib/agents/skills/check-prat-layers/check-prat-layers.ps1"'
 ```
 
 ## After running
