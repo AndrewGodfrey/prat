@@ -5,6 +5,7 @@ description: Load before working on the integration of a project into the prat d
 
 This skill covers how to integrate an external repo/project so that it presents a uniform
 inner-loop dev interface to the user: `pb` (prebuild), `b` (build), `t` (test), `d` (deploy).
+(For details on that interface, see the `pratified-dev-loop` skill.)
 
 ## Question 1: Internal or external?
 

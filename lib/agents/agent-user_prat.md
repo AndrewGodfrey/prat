@@ -12,16 +12,22 @@ These are stable — no periodic review needed.
   when reviewing history. Example: `glp main...localAgentSandbox`.
   Features: Omits author where irrelevant; automatically adds `--graph` where relevant.
   **Note:** `glp` is a PowerShell function. In bash contexts, invoke it via `pwsh -c 'glp ...'`.  
+- `ude` — Update-DevEnvironment
+- `c` — Set-LocationUsingShortcut (navigate by repo shortcut)
 
-#### Interactive aliases (installed by prat into `~/prat/auto/profile/interactiveAliases.ps1`)
+### Pratified projects
+
+To check if a project is pratified, `Get-PratProject (Get-Location)` — returns `$null` if not registered.
 
 When telling the user to run something, prefer these aliases over full command names:
 
-- `d` — Deploy-Codebase (runs the deploy script for the current codebase)
-- `ude` — Update-DevEnvironment
-- `t` — Test-Codebase
-- `b` — Build-Codebase
-- `c` — Set-LocationUsingShortcut (navigate by repo shortcut)
+- `d` — Deploy-Codebase (pratified projects only — see below)
+- `t` — Test-Codebase (pratified projects only — see below)
+- `b` — Build-Codebase (pratified projects only — see below)
+- `pb` — Prebuild-Codebase (pratified projects only — see below)
+
+For usage details, load the `pratified-dev-loop` skill.
+
 
 ### Forcing a deploy stage to re-run
 
@@ -47,7 +53,7 @@ sound (e.g. behavior will be tested manually; e.g. consequences of failure are s
 to change" is not sufficient on its own. To refactor a high-stakes area, one approach is: write pinning
 tests; refactor; cover with unit tests; remove the pinning tests.
 
-See the `testing` skill for more detail. Use the `prat-run-tests` skill for running tests in
+See the `testing` skill for more detail. Use the `pratified-dev-loop` skill for running tests in
 pratified codebases; use the `run-tests` skill for other codebases.
 
 When a subagent's summary doesn't have enough detail, have a way to recover — either by resuming

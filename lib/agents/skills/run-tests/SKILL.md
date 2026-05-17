@@ -1,6 +1,6 @@
 ---
 name: run-tests
-description: Use in non-pratified codebases, when doing TDD, running tests after code changes, checking coverage, or debugging test failures. For pratified codebases, use `prat-run-tests` instead.
+description: Use in non-pratified codebases, when doing TDD, running tests after code changes, checking coverage, or debugging test failures. For pratified codebases, use `pratified-dev-loop` instead.
 ---
 
 # Running tests

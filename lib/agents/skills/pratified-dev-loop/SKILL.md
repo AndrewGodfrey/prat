@@ -1,7 +1,25 @@
 ---
-name: prat-run-tests
-description: Use in any pratified codebase, when doing TDD, running tests after code changes, checking coverage, or debugging test failures.
+name: pratified-dev-loop
+description: Use in any pratified project for build/test/deploy/prebuild work — b, d, pb, t with absolute-path support and coverage tools.
 ---
+
+How to pratify a project? See the `pratify-a-project` skill.
+
+# Dev loop tools
+
+`b`, `d`, `pb`, and `t` all accept an absolute path as the first positional arg and auto-derive
+the project — no `cd` required.
+
+```bash
+b ~/prat                        # build from any CWD
+b ~/prat/lib/Foo.ps1            # partial build scoped to a subdir
+d ~/prat                        # deploy from any CWD
+pb ~/prat                       # prebuild from any CWD
+t ~/prat/lib/Foo.Tests.ps1      # test from any CWD
+```
+
+`b` accepts a subdir for partial builds. `d` and `pb` require the exact project root — they throw
+if given a subdirectory. To use a non-default build command: `b -CommandName clean`.
 
 # Running tests
 
