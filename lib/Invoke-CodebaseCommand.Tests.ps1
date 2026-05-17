@@ -25,12 +25,13 @@ Describe "Invoke-CodebaseCommand" {
 
     It "Does not apply cachedEnvDelta for prebuild" {
         Push-Location $testCbDir
+        $saved = $env:testenvvar
         $env:testenvvar = 'original'
         try {
             $result = &$scriptToTest "prebuild"
             $result | Should -Be "testCb: prebuild: original"
         } finally {
-            $env:testenvvar = $null
+            $env:testenvvar = $saved
         }
     }
 

@@ -8,7 +8,6 @@ BeforeAll {
 Describe "Prebuild-Codebase" {
     BeforeEach {
         Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$pratRoot/codebaseProfile_prat.ps1") }
-        $env:testenvvar = $null  # prebuild skips cachedEnvDelta, so expected output has no envvar; guard against prior test leaving it set
     }
     AfterEach { Pop-Location }
 
@@ -16,8 +15,14 @@ Describe "Prebuild-Codebase" {
         It "Derives project from absolute root path without requiring CWD in testCb" {
             New-Item -Type Directory "TestDrive:\prebuild-abs-root" | Out-Null
             Push-Location "TestDrive:\prebuild-abs-root"
-            $result = & $script $testCbDir
-            $result | Should -Be "testCb: prebuild: : Force=False RepoRoot=$testCbDir"
+            $saved = $env:testenvvar
+            $env:testenvvar = $null  # prebuild skips cachedEnvDelta; guard against prior test leaving it set
+            try {
+                $result = & $script $testCbDir
+                $result | Should -Be "testCb: prebuild: : Force=False RepoRoot=$testCbDir"
+            } finally {
+                $env:testenvvar = $saved
+            }
         }
 
         It "Throws when path is an absolute subdirectory" {
