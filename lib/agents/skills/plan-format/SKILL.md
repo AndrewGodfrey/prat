@@ -36,3 +36,11 @@ all its steps are struck through.
 
 Split content into a companion file when it would make agents re-read stable material every time
 they update the plan. If content changes alongside the action steps, keep it in the main file.
+
+If splitting an existing plan file to create a `_ref.md`, load `working-with-git` first and follow
+the rename pattern: `git mv` the original to the new name, commit as a pure rename, then write new
+content in a second change.
+
+## After creating the plan structure
+
+Invoke `start-plan`.
