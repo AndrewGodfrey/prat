@@ -261,6 +261,7 @@ function Invoke-PesterAsJob {
 . $PSScriptRoot\envDelta.ps1
 . $PSScriptRoot\gitForkpoint.ps1
 . $PSScriptRoot\pratRepos.ps1
+. $PSScriptRoot\Get-DevToolPath.ps1
 . $PSScriptRoot\testRun.ps1
 . $PSScriptRoot\coverageSummary.ps1
 

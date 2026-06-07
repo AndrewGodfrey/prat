@@ -73,6 +73,7 @@ FunctionsToExport = @('Get-CurrentUserIsElevated', 'Get-RelativePath', 'Import-P
                       'Export-EnvDeltaFromInvokedBatchScript', 'Get-DefaultOnOutputBlock', 'Invoke-CommandWithEnvDelta', 'Install-CachedEnvDelta', 'Get-CachedEnvDelta', 'Invoke-CommandWithCachedEnvDelta',
                       'Get-CurrentGitForkpoint', 'Get-ForkpointCacheIsValid', 'Set-ForkpointCache', 'Get-ForkpointRelationship',
                       'New-Subfolder', 'New-FolderAndParents', 'Get-HtmlFromClipboard', 'Invoke-PesterAsJob',
+                      'Get-DevToolPath',
                       'Get-PratRepo', 'Get-PratProject', 'Find-ProjectShortcut', 'Resolve-JunctionInPath',
                       'Expand-TildePath',
                       'Resolve-GitRoot',
