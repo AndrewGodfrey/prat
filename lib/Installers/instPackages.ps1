@@ -332,12 +332,15 @@ $pratPackages = @{
         dependencies = @("sudo")
     }
     python = @{
+        installerVersion = "2.0"
         install = {
             installPratWingetPackage "Python.PythonInstallManager" -NoScope
 
-            # This is a rare case where I don't need to fix up PATH, not even in the current instance.
-            # The reason is that PythonInstallManager overwrites the existing link at $env:LocalAppData\Microsoft\WindowsApps\python.exe, 
-            # which is *already* in the path (Windows 10 does that).
+            # python.exe is already on PATH via WindowsApps (Windows 10 puts it there).
+            # pip-installed scripts land in a version-specific Scripts dir that is not.
+            # Python.PythonInstallManager installs to %LOCALAPPDATA%, so use the install-relative
+            # scripts path rather than the nt_user (%APPDATA%) one.
+            Install-UserPathEntry $stage (python -c "import sysconfig; print(sysconfig.get_path('scripts'))")
         }
     }
     removeBuiltinPester = @{

@@ -32,7 +32,10 @@ For usage details, load the `pratified-dev-loop` skill.
 ### Forcing a deploy stage to re-run
 
 Some deploy stages track state in instDb files. For those, to force a re-run:
-`rppr <stageName> && d`. The stage name matches the string passed to `StartStage`.
+`rppr <stepId> && d`. The step ID is the file path within the instDb directory (without the version suffix).
+- For stages using `GetIsStepComplete` directly, the step ID is the string before the `:` — e.g. `rppr agentDeploy`.
+- For `Install-PratPackage`, the step ID is `pkg/{packageId}` — e.g. `rppr "pkg/python"`.
+  This differs from the stage name passed to `StartStage` (`Install-PratPackage(python)`).
 
 ### Testing
 
