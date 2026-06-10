@@ -373,6 +373,19 @@ $pratPackages = @{
             installPratWingetPackage "MarkText.MarkText" -NoScope
         }
     }
+    winget = @{
+        check = { $null -ne (Get-Command winget -ErrorAction SilentlyContinue) }
+        install = {
+            # Add-AppxPackage only works in Windows PowerShell, not PS Core.
+            $bundle = "$env:TEMP\AppInstaller.msixbundle"
+            curl.exe -sL -o $bundle "https://github.com/microsoft/winget-cli/releases/latest/download/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
+            if ($LASTEXITCODE -ne 0) { throw "winget download failed (exit $LASTEXITCODE)" }
+            powershell.exe -NonInteractive -Command "Add-AppxPackage -Path '$bundle'"
+            if ($LASTEXITCODE -ne 0) { throw "Add-AppxPackage failed (exit $LASTEXITCODE)" }
+            Remove-Item $bundle -Force -ErrorAction SilentlyContinue
+            fixupPath $stage "$env:LOCALAPPDATA\Microsoft\WindowsApps"
+        }
+    }
     windbg = @{
         install = {
             Install-WingetPackage $stage "Microsoft.WinDbg" "$env:localappdata\Microsoft\WindowsApps\WinDbgX.exe"
