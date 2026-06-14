@@ -332,15 +332,39 @@ $pratPackages = @{
         dependencies = @("sudo")
     }
     python = @{
-        installerVersion = "2.0"
+        installerVersion = "3.0"
         install = {
-            installPratWingetPackage "Python.PythonInstallManager" -NoScope
+            # Pinned to 3.12: llama-cpp-python pre-built wheels require Python 3.10-3.12.
+            # Uses embeddable zip — full Windows installer silently exits 0 without installing
+            # in non-interactive sessions (no UAC prompt available).
+            $version   = "3.12.8"
+            $pythonDir = "$env:LOCALAPPDATA\Programs\Python\Python312"
+            $pythonExe = "$pythonDir\python.exe"
 
-            # python.exe is already on PATH via WindowsApps (Windows 10 puts it there).
-            # pip-installed scripts land in a version-specific Scripts dir that is not.
-            # Python.PythonInstallManager installs to %LOCALAPPDATA%, so use the install-relative
-            # scripts path rather than the nt_user (%APPDATA%) one.
-            Install-UserPathEntry $stage (python -c "import sysconfig; print(sysconfig.get_path('scripts'))")
+            if (-not (Test-Path $pythonExe)) {
+                $zipFile = "$env:TEMP\python-$version-embed-amd64.zip"
+                curl.exe -sL -o $zipFile "https://www.python.org/ftp/python/$version/python-$version-embed-amd64.zip"
+                if ($LASTEXITCODE -ne 0) { throw "Python download failed (exit $LASTEXITCODE)" }
+                New-Item -ItemType Directory -Force -Path $pythonDir | Out-Null
+                Expand-Archive -Path $zipFile -DestinationPath $pythonDir -Force
+                Remove-Item $zipFile -Force -ErrorAction SilentlyContinue
+                if (-not (Test-Path $pythonExe)) { throw "Python extract failed" }
+                # Enable site-packages so pip and installed packages work
+                $pthFile = "$pythonDir\python312._pth"
+                (Get-Content $pthFile -Raw) -replace '#import site', 'import site' | Set-Content $pthFile
+                # Install pip
+                $getPip = "$env:TEMP\get-pip.py"
+                curl.exe -sL -o $getPip "https://bootstrap.pypa.io/get-pip.py"
+                if ($LASTEXITCODE -ne 0) { throw "get-pip.py download failed (exit $LASTEXITCODE)" }
+                & $pythonExe $getPip --no-warn-script-location
+                if ($LASTEXITCODE -ne 0) { throw "pip installation failed (exit $LASTEXITCODE)" }
+                Remove-Item $getPip -Force -ErrorAction SilentlyContinue
+            }
+            # Remove Windows App Execution Alias stubs that shadow real Python
+            Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe"  -Force -ErrorAction SilentlyContinue
+            Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.exe" -Force -ErrorAction SilentlyContinue
+            Install-UserPathEntry $stage $pythonDir
+            Install-UserPathEntry $stage "$pythonDir\Scripts"
         }
     }
     removeBuiltinPester = @{
