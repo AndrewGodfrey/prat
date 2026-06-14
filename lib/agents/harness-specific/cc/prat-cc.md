@@ -28,5 +28,4 @@ is what actually gets injected. Verify CC hook behavior empirically rather than 
 
 Verified flag (not prominent in docs): `claude --settings <path>` loads an additional JSON merged into the
 standard settings hierarchy with no on-disk residue. Use this for per-launch overrides (e.g. session-specific
-`skillOverrides`) rather than writing to `.claude/settings.local.json`. `agency claude` passes the flag
-through to `claude`.
+`skillOverrides`) rather than writing to `.claude/settings.local.json`.
