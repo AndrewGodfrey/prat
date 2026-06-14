@@ -17,6 +17,8 @@ if ($env:__prat_shellDepth -eq '1' -and $null -ne $env:__prat_loopControllerPid)
 
 pratProfile_trace start "scriptProfile.ps1"
 
+$env:PYTHONPYCACHEPREFIX = "$home/prat/auto/pycache"
+
 $_pratroot = Resolve-Path $PSScriptRoot\..\..
 
 pratProfile_trace done "Resolve-Path"
