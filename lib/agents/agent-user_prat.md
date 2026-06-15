@@ -56,8 +56,10 @@ sound (e.g. behavior will be tested manually; e.g. consequences of failure are s
 to change" is not sufficient on its own. To refactor a high-stakes area, one approach is: write pinning
 tests; refactor; cover with unit tests; remove the pinning tests.
 
-See the `testing` skill for more detail. Use the `pratified-dev-loop` skill for running tests in
-pratified codebases; use the `run-tests` skill for other codebases.
+See the `testing` skill for more detail. Assume all repos are pratified — use `t` and the
+`pratified-dev-loop` skill by default. Only use `run-tests` if the repo is marked non-pratified,
+either in its own `AGENTS.md` (e.g. `**Pratified:** No`) or in the user's personal instructions
+(for repos where editing `AGENTS.md` isn't possible).
 
 When a subagent's summary doesn't have enough detail, have a way to recover — either by resuming
 the subagent or accessing its full output.
