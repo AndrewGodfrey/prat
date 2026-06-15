@@ -22,7 +22,7 @@ Describe "Test-Codebase" {
     It "Relative Focus uses CWD for project detection" {
         Push-Location $testCbDir
         $result = & $script "testCb_fileWithTests.ps1" -NoCoverage
-        $result | Should -Be "testCb: test: bar: Focus=testCb_fileWithTests.ps1 NoCoverage=True"
+        $result | Should -Be "testCb: test: bar: Focus=$testCbDir\testCb_fileWithTests.ps1 NoCoverage=True RepoRoot=$testCbDir"
     }
 
     It "Absolute directory Focus runs full suite" {
@@ -32,12 +32,12 @@ Describe "Test-Codebase" {
         $result | Should -Be "testCb: test: bar: Focus=$testCbDir NoCoverage=True RepoRoot=$testCbDir"
     }
 
-    It "Tilde-prefixed Focus is expanded to absolute path for project detection" {
+    It "Tilde-prefixed Focus is expanded to absolute path" {
         $tildeFocusFile = "~" + "$testCbDir\testCb_fileWithTests.ps1".Substring($home.Length)
         New-Item -Type Directory "TestDrive:\tilde-test" | Out-Null
         Push-Location "TestDrive:\tilde-test"
         $result = & $script $tildeFocusFile -NoCoverage
-        $result | Should -Be "testCb: test: bar: Focus=$tildeFocusFile NoCoverage=True RepoRoot=$testCbDir"
+        $result | Should -Be "testCb: test: bar: Focus=$testCbDir\testCb_fileWithTests.ps1 NoCoverage=True RepoRoot=$testCbDir"
     }
 
     It "Warns when absolute Focus path is not in a registered project" {

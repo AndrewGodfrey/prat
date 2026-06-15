@@ -23,10 +23,17 @@ param(
     [switch] $UseAlternateCollector
 )
 
-if ($Focus) { $Focus = Expand-TildePath $Focus }
-if ($Focus -and [System.IO.Path]::IsPathRooted($Focus)) {
-    $project = Get-PratProject -Location $Focus
-    if ($project) { $PSBoundParameters['RepoRoot'] = $project.root }
-    else { Write-Warning "No registered project found for path '$Focus'" }
+if (!$Focus) { $Focus = (Get-Location).Path }
+else {
+    $Focus = Expand-TildePath $Focus
+    if (-not [System.IO.Path]::IsPathRooted($Focus)) {
+        $Focus = [System.IO.Path]::GetFullPath($Focus, (Get-Location).Path)
+    }
 }
+$PSBoundParameters['Focus'] = $Focus
+
+$project = Get-PratProject -Location $Focus
+if ($project) { $PSBoundParameters['RepoRoot'] = $project.root }
+else { Write-Warning "No registered project found for path '$Focus'" }
+
 &$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "test" -CommandParameters:$PSBoundParameters

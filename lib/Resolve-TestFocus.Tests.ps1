@@ -4,8 +4,13 @@ BeforeAll {
 }
 
 Describe "Resolve-TestFocus" {
-    It "returns '.' when Focus is empty" {
+    It "returns '.' when Focus is empty and no RepoRoot" {
         &$scriptToTest | Should -Be "."
+    }
+
+    It "returns RepoRoot when Focus is empty and RepoRoot is provided" {
+        $repoRoot = (Get-Item "TestDrive:\").FullName.TrimEnd('\', '/') -replace '\\', '/'
+        &$scriptToTest -RepoRoot $repoRoot | Should -Be $repoRoot
     }
 
     It "returns absolute Focus as-is when it exists" {
