@@ -274,7 +274,6 @@ Describe "installClaude" {
 
     It "warns and skips when Claude is running and user presses Enter" {
         Mock -ModuleName Installers isClaudeRunning { return $true }
-        Mock -ModuleName Installers Read-Host { return '' }
 
         $warnings = InModuleScope Installers { installClaude $null $null } 3>&1 |
             Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
@@ -283,19 +282,8 @@ Describe "installClaude" {
         Should -Not -Invoke invokeClaudeInstaller -ModuleName Installers
     }
 
-    It "installs when Claude is running and user types 'd'" {
-        Mock -ModuleName Installers isClaudeRunning { return $true }
-        Mock -ModuleName Installers Read-Host { return 'd' }
-        Mock -ModuleName Installers Test-Path { return $true } -ParameterFilter { $Path -like "*claude.exe" }
-
-        InModuleScope Installers { installClaude $null $null }
-
-        Should -Invoke invokeClaudeInstaller -ModuleName Installers -Times 1
-    }
-
     It "includes version info in warning when available" {
         Mock -ModuleName Installers isClaudeRunning { return $true }
-        Mock -ModuleName Installers Read-Host { return '' }
         Mock -ModuleName Installers getInstalledClaudeVersion { return "1.2.3" }
 
         $warnings = InModuleScope Installers { installClaude $null "1.3.0" } 3>&1 |

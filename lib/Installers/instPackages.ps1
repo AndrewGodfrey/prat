@@ -213,9 +213,6 @@ function installClaude($stage, $targetVersion) {
         if ($installed -and $targetVersion) { $msg += " ($installed → $targetVersion)" }
         Write-Warning "$msg — close it to install the update."
         return
-        Write-Host -F Blue "Hit 'Enter' to skip, or close Claude and type 'd' when done."
-        $result = Read-Host
-        if ($result -ne 'd') { return }
     }
 
     invokeClaudeInstaller $targetVersion
