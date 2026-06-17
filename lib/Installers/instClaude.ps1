@@ -1,5 +1,5 @@
 # Installs Claude Code user-level CLAUDE.md, assembled from registered fragments.
-function Install-ClaudeUserConfig {
+function Install-ClaudeUserInstructions {
     [CmdletBinding()]
     param ($stage, [string[]] $fragmentPaths)
     $destFile = "$home\.claude\CLAUDE.md"
@@ -35,7 +35,7 @@ function Install-ClaudeHarness {
             $fragments = @($fragments[0], $pratCcFile) + $rest
         }
 
-        Install-ClaudeUserConfig $stage $fragments
+        Install-ClaudeUserInstructions $stage $fragments
     }
 
     Install-ClaudeUserSettings $stage
