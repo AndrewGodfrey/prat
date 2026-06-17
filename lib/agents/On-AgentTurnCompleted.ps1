@@ -1,4 +1,4 @@
-. "$PSScriptRoot/Get-GitRepoState.ps1"
+. "$PSScriptRoot/../Get-GitRepoState.ps1"
 
 # .SYNOPSIS
 # A 'Stop' hook function for agents, currently only designed for Claude Code.

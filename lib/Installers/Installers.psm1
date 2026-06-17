@@ -342,6 +342,10 @@ function Start-Installation([Parameter(Position=0)] [string] $InstallerName, [Pa
 
 . $PSScriptRoot\instClaude.ps1
 
+. $PSScriptRoot\instCopilot.ps1
+
+. $PSScriptRoot\instHarness.ps1
+
 . $PSScriptRoot\instLocalAgentSandbox.ps1
 
 . $PSScriptRoot\detectAgents.ps1
