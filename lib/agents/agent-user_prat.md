@@ -37,6 +37,11 @@ Some deploy stages track state in instDb files. For those, to force a re-run:
 - For `Install-PratPackage`, the step ID is `pkg/{packageId}` — e.g. `rppr "pkg/python"`.
   This differs from the stage name passed to `StartStage` (`Install-PratPackage(python)`).
 
+### Removing a deploy stage
+
+When removing code that previously deployed an artifact, add a migration step that cleans up
+existing deployments on other machines. The local machine isn't the only consumer of `d`.
+
 ### Testing
 
 Write the test first, and run it to verify it fails in the expected way. Only implement after that.
