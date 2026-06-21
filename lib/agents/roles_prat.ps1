@@ -5,7 +5,7 @@
         # Everyday dev skills, usable in any repo (pratified or not).
         core = @(
             'working-with-git', 'run-tests', 'testing',
-            'review-changes', 'reviewer', 'simplify',
+            'review-changes', 'simplify',
             'remember', 'reflect',
             'plan-format', 'start-plan', 'wrap', 'land-step'
         )
