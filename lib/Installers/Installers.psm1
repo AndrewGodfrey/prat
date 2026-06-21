@@ -340,11 +340,11 @@ function Start-Installation([Parameter(Position=0)] [string] $InstallerName, [Pa
 
 . $PSScriptRoot\instSyncFolders.ps1
 
+. $PSScriptRoot\instHarness.ps1
+
 . $PSScriptRoot\instClaude.ps1
 
 . $PSScriptRoot\instCopilot.ps1
-
-. $PSScriptRoot\instHarness.ps1
 
 . $PSScriptRoot\instLocalAgentSandbox.ps1
 

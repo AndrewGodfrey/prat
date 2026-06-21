@@ -266,6 +266,14 @@ technical reasoning if wrong; the user wants correctness, not compliance.
 When the user provides a URL, preserve it verbatim in any file you write it to — don't collapse
 to anchor form (`#123`) or a bare issue number.
 
+## Planning
+
+### Sequencing removal vs. replacement
+
+When a plan splits removing an old mechanism from wiring its replacement across separate steps,
+order the removal after the replacement is live (or guard it as a no-op until then). Deleting the
+old mechanism first leaves the system broken in between.
+
 ## Public repos (e.g. prat, prefs)
 
 Before finalizing a feature branch or committing directly to main in a public repo,

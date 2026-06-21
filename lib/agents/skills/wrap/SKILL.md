@@ -17,7 +17,8 @@ unclear.
 ## 2. Update plan
 
 - **Update the next-step pointer.** Set the "## Next step" line at the top of the active plan to
-  the next step.
+  the next step. If the user says the plan is complete but the plan file still shows an unfinished
+  step, read the code before deferring it — prior sessions may have implemented it without wrapping.
 
 - **Move the completed step.** Cut the completed step description from the active plan and append
   it to the corresponding `*_done.md` file. Do not leave a copy in both files.

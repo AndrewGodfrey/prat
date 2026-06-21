@@ -1,4 +1,5 @@
 BeforeAll {
+    . $PSScriptRoot\instHarness.ps1
     . $PSCommandPath.Replace('.Tests.ps1', '.ps1')
     . $PSScriptRoot\instFilesAndFolders.ps1
 
@@ -67,6 +68,52 @@ Describe "Merge-AgentHooksToCopilot" {
         )
         $result = Merge-AgentHooksToCopilot $specs
         @($result['Stop']).Count | Should -Be 2
+    }
+}
+
+Describe "Install-CopilotHarness" {
+    BeforeEach {
+        $script:testDir = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/') + "/copilotHarness.Tests"
+        mkdir $testDir | Out-Null
+        $script:copilotDir = "$testDir/.copilot"
+        $script:stage = [MockStage]::new()
+        $script:fragFile = "$testDir/agent-user.md"
+        "base content" | Out-File $script:fragFile -Encoding utf8NoBOM
+        $script:spliceFile = "$testDir/splice.md"
+        "splice canary" | Out-File $script:spliceFile -Encoding utf8NoBOM
+
+        Mock Install-CopilotHooks { }
+        Mock Get-HarnessUserFragments { return @($script:fragFile) }
+    }
+    AfterEach {
+        Remove-Item $testDir -Recurse -Force
+    }
+
+    It "creates copilot-instructions.md assembling agent-user fragments" {
+        Install-CopilotHarness $stage -copilotDir $copilotDir -spliceFile "$testDir/absent.md"
+
+        "$copilotDir/copilot-instructions.md" | Should -Exist
+    }
+
+    It "includes base fragment content in the output" {
+        Install-CopilotHarness $stage -copilotDir $copilotDir -spliceFile "$testDir/absent.md"
+
+        Get-Content "$copilotDir/copilot-instructions.md" -Raw | Should -BeLike "*base content*"
+    }
+
+    It "inserts splice content after first fragment when splice file exists" {
+        Install-CopilotHarness $stage -copilotDir $copilotDir -spliceFile $spliceFile
+
+        $content = Get-Content "$copilotDir/copilot-instructions.md" -Raw
+        $content | Should -BeLike "*splice canary*"
+        $content.IndexOf("base content") | Should -BeLessThan ($content.IndexOf("splice canary"))
+    }
+
+    It "omits splice when splice file does not exist" {
+        Install-CopilotHarness $stage -copilotDir $copilotDir -spliceFile "$testDir/absent.md"
+
+        # splice.md (with "splice canary") exists but absent.md does not — canary must not appear
+        Get-Content "$copilotDir/copilot-instructions.md" -Raw | Should -Not -BeLike "*splice canary*"
     }
 }
 

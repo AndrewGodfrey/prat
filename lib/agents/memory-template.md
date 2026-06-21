@@ -10,8 +10,8 @@ This file is read-only. Save memories by editing the correct source files:
   - User-specific variant → the user's `de/lib/agents/agent-user_de.md` (if they have a de repo)
   - Preferences shared across environments → the user's `prefs/lib/agents/agent-user_prefs.md` (if they have a prefs repo)
 - Context-specific patterns (can be reliably triggered when relevant) → create/update a skill in `prat/lib/agents/skills/`
-  - skills are deployed to user settings (e.g. `.claude/skills/`) by the user's de or prefs deploy — always edit the source, never the deployed copy
-  - skills are opt-in — the user's de/prefs deploys none/some/all of them
+  - skills are deployed from here into per-role dirs (`~/agentRoles/<role>/.claude/skills/`) by the user's deploy — always edit the source, never the deployed copy
+  - each role gets a curated subset, selected by skill groups (see `roles_<layer>.ps1`)
 - If none of these fit - ask the user. Do not edit e.g. `~/.claude/projects/*/memory/` files - those are deployed by `d`.
 
 These are in git repos — edits are visible and reviewable. No need to wait for confirmation.

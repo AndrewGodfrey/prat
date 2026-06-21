@@ -145,89 +145,99 @@ function Install-LocalAgentSandbox {
 
     $agentHome = "$env:SystemDrive\Users\$agentUser"
 
-    if ($stage.GetIsStepComplete("localAgentSandbox/$agentUser")) { return }
-
-    # Create account — interactive: sudo prompts for password via 'net user *'
-    if ($null -eq (Get-LocalUser $agentUser -ErrorAction SilentlyContinue)) {
-        $stage.OnChange()
-        sudo "net user $agentUser /add" | Out-Null 
-        sudo "net user $agentUser *"
-    }
-
-    # Store credential for password-free launching. Also creates $agentHome with correct ACLs.
-    if (-not (Test-Path $agentHome)) {
-        $stage.OnChange()
-        sudo "runas /savecred /user:$agentUser 'pwsh -Command exit'"
-    }
-    if (-not (Test-Path $agentHome)) {
-        throw "Failed to create home directory for $agentUser at $agentHome"
-    }
-
-    # Grant the managing user Modify access to agentHome for unelevated management operations
-    # (idempotency checks, config injection at launch time).
-    $agentHomeNorm = $agentHome -replace '/', '\'
-    $managerGrant  = "${env:USERNAME}:(OI)(CI)M"
-    Invoke-Gsudo {
-        icacls $using:agentHomeNorm /grant:r $using:managerGrant | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:agentHomeNorm (exit $LASTEXITCODE)" }
-    }
-
-    # NTFS grants — roPaths first, then rwPaths so rwPaths wins when paths overlap (e.g. a roPath
-    # parent of an rwPath). /grant:r avoids duplicate ACEs on re-runs.
-    # Run elevated so icacls can traverse subdirectories owned by the agent account.
-    applyPathGrants $agentUser $roPaths 'RX'
-    applyPathGrants $agentUser $rwPaths 'F'
-
-    # Home directory junctions — make ~/name resolve to the target from the agent's perspective.
-    # Andrew has Modify on agentHome (granted above) so no elevation needed.
-    foreach ($name in $homeJunctions.Keys) {
-        $jLink   = "$agentHome\$name"
-        $jTarget = $homeJunctions[$name] -replace '/', '\'
-        $jItem   = Get-Item $jLink -ErrorAction SilentlyContinue
-        if ($null -eq $jItem -or $jItem.LinkType -ne 'Junction') {
+    # One-time setup: account creation and home directory. These steps are interactive or
+    # depend only on the user's existence — never need repeating once done.
+    if (-not $stage.GetIsStepComplete("localAgentSandbox/$($agentUser)")) {
+        # Create account — interactive: sudo prompts for password via 'net user *'
+        if ($null -eq (Get-LocalUser $agentUser -ErrorAction SilentlyContinue)) {
             $stage.OnChange()
-            if ($null -ne $jItem) { Remove-Item -Force -Recurse $jLink }
-            New-Item -ItemType Junction -Path $jLink -Target $jTarget | Out-Null
+            sudo "net user $agentUser /add" | Out-Null
+            sudo "net user $agentUser *"
         }
-    }
 
-    # PowerShell profile — makes prat aliases (t, c, etc.) available in the agent's sessions.
-    if ($profileContent) {
-        $profileDir = Join-Path $agentHome "Documents\PowerShell"
-        $null = New-Item -ItemType Directory -Path $profileDir -ErrorAction SilentlyContinue
-        Install-TextToFile $stage (Join-Path $profileDir "Microsoft.PowerShell_profile.ps1") $profileContent
-    }
+        # Store credential for password-free launching. Also creates $agentHome with correct ACLs.
+        if (-not (Test-Path $agentHome)) {
+            $stage.OnChange()
+            sudo "runas /savecred /user:$agentUser 'pwsh -Command exit'"
+        }
+        if (-not (Test-Path $agentHome)) {
+            throw "Failed to create home directory for $agentUser at $agentHome"
+        }
 
-    # gitconfig safe.directory entries
-    $agentGitconfig = Join-Path $agentHome ".gitconfig"
-    Install-TextToFile $stage $agentGitconfig (Get-AgentGitconfigContent $safeDirectories) -SudoOnWrite
-
-    # SSH authorized_keys — enables loopback SSH access from the managing user.
-    # Done entirely elevated: after first run the file is owned by agentUser with no ACE for andrew,
-    # so non-elevated reads/writes would fail on re-runs.
-    if ($sshPublicKeyPath) {
-        $sshDir         = "$agentHome\.ssh"
-        $authKeys       = "$sshDir\authorized_keys"
-        $desiredContent = Get-Content $sshPublicKeyPath -Raw
-        New-Item -ItemType Directory -Path $sshDir -ErrorAction SilentlyContinue | Out-Null
+        # Grant the managing user Modify access to agentHome for unelevated management operations
+        # (idempotency checks, config injection at launch time).
+        $agentHomeNorm = $agentHome -replace '/', '\'
+        $managerGrant  = "${env:USERNAME}:(OI)(CI)M"
         Invoke-Gsudo {
-            if (Test-Path $using:authKeys) {
-                # File has owner=agentUser, ACL=agentUser+SYSTEM only — no ACE for Administrators.
-                # Take ownership first (SeTakeOwnershipPrivilege), then grant admin read/write.
-                & takeown /f $using:authKeys | Out-Null
-                & icacls $using:authKeys /grant "Administrators:(F)" | Out-Null
-            }
-            $existing = Get-Content $using:authKeys -Raw -ErrorAction SilentlyContinue
-            if ($existing -ne $using:desiredContent) {
-                Set-Content $using:authKeys $using:desiredContent -Encoding UTF8
-            }
-            # Restore owner and apply final ACLs
-            & icacls $using:authKeys /setowner $using:agentUser | Out-Null
-            if ($LASTEXITCODE -ne 0) { throw "icacls /setowner failed for $using:authKeys (exit $LASTEXITCODE)" }
-            & icacls $using:authKeys /inheritance:r /grant:r "$($using:agentUser):(F)" /grant:r "NT AUTHORITY\SYSTEM:(F)" | Out-Null
-            if ($LASTEXITCODE -ne 0) { throw "icacls ACL failed for $using:authKeys (exit $LASTEXITCODE)" }
+            icacls $using:agentHomeNorm /grant:r $using:managerGrant | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:agentHomeNorm (exit $LASTEXITCODE)" }
         }
+
+        $stage.SetStepComplete("localAgentSandbox/$($agentUser)")
     }
 
-    $stage.SetStepComplete("localAgentSandbox/$agentUser")
+    # Config-dependent setup: NTFS grants, junctions, profile, gitconfig, SSH keys.
+    # Separated from the one-time block so adding a path to rwPaths only requires bumping this
+    # step's version (e.g. "sandboxacls/$($agentUser):2.0"), not re-running account creation.
+    if (-not $stage.GetIsStepComplete("sandboxacls/$($agentUser)")) {
+
+        # NTFS grants — roPaths first, then rwPaths so rwPaths wins when paths overlap (e.g. a roPath
+        # parent of an rwPath). /grant:r avoids duplicate ACEs on re-runs.
+        # Run elevated so icacls can traverse subdirectories owned by the agent account.
+        applyPathGrants $agentUser $roPaths 'RX'
+        applyPathGrants $agentUser $rwPaths 'F'
+
+        # Home directory junctions — make ~/name resolve to the target from the agent's perspective.
+        # Andrew has Modify on agentHome (granted above) so no elevation needed.
+        foreach ($name in $homeJunctions.Keys) {
+            $jLink   = "$agentHome\$name"
+            $jTarget = $homeJunctions[$name] -replace '/', '\'
+            $jItem   = Get-Item $jLink -ErrorAction SilentlyContinue
+            if ($null -eq $jItem -or $jItem.LinkType -ne 'Junction') {
+                $stage.OnChange()
+                if ($null -ne $jItem) { Remove-Item -Force -Recurse $jLink }
+                New-Item -ItemType Junction -Path $jLink -Target $jTarget | Out-Null
+            }
+        }
+
+        # PowerShell profile — makes prat aliases (t, c, etc.) available in the agent's sessions.
+        if ($profileContent) {
+            $profileDir = Join-Path $agentHome "Documents\PowerShell"
+            $null = New-Item -ItemType Directory -Path $profileDir -ErrorAction SilentlyContinue
+            Install-TextToFile $stage (Join-Path $profileDir "Microsoft.PowerShell_profile.ps1") $profileContent
+        }
+
+        # gitconfig safe.directory entries
+        $agentGitconfig = Join-Path $agentHome ".gitconfig"
+        Install-TextToFile $stage $agentGitconfig (Get-AgentGitconfigContent $safeDirectories) -SudoOnWrite
+
+        # SSH authorized_keys — enables loopback SSH access from the managing user.
+        # Done entirely elevated: after first run the file is owned by agentUser with no ACE for andrew,
+        # so non-elevated reads/writes would fail on re-runs.
+        if ($sshPublicKeyPath) {
+            $sshDir         = "$agentHome\.ssh"
+            $authKeys       = "$sshDir\authorized_keys"
+            $desiredContent = Get-Content $sshPublicKeyPath -Raw
+            New-Item -ItemType Directory -Path $sshDir -ErrorAction SilentlyContinue | Out-Null
+            Invoke-Gsudo {
+                if (Test-Path $using:authKeys) {
+                    # File has owner=agentUser, ACL=agentUser+SYSTEM only — no ACE for Administrators.
+                    # Take ownership first (SeTakeOwnershipPrivilege), then grant admin read/write.
+                    & takeown /f $using:authKeys | Out-Null
+                    & icacls $using:authKeys /grant "Administrators:(F)" | Out-Null
+                }
+                $existing = Get-Content $using:authKeys -Raw -ErrorAction SilentlyContinue
+                if ($existing -ne $using:desiredContent) {
+                    Set-Content $using:authKeys $using:desiredContent -Encoding UTF8
+                }
+                # Restore owner and apply final ACLs
+                & icacls $using:authKeys /setowner $using:agentUser | Out-Null
+                if ($LASTEXITCODE -ne 0) { throw "icacls /setowner failed for $using:authKeys (exit $LASTEXITCODE)" }
+                & icacls $using:authKeys /inheritance:r /grant:r "$($using:agentUser):(F)" /grant:r "NT AUTHORITY\SYSTEM:(F)" | Out-Null
+                if ($LASTEXITCODE -ne 0) { throw "icacls ACL failed for $using:authKeys (exit $LASTEXITCODE)" }
+            }
+        }
+
+        $stage.SetStepComplete("sandboxacls/$($agentUser)")
+    }
 }

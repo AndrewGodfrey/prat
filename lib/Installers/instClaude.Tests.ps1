@@ -437,3 +437,179 @@ Describe "Install-ClaudeUserSettings" {
         (Get-ItemProperty "$claudeDir\settings.json").IsReadOnly | Should -BeFalse
     }
 }
+
+Describe "Get-AgentRoles" {
+    It "expands a role's skillGroups into a flat skill list" {
+        $contribs = @(
+            @{ skillGroups = @{ core = @('git', 'test') } }
+            @{ roles = @{ default = @{ skillGroups = @('core') } } }
+        )
+
+        $roles = Get-AgentRoles -Contributions $contribs
+
+        $roles.default.skills | Should -Be @('git', 'test')
+    }
+
+    It "merges skillGroups from multiple layers" {
+        $contribs = @(
+            @{ skillGroups = @{ core = @('git') } }
+            @{ skillGroups = @{ writing = @('kql') } }
+            @{ roles = @{ default = @{ skillGroups = @('core', 'writing') } } }
+        )
+
+        $roles = Get-AgentRoles -Contributions $contribs
+
+        $roles.default.skills | Should -Be @('git', 'kql')
+    }
+
+    It "lets a higher layer override a skillGroup on name collision (base-first merge)" {
+        $contribs = @(
+            @{ skillGroups = @{ core = @('old') } }        # base
+            @{ skillGroups = @{ core = @('new') } }        # higher — wins
+            @{ roles = @{ default = @{ skillGroups = @('core') } } }
+        )
+
+        $roles = Get-AgentRoles -Contributions $contribs
+
+        $roles.default.skills | Should -Be @('new')
+    }
+
+    It "includes a role's explicit skills alongside its groups" {
+        $contribs = @(
+            @{ skillGroups = @{ core = @('git') } }
+            @{ roles = @{ default = @{ skillGroups = @('core'); skills = @('extra') } } }
+        )
+
+        $roles = Get-AgentRoles -Contributions $contribs
+
+        $roles.default.skills | Should -Be @('git', 'extra')
+    }
+
+    It "de-duplicates a skill that appears in more than one group" {
+        $contribs = @(
+            @{ skillGroups = @{ a = @('git', 'test'); b = @('git', 'review') } }
+            @{ roles = @{ default = @{ skillGroups = @('a', 'b') } } }
+        )
+
+        $roles = Get-AgentRoles -Contributions $contribs
+
+        @($roles.default.skills | Where-Object { $_ -eq 'git' }).Count | Should -Be 1
+    }
+
+    It "carries a role's repo binding through" {
+        $contribs = @(
+            @{ skillGroups = @{ core = @('git') } }
+            @{ roles = @{ llamacpp = @{ skillGroups = @('core'); repo = 'llamacpp' } } }
+        )
+
+        $roles = Get-AgentRoles -Contributions $contribs
+
+        $roles.llamacpp.repo | Should -Be 'llamacpp'
+    }
+
+    It "omits repo for roles without a binding" {
+        $contribs = @(
+            @{ skillGroups = @{ core = @('git') } }
+            @{ roles = @{ default = @{ skillGroups = @('core') } } }
+        )
+
+        $roles = Get-AgentRoles -Contributions $contribs
+
+        $roles.default.ContainsKey('repo') | Should -BeFalse
+    }
+
+    It "throws when a role references an unknown skillGroup" {
+        $contribs = @(
+            @{ skillGroups = @{ core = @('git') } }
+            @{ roles = @{ default = @{ skillGroups = @('nope') } } }
+        )
+
+        { Get-AgentRoles -Contributions $contribs } | Should -Throw "*unknown skillGroup 'nope'*"
+    }
+
+    It "reads, reverses (highest-first to base-first), and evaluates role files from disk" {
+        $dir = Join-Path (Resolve-Path "TestDrive:\").ProviderPath "roles-disk"
+        mkdir $dir | Out-Null
+        '@{ skillGroups = @{ core = @("old") } }' | Out-File "$dir\roles_prat.ps1" -Encoding utf8NoBOM
+        '@{ skillGroups = @{ core = @("new") }; roles = @{ default = @{ skillGroups = @("core") } } }' |
+            Out-File "$dir\roles_de.ps1" -Encoding utf8NoBOM
+
+        # -RolesFiles is highest-first (as Resolve-PratLibFile returns); the high (de) layer wins.
+        $roles = Get-AgentRoles -RolesFiles @("$dir\roles_de.ps1", "$dir\roles_prat.ps1")
+
+        $roles.default.skills | Should -Be @('new')
+    }
+}
+
+Describe "Install-AgentRoles" {
+    BeforeEach {
+        $script:testDir = Join-Path (Resolve-Path "TestDrive:\").ProviderPath "instAgentRoles.Tests"
+        mkdir $testDir | Out-Null
+        $script:pratSrc  = "$testDir\src-prat"
+        $script:prefsSrc = "$testDir\src-prefs"
+        $script:destParent = "$testDir\agentRoles"
+        $script:stage = [MockStage]::new()
+
+        # Helper to drop a skill source dir under a source root.
+        function newSkill($srcRoot, $name) {
+            $d = "$srcRoot\$name"
+            mkdir $d -Force | Out-Null
+            "content" | Out-File "$d\SKILL.md" -Encoding utf8NoBOM
+        }
+    }
+    AfterEach {
+        Remove-Item $testDir -Recurse -Force
+    }
+
+    It "deploys a role's skills to destParent/<role>/.claude/skills" {
+        newSkill $pratSrc 'git'
+        newSkill $pratSrc 'test'
+
+        Install-AgentRoles $stage @{ default = @{ skills = @('git', 'test') } } $destParent -skillSources @($pratSrc)
+
+        "$destParent\default\.claude\skills\git\SKILL.md"  | Should -Exist
+        "$destParent\default\.claude\skills\test\SKILL.md" | Should -Exist
+    }
+
+    It "groups skills by the source dir that provides them" {
+        newSkill $pratSrc 'git'
+        newSkill $prefsSrc 'kql'
+
+        Install-AgentRoles $stage @{ default = @{ skills = @('git', 'kql') } } $destParent -skillSources @($pratSrc, $prefsSrc)
+
+        "$destParent\default\.claude\skills\git\SKILL.md" | Should -Exist
+        "$destParent\default\.claude\skills\kql\SKILL.md" | Should -Exist
+    }
+
+    It "throws when a role names a skill with no source dir" {
+        newSkill $pratSrc 'git'
+
+        { Install-AgentRoles $stage @{ default = @{ skills = @('git', 'ghost') } } $destParent -skillSources @($pratSrc) } |
+            Should -Throw "*no source dir: ghost*"
+    }
+
+    It "removes a stale role dir not in the role set" {
+        newSkill $pratSrc 'git'
+        mkdir "$destParent\obsolete" -Force | Out-Null
+        "stale" | Out-File "$destParent\obsolete\marker.txt" -Encoding utf8NoBOM
+
+        Install-AgentRoles $stage @{ default = @{ skills = @('git') } } $destParent -skillSources @($pratSrc)
+
+        "$destParent\default"  | Should -Exist
+        "$destParent\obsolete" | Should -Not -Exist
+    }
+
+    It "deploys multiple roles" {
+        newSkill $pratSrc 'git'
+        newSkill $pratSrc 'cmake'
+
+        Install-AgentRoles $stage @{
+            default  = @{ skills = @('git', 'cmake') }
+            llamacpp = @{ skills = @('git') }
+        } $destParent -skillSources @($pratSrc)
+
+        "$destParent\default\.claude\skills\cmake\SKILL.md"  | Should -Exist
+        "$destParent\llamacpp\.claude\skills\git\SKILL.md"   | Should -Exist
+        "$destParent\llamacpp\.claude\skills\cmake"          | Should -Not -Exist
+    }
+}

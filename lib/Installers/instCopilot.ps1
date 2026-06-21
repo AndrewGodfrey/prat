@@ -53,6 +53,22 @@ function Install-CopilotHooks($stage, [string] $copilotDir = "$home\.copilot") {
     Install-JsonToFile $stage $destFile $newText -SetReadOnly
 }
 
-function Install-CopilotHarness($stage) {
-    Install-CopilotHooks $stage
+# Installs Copilot harness integration: hooks and user instructions assembled from registered fragments.
+# Called via Install-HarnessIntegration $stage 'copilot'.
+function Install-CopilotHarness(
+    $stage,
+    [string] $copilotDir = "$home\.copilot",
+    [string] $spliceFile = "$PSScriptRoot\..\agents\harness-specific\prat-copilot.md"
+) {
+    Install-Folder $stage $copilotDir
+    Install-CopilotHooks $stage $copilotDir
+
+    $fragments = @(Get-HarnessUserFragments)
+
+    if ((Test-Path $spliceFile) -and $fragments.Count -gt 0) {
+        $rest      = if ($fragments.Count -gt 1) { $fragments[1..($fragments.Count - 1)] } else { @() }
+        $fragments = @($fragments[0], $spliceFile) + $rest
+    }
+
+    Install-HarnessUserInstructions $stage (Join-Path $copilotDir 'copilot-instructions.md') $fragments
 }
