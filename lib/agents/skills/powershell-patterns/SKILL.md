@@ -70,6 +70,66 @@ if ($Path) { $Path = Expand-TildePath $Path }
 if ([System.IO.Path]::IsPathRooted($Path)) { ... }
 ```
 
+# Scriptblocks passed as hooks — variable capture and shadowing
+
+A plain `{ }` scriptblock captures a live reference to its defining scope's SessionStateInternal.
+Variables from the defining scope are accessible when the hook runs. The risk is **shadowing**: a
+variable anywhere in the call chain between invoker and hook that shares a name takes precedence.
+
+**`.GetNewClosure()`** — snapshots variable values at definition time, making them immune to
+shadowing. Safe when the scriptblock stays in-process and is never serialized:
+
+```powershell
+$claudeExe = "$home\.local\bin\claude.exe"
+$hook = { & $claudeExe @allArgs }.GetNewClosure()   # $claudeExe value embedded, not looked up
+```
+
+**`[scriptblock]::Create()`** — bakes values into source text via string interpolation. Required
+when the scriptblock goes through `Strip-Scriptblocks` / `Import-Scriptblock` (which reconstruct
+from source text, discarding any `.GetNewClosure()` captures):
+
+```powershell
+$claudeExe = "$home\.local\bin\claude.exe"
+$hook = [scriptblock]::Create("& '$claudeExe' @allArgs")   # value is in the source text
+```
+
+Switch params (`[switch] $NoSandbox`) are captured correctly by `.GetNewClosure()` as bool values.
+
+**Functions are not captured** — only variables are. A function defined in the outer scope and
+called by name inside the hook will fail after `.GetNewClosure()`. Workaround: store the function
+as a variable using `${function:name}` syntax before closing over it:
+
+```powershell
+function getToken { ... }
+$getToken = ${function:getToken}   # captured as a variable by GetNewClosure()
+
+$hook = {
+    $tok = & $getToken             # call via variable, not by name
+}.GetNewClosure()
+```
+
+# Keep scriptblocks thin — extract implementation into functions
+
+Closures capture the entire outer scope, so any variable name collision between the outer scope
+and the scriptblock body is a latent bug. Keep the scriptblock as a thin wiring layer and put the
+implementation in a named function, making dependencies explicit via parameters:
+
+```powershell
+function Invoke-MyHook($param1, $capturedVal, $resumeSid, $allArgs) {
+    # all logic here — dependencies are explicit parameters
+}
+
+$capturedVal  = "..."
+$invokeMyHook = ${function:Invoke-MyHook}
+$hook = {
+    param($resumeSid, $allArgs)
+    & $invokeMyHook $param1 $capturedVal $resumeSid $allArgs
+}.GetNewClosure()
+```
+
+The scriptblock becomes a legible declaration of what flows in. The function is independently
+testable without any closure setup.
+
 # $PSScriptRoot-relative paths when moving a script
 
 Before writing a moved script to its new location, audit every `$PSScriptRoot`-relative path —

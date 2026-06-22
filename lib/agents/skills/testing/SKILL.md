@@ -91,6 +91,18 @@ PowerShell's scope chain makes the locally-defined function visible inside `& $s
 shadows the module-exported function of the same name. Confirmed empirically in Pester v5 — a function
 defined in `Context BeforeAll` shadows the module export for `It` blocks within that context.
 
+### Capturing hook invocations in Pester tests
+
+Capture what a hook received via a **reference type closed over in the hook** — not `$script:`.
+`$script:` doesn't reliably propagate back when the hook runs inside the tested script's scope
+chain (see powershell-patterns — scriptblock scope capture). Pester `Mock` scriptblocks are
+different: Pester's own machinery puts them in a scope where `$script:` resolves correctly.
+
+```powershell
+$captured = @{}
+$hook = { param($x) $captured.x = $x }
+```
+
 ### Pester 5 gotchas
 
 **`TestDrive:` is shared within a `Context` block** — it is NOT reset between `It` blocks. Use distinct
