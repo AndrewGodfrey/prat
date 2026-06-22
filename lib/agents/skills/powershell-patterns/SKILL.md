@@ -4,6 +4,26 @@ description: Use when writing PowerShell code. Covers gotchas with arrays, argum
   handling, and common patterns in this codebase.
 ---
 
+# `[Parameter()]` activates advanced mode — `$ARGS` goes empty
+
+Adding any `[Parameter()]` attribute to a `param()` block activates advanced function mode, even
+without `[CmdletBinding()]`. In advanced mode `$ARGS` is always empty — extra positional arguments
+are rejected with "A positional parameter cannot be found that accepts argument '...'".
+
+For scripts that use `$ARGS` to forward pass-through args, use plain typed params with no
+`[Parameter()]` decoration:
+
+```powershell
+# Correct — $ARGS captures remaining args
+param([string] $Harness, [scriptblock] $LaunchHook)
+
+# Broken — advanced mode, $ARGS always empty
+param([Parameter(Mandatory)] [string] $Harness, [Parameter(Mandatory)] [scriptblock] $LaunchHook)
+```
+
+If mandatory enforcement is needed in advanced mode, capture remaining args explicitly:
+`[Parameter(ValueFromRemainingArguments)] $PassThrough`.
+
 # Calling a script for its return value
 
 Use `& $file` not `. $file`. Dot-source runs the script in the current scope and imports its
