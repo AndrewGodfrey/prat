@@ -7,7 +7,7 @@
             'working-with-git', 'run-tests', 'testing',
             'review-changes', 'simplify',
             'remember', 'reflect',
-            'plan-format', 'start-plan', 'wrap', 'land-step'
+            'plan-format', 'start-plan', 'wrap', 'land-step', 'plan-refine-next-step'
         )
         # Prat-ecosystem development (pratified projects: prat, prefs, de).
         pratDev = @('pratified-dev-loop', 'working-in-prat', 'powershell-patterns', 'check-prat-layers')

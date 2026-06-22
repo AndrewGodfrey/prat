@@ -14,5 +14,4 @@ second change.
 
 ## 2. Set up the first step
 
-Load `wrap` and follow its "Update plan" section, with one adaptation: if the next-step pointer
-doesn't exist yet, create it pointing to Phase 1.
+Invoke `/plan-refine-next-step`.
