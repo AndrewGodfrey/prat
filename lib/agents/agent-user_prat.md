@@ -286,4 +286,7 @@ When writing examples or prose in prat (or any public layer):
 - Use generic placeholder names (`myproject`, `myrepo`, `myfunction`) — never real names from
   private layers (like the user's `de` repo)
 - Don't reference identifiers that don't exist in prat itself
+- Referencing expected filenames in a de repo (e.g. `de/lib/agents/agent-user_de.md`) is
+  fine — that's part of the prat ecosystem. But don't reference specific contents of a particular user's de repo
+  — that's a layer violation
 
