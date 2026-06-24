@@ -6,6 +6,11 @@ description: Finalize the completed plan step and set up the next one. User-invo
 The "active plan" is the plan file most relevant to this session — infer from context, or ask if
 unclear.
 
+## 0. Is the step complete?
+
+If the user signals the session is ending but the step is still in progress, skip sections 1 and 2.
+Instead, update the step in the plan to document what's done and what remains, then go to section 3.
+
 ## 1. Finalize current step
 
 - **Check the wrap list.** Look for a "## Wrap list" section near the top of the active plan
