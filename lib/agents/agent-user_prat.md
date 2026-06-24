@@ -42,6 +42,10 @@ Some deploy stages track state in instDb files. For those, to force a re-run:
 When removing code that previously deployed an artifact, add a migration step that cleans up
 existing deployments on other machines. The local machine isn't the only consumer of `d`.
 
+Migration step pattern: call `$stage.NoteMigrationStep((Get-Date "YYYY-MM-DD"))` (today's date),
+then use idempotent checks (e.g. `if (Test-Path ...)`) before making changes. The framework warns
+after 30 days — signal to remove the step.
+
 ### Testing
 
 Write the test first, and run it to verify it fails in the expected way. Only implement after that.
