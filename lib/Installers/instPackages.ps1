@@ -364,6 +364,17 @@ $pratPackages = @{
             Install-UserPathEntry $stage "$pythonDir\Scripts"
         }
     }
+    pytest = @{
+        # pytest 9.x is compatible with Python 3.12. pytest-cov 7.x tracks pytest 9.x.
+        # Bump installerVersion to upgrade (e.g. when changing the Python major version).
+        installerVersion = "1.0"
+        install = {
+            $stage.SetSubstage("pip install pytest pytest-cov")
+            pip install "pytest==9.1.0" "pytest-cov==7.1.0" --quiet 2>&1
+            if ($LASTEXITCODE -ne 0) { throw "pip install failed (exit $LASTEXITCODE)" }
+        }
+        dependencies = @("python")
+    }
     removeBuiltinPester = @{
         install = {
             sudo {
