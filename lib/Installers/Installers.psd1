@@ -77,7 +77,7 @@ FunctionsToExport = @(
     'Install-SoftLinkToFile', 'Install-DirectoryJunction',
 	'Install-RegistryKey', 'Install-RegistryDwordValue', 'Install-RegistryStringValue', 'Install-RegistryBinaryValue',
     'Install-DailyScheduledTask', 'Install-AtLogonScheduledTask',
-	'Install-InteractiveAlias',
+	'Install-InteractiveAlias', 'Remove-InteractiveAlias',
     'Get-DotnetSdkRequirement',
 	'Install-PratPackage',
 	'Install-WingetPackage',

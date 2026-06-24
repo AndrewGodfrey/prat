@@ -33,3 +33,10 @@ function installPratScriptAlias($stage, [string] $Name, [string] $Value) {
 function Install-InteractiveAlias($stage, [string] $Name, [string] $Value) {
     installPratAlias $stage 'interactiveAliases.ps1' 'installedAliases' $Name $Value
 }
+
+function Remove-InteractiveAlias($stage, [string] $Name) {
+    $installedAliasesFile = installOrGetInstalledAliasesFile $stage 'interactiveAliases.ps1'
+    $lineArray = [LineArray]::new((Import-TextFile $installedAliasesFile))
+    Add-HashTableItemInPowershellScript $lineArray 'installedAliases' $Name $null
+    Install-TextToFile $stage $installedAliasesFile $lineArray.ToString()
+}
