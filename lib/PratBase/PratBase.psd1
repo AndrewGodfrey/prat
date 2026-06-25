@@ -71,6 +71,7 @@ Description = 'Basic functions that Prat needs everywhere, and that will always 
 FunctionsToExport = @('Get-CurrentUserIsElevated', 'Get-RelativePath', 'Import-PratAliases', 'ConvertTo-Expression', 'Get-OptimalSize',
                       'Get-DiskFreeSpace', 'Get-UserIdleTimeInSeconds', 'Restart-Process', 'Test-PathIsUnder',
                       'Export-EnvDeltaFromInvokedBatchScript', 'Get-DefaultOnOutputBlock', 'Invoke-CommandWithEnvDelta', 'Install-CachedEnvDelta', 'Get-CachedEnvDelta', 'Invoke-CommandWithCachedEnvDelta',
+                      'Save-Env', 'Set-EnvTemp', 'Restore-Env',
                       'Get-CurrentGitForkpoint', 'Get-ForkpointCacheIsValid', 'Set-ForkpointCache', 'Get-ForkpointRelationship',
                       'New-Subfolder', 'New-FolderAndParents', 'Get-HtmlFromClipboard', 'Invoke-PesterAsJob',
                       'Get-DevToolPath',
