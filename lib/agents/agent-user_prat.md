@@ -182,6 +182,9 @@ resource cleanup (e.g. `Push-Location`/`Pop-Location`), try/finally — decide w
 in the end state. If yes, carry it forward immediately — as a TODO comment if the target code
 doesn't exist yet — rather than deferring with no tracking mechanism.
 
+Applies equally to prose content (notes, musings, rationale) in plan files — when restructuring a
+step, either carry such content forward or explicitly decide to discard it; don't drop it by reference.
+
 ### Debugging
 
 Find root cause before fixing. If three fixes have failed, stop and question the approach rather
