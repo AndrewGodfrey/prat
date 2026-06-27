@@ -96,6 +96,13 @@ Describe "Get-CoverageData" {
         Get-CoverageData -Path $f -Unit "Lines" | Should -BeNullOrEmpty
     }
 
+    It "returns null for empty XML file (no root element)" {
+        $f = "$TestDrive/gcd-empty.xml"
+        "" | Set-Content $f -Encoding utf8NoBOM
+
+        Get-CoverageData -Path $f -Unit "Lines" | Should -BeNullOrEmpty
+    }
+
     It "throws for unrecognized XML root element" {
         $f = "$TestDrive/gcd-unknown.xml"
         @"

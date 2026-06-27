@@ -14,6 +14,7 @@ function Get-CoverageData {
     if (-not $Path -or !(Test-Path $Path)) { return $null }
 
     [xml]$xml = Get-Content $Path
+    if (-not $xml.DocumentElement) { return $null }
     $target = Get-CoveragePercentTarget
 
     if ($xml.DocumentElement.LocalName -eq 'report') {
