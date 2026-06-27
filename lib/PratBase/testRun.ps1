@@ -108,12 +108,11 @@ function Merge-TestSummary {
     )
 
     $errors = $Summaries | ForEach-Object { $_.FatalError } | Where-Object { $_ }
-    $fatalError = if ($errors) { ($errors | ForEach-Object { $_ }) -join '; ' } else { $null }
+    $fatalError = if ($errors) { $errors -join '; ' } else { $null }
     $passed = if ($fatalError) { $null } else { ($Summaries | ForEach-Object { $_.Passed ?? 0 } | Measure-Object -Sum).Sum }
     $failed = if ($fatalError) { $null } else { ($Summaries | ForEach-Object { $_.Failed ?? 0 } | Measure-Object -Sum).Sum }
 
     $unitWeight = @{ Commands = 1; Lines = 3; Blocks = 3 }
-    $covSummary = $null
     $withCoverage = @($Summaries | Where-Object { $_.CoverageData })
     if ($withCoverage) {
         $coveredRaw = 0; $totalRaw = 0; $coveredW = 0; $totalW = 0; $fileCount = 0; $target = $null; $units = @()

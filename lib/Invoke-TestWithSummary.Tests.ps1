@@ -75,7 +75,7 @@ Describe "Invoke-TestWithSummary" {
             CoverageUnit    = "Lines"
             GetCoverageFile = { param($rd) $covXml }
         }
-        Should -Invoke Write-TestRunResult -Times 1 -ParameterFilter { $CoverageSummary -match '90%' }
+        Should -Invoke Write-TestRunResult -Times 1 -ParameterFilter { $CoverageData.Pct -eq 90 }
     }
 
     It "injects state.logFile for use by ProcessLine" {
