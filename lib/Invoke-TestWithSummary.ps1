@@ -86,7 +86,7 @@ if ($PassThru) {
 }
 
 Write-TestRunResult `
-    -CoverageSummary (Format-CoverageData $coverageData) `
+    -CoverageData $coverageData `
     -Passed      $testResult.Passed `
     -Failed      $testResult.Failed `
     -Elapsed     ([DateTimeOffset]::UtcNow - $StartTime) `

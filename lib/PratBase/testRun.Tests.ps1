@@ -66,12 +66,39 @@ Describe "Write-TestRunResult" {
         $runDir = "$TestDrive/wr-coverage"
         New-Item $runDir -ItemType Directory | Out-Null
 
-        $output = Write-TestRunResult -CoverageSummary "Covered 85% / 70%. 17/20 Lines in 3 Files." `
+        $output = Write-TestRunResult -CoverageData @{ Pct = 85; Target = 70; Covered = 17; Total = 20; Unit = "Lines"; FileCount = 3 } `
             -Passed 5 -Failed 0 -RunDir $runDir
 
         $summary = Get-Content "$runDir/summary.txt"
         $summary | Should -Match "Covered 85%"
         $summary | Should -Match "Passed: 5"
+    }
+
+    It "omits target from summary when coverage is met" {
+        $runDir = "$TestDrive/wr-cov-met"
+        New-Item $runDir -ItemType Directory | Out-Null
+
+        Write-TestRunResult -CoverageData @{ Pct = 85; Target = 70; Covered = 17; Total = 20; Unit = "Lines"; FileCount = 3 } `
+            -Passed 5 -Failed 0 -RunDir $runDir
+
+        $summary = Get-Content "$runDir/summary.txt"
+        $summary | Should -Match "Covered 85%"
+        $summary | Should -Not -Match "/ 70%"
+    }
+
+    It "includes target in summary and colors coverage yellow when coverage not met and tests pass" {
+        $runDir = "$TestDrive/wr-cov-missed"
+        New-Item $runDir -ItemType Directory | Out-Null
+
+        $output = Write-TestRunResult -CoverageData @{ Pct = 55; Target = 70; Covered = 11; Total = 20; Unit = "Lines"; FileCount = 3 } `
+            -Passed 5 -Failed 0 -RunDir $runDir
+
+        $summary = Get-Content "$runDir/summary.txt"
+        $summary | Should -Match "55%"
+        $summary | Should -Match "/ 70%"
+        # Coverage portion yellow, pass/fail portion green
+        $output | Should -Match '\x1b\[93m.*55%'
+        $output | Should -Match '\x1b\[92m.*Passed'
     }
 
     It "emits green for all-pass, yellow for partial failures, red for mass failures" {
@@ -299,7 +326,7 @@ Describe "Merge-TestSummary" {
             Passed = 3; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = $runDirB
         }
 
-        Merge-TestSummary $a $b ([TimeSpan]::FromSeconds(10))
+        Merge-TestSummary @($a, $b) ([TimeSpan]::FromSeconds(10))
 
         $summary = Get-Content "$runDirA/summary.txt"
         $summary | Should -Match "16/112 Thingies in 7 Files"
@@ -318,7 +345,7 @@ Describe "Merge-TestSummary" {
             FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-fatal-b"
         }
 
-        Merge-TestSummary $a $b ([TimeSpan]::Zero)
+        Merge-TestSummary @($a, $b) ([TimeSpan]::Zero)
 
         $summary = Get-Content "$runDir/summary.txt"
         $summary | Should -Match "exit code: 1"
@@ -335,7 +362,7 @@ Describe "Merge-TestSummary" {
             FatalError = "dotnet exit: 2"; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-dual-fatal-b"
         }
 
-        Merge-TestSummary $a $b ([TimeSpan]::Zero)
+        Merge-TestSummary @($a, $b) ([TimeSpan]::Zero)
 
         $summary = Get-Content "$runDir/summary.txt"
         $summary | Should -Match "pester exit: 1"
@@ -353,7 +380,7 @@ Describe "Merge-TestSummary" {
             Passed = 3; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-same-b"
         }
 
-        Merge-TestSummary $a $b ([TimeSpan]::Zero)
+        Merge-TestSummary @($a, $b) ([TimeSpan]::Zero)
 
         $summary = Get-Content "$runDirA/summary.txt"
         $summary | Should -Match "Commands"
@@ -371,11 +398,27 @@ Describe "Merge-TestSummary" {
             Passed = 2; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-one-sided-b"
         }
 
-        Merge-TestSummary $a $b ([TimeSpan]::Zero)
+        Merge-TestSummary @($a, $b) ([TimeSpan]::Zero)
 
         $summary = Get-Content "$runDirA/summary.txt"
         $summary | Should -Match "Lines"
         $summary | Should -Not -Match "Thingies"
+    }
+
+    It "merges three summaries" {
+        $runDirA = "$TestDrive/ms-3a"; New-Item $runDirA -ItemType Directory | Out-Null
+        $a = @{ CoverageData = @{ Covered = 10; Total = 20; FileCount = 2; Pct = 50.0; Unit = "Lines"; Target = 70 }
+                Passed = 4; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = $runDirA }
+        $b = @{ CoverageData = @{ Covered = 6; Total = 10; FileCount = 1; Pct = 60.0; Unit = "Lines"; Target = 70 }
+                Passed = 2; Failed = 1; FatalError = $null; FailuresSeen = 1; FailureThreshold = 5; RunDir = "$TestDrive/ms-3b" }
+        $c = @{ CoverageData = @{ Covered = 3; Total = 10; FileCount = 3; Pct = 30.0; Unit = "Lines"; Target = 70 }
+                Passed = 1; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-3c" }
+
+        Merge-TestSummary @($a, $b, $c) ([TimeSpan]::FromSeconds(5))
+
+        $summary = Get-Content "$runDirA/summary.txt"
+        $summary | Should -Match "19/40 Lines in 6 Files"
+        $summary | Should -Match "Passed: 7, Failed: 1"
     }
 
     It "sums FailureThreshold from both results" {
@@ -389,7 +432,7 @@ Describe "Merge-TestSummary" {
             FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-threshold-b"
         }
 
-        $output = Merge-TestSummary $a $b ([TimeSpan]::Zero)
+        $output = Merge-TestSummary @($a, $b) ([TimeSpan]::Zero)
 
         # 12 failures >= summed threshold 10 → red (91)
         $output | Select-Object -First 1 | Should -Match '^\x1b\[91m'

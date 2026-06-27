@@ -37,7 +37,7 @@ function Initialize-TestRunDir {
 # $Passed/$Failed accept $null to signal "no result parsed" (yellow summary, fallback text).
 function Write-TestRunResult {
     param(
-        $CoverageSummary = $null,
+        [hashtable] $CoverageData = $null,
         $Passed = $null,
         $Failed = $null,
         [TimeSpan] $Elapsed = [TimeSpan]::Zero,
@@ -49,24 +49,35 @@ function Write-TestRunResult {
     $failedCount = if ($null -ne $Failed) { [int]$Failed } else { 0 }
     $durationStr = Format-Duration $Elapsed.TotalSeconds
 
-    $components = @()
-    if ($CoverageSummary) { $components += $CoverageSummary }
-    if ($null -ne $Passed -and $null -ne $Failed) {
-        $components += "Passed: $Passed, Failed: $Failed. $durationStr"
+    $coverageMet = $CoverageData -and $CoverageData.Pct -ge $CoverageData.Target
+    $covText = if ($CoverageData) {
+        $targetSuffix = if ($coverageMet) { "" } else { " / $($CoverageData.Target)%" }
+        "Covered $($CoverageData.Pct)%$targetSuffix. $($CoverageData.Covered)/$($CoverageData.Total) $($CoverageData.Unit) in $($CoverageData.FileCount) Files."
+    } else { $null }
+
+    $passFailText = if ($null -ne $Passed -and $null -ne $Failed) {
+        "Passed: $Passed, Failed: $Failed. $durationStr"
     } elseif ($FatalError) {
-        $components += "Test run failed ($FatalError, no result parsed). $durationStr"
+        "Test run failed ($FatalError, no result parsed). $durationStr"
     } else {
-        $components += "Test run completed (no result parsed). $durationStr"
+        "Test run completed (no result parsed). $durationStr"
     }
-    $summary = $components -join " "
+
+    $plainSummary = (@($covText, $passFailText) | Where-Object { $_ }) -join " "
 
     $colorCode = if ($FatalError) { 91 }
                  elseif ($null -eq $Failed) { 93 }
                  elseif ($failedCount -gt 0) { if ($failedCount -ge $FailureThreshold) { 91 } else { 93 } }
                  else { 92 }
 
-    $summary | Out-File "$RunDir/summary.txt" -Encoding utf8NoBOM
-    Format-AnsiText $summary $colorCode
+    $plainSummary | Out-File "$RunDir/summary.txt" -Encoding utf8NoBOM
+
+    # When all tests pass but coverage is below target, color coverage yellow within the green line.
+    if ($covText -and -not $coverageMet -and $colorCode -eq 92) {
+        (Format-AnsiText $covText 93) + " " + (Format-AnsiText $passFailText 92)
+    } else {
+        Format-AnsiText $plainSummary $colorCode
+    }
 
     if ($FatalError) {
         $logFile = ("$RunDir/test-run.txt") -replace '\\', '/'
@@ -86,49 +97,54 @@ function Write-TestRunResult {
     }
 }
 
-# Merge-TestSummary: Combines two PassThru result objects (from Invoke-TestWithSummary) into a
+# Merge-TestSummary: Combines N PassThru result objects (from Invoke-TestWithSummary) into a
 # single summary line. Coverage counts are merged using unit weighting: 1 Command = 1 Thingy,
-# 1 Line|Block = 3 Thingies. Unit name is preserved when both sides share the same unit;
+# 1 Line|Block = 3 Thingies. Unit name is preserved when all sides share the same unit;
 # "Thingies" is used only when mixing different units.
 function Merge-TestSummary {
     param(
-        [hashtable] $A,
-        [hashtable] $B,
-        [TimeSpan]  $Elapsed
+        [hashtable[]] $Summaries,
+        [TimeSpan]    $Elapsed
     )
 
-    $errors = @($A.FatalError, $B.FatalError) | Where-Object { $_ }
-    $fatalError = if ($errors) { $errors -join '; ' } else { $null }
-    $passed = if ($fatalError) { $null } else { ($A.Passed ?? 0) + ($B.Passed ?? 0) }
-    $failed = if ($fatalError) { $null } else { ($A.Failed ?? 0) + ($B.Failed ?? 0) }
+    $errors = $Summaries | ForEach-Object { $_.FatalError } | Where-Object { $_ }
+    $fatalError = if ($errors) { ($errors | ForEach-Object { $_ }) -join '; ' } else { $null }
+    $passed = if ($fatalError) { $null } else { ($Summaries | ForEach-Object { $_.Passed ?? 0 } | Measure-Object -Sum).Sum }
+    $failed = if ($fatalError) { $null } else { ($Summaries | ForEach-Object { $_.Failed ?? 0 } | Measure-Object -Sum).Sum }
 
     $unitWeight = @{ Commands = 1; Lines = 3; Blocks = 3 }
     $covSummary = $null
-    $aData = $A.CoverageData
-    $bData = $B.CoverageData
-    if ($aData -or $bData) {
-        $aW = if ($aData) { $unitWeight[$aData.Unit] ?? 1 } else { 0 }
-        $bW = if ($bData) { $unitWeight[$bData.Unit] ?? 1 } else { 0 }
-        $coveredThingies = ($aData ? ($aData.Covered * $aW) : 0) + ($bData ? ($bData.Covered * $bW) : 0)
-        $totalThingies   = ($aData ? ($aData.Total   * $aW) : 0) + ($bData ? ($bData.Total   * $bW) : 0)
-        $fileCount = ($aData ? $aData.FileCount : 0) + ($bData ? $bData.FileCount : 0)
-        $target = if ($aData) { $aData.Target } else { $bData.Target }
-        $unit = if (-not $aData)                     { $bData.Unit }
-                elseif (-not $bData)                 { $aData.Unit }
-                elseif ($aData.Unit -eq $bData.Unit) { $aData.Unit }
-                else                                 { 'Thingies' }
-        if ($totalThingies -gt 0) {
-            $pct = [int][math]::Round($coveredThingies * 10000.0 / $totalThingies) / 100
-            $covSummary = Format-CoverageData @{ Pct = $pct; Target = $target; Covered = $coveredThingies; Total = $totalThingies; Unit = $unit; FileCount = $fileCount }
+    $withCoverage = @($Summaries | Where-Object { $_.CoverageData })
+    if ($withCoverage) {
+        $coveredRaw = 0; $totalRaw = 0; $coveredW = 0; $totalW = 0; $fileCount = 0; $target = $null; $units = @()
+        foreach ($s in $withCoverage) {
+            $d = $s.CoverageData
+            $w = $unitWeight[$d.Unit] ?? 1
+            $coveredRaw += $d.Covered
+            $totalRaw   += $d.Total
+            $coveredW   += $d.Covered * $w
+            $totalW     += $d.Total   * $w
+            $fileCount  += $d.FileCount
+            if (-not $target) { $target = $d.Target }
+            $units += $d.Unit
+        }
+        $distinctUnits = @($units | Sort-Object -Unique)
+        $sameUnit = $distinctUnits.Count -eq 1
+        $unit     = if ($sameUnit) { $distinctUnits[0] } else { 'Thingies' }
+        $covered  = if ($sameUnit) { $coveredRaw } else { $coveredW }
+        $total    = if ($sameUnit) { $totalRaw   } else { $totalW   }
+        if ($total -gt 0) {
+            $pct = [int][math]::Round($covered * 10000.0 / $total) / 100
+            $covData = @{ Pct = $pct; Target = $target; Covered = $covered; Total = $total; Unit = $unit; FileCount = $fileCount }
         }
     }
 
-    $failuresSeen     = ($A.FailuresSeen ?? 0) + ($B.FailuresSeen ?? 0)
-    $failureThreshold = ($A.FailureThreshold ?? 0) + ($B.FailureThreshold ?? 0)
-    $runDir           = $A.RunDir ?? $B.RunDir
+    $failuresSeen     = ($Summaries | ForEach-Object { $_.FailuresSeen     ?? 0 } | Measure-Object -Sum).Sum
+    $failureThreshold = ($Summaries | ForEach-Object { $_.FailureThreshold ?? 0 } | Measure-Object -Sum).Sum
+    $runDir           = ($Summaries | Where-Object { $_.RunDir } | Select-Object -First 1).RunDir
 
     Write-TestRunResult `
-        -CoverageSummary  $covSummary `
+        -CoverageData     $covData `
         -Passed           $passed `
         -Failed           $failed `
         -Elapsed          $Elapsed `
