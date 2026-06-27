@@ -27,11 +27,18 @@ function Get-CoverageData {
         $fileCount = [int]$cls.missed + [int]$cls.covered
         $pct = [math]::Round($covered * 100.0 / $total, 1)
     } elseif ($xml.DocumentElement.LocalName -eq 'coverage') {
-        # Cobertura format
-        $covered   = [int]$xml.coverage.'lines-covered'
-        $total     = [int]$xml.coverage.'lines-valid'
+        # Cobertura format — prefer branch coverage if present
+        $branchesValid = [int]$xml.coverage.'branches-valid'
+        if ($branchesValid -gt 0) {
+            $covered = [int]$xml.coverage.'branches-covered'
+            $total   = $branchesValid
+            $pct     = [math]::Round([double]$xml.coverage.'branch-rate' * 100, 1)
+        } else {
+            $covered = [int]$xml.coverage.'lines-covered'
+            $total   = [int]$xml.coverage.'lines-valid'
+            $pct     = [math]::Round([double]$xml.coverage.'line-rate' * 100, 1)
+        }
         if ($total -eq 0) { return $null }
-        $pct       = [math]::Round([double]$xml.coverage.'line-rate' * 100, 1)
         $fileCount = ($xml.coverage.packages.package.classes.class | Measure-Object).Count
     } else {
         throw "Get-CoverageData: unrecognized XML root element '$($xml.DocumentElement.LocalName)'"

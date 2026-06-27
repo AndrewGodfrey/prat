@@ -1,6 +1,11 @@
 # .SYNOPSIS
 # Common scaffolding for test runners: runDir setup, output filtering, coverage summary, result reporting.
 #
+# Existing adapters (use as pattern for adding new ones):
+#   Invoke-PesterWithSummary.ps1       — Pester (.ps1 tests)
+#   Invoke-DotnetTestWithSummary.ps1   — dotnet test (.csproj)
+#   Invoke-PytestWithSummary.ps1       — pytest (.py tests)
+#
 # The adapter (caller) provides scriptblock params for the framework-specific parts:
 #   TestCommand     — runs the tests, streams output
 #   ProcessLine     — filters/passes each output line; receives ($line, $state); returns string|$null

@@ -112,7 +112,7 @@ function Merge-TestSummary {
     $passed = if ($fatalError) { $null } else { ($Summaries | ForEach-Object { $_.Passed ?? 0 } | Measure-Object -Sum).Sum }
     $failed = if ($fatalError) { $null } else { ($Summaries | ForEach-Object { $_.Failed ?? 0 } | Measure-Object -Sum).Sum }
 
-    $unitWeight = @{ Commands = 1; Lines = 3; Blocks = 3 }
+    $unitWeight = @{ Commands = 1; Lines = 3; Blocks = 3; Branches = 3 }
     $withCoverage = @($Summaries | Where-Object { $_.CoverageData })
     if ($withCoverage) {
         $coveredRaw = 0; $totalRaw = 0; $coveredW = 0; $totalW = 0; $fileCount = 0; $target = $null; $units = @()

@@ -84,6 +84,29 @@ Describe "Get-CoverageData" {
         Get-CoverageData -Path $f -Unit "Commands" | Should -BeNullOrEmpty
     }
 
+    It "parses Cobertura format: uses branch coverage when branches-valid > 0" {
+        $f = "$TestDrive/gcd-cobertura-branch.xml"
+        @"
+<?xml version="1.0"?>
+<coverage line-rate="0.85" lines-covered="85" lines-valid="100" branch-rate="0.60" branches-covered="30" branches-valid="50">
+  <packages><package name="p">
+    <classes>
+      <class filename="Foo.cs" />
+    </classes>
+  </package></packages>
+</coverage>
+"@ | Set-Content $f -Encoding utf8NoBOM
+
+        $result = Get-CoverageData -Path $f -Unit "Branches"
+
+        $result.Covered   | Should -Be 30
+        $result.Total     | Should -Be 50
+        $result.FileCount | Should -Be 1
+        $result.Pct       | Should -Be 60.0
+        $result.Unit      | Should -Be "Branches"
+        $result.Target    | Should -Be 70
+    }
+
     It "returns null for Cobertura with zero lines-valid" {
         $f = "$TestDrive/gcd-zero.xml"
         @"
