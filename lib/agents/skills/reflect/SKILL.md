@@ -9,21 +9,18 @@ Review this session for improvements worth capturing. Two categories:
    additional direction. This includes tool errors that the agent automatically worked around.
 2. **Discovered context** — things you had to explore or look up that a fresh agent would also
    have to rediscover. Even in smooth executions, there may be non-obvious facts (API quirks,
-   column names, indirection patterns) that cost investigation time and could be pre-loaded in
-   a skill or agent-instructions file for next time.
+   column names, indirection patterns) that cost investigation time.
+   
+There are various ways to address these, in decreasing order of preference:
 
-For each candidate: describe the mistake briefly, propose the specific addition or edit (consult
-the `remember` skill for where to save and how to write entries), then wait for confirmation before
-writing it. When considering solutions, also think about whether a small tool change - e.g. added support - could
-resolve it without adding to the context burden.
+- modify a tool, or add a new one
+- change configuration to make the mistake impossible
+- use the `remember` skill to add it to context somewhere
 
-When considering context edits, be aware that the agent doesn't experience cumulative context load — each concern appears
-locally small to it, so it evaluates it on its own and often concludes "the risk of missing this outweighs the token cost."
-The always-loaded context budget is tight and contested — many things seem worth adding individually,
-but the cumulative effect degrades the quality of the agent's work. Contradictory instructions are
-especially costly: even a few force mid-task conflict resolution and quality drops sharply.
+When considering context edits, be aware that the agent is biased towards adding very
+specific context, which over time accumulates context which degrades the quality of the agent's work.
+Contradictory instructions are especially costly.
 
 When drafting proposed additions to instructions or rules, don't tack on a closing explanatory
 sentence unless it heads off a specific competing interpretation. If the rule's reasoning is
-obvious from the rule itself, the closer is filler. Watch for this pattern: if the user asks
-"does that last sentence add anything?" and you immediately agree to remove it, it was filler.
+obvious from the rule itself, the closer is filler.
