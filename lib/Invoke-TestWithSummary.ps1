@@ -28,7 +28,8 @@ param(
     [Parameter(Mandatory)] [scriptblock] $RenderResult,
     [Parameter(Mandatory)] [scriptblock] $GetCoverageFile,
     [Parameter(Mandatory)] [scriptblock] $GetTestResult,
-    [Parameter(Mandatory)] [string]      $CoverageUnit,
+    [ValidateSet('commands', 'lines', 'instructions', '')]
+    [string] $CoverageUnitForJaCoco = '',
     [Parameter(Mandatory)] [string]      $RepoRoot,
     [Parameter(Mandatory)] [DateTimeOffset] $StartTime,
     [hashtable]   $InitialState = @{},
@@ -77,7 +78,7 @@ $coveragePath = & $GetCoverageFile $runDir
 $testResult   = & $GetTestResult $runState
 
 $failuresSeen = $runState.failuresSeen ?? 0
-$coverageData = Get-CoverageData -Path $coveragePath -Unit $CoverageUnit
+$coverageData = Get-CoverageData -Path $coveragePath -CoverageUnitForJaCoco $CoverageUnitForJaCoco
 if ($PassThru) {
     return @{
         CoverageData     = $coverageData

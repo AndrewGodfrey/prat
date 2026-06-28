@@ -74,7 +74,7 @@ $runState = @{
     -StartTime     $startTime `
     -RepoRoot      $RepoRoot `
     -OutputDir     $OutputDir `
-    -CoverageUnit  "Commands" `
+    -CoverageUnitForJaCoco 'commands' `
     -InitialState  $runState `
     -LogHeader     @("RepoRoot: $RepoRoot", "PathToTest: $PathToTest", "") `
     -PassThru:$PassThru `

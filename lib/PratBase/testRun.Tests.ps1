@@ -309,16 +309,16 @@ Describe "Merge-TestSummary" {
         Mock Get-CoveragePercentTarget -ModuleName PratBase { 70 }
     }
 
-    It "sums Passed/Failed and computes weighted Thingies coverage" {
+    It "sums Passed/Failed and computes weighted coverage with '-ish' suffix for mixed units" {
         # A: 10 Commands covered out of 100, 5 files, 5 passed
         # B: 2 Lines covered out of 4, 2 files, 3 passed
-        # Weights: Commands=1, Lines=3
-        # Thingies: A = 10/100; B = 6/12 => combined 16/112, pct = round(16*10000/112)/100 = 14.29%
+        # Weights: Commands=1, Lines=3; lowest-rank unit = Commands (rank 1) → "Commands-ish"
+        # Weighted: A = 10/100; B = 6/12 => combined 16/112, pct = round(16*10000/112)/100 = 14.29%
         $runDirA = "$TestDrive/ms-a"; New-Item $runDirA -ItemType Directory | Out-Null
         $runDirB = "$TestDrive/ms-b"; New-Item $runDirB -ItemType Directory | Out-Null
 
         $a = @{
-            CoverageData     = @{ Covered = 10; Total = 100; FileCount = 5; Pct = 10.0; Unit = "Commands"; Target = 70 }
+            CoverageData     = @{ Covered = 10; Total = 100; FileCount = 5; Pct = 10.0; Unit = "commands"; Target = 70 }
             Passed = 5; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = $runDirA
         }
         $b = @{
@@ -329,9 +329,45 @@ Describe "Merge-TestSummary" {
         Merge-TestSummary @($a, $b) ([TimeSpan]::FromSeconds(10))
 
         $summary = Get-Content "$runDirA/summary.txt"
-        $summary | Should -Match "16/112 Thingies in 7 Files"
+        $summary | Should -Match "16/112 Commands-ish in 7 Files"
         $summary | Should -Match "14\.29%"
         $summary | Should -Match "Passed: 8, Failed: 0"
+    }
+
+    It "uses coarsest unit + '-ish' when mixing Commands and Branches" {
+        $runDirA = "$TestDrive/ms-cmd-br-a"; New-Item $runDirA -ItemType Directory | Out-Null
+        $a = @{
+            CoverageData = @{ Covered = 10; Total = 100; FileCount = 5; Pct = 10.0; Unit = "commands"; Target = 70 }
+            Passed = 3; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = $runDirA
+        }
+        $b = @{
+            CoverageData = @{ Covered = 6; Total = 10; FileCount = 1; Pct = 60.0; Unit = "Branches"; Target = 70 }
+            Passed = 2; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-cmd-br-b"
+        }
+
+        Merge-TestSummary @($a, $b) ([TimeSpan]::Zero)
+
+        $summary = Get-Content "$runDirA/summary.txt"
+        $summary | Should -Match "Commands-ish"
+        $summary | Should -Not -Match "Thingies"
+    }
+
+    It "uses coarsest unit + '-ish' when mixing Lines and Branches" {
+        $runDirA = "$TestDrive/ms-lines-br-a"; New-Item $runDirA -ItemType Directory | Out-Null
+        $a = @{
+            CoverageData = @{ Covered = 10; Total = 20; FileCount = 2; Pct = 50.0; Unit = "Lines"; Target = 70 }
+            Passed = 3; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = $runDirA
+        }
+        $b = @{
+            CoverageData = @{ Covered = 6; Total = 10; FileCount = 1; Pct = 60.0; Unit = "Branches"; Target = 70 }
+            Passed = 2; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-lines-br-b"
+        }
+
+        Merge-TestSummary @($a, $b) ([TimeSpan]::Zero)
+
+        $summary = Get-Content "$runDirA/summary.txt"
+        $summary | Should -Match "Lines-ish"
+        $summary | Should -Not -Match "Thingies"
     }
 
     It "propagates FatalError from either result" {
@@ -372,11 +408,11 @@ Describe "Merge-TestSummary" {
     It "uses the common unit name when both sides have the same unit" {
         $runDirA = "$TestDrive/ms-same-a"; New-Item $runDirA -ItemType Directory | Out-Null
         $a = @{
-            CoverageData = @{ Covered = 10; Total = 100; FileCount = 5; Pct = 10.0; Unit = "Commands"; Target = 70 }
+            CoverageData = @{ Covered = 10; Total = 100; FileCount = 5; Pct = 10.0; Unit = "commands"; Target = 70 }
             Passed = 5; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = $runDirA
         }
         $b = @{
-            CoverageData = @{ Covered = 5; Total = 50; FileCount = 3; Pct = 10.0; Unit = "Commands"; Target = 70 }
+            CoverageData = @{ Covered = 5; Total = 50; FileCount = 3; Pct = 10.0; Unit = "commands"; Target = 70 }
             Passed = 3; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-same-b"
         }
 

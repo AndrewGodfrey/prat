@@ -62,7 +62,6 @@ $workingDirLocal = $WorkingDir
     -StartTime    $startTime `
     -RepoRoot     $RepoRoot `
     -OutputDir    $OutputDir `
-    -CoverageUnit 'Branches' `
     -InitialState $runState `
     -LogHeader    @("RepoRoot: $RepoRoot", "Modules: $($modulesLocal -join ', ')", "") `
     -PassThru:$PassThru `

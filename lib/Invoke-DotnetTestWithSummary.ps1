@@ -132,7 +132,6 @@ $testCommand = if (-not $NoCoverage -and $coverageCollectorLocal -eq "dotnet-cov
     -StartTime     $startTime `
     -RepoRoot      $RepoRoot `
     -OutputDir     $OutputDir `
-    -CoverageUnit  ($coverageCollectorLocal -eq "dotnet-coverage" ? "Blocks" : "Lines") `
     -InitialState  $runState `
     -LogHeader     @("RepoRoot: $RepoRoot", "TestArgs: $TestArgs", "") `
     -PassThru:$PassThru `

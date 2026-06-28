@@ -8,7 +8,7 @@ BeforeAll {
         $p = @{
             StartTime       = $extra.ContainsKey('StartTime')       ? $extra.StartTime       : [DateTimeOffset]::UtcNow
             RepoRoot        = $extra.ContainsKey('RepoRoot')        ? $extra.RepoRoot        : "$TestDrive/repo-$(New-Guid)"
-            CoverageUnit    = $extra.ContainsKey('CoverageUnit')    ? $extra.CoverageUnit    : "Lines"
+            CoverageUnitForJaCoco = $extra.ContainsKey('CoverageUnitForJaCoco') ? $extra.CoverageUnitForJaCoco : ''
             InitialState    = $extra.ContainsKey('InitialState')    ? $extra.InitialState    : @{ failuresSeen = 0 }
             TestCommand     = $extra.ContainsKey('TestCommand')     ? $extra.TestCommand     : { }
             ProcessLine     = $extra.ContainsKey('ProcessLine')     ? $extra.ProcessLine     : { param($l, $s) $null }
@@ -72,7 +72,7 @@ Describe "Invoke-TestWithSummary" {
 '@ | Set-Content $covXml -Encoding utf8NoBOM
 
         invokeHarness @{
-            CoverageUnit    = "Lines"
+            CoverageUnitForJaCoco = ''
             GetCoverageFile = { param($rd) $covXml }
         }
         Should -Invoke Write-TestRunResult -Times 1 -ParameterFilter { $CoverageData.Pct -eq 90 }
@@ -108,7 +108,7 @@ Describe "Invoke-TestWithSummary" {
 '@ | Set-Content $covXml -Encoding utf8NoBOM
 
         $result = invokeHarness @{
-            CoverageUnit    = "Lines"
+            CoverageUnitForJaCoco = ''
             GetCoverageFile = { param($rd) $covXml }
             GetTestResult   = { param($s) @{ Passed = 3; Failed = 1; FatalError = $null } }
             PassThru        = $true
@@ -119,7 +119,7 @@ Describe "Invoke-TestWithSummary" {
         $result.Failed           | Should -Be 1
         $result.CoverageData.Covered   | Should -Be 5
         $result.CoverageData.Total     | Should -Be 10
-        $result.CoverageData.Unit      | Should -Be "Lines"
+        $result.CoverageData.Unit      | Should -Be "lines"
         $result.RunDir           | Should -Not -BeNullOrEmpty
     }
 }
