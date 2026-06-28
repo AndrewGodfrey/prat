@@ -155,8 +155,24 @@ Describe "Get-LayerViolationFindings" {
             $result | Should -HaveCount 1
         }
 
-        It "ignores non-.ps1/.md files" {
+        It "finds violations in a .py file" {
+            "_mcp = FastMCP('$($script:dePattern)sandbox')" | Set-Content "$script:testDir/server.py" -Encoding utf8NoBOM
+
+            $result = @(Get-LayerViolationFindings -Path $script:testDir -Config $script:dirConfig)
+
+            $result | Should -HaveCount 1
+        }
+
+        It "scans .txt files" {
             "see $($script:dePattern)lib/foo.ps1" | Set-Content "$script:testDir/notes.txt" -Encoding utf8NoBOM
+
+            $result = @(Get-LayerViolationFindings -Path $script:testDir -Config $script:dirConfig)
+
+            $result | Should -HaveCount 1
+        }
+
+        It "ignores non-text files" {
+            "see $($script:dePattern)lib/foo.ps1" | Set-Content "$script:testDir/data.bin" -Encoding utf8NoBOM
 
             $result = @(Get-LayerViolationFindings -Path $script:testDir -Config $script:dirConfig)
 

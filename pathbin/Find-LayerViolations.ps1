@@ -20,6 +20,8 @@ param (
     [hashtable] $Config
 )
 
+$textExtensions = & "$PSScriptRoot/../lib/Get-TextExtensions.ps1"
+
 $defaultPratConfig = & "$PSScriptRoot/../lib/Get-LayerViolationsConfig_prat.ps1"
 
 if (-not $Config) { $Config = $defaultPratConfig }
@@ -74,11 +76,11 @@ function Get-LayerViolationFindings {
     try {
         $gitFiles = git ls-files 2>$null
         if ($LASTEXITCODE -eq 0 -and $gitFiles) {
-            $files = $gitFiles | Where-Object { $_ -match '\.(ps1|md)$' }
+            $files = $gitFiles | Where-Object { $_ -match "\.(${textExtensions})$" }
         } else {
-            Write-Warning "Not a git repo or git ls-files failed — scanning all .ps1/.md files"
+            Write-Warning "Not a git repo or git ls-files failed — scanning all text files"
             $files = Get-ChildItem -Recurse |
-                Where-Object { $_.Name -match '\.(ps1|md)$' } |
+                Where-Object { $_.Name -match "\.(${textExtensions})$" } |
                 ForEach-Object { $_.FullName.Substring($Path.Length + 1) -replace '\\', '/' }
         }
 

@@ -82,7 +82,7 @@ function Get-SensitiveDataFindings {
         [int]    $MaxFoundLines = 3
     )
 
-    $textExtensions = 'ps1|md|txt|json|yaml|yml|ini|cfg|sh|bat|cmd'
+    $textExtensions = & "$PSScriptRoot/../lib/Get-TextExtensions.ps1"
     $allFindings = [System.Collections.Generic.List[string]]::new()
 
     if (Test-Path $Path -PathType Leaf) {
