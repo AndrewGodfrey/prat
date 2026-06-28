@@ -309,11 +309,10 @@ Describe "Merge-TestSummary" {
         Mock Get-CoveragePercentTarget -ModuleName PratBase { 70 }
     }
 
-    It "sums Passed/Failed and computes weighted coverage with '-ish' suffix for mixed units" {
+    It "sums Passed/Failed and concatenates unit names with '/' for mixed units" {
         # A: 10 Commands covered out of 100, 5 files, 5 passed
         # B: 2 Lines covered out of 4, 2 files, 3 passed
-        # Weights: Commands=1, Lines=3; lowest-rank unit = Commands (rank 1) → "Commands-ish"
-        # Weighted: A = 10/100; B = 6/12 => combined 16/112, pct = round(16*10000/112)/100 = 14.29%
+        # Raw: combined 12/104, pct = round(12*10000/104)/100 = 11.54%; unit = "commands/lines"
         $runDirA = "$TestDrive/ms-a"; New-Item $runDirA -ItemType Directory | Out-Null
         $runDirB = "$TestDrive/ms-b"; New-Item $runDirB -ItemType Directory | Out-Null
 
@@ -329,12 +328,12 @@ Describe "Merge-TestSummary" {
         Merge-TestSummary @($a, $b) ([TimeSpan]::FromSeconds(10))
 
         $summary = Get-Content "$runDirA/summary.txt"
-        $summary | Should -Match "16/112 Commands-ish in 7 Files"
-        $summary | Should -Match "14\.29%"
+        $summary | Should -Match "12/104 commands/lines in 7 Files"
+        $summary | Should -Match "11\.54%"
         $summary | Should -Match "Passed: 8, Failed: 0"
     }
 
-    It "uses coarsest unit + '-ish' when mixing Commands and Branches" {
+    It "uses slash-joined unit names when mixing Commands and Branches" {
         $runDirA = "$TestDrive/ms-cmd-br-a"; New-Item $runDirA -ItemType Directory | Out-Null
         $a = @{
             CoverageData = @{ Covered = 10; Total = 100; FileCount = 5; Pct = 10.0; Unit = "commands"; Target = 70 }
@@ -348,11 +347,11 @@ Describe "Merge-TestSummary" {
         Merge-TestSummary @($a, $b) ([TimeSpan]::Zero)
 
         $summary = Get-Content "$runDirA/summary.txt"
-        $summary | Should -Match "Commands-ish"
+        $summary | Should -Match "branches/commands"
         $summary | Should -Not -Match "Thingies"
     }
 
-    It "uses coarsest unit + '-ish' when mixing Lines and Branches" {
+    It "uses slash-joined unit names when mixing Lines and Branches" {
         $runDirA = "$TestDrive/ms-lines-br-a"; New-Item $runDirA -ItemType Directory | Out-Null
         $a = @{
             CoverageData = @{ Covered = 10; Total = 20; FileCount = 2; Pct = 50.0; Unit = "Lines"; Target = 70 }
@@ -366,7 +365,7 @@ Describe "Merge-TestSummary" {
         Merge-TestSummary @($a, $b) ([TimeSpan]::Zero)
 
         $summary = Get-Content "$runDirA/summary.txt"
-        $summary | Should -Match "Lines-ish"
+        $summary | Should -Match "branches/lines"
         $summary | Should -Not -Match "Thingies"
     }
 

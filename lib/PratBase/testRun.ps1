@@ -98,9 +98,8 @@ function Write-TestRunResult {
 }
 
 # Merge-TestSummary: Combines N PassThru result objects (from Invoke-TestWithSummary) into a
-# single summary line. Coverage counts are merged using unit weighting (1 command = 1, 1 line|block = 3).
-# Unit name is preserved when all sides share the same unit; when mixing units, the coarsest
-# (lowest-rank) unit name is used with an "-ish" suffix (e.g. "commands-ish", "lines-ish").
+# single summary line. Coverage counts are merged by summing raw counts. Unit name is preserved
+# when all sides share the same unit; when mixing units, names are concatenated with '/' (e.g. "lines/branches").
 function Merge-TestSummary {
     param(
         [hashtable[]] $Summaries,
@@ -112,35 +111,18 @@ function Merge-TestSummary {
     $passed = if ($fatalError) { $null } else { ($Summaries | ForEach-Object { $_.Passed ?? 0 } | Measure-Object -Sum).Sum }
     $failed = if ($fatalError) { $null } else { ($Summaries | ForEach-Object { $_.Failed ?? 0 } | Measure-Object -Sum).Sum }
 
-    # Granularity rank: commands < lines ≈ blocks ≈ instructions < branches. Used to pick the "-ish" label when units differ.
-    $unitRank   = @{ commands = 1; lines = 2; blocks = 2; instructions = 2; branches = 3 }
-    $unitWeight = @{ commands = 1; lines = 3; blocks = 3; instructions = 3; branches = 3 }
     $withCoverage = @($Summaries | Where-Object { $_.CoverageData })
     if ($withCoverage) {
-        $coveredRaw = 0; $totalRaw = 0; $coveredW = 0; $totalW = 0; $fileCount = 0; $target = $null; $units = @()
+        $covered = 0; $total = 0; $fileCount = 0; $target = $null; $units = @()
         foreach ($s in $withCoverage) {
             $d = $s.CoverageData
-            $w = $unitWeight[$d.Unit] ?? 1
-            $coveredRaw += $d.Covered
-            $totalRaw   += $d.Total
-            $coveredW   += $d.Covered * $w
-            $totalW     += $d.Total   * $w
-            $fileCount  += $d.FileCount
+            $covered   += $d.Covered
+            $total     += $d.Total
+            $fileCount += $d.FileCount
             if (-not $target) { $target = $d.Target }
-            $units += $d.Unit
+            $units += $d.Unit.ToLower()
         }
-        $distinctUnits = @($units | Sort-Object -Unique)
-        $sameUnit = $distinctUnits.Count -eq 1
-        if ($sameUnit) {
-            $unit    = $distinctUnits[0]
-            $covered = $coveredRaw
-            $total   = $totalRaw
-        } else {
-            $lowestRankUnit = $distinctUnits | Sort-Object { $unitRank[$_] ?? 99 } | Select-Object -First 1
-            $unit    = "$lowestRankUnit-ish"
-            $covered = $coveredW
-            $total   = $totalW
-        }
+        $unit = @($units | Sort-Object -Unique) -join "/"
         if ($total -gt 0) {
             $pct = [int][math]::Round($covered * 10000.0 / $total) / 100
             $covData = @{ Pct = $pct; Target = $target; Covered = $covered; Total = $total; Unit = $unit; FileCount = $fileCount }
