@@ -130,6 +130,29 @@ $hook = {
 The scriptblock becomes a legible declaration of what flows in. The function is independently
 testable without any closure setup.
 
+# Error-handling traps in pipeline redirection
+
+`throw` is a terminating error — it bypasses `2>&1 | ForEach-Object` pipeline redirection entirely.
+Wrap the pipeline in `try/catch` to handle both terminating and non-terminating errors:
+
+```powershell
+try {
+    & $inner 2>&1 | ForEach-Object {
+        if ($_ -is [System.Management.Automation.ErrorRecord]) { "[err] $($_.Exception.Message)" }
+        else { $_ }
+    }
+} catch {
+    "[err] $_"
+    exit 1
+}
+```
+
+# `exit N` inside a scriptblock exits the process
+
+`exit N` inside `& { ... }` exits the **containing process**, not just the scriptblock.
+To propagate an exit code without exiting, check `$LASTEXITCODE` after the block, or use a child
+process (`pwsh -c ...`).
+
 # $PSScriptRoot-relative paths when moving a script
 
 Before writing a moved script to its new location, audit every `$PSScriptRoot`-relative path —
