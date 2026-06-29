@@ -29,3 +29,6 @@ is what actually gets injected. Verify CC hook behavior empirically rather than 
 Verified flag (not prominent in docs): `claude --settings <path>` loads an additional JSON merged into the
 standard settings hierarchy with no on-disk residue. Use this for per-launch overrides (e.g. session-specific
 `skillOverrides`) rather than writing to `.claude/settings.local.json`.
+
+`/mcp` in CC reconnects to an MCP server and restarts the server process — use it to pick up code
+changes to an MCP server without restarting CC.
