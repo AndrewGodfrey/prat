@@ -175,6 +175,12 @@ Each concern stands on its own: evaluate it directly rather than letting a nearb
 Same pattern: "this is a prototype" doesn't mean tests don't matter; "this is internal" doesn't mean
 input validation isn't needed.
 
+### Security reasoning: non-destructive ≠ safe
+
+When assessing whether to allow a tool or permission: "non-destructive" (no data loss) is not the
+same as "safe". There are multiple distinct failure modes beyond data destruction — exfiltration and
+prompt injection are two examples. Don't grant a permission on the grounds that it can't destroy data.
+
 ### Incremental transformations
 
 When removing any structural element during a refactor or migration — comment, error handling,
