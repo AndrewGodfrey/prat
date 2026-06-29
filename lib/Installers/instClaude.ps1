@@ -335,9 +335,10 @@ function Install-ClaudeAgentSandbox {
     # Migration: revoke (AD) ACE on claudeHome granted so the agent could create .claude.lock.
     # CC creates .claude.lock as the running user, not the agent, so this right is no longer needed.
     $stage.NoteMigrationStep((Get-Date "2026-06-28"))
-    if ($stage.GetIsStepComplete("claudeAgentSandbox/lockGrant/$agentUser")) {
+    if (-not $stage.GetIsStepComplete("claudeAgentSandbox/lockGrant/$($agentUser):2.0")) {
         $stage.OnChange()
         Invoke-Gsudo { icacls $using:claudeHome /remove:g $using:agentUser | Out-Null }
+        $stage.SetStepComplete("claudeAgentSandbox/lockGrant/$($agentUser):2.0")
     }
 }
 
