@@ -4,6 +4,17 @@ description: Use when writing PowerShell code. Covers gotchas with arrays, argum
   handling, and common patterns in this codebase.
 ---
 
+# Cryptographically secure random bytes
+
+`Get-Random` is seeded from the clock — not cryptographically secure. For keys, tokens, or any
+secret material, use `RandomNumberGenerator`:
+
+```powershell
+$bytes = [byte[]]::new(32)
+[System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+$key = [System.Convert]::ToBase64String($bytes)
+```
+
 # `[Parameter()]` activates advanced mode — `$ARGS` goes empty
 
 Adding any `[Parameter()]` attribute to a `param()` block activates advanced function mode, even
