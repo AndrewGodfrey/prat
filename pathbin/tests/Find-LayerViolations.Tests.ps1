@@ -217,4 +217,35 @@ Describe "Get-LayerViolationFindings" {
             $result[0] | Should -Match 'normal\.ps1'
         }
     }
+
+    Context "git repo with untracked files" {
+        BeforeEach {
+            $script:testDir = "$script:realTestDrive/flv-$([System.IO.Path]::GetRandomFileName())"
+            New-Item -ItemType Directory -Path $script:testDir | Out-Null
+            git -C $script:testDir init --quiet
+        }
+        AfterEach {
+            Remove-Item $script:testDir -Recurse -Force
+        }
+
+        It "finds violations in an untracked (not yet git-added) file" {
+            "see $($script:dePattern)lib/foo.ps1" | Set-Content "$script:testDir/untracked.ps1" -Encoding utf8NoBOM
+
+            $result = @(Get-LayerViolationFindings -Path $script:testDir -Config $script:dirConfig)
+
+            $result | Should -HaveCount 1
+            $result[0] | Should -Match $script:dePattern
+        }
+
+        It "finds violations in both tracked and untracked files" {
+            "see $($script:dePattern)a" | Set-Content "$script:testDir/tracked.ps1" -Encoding utf8NoBOM
+            git -C $script:testDir add tracked.ps1
+            git -C $script:testDir -c user.email=t@t -c user.name=t commit -m init --quiet
+            "see $($script:dePattern)b" | Set-Content "$script:testDir/untracked.ps1" -Encoding utf8NoBOM
+
+            $result = @(Get-LayerViolationFindings -Path $script:testDir -Config $script:dirConfig)
+
+            $result | Should -HaveCount 2
+        }
+    }
 }

@@ -170,6 +170,26 @@ Describe "Get-SensitiveDataFindings" {
         }
     }
 
+    Context "git repo with untracked files" {
+        BeforeEach {
+            $script:gitTestDir = Join-Path (Resolve-Path "TestDrive:\").ProviderPath "fsd-git-$([System.IO.Path]::GetRandomFileName())"
+            mkdir $gitTestDir | Out-Null
+            git -C $gitTestDir init --quiet
+        }
+        AfterEach {
+            Remove-Item $gitTestDir -Recurse -Force
+        }
+
+        It "finds sensitive data in an untracked (not yet git-added) file" {
+            "C:\Users\alice\prat" | Set-Content "$gitTestDir\untracked.ps1" -Encoding utf8NoBOM
+
+            $result = @(Get-SensitiveDataFindings -Path $gitTestDir -HomeDir "C:\Users\alice")
+
+            $result | Should -HaveCount 1
+            $result[0] | Should -Match "hardcoded home path"
+        }
+    }
+
     Context "file path" {
         It "finds sensitive data in a single file" {
             $file = "$testDir\secret.ps1"

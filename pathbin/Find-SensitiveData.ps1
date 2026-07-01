@@ -100,8 +100,10 @@ function Get-SensitiveDataFindings {
     } else {
         Push-Location $Path
         try {
-            $gitFiles = git ls-files 2>$null
-            if ($LASTEXITCODE -eq 0 -and $gitFiles) {
+            # --cached --others --exclude-standard: tracked files plus untracked-but-not-ignored files —
+            # so a new file that hasn't been `git add`ed yet still gets scanned before it's committed.
+            $gitFiles = git ls-files --cached --others --exclude-standard 2>$null
+            if ($LASTEXITCODE -eq 0) {
                 $files = $gitFiles | Where-Object { $_ -match "\.($textExtensions)$" }
             } else {
                 Write-Warning "Not a git repo or git ls-files failed — scanning all text files"
