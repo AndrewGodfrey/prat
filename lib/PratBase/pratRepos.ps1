@@ -293,6 +293,31 @@ function Get-PratProject {
 }
 
 # .SYNOPSIS
+# Diagnostic for a Get-PratProject miss: checks whether $Location would match a registered
+# project once NTFS junctions are resolved on both sides. A match here means the caller passed
+# a path in a different "junction island" than the one the registry was built from (see the
+# Junction islands note above Get-PratRepoIndex) — the project exists, but the plain string-prefix
+# match doesn't bridge junctions. Returns the would-be match, or $null if truly unregistered.
+function Find-JunctionIslandMismatch {
+    [CmdletBinding()]
+    param([string] $Location = $pwd)
+
+    $Location = (Resolve-Path $Location).ProviderPath
+
+    $index = Get-PratRepoIndex (Get-RepoProfileFiles)
+    if ($null -eq $index) { return $null }
+
+    $resolvedLocation = Resolve-JunctionInPath $Location
+    $resolvedNodes = $index.repos.Values | ForEach-Object {
+        $clone = $_.Clone()
+        $clone.root = Resolve-JunctionInPath $_.root
+        $clone
+    }
+
+    return Find-BestMatch $resolvedNodes $resolvedLocation
+}
+
+# .SYNOPSIS
 # Searches all registered repoProfile files, for navigation shortcuts.
 #
 # With -ListAll:  Returns an ordered dictionary of all shortcuts.

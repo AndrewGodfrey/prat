@@ -12,6 +12,14 @@ $location = if ($CommandParameters['RepoRoot']) {
 } else { Get-Location }
 $project = Get-PratProject $location
 if ($null -eq $project) {
+    $junctionMatch = Find-JunctionIslandMismatch $location
+    if ($null -ne $junctionMatch) {
+        throw "Unknown project - can't $CommandName. '$location' matches project '$($junctionMatch.id)' " +
+              "(root: $($junctionMatch.root)) only after resolving NTFS junctions - this is a junction-island " +
+              "mismatch, not an unregistered project. Pass a path in the same junction island the project " +
+              "registry was built from (e.g. a sandbox account's own '~/...', not a real path reached through " +
+              "an env var pointing outside the island)."
+    }
     throw "Unknown project - can't $CommandName"
 }
 

@@ -40,6 +40,17 @@ Describe "Test-Codebase" {
         $result | Should -Be "testCb: test: bar: Focus=$testCbDir\testCb_fileWithTests.ps1 NoCoverage=True RepoRoot=$testCbDir"
     }
 
+    It "Surfaces a junction-island hint when Focus matches a project only through an NTFS junction" {
+        $root = (Get-Item "TestDrive:\").FullName.TrimEnd('\')
+        New-Item -ItemType Directory "$root/realrepo" -Force | Out-Null
+        New-Item -ItemType Junction  "$root/junction" -Target "$root/realrepo" | Out-Null
+        "@{ '.' = @{ repos = @{ repo = @{ root = '$root/junction' } } } }" | Out-File "$root/junction-profile.ps1"
+        Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$root/junction-profile.ps1") }
+        Push-Location $root
+
+        { & $script "$root/realrepo" -NoCoverage -WarningAction SilentlyContinue } | Should -Throw "*junction*"
+    }
+
     It "Warns when absolute Focus path is not in a registered project" {
         New-Item -Type Directory "TestDrive:\unknown-project" | Out-Null
         Push-Location "TestDrive:\unknown-project"

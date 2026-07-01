@@ -17,6 +17,17 @@ Describe "Invoke-CodebaseCommand" {
         { &$scriptToTest "build" } | Should -Throw "Unknown project*"
     }
 
+    It "Throws with a junction-island hint when location matches a project only after resolving junctions" {
+        $root = (Get-Item "TestDrive:\").FullName.TrimEnd('\')
+        New-Item -ItemType Directory "$root/realrepo" -Force | Out-Null
+        New-Item -ItemType Junction  "$root/junction" -Target "$root/realrepo" | Out-Null
+        "@{ '.' = @{ repos = @{ repo = @{ root = '$root/junction' } } } }" | Out-File "$root/junction-profile.ps1"
+        Mock Get-RepoProfileFiles -ModuleName PratBase { return @("$root/junction-profile.ps1") }
+        Push-Location "$root/realrepo"
+
+        { &$scriptToTest "build" } | Should -Throw "*junction*"
+    }
+
     It "Runs the project command script with its env delta applied" {
         Push-Location $testCbDir
         $result = &$scriptToTest "test" -CommandParameters @{NoCoverage=$true}

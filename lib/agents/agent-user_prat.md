@@ -70,6 +70,12 @@ See the `testing` skill for more detail. Assume all repos are pratified — use 
 either in its own `AGENTS.md` (e.g. `**Pratified:** No`) or in the user's personal instructions
 (for repos where editing `AGENTS.md` isn't possible).
 
+If `t` itself errors (e.g. "Unknown project"), that's a case of "friction in tooling is a defect to
+address, not a cost to route around" (see Model workarounds) — debug and fix the root cause. Do not
+fall back to running the underlying test command (pytest, `dotnet test`, Pester) directly as a
+substitute; that silently drops `t`'s guarantees (coverage collection, working directory, output
+location) and is never an acceptable resolution on its own.
+
 When a subagent's summary doesn't have enough detail, have a way to recover — either by resuming
 the subagent or accessing its full output.
 

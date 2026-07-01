@@ -34,6 +34,11 @@ $PSBoundParameters['Focus'] = $Focus
 
 $project = Get-PratProject -Location $Focus
 if ($project) { $PSBoundParameters['RepoRoot'] = $project.root }
-else { Write-Warning "No registered project found for path '$Focus'" }
+else {
+    Write-Warning "No registered project found for path '$Focus'"
+    # Forward $Focus as RepoRoot anyway, so Invoke-CodebaseCommand.ps1's "Unknown project" check
+    # runs against the path the caller actually asked about, not $PWD.
+    $PSBoundParameters['RepoRoot'] = $Focus
+}
 
 &$PSScriptRoot\..\lib\Invoke-CodebaseCommand.ps1 "test" -CommandParameters:$PSBoundParameters
