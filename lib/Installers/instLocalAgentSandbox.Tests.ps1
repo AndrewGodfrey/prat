@@ -31,6 +31,49 @@ Describe "Install-LocalAgentSandbox" {
             }
         }
     }
+
+    Context "Ancestor traverse grants" {
+        It "grants ancestor access on the deduped parent of every rw/ro path" {
+            InModuleScope Installers {
+                $stage = [PSCustomObject]@{}
+                $stage | Add-Member ScriptMethod GetIsStepComplete { $false }
+                $stage | Add-Member ScriptMethod OnChange {}
+                $stage | Add-Member ScriptMethod SetStepComplete {}
+
+                $grantedDirs = [System.Collections.Generic.List[string]]::new()
+                Mock applyAncestorTraverseGrants { $grantedDirs.AddRange([string[]]$paths) }
+                Mock Get-LocalUser      { [PSCustomObject]@{} }
+                Mock Test-Path          { $true }
+                Mock Invoke-Gsudo       {}
+                Mock Install-TextToFile {}
+
+                Install-LocalAgentSandbox $stage -agentUser 'test_agent' `
+                    -rwPaths @('C:\parent\de', 'C:\parent\prat') -roPaths @('C:\parent\prefs')
+
+                ($grantedDirs | Sort-Object) | Should -Be @('C:\parent\de', 'C:\parent\prat', 'C:\parent\prefs')
+            }
+        }
+
+        It "dedupes ancestors that share the same parent directory" {
+            InModuleScope Installers {
+                Mock Invoke-Gsudo {}
+
+                applyAncestorTraverseGrants 'test_agent' @('C:\parent\de', 'C:\parent\prat')
+
+                Should -Invoke Invoke-Gsudo -Times 1 -Exactly
+            }
+        }
+
+        It "throws instead of granting on a drive root when given a shallow path" {
+            InModuleScope Installers {
+                Mock Invoke-Gsudo {}
+
+                { applyAncestorTraverseGrants 'test_agent' @('C:\rw') } | Should -Throw '*drive root*'
+
+                Should -Invoke Invoke-Gsudo -Times 0 -Exactly
+            }
+        }
+    }
 }
 
 Describe "Get-SshdConfigContent" {

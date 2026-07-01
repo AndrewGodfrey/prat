@@ -98,6 +98,32 @@ function applyPathGrants($agentUser, $paths, $permission) {
     }
 }
 
+# Grants non-inherited access on the immediate parent of each given path. Tools that canonicalize
+# paths (e.g. Node's fs.realpathSync, used by its module resolver) stat every ancestor directory to
+# check for symlinks/junctions, not just the target path itself — even though nothing below that
+# ancestor is otherwise accessible. Without this, such tools fail with EPERM on the parent even
+# though the agent has full access to the target path underneath it.
+# (RA) (FILE_READ_ATTRIBUTES alone) was tried first and was insufficient — Node's Windows lstat
+# still failed with EPERM, implying it needs FILE_LIST_DIRECTORY too. (RX) grants that, so — since
+# there's no (OI)(CI) — the agent account can list the *names* of the parent's immediate children (e.g.
+# see "Desktop", "AppData" exist) but not their contents, and nothing propagates to descendants.
+function applyAncestorTraverseGrants($agentUser, $paths) {
+    $ancestors = $paths | ForEach-Object { Split-Path ($_ -replace '/', '\') -Parent } | Sort-Object -Unique
+    foreach ($dir in $ancestors) {
+        # A shallow path (e.g. 'C:\rw') has its parent resolve to the drive root itself. Granting
+        # (RX) there would let the agent list the entire drive's top-level contents — a much larger
+        # blast radius than "list this one grant's siblings". Fail loud instead of silently doing that.
+        if ($dir -match '^[A-Za-z]:\\?$') {
+            throw "applyAncestorTraverseGrants: '$dir' is a drive root — refusing to grant (RX) there. Path too shallow: check the input path list."
+        }
+        $grant = "${agentUser}:(RX)"
+        Invoke-Gsudo {
+            icacls $using:dir /grant:r $using:grant | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:dir (exit $LASTEXITCODE)" }
+        }
+    }
+}
+
 # .SYNOPSIS
 # Set up a sandboxed local Windows account for running an AI coding agent.
 #
@@ -179,13 +205,14 @@ function Install-LocalAgentSandbox {
     # Config-dependent setup: NTFS grants, junctions, profile, gitconfig, SSH keys.
     # Separated from the one-time block so adding a path to rwPaths only requires bumping this
     # step's version (e.g. "sandboxacls/$($agentUser):2.0"), not re-running account creation.
-    if (-not $stage.GetIsStepComplete("sandboxacls/$($agentUser)")) {
+    if (-not $stage.GetIsStepComplete("sandboxacls/$($agentUser):4.0")) {
 
         # NTFS grants — roPaths first, then rwPaths so rwPaths wins when paths overlap (e.g. a roPath
         # parent of an rwPath). /grant:r avoids duplicate ACEs on re-runs.
         # Run elevated so icacls can traverse subdirectories owned by the agent account.
         applyPathGrants $agentUser $roPaths 'RX'
         applyPathGrants $agentUser $rwPaths 'F'
+        applyAncestorTraverseGrants $agentUser ($roPaths + $rwPaths)
 
         # Home directory junctions — make ~/name resolve to the target from the agent's perspective.
         # Andrew has Modify on agentHome (granted above) so no elevation needed.
@@ -238,6 +265,6 @@ function Install-LocalAgentSandbox {
             }
         }
 
-        $stage.SetStepComplete("sandboxacls/$($agentUser)")
+        $stage.SetStepComplete("sandboxacls/$($agentUser):4.0")
     }
 }
