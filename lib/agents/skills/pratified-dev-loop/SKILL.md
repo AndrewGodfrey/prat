@@ -84,15 +84,10 @@ corresponding production file. Use `-NoCoverage` during rapid iteration.
 Use `Get-FileCoverage -FilePath "C:\path\to\File.ps1"` for a per-function summary.
 Use `Get-FileCoverage -Detail -FilePath "C:\path\to\File.ps1"` for a line-range summary.
 
-Both `Get-FileCoverage` and `gcr` infer the coverage file from the git repo root: `<repoRoot>/auto/testRuns/last/coverage.xml`.
-For projects with a separate coverage subdirectory (e.g. a subproject), use `-Project`:
-
-```powershell
-gcr -Project myproject
-Get-FileCoverage -FilePath "C:\path\to\File.cs" -Project myproject
-```
-
-`-Project <id>` resolves to `<repoRoot>/auto/testRuns/<id>/last/coverage.xml`.
+Both `Get-FileCoverage` and `gcr` infer the coverage file from the target's git repo root and prat
+project — `<repoRoot>/auto/testRuns/[<subprojectId>/]last/coverage.xml` — including the subproject
+segment when the target is inside a registered subproject. To point at a different run, pass the
+file explicitly: `Get-FileCoverage ... -CoverageFile <path>` / `gcr -coverageFile <path>`.
 
 `Get-CoverageData` and `gcr` support JaCoCo/CoverageGutters and Cobertura XML formats.
 
