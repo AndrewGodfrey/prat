@@ -64,12 +64,20 @@ $logWriter = [System.IO.StreamWriter]::new($logFile, $true, [System.Text.UTF8Enc
 $runState.logWriter = $logWriter
 
 $PSStyle.OutputRendering = 'Ansi'
+$filterParams = @{
+    InitialState = $runState
+    Command      = $TestCommand
+    ProcessLine  = $ProcessLine
+    RenderResult = $RenderResult
+}
 try {
-    & "$PSScriptRoot/Invoke-WithOutputFilter.ps1" `
-        -InitialState $runState `
-        -Command      $TestCommand `
-        -ProcessLine  $ProcessLine `
-        -RenderResult $RenderResult
+    if ($PassThru) {
+        # -PassThru's contract is that the result hashtable is the only pipeline output;
+        # live lines (e.g. failure reporting) go straight to the host instead.
+        & "$PSScriptRoot/Invoke-WithOutputFilter.ps1" @filterParams | Out-Host
+    } else {
+        & "$PSScriptRoot/Invoke-WithOutputFilter.ps1" @filterParams
+    }
 } finally {
     $logWriter.Close()
 }

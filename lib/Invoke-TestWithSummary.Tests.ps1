@@ -122,4 +122,15 @@ Describe "Invoke-TestWithSummary" {
         $result.CoverageData.Unit      | Should -Be "lines"
         $result.RunDir           | Should -Not -BeNullOrEmpty
     }
+
+    It "returns only the result hashtable when -PassThru is set and ProcessLine emits live lines" {
+        $result = invokeHarness @{
+            TestCommand = { "FAILED test_one"; "FAILED test_two" }
+            ProcessLine = { param($l, $s) $l.line }  # echo every line live, like failure reporting does
+            PassThru    = $true
+        }
+
+        @($result).Count | Should -Be 1
+        $result | Should -BeOfType [hashtable]
+    }
 }
