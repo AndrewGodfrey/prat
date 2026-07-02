@@ -17,6 +17,15 @@ automatically, so same-directory imports work without boilerplate.
 For cross-repo imports (e.g. de code importing from prat), use `pip install -e` on the source
 package or add the path in the launcher script — not `sys.path.insert` in production source files.
 
+Give pip-installed packages in this ecosystem a distinct top-level name (e.g. `prat_foo_parser`,
+not `parser`) — a generic name risks colliding with another package in the same shared
+site-packages. A shared `sys.path`-mutating helper module (import it first, it inserts paths as a
+side effect) is not a substitute: it just relocates the same anti-pattern into one file instead of
+removing it, and becomes its own hardcoded map to maintain. PEP 420 implicit namespace packages
+(`prat.foo`, `prat.bar`) are a real alternative but editable installs of namespace packages are a
+known-flaky corner of pip/setuptools — not worth it until the number of prat-prefixed packages
+grows enough to justify the complexity.
+
 # Dependency management
 
 `requirements.txt` is for **runtime** dependencies only. Test tools or other SDK-like dependencies
