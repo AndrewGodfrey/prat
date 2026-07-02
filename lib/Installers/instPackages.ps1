@@ -329,7 +329,7 @@ $pratPackages = @{
         dependencies = @("sudo")
     }
     python = @{
-        installerVersion = "3.0"
+        installerVersion = "4.0"
         install = {
             # Pinned to 3.12: llama-cpp-python pre-built wheels require Python 3.10-3.12.
             # Uses embeddable zip — full Windows installer silently exits 0 without installing
@@ -360,7 +360,10 @@ $pratPackages = @{
             # Remove Windows App Execution Alias stubs that shadow real Python
             Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe"  -Force -ErrorAction SilentlyContinue
             Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.exe" -Force -ErrorAction SilentlyContinue
-            Install-UserPathEntry $stage $pythonDir
+
+            # -Prepend: The python.exe stub in the WindowsApps directory interferes unless we put the real one first.
+            # (Tried removing the stub, but Windows periodically puts it back).
+            Install-UserPathEntry $stage $pythonDir -Prepend
             Install-UserPathEntry $stage "$pythonDir\Scripts"
         }
     }
