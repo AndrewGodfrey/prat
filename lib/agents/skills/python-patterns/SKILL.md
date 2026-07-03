@@ -39,3 +39,24 @@ that loaded the profile. If you're seeing `__pycache__` in source dirs
 despite the profile being loaded, the likely cause is a profile-less invocation.
 
 If you want no cache at all (e.g. in a test runner where compilation overhead is negligible and you want zero artifacts), add `-B` to the python invocation explicitly. 
+
+# Naming
+
+| pattern | use |
+|---------|-----|
+|`ALL_CAPS_WITH_UNDERSCORES`| constant data (numbers, strings, tuples, dicts, lists) |
+|`lowercase_with_underscores`| functions and methods |
+|`PascalCase`| classes, exceptions, dataclasses, protocols |
+
+  — e.g. a tool-schema dict, or a list of them). Functions and
+methods always get `lowercase_with_underscores`.
+
+A leading underscore signals "not a designed API surface".
+
+# Namespaces
+
+Avoid classes whose only job is to hold static/related functions.
+Prefer `import mypackage` + `mypackage.thing()` over `from mypackage import thing` when you want
+the call site to keep showing provenance.
+
+For a namespace spanning multiple files, use a package (`__init__.py` curating the public surface).
