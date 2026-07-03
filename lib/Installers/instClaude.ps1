@@ -272,13 +272,11 @@ function Install-ClaudeProjectMemory {
     }
 }
 
-# Installs Claude Code user-level settings.json. For now just a copy, may need merging later.
-# Wraps Install-LocalAgentSandbox with Claude-specific config sharing: junction for .claude/,
-# symlinks for .claude.json and .claude.json.backup. The two json files are automatically added
-# to rwPaths so permissions are granted and {} placeholders created if not yet present.
+# This can be removed, in favor of Install-LocalAgentSandbox, once the migration steps can be removed.
+# It used to wrap Install-LocalAgentSandbox with CC-specific migration cleanup (junction/symlink/ACE removal).
 #
 # .PARAMETER claudeHome
-# Home directory of the user whose Claude config the agent should share.
+# Home directory of the primary user (used for migration cleanup targets).
 function Install-ClaudeAgentSandbox {
     [CmdletBinding()]
     param(
@@ -297,61 +295,49 @@ function Install-ClaudeAgentSandbox {
 
     Install-LocalAgentSandbox $stage `
         -agentUser       $agentUser `
-        -rwPaths         ($rwPaths + @("$claudeHome\.claude", "$claudeHome\.claude.json.backup")) `
-        -roPaths         ($roPaths + @("$claudeHome\.local\bin")) `
+        -rwPaths         $rwPaths `
+        -roPaths         $roPaths `
         -safeDirectories $safeDirectories `
         -homeJunctions   $homeJunctions `
         -profileContent  $profileContent `
         -sshPublicKeyPath $sshPublicKeyPath
 
-    # Create junction and symlinks after Install-LocalAgentSandbox has set ACLs and ensured targets exist.
+    # Create symlinks after Install-LocalAgentSandbox has set ACLs and ensured targets exist.
     $agentHome = "$env:SystemDrive\Users\$agentUser"
 
+    # Migration: .claude junction management moved to de layer. Remove prat-managed junction.
+    $stage.NoteMigrationStep((Get-Date "2026-06-27"))
     $jLink = "$agentHome\.claude"
     $jItem = Get-Item $jLink -ErrorAction SilentlyContinue
-    if ($null -eq $jItem -or $jItem.LinkType -ne 'Junction') {
+    if ($null -ne $jItem -and $jItem.LinkType -eq 'Junction') {
         $stage.OnChange()
-        $jTarget = "$claudeHome\.claude"
-        if ($null -ne $jItem) { Invoke-Gsudo { Remove-Item -Force -Recurse $using:jLink } }
-        Invoke-Gsudo { New-Item -ItemType Junction -Path $using:jLink -Target $using:jTarget | Out-Null }
+        Invoke-Gsudo { Remove-Item -Force -Recurse $using:jLink }
     }
 
-    # .claude.json is intentionally NOT symlinked: Start-CommandLineAgent.ps1 removes and
-    # re-copies .claude.json at each launch (to refresh auth), so a symlink here would be
-    # replaced with a regular file on every cl invocation, causing spurious deploy updates.
-    foreach ($fileName in @('.claude.json.backup')) {
-        $sLink = "$agentHome\$fileName"
-        $sItem = Get-Item $sLink -ErrorAction SilentlyContinue
-        if ($null -eq $sItem -or $sItem.LinkType -ne 'SymbolicLink') {
-            $stage.OnChange()
-            $sTarget = "$claudeHome\$fileName"
-            if ($null -ne $sItem) { Invoke-Gsudo { Remove-Item -Force $using:sLink } }
-            Invoke-Gsudo { New-Item -ItemType SymbolicLink -Path $using:sLink -Target $using:sTarget | Out-Null }
-        }
+    # Migration: remove .claude.json.backup symlink (no longer running CC from sandbox account).
+    $stage.NoteMigrationStep((Get-Date "2026-06-28"))
+    $sLink = "$agentHome\.claude.json.backup"
+    $sItem = Get-Item $sLink -ErrorAction SilentlyContinue
+    if ($null -ne $sItem -and $sItem.LinkType -eq 'SymbolicLink') {
+        $stage.OnChange()
+        Invoke-Gsudo { Remove-Item -Force $using:sLink }
     }
 
-    # Junction .local\bin to the managing user's — ensures agent always runs the current version
-    # and can't accumulate a stale separate copy (agent has RX on the target via roPaths).
-    $localBin       = "$agentHome\.local\bin"
-    $localBinTarget = "$claudeHome\.local\bin"
-    $null = New-Item -ItemType Directory -Path "$agentHome\.local" -ErrorAction SilentlyContinue
+    # Migration: .local\bin junction management moved to de layer. Remove prat-managed junction.
+    $stage.NoteMigrationStep((Get-Date "2026-06-27"))
+    $localBin = "$agentHome\.local\bin"
     $jItem = Get-Item $localBin -ErrorAction SilentlyContinue
-    if ($null -eq $jItem -or $jItem.LinkType -ne 'Junction') {
+    if ($null -ne $jItem -and $jItem.LinkType -eq 'Junction') {
         $stage.OnChange()
-        if ($null -ne $jItem) { Remove-Item -Force -Recurse $localBin }
-        New-Item -ItemType Junction -Path $localBin -Target $localBinTarget | Out-Null
+        Remove-Item -Force -Recurse $localBin
     }
 
-    # Grant add-subdirectory right on claudeHome so CC can create .claude.lock as a token-refresh
-    # mutex. andrew_agent owns the dir it creates, so no Delete ACE on the parent is needed.
-    # (AD) only — does not grant file creation, listing, or access to existing items.
-    if (-not $stage.GetIsStepComplete("claudeAgentSandbox/lockGrant/$agentUser")) {
-        $lockGrant = "${agentUser}:(AD)"
-        Invoke-Gsudo {
-            icacls $using:claudeHome /grant:r $using:lockGrant | Out-Null
-            if ($LASTEXITCODE -ne 0) { throw "icacls failed for $using:claudeHome (exit $LASTEXITCODE)" }
-        }
-        $stage.SetStepComplete("claudeAgentSandbox/lockGrant/$agentUser")
+    # Migration: revoke (AD) ACE on claudeHome granted so the agent could create .claude.lock.
+    # CC creates .claude.lock as the running user, not the agent, so this right is no longer needed.
+    $stage.NoteMigrationStep((Get-Date "2026-06-28"))
+    if ($stage.GetIsStepComplete("claudeAgentSandbox/lockGrant/$agentUser")) {
+        $stage.OnChange()
+        Invoke-Gsudo { icacls $using:claudeHome /remove:g $using:agentUser | Out-Null }
     }
 }
 
