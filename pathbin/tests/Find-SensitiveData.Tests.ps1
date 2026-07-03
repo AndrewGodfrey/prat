@@ -44,6 +44,13 @@ Describe "Find-SensitiveDataInContent" {
             $result[0] | Should -Match 'and 1 more'
         }
 
+        It "flags the home path in double-backslash (Python/JSON escaped) form" {
+            $result = @(Find-SensitiveDataInContent -Content '"PAS_HOME": "C:\\Users\\alice\\de"' -RelPath "foo.py" -HomeDir "C:\Users\alice")
+
+            $result | Should -HaveCount 1
+            $result[0] | Should -Match "hardcoded home path"
+        }
+
         It "does not flag a different user's path" {
             $result = @(Find-SensitiveDataInContent -Content "C:\Users\bob\prat" -RelPath "foo.ps1" -HomeDir "C:\Users\alice")
 
@@ -151,6 +158,15 @@ Describe "Get-SensitiveDataFindings" {
             $result = @(Get-SensitiveDataFindings -Path $testDir -HomeDir "C:\Users\alice")
 
             $result | Should -HaveCount 0
+        }
+
+        It "scans .py files" {
+            '"PAS_HOME": "C:\\Users\\alice\\de"' | Set-Content "$testDir\test_sandbox.py" -Encoding utf8NoBOM
+
+            $result = @(Get-SensitiveDataFindings -Path $testDir -HomeDir "C:\Users\alice")
+
+            $result | Should -HaveCount 1
+            $result[0] | Should -Match "hardcoded home path"
         }
     }
 

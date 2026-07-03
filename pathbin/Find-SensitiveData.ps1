@@ -43,8 +43,12 @@ function Find-SensitiveDataInContent {
     }
 
     $homeNums = [System.Collections.Generic.List[int]]::new()
+    $homeDirDoubleSlash = $HomeDir.Replace('\', '\\')
     for ($i = 0; $i -lt $lines.Count; $i++) {
-        if ($lines[$i] -match [regex]::Escape($HomeDir)) { $homeNums.Add($i + 1) }
+        if ($lines[$i] -match [regex]::Escape($HomeDir) -or
+            ($homeDirDoubleSlash -ne $HomeDir -and $lines[$i] -match [regex]::Escape($homeDirDoubleSlash))) {
+            $homeNums.Add($i + 1)
+        }
     }
     if ($homeNums.Count -gt 0) { $findings.Add("hardcoded home path $(fmtLines $homeNums): $RelPath") }
 

@@ -8,6 +8,15 @@ description: Use when setting up a Python project in the prat ecosystem — Pyth
 
 Python is pinned to **3.12**. See the comment in `instPackages.ps1` for the compatibility rationale.
 
+# sys.path and PYTHONPATH
+
+`python312._pth` (in the Python install dir) suppresses `PYTHONPATH` — setting it has no effect.
+However, running `python script.py` still adds the script's own directory to `sys.path[0]`
+automatically, so same-directory imports work without boilerplate.
+
+For cross-repo imports (e.g. de code importing from prat), use `pip install -e` on the source
+package or add the path in the launcher script — not `sys.path.insert` in production source files.
+
 # Dependency management
 
 `requirements.txt` is for **runtime** dependencies only. Test tools or other SDK-like dependencies
