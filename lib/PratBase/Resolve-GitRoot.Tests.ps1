@@ -69,4 +69,21 @@ Describe "Resolve-GitRoot" {
             Pop-Location
         }
     }
+
+    It "Stays in the caller's path space when the path traverses a junction (does not resolve to the real target)" {
+        $realRepoDir = "$realTestDrive/realRepo"
+        New-Item -ItemType Directory $realRepoDir | Out-Null
+        git -C $realRepoDir init -q
+        New-Item "$realRepoDir/file.txt" | Out-Null
+        git -C $realRepoDir add . 2>$null
+        git -C $realRepoDir -c user.email="t@t" -c user.name="t" commit -q -m "init" 2>$null
+
+        $junctionParent = "$realTestDrive/junctionParent"
+        New-Item -ItemType Directory $junctionParent | Out-Null
+        $junctionPath = "$junctionParent/repoLink"
+        New-Item -ItemType Junction -Path $junctionPath -Target $realRepoDir | Out-Null
+
+        $result = Resolve-GitRoot "$junctionPath/file.txt"
+        $result | Should -Be $junctionPath
+    }
 }
