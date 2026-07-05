@@ -61,6 +61,16 @@ The goal is not to test every parameter, but to test every distinct mechanism or
 several inputs are structurally identical, one representative test is enough — but watch for inputs
 that *appear* identical while hiding a different code path, implicit dependency, or silent failure mode.
 
+## Duplicate coverage across layers
+
+Before adding tests that vary an input along some dimension (size, count, type), check whether a
+lower layer your code calls into already owns that dimension. A wrapper that forwards a parameter
+unchanged to an already-tested primitive doesn't need its own tests for every value of that
+parameter — only for the translation/wiring it actually performs. Varying an input that a lower
+layer already covers adds test count without adding a new code path of your own; it's easy to
+mistake for thoroughness. When in doubt, ask: does this test exercise a branch in *this* function
+that the existing test suite (at any layer) doesn't already prove?
+
 ## Test isolation
 
 Use an auto-managed temp directory rather than hardcoded paths. Test frameworks typically provide one
