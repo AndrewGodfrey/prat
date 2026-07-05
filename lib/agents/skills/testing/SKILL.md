@@ -128,6 +128,11 @@ get a trailing `/`, so `"$realTestDrive/subdir"` becomes `...//subdir`. This sil
 matching when other tools (git, `Resolve-Path`) normalize to single slashes. Always trim:
 `((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')`.
 
+**Bare top-level code (outside any `Describe`/`BeforeAll`) only runs during discovery**, not during
+the run phase. A helper `function` defined at the top of the file, outside `Describe`, exists during
+discovery but is gone by the time `It` blocks execute — `CommandNotFoundException`. Move such helpers
+inside the outermost `BeforeAll` so they're redefined at run time, in the scope `It` blocks can see.
+
 **`InModuleScope` + `-Focus`**: `InModuleScope` is evaluated at discovery time, but `BeforeAll` runs
 at execution time. When the focused file is the first to be discovered, the module isn't loaded yet
 and discovery fails. Fix: add a `BeforeDiscovery` block (in addition to `BeforeAll`) to load the
