@@ -41,6 +41,29 @@ Use `& $file` not `. $file`. Dot-source runs the script in the current scope and
 definitions — only use it when you need that (e.g. loading helper functions). For a script that
 returns data, `& $file` is correct.
 
+# Guarding a script's entrypoint so it can be dot-sourced
+
+Any top-level script that calls its own logic unconditionally at the bottom — e.g. a `main` function,
+following the "define `main` at the top, invoke it from the bottom" literate-structure convention —
+can't be dot-sourced without triggering that call, whether to unit-test its helper functions or to
+import them for reuse elsewhere. Guard the call:
+
+```powershell
+param(...)           # must stay at top — NOT inside the if block
+
+function Helper { ... }
+
+if ($MyInvocation.InvocationName -ne '.') {
+    # main body — only runs when executed directly, not when dot-sourced
+}
+```
+
+`$MyInvocation.InvocationName` is `.` when the script is dot-sourced, and the script's own name/path
+otherwise — normal execution (`& script.ps1`, or running it directly) is unaffected.
+
+Test files dot-source the script (`BeforeAll { . "$PSScriptRoot/myscript.ps1" }`) to load helpers
+without triggering the body. Don't create separate files just to hold helpers for a single script.
+
 # Accumulating into an array
 
 Start with `$x = @()` and use `$x +=` to add elements. Do not use `[array]$source` when `$source`

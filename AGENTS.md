@@ -27,21 +27,9 @@ This catches unguarded env var mutations and writes to `$home`. Run it before wr
   is where the source lives), but don't need `InModuleScope`.
 
 ### Testing helper functions in deploy scripts
-Deploy scripts (`param` at top, side effects) can't be dot-sourced without triggering execution. To make
-helper functions testable, inline them at the top of the script and guard the execution body:
-
-```powershell
-param(...)           # must stay at top — NOT inside the if block
-
-function Helper { ... }
-
-if ($MyInvocation.InvocationName -ne ".") {
-    # main body — only runs when executed directly, not when dot-sourced
-}
-```
-
-Test files dot-source the script (`BeforeAll { . "$PSScriptRoot/myscript.ps1" }`) to load the helpers
-without triggering the body. Don't create separate files just to hold helpers for a single script.
+Deploy scripts guard their entrypoint so they can be dot-sourced for testing — see `powershell-patterns`
+skill for the mechanism. Inline helper functions at the top of the script rather than creating a
+separate file to hold them for a single script.
 
 ### Readability patterns (see `Get-PratProject.Tests.ps1` as a reference)
 - Extract a `makeTestProfile` / `makeIndex` helper in `BeforeAll` to eliminate repeated profile-writing boilerplate.
