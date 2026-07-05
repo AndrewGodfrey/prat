@@ -332,8 +332,13 @@ $pratPackages = @{
         installerVersion = "4.0"
         install = {
             # Pinned to 3.12: llama-cpp-python pre-built wheels require Python 3.10-3.12.
-            # Uses embeddable zip — full Windows installer silently exits 0 without installing
-            # in non-interactive sessions (no UAC prompt available).
+
+            # Uses embeddable zip, so that it can be installed in the agent-sandbox account.
+            # (The msi requires an interactive session).
+            # And then installs pip, like the msi would.
+            #
+            # This adds a wrinkle - the embeddable zip disables PYTHONPATH and auto-inserting the script's own directory.
+            # So a script that wants to import another one in the same directory, needs to do a sys.path.insert.
             $version   = "3.12.8"
             $pythonDir = "$env:LOCALAPPDATA\Programs\Python\Python312"
             $pythonExe = "$pythonDir\python.exe"
@@ -346,9 +351,11 @@ $pratPackages = @{
                 Expand-Archive -Path $zipFile -DestinationPath $pythonDir -Force
                 Remove-Item $zipFile -Force -ErrorAction SilentlyContinue
                 if (-not (Test-Path $pythonExe)) { throw "Python extract failed" }
+                
                 # Enable site-packages so pip and installed packages work
                 $pthFile = "$pythonDir\python312._pth"
                 (Get-Content $pthFile -Raw) -replace '#import site', 'import site' | Set-Content $pthFile
+
                 # Install pip
                 $getPip = "$env:TEMP\get-pip.py"
                 curl.exe -sL -o $getPip "https://bootstrap.pypa.io/get-pip.py"
@@ -357,9 +364,6 @@ $pratPackages = @{
                 if ($LASTEXITCODE -ne 0) { throw "pip installation failed (exit $LASTEXITCODE)" }
                 Remove-Item $getPip -Force -ErrorAction SilentlyContinue
             }
-            # Remove Windows App Execution Alias stubs that shadow real Python
-            Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe"  -Force -ErrorAction SilentlyContinue
-            Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.exe" -Force -ErrorAction SilentlyContinue
 
             # -Prepend: The python.exe stub in the WindowsApps directory interferes unless we put the real one first.
             # (Tried removing the stub, but Windows periodically puts it back).

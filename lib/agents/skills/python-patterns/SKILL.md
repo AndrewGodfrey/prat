@@ -10,9 +10,10 @@ Python is pinned to **3.12**. See the comment in `instPackages.ps1` for the comp
 
 # sys.path and PYTHONPATH
 
-`python312._pth` (in the Python install dir) suppresses `PYTHONPATH` — setting it has no effect.
-However, running `python script.py` still adds the script's own directory to `sys.path[0]`
-automatically, so same-directory imports work without boilerplate.
+`python312._pth` (in the Python install dir) suppresses
+- `PYTHONPATH` — setting it has no effect.
+- finding other scripts in the same directory. Scripts that want to do this, need to do:
+  `sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))`
 
 For cross-repo imports (e.g. de code importing from prat), use `pip install -e` on the source
 package or add the path in the launcher script — not `sys.path.insert` in production source files.
