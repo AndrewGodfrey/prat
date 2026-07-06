@@ -5,49 +5,59 @@ param(
     [hashtable] $CommandParameters = @{}
 )
 
-$location = if ($CommandParameters['RepoRoot']) {
-    $resolved = (Resolve-Path $CommandParameters['RepoRoot']).Path
-    $CommandParameters['RepoRoot'] = $resolved
-    $resolved
-} else { Get-Location }
-$project = Get-PratProject $location
-if ($null -eq $project) {
-    $junctionMatch = Find-JunctionIslandMismatch $location
-    if ($null -ne $junctionMatch) {
-        throw "Unknown project - can't $CommandName. '$location' matches project '$($junctionMatch.id)' " +
-              "(root: $($junctionMatch.root)) only after resolving NTFS junctions - this is a junction-island " +
-              "mismatch, not an unregistered project. Pass a path in the same junction island the project " +
-              "registry was built from (e.g. a sandbox account's own '~/...', not a real path reached through " +
-              "an env var pointing outside the island)."
+# 'test' is the one command not simply $Project[$CommandName] — it always goes through
+# Resolve-ProjectTestScript, which falls back to marker-based auto-detection when the project
+# declares no `test` of its own.
+function Resolve-EffectiveCommand($CommandName, $Project) {
+    if ($CommandName -eq "test") { return Resolve-ProjectTestScript $Project }
+    $Project[$CommandName]
+}
+
+if ($MyInvocation.InvocationName -ne '.') {
+    $location = if ($CommandParameters['RepoRoot']) {
+        $resolved = (Resolve-Path $CommandParameters['RepoRoot']).Path
+        $CommandParameters['RepoRoot'] = $resolved
+        $resolved
+    } else { Get-Location }
+    $project = Get-PratProject $location
+    if ($null -eq $project) {
+        $junctionMatch = Find-JunctionIslandMismatch $location
+        if ($null -ne $junctionMatch) {
+            throw "Unknown project - can't $CommandName. '$location' matches project '$($junctionMatch.id)' " +
+                  "(root: $($junctionMatch.root)) only after resolving NTFS junctions - this is a junction-island " +
+                  "mismatch, not an unregistered project. Pass a path in the same junction island the project " +
+                  "registry was built from (e.g. a sandbox account's own '~/...', not a real path reached through " +
+                  "an env var pointing outside the island)."
+        }
+        throw "Unknown project - can't $CommandName"
     }
-    throw "Unknown project - can't $CommandName"
-}
 
-$command = $project[$CommandName]
-if ($null -eq $command) {
-    Write-Verbose "$($CommandName): NOP"
-    return
-}
-
-if ($CommandName -ne "prebuild") {
-    $envDelta = $project.cachedEnvDelta
-    if (($null -ne $envDelta) -and (-not (Split-Path $envDelta -IsAbsolute))) {
-        $envDelta = Join-Path $project.root $envDelta
+    $command = Resolve-EffectiveCommand $CommandName $project
+    if ($null -eq $command) {
+        Write-Verbose "$($CommandName): NOP"
+        return
     }
-} else {
-    # In the case of prebuild, cachedEnvDelta is not needed.
-    # But also: Prebuild often would malfunction if cachedEnvDelta is applied, since it
-    # needs the unapplied state to accurately calculate/update cachedEnvDelta.
-    #
-    # TODO: Add detection for when prebuild is called with any envdelta applied.
-    #       Maybe Invoke-CommandWithEnvDelta could reserve some env-var name, and use it to maintain a 'nesting' counter.    
-    $envDelta = $null
-}
 
-Write-Debug "calling $CommandName script for $($project.id), with switches: ($(ConvertTo-Expression $CommandParameters))"
+    if ($CommandName -ne "prebuild") {
+        $envDelta = $project.cachedEnvDelta
+        if (($null -ne $envDelta) -and (-not (Split-Path $envDelta -IsAbsolute))) {
+            $envDelta = Join-Path $project.root $envDelta
+        }
+    } else {
+        # In the case of prebuild, cachedEnvDelta is not needed.
+        # But also: Prebuild often would malfunction if cachedEnvDelta is applied, since it
+        # needs the unapplied state to accurately calculate/update cachedEnvDelta.
+        #
+        # TODO: Add detection for when prebuild is called with any envdelta applied.
+        #       Maybe Invoke-CommandWithEnvDelta could reserve some env-var name, and use it to maintain a 'nesting' counter.
+        $envDelta = $null
+    }
 
-$wrapperScriptBlock = {
-    param([hashtable]$CommandParameters = @{})
-    & $command $project -CommandParameters:$CommandParameters
+    Write-Debug "calling $CommandName script for $($project.id), with switches: ($(ConvertTo-Expression $CommandParameters))"
+
+    $wrapperScriptBlock = {
+        param([hashtable]$CommandParameters = @{})
+        & $command $project -CommandParameters:$CommandParameters
+    }
+    Invoke-CommandWithCachedEnvDelta $wrapperScriptBlock $envDelta -CommandParameters $CommandParameters
 }
-Invoke-CommandWithCachedEnvDelta $wrapperScriptBlock $envDelta -CommandParameters $CommandParameters

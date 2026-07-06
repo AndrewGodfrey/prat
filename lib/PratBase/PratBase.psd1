@@ -75,14 +75,15 @@ FunctionsToExport = @('Get-CurrentUserIsElevated', 'Get-RelativePath', 'Import-P
                       'Get-CurrentGitForkpoint', 'Get-ForkpointCacheIsValid', 'Set-ForkpointCache', 'Get-ForkpointRelationship',
                       'New-Subfolder', 'New-FolderAndParents', 'Get-HtmlFromClipboard', 'Invoke-PesterAsJob',
                       'Get-DevToolPath',
-                      'Get-PratRepo', 'Get-PratProject', 'Find-ProjectShortcut', 'Resolve-JunctionInPath',
+                      'Get-PratRepo', 'Get-PratProject', 'Get-PratTestTargetsUnder', 'Resolve-ProjectTestScript',
+                      'Get-DetectedTestFrameworks', 'Get-ProjectTestOutputDir', 'Find-ProjectShortcut', 'Resolve-JunctionInPath',
                       'Find-JunctionIslandMismatch',
                       'Expand-TildePath',
                       'Resolve-GitRoot',
                       'Format-Duration',
                       'Initialize-TestRunDir', 'Format-AnsiText', 'Write-TestRunResult',
                       'Convert-CoberturaXmlFile', 'Get-PathPrefixesFromWorkspace',
-                      'Get-CoverageData', 'Format-CoverageData', 'Merge-TestSummary')
+                      'Get-CoverageData', 'Format-CoverageData', 'Merge-TestSummary', 'Get-TestDispatch')
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()

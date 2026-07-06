@@ -32,6 +32,9 @@ function makeTestCommand([string]$cmd) {
                 test     = makeTestCommand 'test'
                 deploy   = makeTestCommand 'deploy'
                 prebuild = makeTestCommand 'prebuild'
+                # Not a real project — its `test` returns a plain
+                # string which would confuse aggregation code.
+                excludeFromAggregation = $true
             }
         }
         shortcuts = @{

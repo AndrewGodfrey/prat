@@ -157,10 +157,18 @@ Describe "Get-PratRepoIndex" {
             }
 
             It "Inherits parent command property when subproject doesn't define it" {
-                (makeIndex "@{ '.' = @{ repos = @{ r = @{ test = 'run-tests.ps1'; subprojects = @{ sub = @{ path = 'lib/sub' } } } } } }").repos["r/sub"].test | Should -Be "$dir/run-tests.ps1"
+                (makeIndex "@{ '.' = @{ repos = @{ r = @{ deploy = 'deploy.ps1'; subprojects = @{ sub = @{ path = 'lib/sub' } } } } } }").repos["r/sub"].deploy | Should -Be "$dir/deploy.ps1"
             }
 
             It "Subproject command overrides inherited parent command" {
+                (makeIndex "@{ '.' = @{ repos = @{ r = @{ deploy = 'parent.ps1'; subprojects = @{ sub = @{ path = 'lib/sub'; deploy = 'sub.ps1' } } } } } }").repos["r/sub"].deploy | Should -Be "$dir/sub.ps1"
+            }
+
+            It "Does NOT inherit `test` from parent — inheriting a test command scoped to the parent's own root is never meaningful" {
+                (makeIndex "@{ '.' = @{ repos = @{ r = @{ test = 'run-tests.ps1'; subprojects = @{ sub = @{ path = 'lib/sub' } } } } } }").repos["r/sub"].ContainsKey("test") | Should -BeFalse
+            }
+
+            It "A subproject can still declare its own `test`, unaffected by the no-inheritance rule" {
                 (makeIndex "@{ '.' = @{ repos = @{ r = @{ test = 'parent.ps1'; subprojects = @{ sub = @{ path = 'lib/sub'; test = 'sub.ps1' } } } } } }").repos["r/sub"].test | Should -Be "$dir/sub.ps1"
             }
 

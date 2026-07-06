@@ -229,6 +229,10 @@ The data shows what happened; the cause is a separate claim that needs its own e
 When claiming a trend from time-series data, normalize against volume first. A declining count
 may just mean less activity — show the *rate* before calling it a signal.
 
+Cost/tradeoff claims ("this costs nothing", "no downside to keeping X general") need the same
+evidence discipline as success claims — trace through what the alternative would actually eliminate
+or cost before asserting one is free.
+
 ### Surfacing documented constraints
 
 If you've written a comment or note encoding a constraint or dependency, surface it when given an

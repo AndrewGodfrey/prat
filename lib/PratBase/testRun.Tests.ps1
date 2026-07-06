@@ -456,6 +456,17 @@ Describe "Merge-TestSummary" {
         $summary | Should -Match "Passed: 7, Failed: 1"
     }
 
+    It "returns a data hashtable instead of printing, when -PassThru is set" {
+        $a = @{ CoverageData = $null; Passed = 4; Failed = 1; FatalError = $null; FailuresSeen = 1; FailureThreshold = 5; RunDir = "$TestDrive/ms-pt-a" }
+        $b = @{ CoverageData = $null; Passed = 2; Failed = 0; FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-pt-b" }
+
+        $result = Merge-TestSummary @($a, $b) ([TimeSpan]::FromSeconds(1)) -PassThru
+
+        $result.Passed | Should -Be 6
+        $result.Failed | Should -Be 1
+        "$TestDrive/ms-pt-a/summary.txt" | Should -Not -Exist
+    }
+
     It "sums FailureThreshold from both results" {
         $runDir = "$TestDrive/ms-threshold"; New-Item $runDir -ItemType Directory | Out-Null
         $a = @{

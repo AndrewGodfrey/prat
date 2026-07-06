@@ -4,7 +4,9 @@
 # Parallels Invoke-DotnetTestWithSummary.ps1 for Python test projects.
 #
 # .PARAMETER Modules
-# Module name(s) to collect branch coverage for (passed as --cov=<module> for each).
+# Module name(s) to collect branch coverage for (--cov=<module> each). If omitted, inferred from
+# $WorkingDir (or cwd): every top-level `*.py` file and `__init__.py`-containing directory,
+# excluding `test_*.py`/`conftest.py`.
 #
 # .PARAMETER TestArgs
 # Additional arguments to pass to pytest (e.g. a focus path).
@@ -20,9 +22,7 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)]
     [string[]] $Modules,
-
     [string[]] $TestArgs = @(),
     [string]   $OutputDir,
     [string]   $RepoRoot,
@@ -31,13 +31,20 @@ param(
     [switch]   $PassThru
 )
 
-$startTime = [DateTimeOffset]::UtcNow
-
-if (-not $RepoRoot) {
-    $RepoRoot = (git rev-parse --show-toplevel 2>$null)
-    if ($LASTEXITCODE -ne 0) { throw "Not in a git repository" }
+# Top-level pytest-coverable modules/packages under $dir: a `*.py` file's base name, or a
+# directory's name if it has `__init__.py`. Excludes `test_*.py`/`conftest.py`.
+function Get-InferredPytestModules($dir) {
+    $modules = @()
+    foreach ($item in Get-ChildItem -LiteralPath $dir) {
+        if ($item.PSIsContainer) {
+            if (Test-Path (Join-Path $item.FullName '__init__.py')) { $modules += $item.Name }
+        } elseif ($item.Extension -eq '.py' -and $item.Name -ne '__init__.py' -and
+                  $item.BaseName -ne 'conftest' -and $item.BaseName -notlike 'test_*') {
+            $modules += $item.BaseName
+        }
+    }
+    $modules
 }
-$RepoRoot = $RepoRoot -replace '\\', '/'
 
 function parsePytestSummary($line) {
     if ($line -notmatch '^=') { return $null }
@@ -51,63 +58,73 @@ function parsePytestSummary($line) {
     return $null
 }
 
-$runState = @{ passed = $null; failed = $null; failuresSeen = 0; exitCode = 0 }
+if ($MyInvocation.InvocationName -ne '.') {
+    $startTime = [DateTimeOffset]::UtcNow
 
-$noCoverageLocal = $NoCoverage
-$modulesLocal    = $Modules
-$testArgsLocal   = $TestArgs
-$workingDirLocal = $WorkingDir
+    if (-not $RepoRoot) {
+        $RepoRoot = (git rev-parse --show-toplevel 2>$null)
+        if ($LASTEXITCODE -ne 0) { throw "Not in a git repository" }
+    }
+    $RepoRoot = $RepoRoot -replace '\\', '/'
 
-& "$PSScriptRoot/Invoke-TestWithSummary.ps1" `
-    -StartTime    $startTime `
-    -RepoRoot     $RepoRoot `
-    -OutputDir    $OutputDir `
-    -InitialState $runState `
-    -LogHeader    @("RepoRoot: $RepoRoot", "Modules: $($modulesLocal -join ', ')", "") `
-    -PassThru:$PassThru `
-    -TestCommand {
-        if ($workingDirLocal) { Push-Location $workingDirLocal }
-        $env:COVERAGE_FILE = "$($runState.runDir)/.coverage"
-        try {
-            $pytestArgs = @('-v', '-p', 'no:cacheprovider') + $testArgsLocal
-            if (-not $noCoverageLocal) {
-                foreach ($m in $modulesLocal) { $pytestArgs += "--cov=$m" }
-                $pytestArgs += @('--cov-branch', "--cov-report=xml:$($runState.runDir)/coverage.xml")
+    $runState = @{ passed = $null; failed = $null; failuresSeen = 0; exitCode = 0 }
+
+    $noCoverageLocal = $NoCoverage
+    $modulesLocal    = if ($PSBoundParameters.ContainsKey('Modules')) { $Modules } else { Get-InferredPytestModules ($WorkingDir ? $WorkingDir : (Get-Location).Path) }
+    $testArgsLocal   = $TestArgs
+    $workingDirLocal = $WorkingDir
+
+    & "$PSScriptRoot/Invoke-TestWithSummary.ps1" `
+        -StartTime    $startTime `
+        -RepoRoot     $RepoRoot `
+        -OutputDir    $OutputDir `
+        -InitialState $runState `
+        -LogHeader    @("RepoRoot: $RepoRoot", "Modules: $($modulesLocal -join ', ')", "") `
+        -PassThru:$PassThru `
+        -TestCommand {
+            if ($workingDirLocal) { Push-Location $workingDirLocal }
+            $env:COVERAGE_FILE = "$($runState.runDir)/.coverage"
+            try {
+                $pytestArgs = @('-v', '-p', 'no:cacheprovider') + $testArgsLocal
+                if (-not $noCoverageLocal) {
+                    foreach ($m in $modulesLocal) { $pytestArgs += "--cov=$m" }
+                    $pytestArgs += @('--cov-branch', "--cov-report=xml:$($runState.runDir)/coverage.xml")
+                }
+                python -B -m pytest @pytestArgs 2>&1
+            } finally {
+                $runState.exitCode = $LASTEXITCODE
+                Remove-Item env:COVERAGE_FILE -ErrorAction SilentlyContinue
+                if ($workingDirLocal) { Pop-Location }
             }
-            python -B -m pytest @pytestArgs 2>&1
-        } finally {
-            $runState.exitCode = $LASTEXITCODE
-            Remove-Item env:COVERAGE_FILE -ErrorAction SilentlyContinue
-            if ($workingDirLocal) { Pop-Location }
-        }
-    } `
-    -ProcessLine {
-        param($line, $state)
-        $state.logWriter.WriteLine($line.line)
-        $parsed = parsePytestSummary $line.line
-        if ($parsed) { $state.passed = $parsed.Passed; $state.failed = $parsed.Failed; return $null }
-        if ($line.line -match '^(FAILED|ERROR) ') {
-            if ($state.failuresSeen -lt $state.failureThreshold) {
-                $state.failuresSeen++
-                return Format-AnsiText $line.line 91
+        } `
+        -ProcessLine {
+            param($line, $state)
+            $state.logWriter.WriteLine($line.line)
+            $parsed = parsePytestSummary $line.line
+            if ($parsed) { $state.passed = $parsed.Passed; $state.failed = $parsed.Failed; return $null }
+            if ($line.line -match '^(FAILED|ERROR) ') {
+                if ($state.failuresSeen -lt $state.failureThreshold) {
+                    $state.failuresSeen++
+                    return Format-AnsiText $line.line 91
+                }
+                return $null
             }
             return $null
+        } `
+        -RenderResult { } `
+        -GetCoverageFile {
+            param($runDir)
+            if ($noCoverageLocal) { return $null }
+            $covFile = "$runDir/coverage.xml"
+            if (Test-Path $covFile) { $covFile } else { $null }
+        } `
+        -GetTestResult {
+            param($state)
+            $fatalError = if ($null -eq $state.passed -and $state.exitCode -ne 0) {
+                "pytest exit code: $($state.exitCode)"
+            } else { $null }
+            @{ Passed = $state.passed; Failed = $state.failed; FatalError = $fatalError }
         }
-        return $null
-    } `
-    -RenderResult { } `
-    -GetCoverageFile {
-        param($runDir)
-        if ($noCoverageLocal) { return $null }
-        $covFile = "$runDir/coverage.xml"
-        if (Test-Path $covFile) { $covFile } else { $null }
-    } `
-    -GetTestResult {
-        param($state)
-        $fatalError = if ($null -eq $state.passed -and $state.exitCode -ne 0) {
-            "pytest exit code: $($state.exitCode)"
-        } else { $null }
-        @{ Passed = $state.passed; Failed = $state.failed; FatalError = $fatalError }
-    }
 
-if ($runState.exitCode -ne 0) { exit $runState.exitCode }
+    if ($runState.exitCode -ne 0) { exit $runState.exitCode }
+}

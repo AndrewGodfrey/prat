@@ -39,6 +39,14 @@ separate file to hold them for a single script.
 - Multi-property assertions: align the `|` pipes and property names for readability.
 
 
+## repoProfile path resolution
+
+In `Register-Node` (`pratRepos.ps1`), a relative command path (`test`/`build`/`deploy`/`prebuild`)
+declared on a *subproject* resolves against the repoProfile **file's own directory**, not the
+subproject's root. E.g. `subprojects = @{ sub = @{ path = 'lib/sub'; test = 'lib/sub/test_sub.ps1' } }`
+in a profile at `$root/codebaseProfile_x.ps1` resolves `sub.test` to `$root/lib/sub/test_sub.ps1` —
+joined against `$root` (the file's directory), not against `sub`'s own root (`$root/lib/sub`).
+
 ## Prat module pattern
 
 When adding an exported function to a prat module (Installers, PratBase, TextFileEditor):

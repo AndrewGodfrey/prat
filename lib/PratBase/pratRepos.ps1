@@ -95,12 +95,14 @@ function Get-PratRepoIndex {
             if ($key -notin $structuralKeys) { $node[$key] = $nodeDef[$key] }
         }
 
-        # Inherit properties from parent node
+        # Inherit properties from parent node. `test` is excluded: it's scoped to the parent's own
+        # root, so inheriting it onto a child is never meaningful — the child declares its own or
+        # gets one auto-detected (see Resolve-ProjectTestScript).
         if ($null -ne $parentNode) {
             $node['parentId'] = $parentNode.id
             $node['repo']     = $repoNode
             foreach ($key in $parentNode.Keys) {
-                if (($key -notin $structuralKeys) -and -not $node.ContainsKey($key)) {
+                if (($key -notin $structuralKeys) -and ($key -ne 'test') -and -not $node.ContainsKey($key)) {
                     $node[$key] = $parentNode[$key]
                 }
             }
@@ -290,6 +292,79 @@ function Get-PratProject {
 
     $item.subdir = Get-RelativePath $item.root $Location
     return $item
+}
+
+# .SYNOPSIS
+# Namespaced OutputDir for $Project's test run: <repo root>/auto/testRuns/<project id's last
+# segment>, so nested projects don't collide. Repo root is $Project.repo.root for a subproject,
+# else `git rev-parse --show-toplevel` (a top-level project with no parent).
+function Get-ProjectTestOutputDir($Project) {
+    $repoRoot = if ($Project.repo) {
+        $Project.repo.root -replace '\\', '/'
+    } else {
+        $gitRoot = git -C $Project.root rev-parse --show-toplevel 2>$null
+        if ($LASTEXITCODE -ne 0) { throw "Not in a git repository: $($Project.root)" }
+        $gitRoot -replace '\\', '/'
+    }
+    $outputLeaf = $Project.id -replace '.*/', ''
+    "$repoRoot/auto/testRuns/$outputLeaf"
+}
+
+# .SYNOPSIS
+# Test framework(s) detected under $ProjectRoot: 'pytest' (pyproject.toml, or a top-level
+# test_*.py/conftest.py) and/or 'dotnet' (a *.Tests.csproj anywhere under the root). Returns an
+# array in stable order @('pytest', 'dotnet'); @() if neither is found. A project can have both.
+function Get-DetectedTestFrameworks($ProjectRoot) {
+    $frameworks = @()
+
+    $hasPytestMarker = (Test-Path (Join-Path $ProjectRoot 'pyproject.toml')) -or
+                        (Test-Path (Join-Path $ProjectRoot 'conftest.py')) -or
+                        (Get-ChildItem -LiteralPath $ProjectRoot -Filter 'test_*.py' -ErrorAction SilentlyContinue)
+    if ($hasPytestMarker) { $frameworks += 'pytest' }
+
+    $testCsproj = Get-ChildItem -LiteralPath $ProjectRoot -Recurse -Filter '*.Tests.csproj' -ErrorAction SilentlyContinue
+    if ($testCsproj) { $frameworks += 'dotnet' }
+
+    $frameworks
+}
+
+# .SYNOPSIS
+# Effective `test` for $Project: its own declaration if set (Register-Node never inherits `test`
+# onto children — see its own comment), else the generic dispatcher (Invoke-DetectedProjectTest.ps1)
+# if a framework is detected, else $null.
+function Resolve-ProjectTestScript($Project) {
+    if ($Project.test) { return $Project.test }
+    if ((Get-DetectedTestFrameworks $Project.root).Count -gt 0) {
+        return (Resolve-Path "$PSScriptRoot/../Invoke-DetectedProjectTest.ps1").Path -replace '\\', '/'
+    }
+    return $null
+}
+
+# .SYNOPSIS
+# Every registered project under $RootPath (subproject, or a sibling repo merely nested under it)
+# with an effective `test` (see Resolve-ProjectTestScript) — for aggregating a repo's run across
+# pytest/dotnet/Pester sub-targets. Each result's `.test` is always the effective script.
+# `excludeFromAggregation` opts a node out, e.g. a dispatch-mechanics fixture whose own result
+# shouldn't fold into a parent's summary.
+function Get-PratTestTargetsUnder {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string] $RootPath)
+
+    $normalizedRoot = ($RootPath -replace '\\', '/').TrimEnd('/')
+    $index = Get-PratRepoIndex (Get-RepoProfileFiles)
+    if ($null -eq $index) { return @() }
+
+    @($index.repos.Values | Where-Object {
+        -not $_.excludeFromAggregation -and
+        ($_.root -replace '\\', '/').StartsWith($normalizedRoot + '/', 'InvariantCultureIgnoreCase')
+    } | ForEach-Object {
+        $resolvedTest = Resolve-ProjectTestScript $_
+        if ($resolvedTest) {
+            $clone = $_.Clone()
+            $clone.test = $resolvedTest
+            $clone
+        }
+    })
 }
 
 # .SYNOPSIS

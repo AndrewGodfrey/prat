@@ -1,8 +1,15 @@
 BeforeAll {
+    Import-Module "$PSScriptRoot/PratBase/PratBase.psd1" -Force
     $scriptToTest = "$PSScriptRoot/Test-PratLayer.ps1"
     function Invoke-PesterWithSummary(
         $NoCoverage, $PathToTest, $RepoRoot, $OutputDir, $IncludeIntegrationTests, $Integration,
         [switch] $PassThru) {}
+    # No sub-targets by default — most tests here aren't exercising aggregation. Shadows the real,
+    # module-exported Get-PratTestTargetsUnder (the same way Invoke-PesterWithSummary shadows its
+    # own script's real implementation — see the "shadowing module functions for standalone
+    # scripts" testing note; Mock -ModuleName doesn't reliably intercept a call made by a script
+    # outside the module).
+    function Get-PratTestTargetsUnder { @() }
 }
 
 Describe "Test-PratLayer.ps1" {
@@ -46,6 +53,52 @@ Describe "Test-PratLayer.ps1" {
         $result = & $scriptToTest $project -CommandParameters @{PassThru = $true}
         Should -Invoke Invoke-PesterWithSummary -ParameterFilter { $PassThru -eq $true }
         $result.Passed | Should -Be 5
+    }
+}
+
+Describe "Test-PratLayer.ps1 sub-target aggregation" {
+    BeforeAll {
+        # Resolve-TestFocus requires a -Focus path to actually exist on disk, so this needs real
+        # TestDrive directories (unlike Get-TestDispatch's own tests, which never touch the
+        # filesystem). Merge-TestSummary also needs a real, writable RunDir for its output files.
+        $root = (Get-Item "TestDrive:\").FullName.TrimEnd('\').Replace('\', '/')
+        New-Item -ItemType Directory "$root/repo/lib/sub" -Force | Out-Null
+        New-Item -ItemType Directory "$root/repo/lib/unrelated" -Force | Out-Null
+        $runDir = "$root/runDir"
+        New-Item -ItemType Directory $runDir -Force | Out-Null
+        $project = @{ root = "$root/repo" }
+
+        # A fake sub-target: `.test` can be a scriptblock (same as a script path, from `&`'s POV).
+        function subTargets() {
+            @(@{ id = 'sub'; root = "$root/repo/lib/sub"; test = { param($project, [hashtable]$CommandParameters = @{}) @{ Passed = 3; Failed = 0; RunDir = $runDir } } })
+        }
+    }
+
+    It "also runs an overlapping sub-target and merges its result with Pester's" {
+        function Get-PratTestTargetsUnder { subTargets }
+        Mock Invoke-PesterWithSummary { @{ Passed = 2; Failed = 0; RunDir = $runDir } }
+
+        $result = & $scriptToTest $project -CommandParameters @{PassThru = $true}
+
+        $result.Passed | Should -Be 5
+    }
+
+    It "skips Pester when the focus is confined inside a sub-target" {
+        function Get-PratTestTargetsUnder { subTargets }
+        Mock Invoke-PesterWithSummary { throw "should not be called — focus is inside the sub-target" }
+
+        $result = & $scriptToTest $project -CommandParameters @{Focus = "$root/repo/lib/sub"; PassThru = $true}
+
+        $result.Passed | Should -Be 3
+    }
+
+    It "still runs Pester over an unrelated focus, without invoking the sub-target" {
+        function Get-PratTestTargetsUnder { subTargets }
+        Mock Invoke-PesterWithSummary { @{ Passed = 2; Failed = 0; RunDir = $runDir } }
+
+        $result = & $scriptToTest $project -CommandParameters @{Focus = "$root/repo/lib/unrelated"; PassThru = $true}
+
+        $result.Passed | Should -Be 2
     }
 }
 

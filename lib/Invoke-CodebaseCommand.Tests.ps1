@@ -100,3 +100,39 @@ Describe "Invoke-CodebaseCommand" {
         $result | Should -Be "string command ran"
     }
 }
+
+Describe "Resolve-EffectiveCommand" {
+    BeforeAll {
+        # Dot-source (with a dummy $CommandName, since it's mandatory) to load the function
+        # without running the script's own dispatch body — guarded by its own InvocationName check.
+        . $scriptToTest "build"
+    }
+
+    It "'test' always defers to Resolve-ProjectTestScript, which returns the project's own test outright" {
+        function Resolve-ProjectTestScript { "explicit.ps1" }
+        $project = @{ test = "explicit.ps1" }
+
+        Resolve-EffectiveCommand "test" $project | Should -Be "explicit.ps1"
+    }
+
+    It "'test' returns whatever Resolve-ProjectTestScript resolves for a project with no test of its own" {
+        function Resolve-ProjectTestScript { "detected.ps1" }
+        $project = @{}
+
+        Resolve-EffectiveCommand "test" $project | Should -Be "detected.ps1"
+    }
+
+    It "'test' returns null (NOP) when Resolve-ProjectTestScript finds nothing" {
+        function Resolve-ProjectTestScript { $null }
+        $project = @{}
+
+        Resolve-EffectiveCommand "test" $project | Should -BeNullOrEmpty
+    }
+
+    It "doesn't consult Resolve-ProjectTestScript for non-test commands" {
+        function Resolve-ProjectTestScript { throw "should not be called for build" }
+        $project = @{ build = "build.ps1" }
+
+        Resolve-EffectiveCommand "build" $project | Should -Be "build.ps1"
+    }
+}

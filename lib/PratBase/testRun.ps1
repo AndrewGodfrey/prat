@@ -97,13 +97,37 @@ function Write-TestRunResult {
     }
 }
 
+# .SYNOPSIS
+# Which of $SubTargets (see Get-PratTestTargetsUnder) overlap $ResolvedPath — ancestor, descendant,
+# or equal, any of which makes that target relevant — and whether Pester should also run. Pester is
+# skipped only when $ResolvedPath is confined inside a sub-target; an ancestor focus (including an
+# unfocused run) still needs it for whatever the sub-targets don't own.
+function Get-TestDispatch($ResolvedPath, $SubTargets) {
+    $overlapping = @($SubTargets | Where-Object {
+        $subRoot = $_.root -replace '\\', '/'
+        $subRoot.StartsWith($ResolvedPath + '/', 'InvariantCultureIgnoreCase') -or
+        $ResolvedPath.StartsWith($subRoot + '/', 'InvariantCultureIgnoreCase') -or
+        $ResolvedPath -ieq $subRoot
+    })
+    $insideASubTarget = @($SubTargets | Where-Object {
+        $subRoot = $_.root -replace '\\', '/'
+        $ResolvedPath.StartsWith($subRoot + '/', 'InvariantCultureIgnoreCase') -or $ResolvedPath -ieq $subRoot
+    }).Count -gt 0
+
+    @{ RunPester = -not $insideASubTarget; Targets = $overlapping }
+}
+
 # Merge-TestSummary: Combines N PassThru result objects (from Invoke-TestWithSummary) into a
 # single summary line. Coverage counts are merged by summing raw counts. Unit name is preserved
 # when all sides share the same unit; when mixing units, names are concatenated with '/' (e.g. "lines/branches").
+#
+# -PassThru returns the merged hashtable (Invoke-TestWithSummary's own contract) instead of
+# printing — for merges that are themselves one layer of a further aggregation.
 function Merge-TestSummary {
     param(
         [hashtable[]] $Summaries,
-        [TimeSpan]    $Elapsed
+        [TimeSpan]    $Elapsed,
+        [switch]      $PassThru
     )
 
     $errors = $Summaries | ForEach-Object { $_.FatalError } | Where-Object { $_ }
@@ -132,6 +156,18 @@ function Merge-TestSummary {
     $failuresSeen     = ($Summaries | ForEach-Object { $_.FailuresSeen     ?? 0 } | Measure-Object -Sum).Sum
     $failureThreshold = ($Summaries | ForEach-Object { $_.FailureThreshold ?? 0 } | Measure-Object -Sum).Sum
     $runDir           = ($Summaries | Where-Object { $_.RunDir } | Select-Object -First 1).RunDir
+
+    if ($PassThru) {
+        return @{
+            CoverageData     = $covData
+            Passed           = $passed
+            Failed           = $failed
+            FatalError       = $fatalError
+            FailuresSeen     = $failuresSeen
+            FailureThreshold = $failureThreshold
+            RunDir           = $runDir
+        }
+    }
 
     Write-TestRunResult `
         -CoverageData     $covData `
