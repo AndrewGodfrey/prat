@@ -91,7 +91,7 @@ FunctionsToExport = @(
 	'Install-ClaudeUserSettings','Install-ClaudeSyncFolders', 'Install-ClaudeProjectMemory', 'Install-ClaudeSkillSet', 'Install-ClaudeMarkdownFiles', 'Install-ClaudeAgentSandbox',
 	'Get-AgentRoles', 'Install-AgentRoles',
 	'Install-CopilotHooks',
-	'Install-HarnessIntegration',
+	'Install-HarnessIntegration', 'Get-HarnessUserFragments',
 	'Install-LocalAgentSandbox', 'Install-SandboxSshServer',
     'Get-AgentsForCodebase', 'Select-AgentForCodebase'
 )
