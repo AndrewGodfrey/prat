@@ -187,6 +187,54 @@ try {
 To propagate an exit code without exiting, check `$LASTEXITCODE` after the block, or use a child
 process (`pwsh -c ...`).
 
+# Scriptblocks assigned as .NET delegates need a runspace — don't use for off-thread callbacks
+
+A scriptblock assigned directly to a delegate-typed property (e.g. `HttpClientHandler`'s
+`ServerCertificateCustomValidationCallback`, `SslStream`'s `RemoteCertificateValidationCallback`)
+needs a PowerShell runspace to execute. If .NET invokes it on a thread that doesn't have one
+available — the normal case for TLS handshake callbacks, which run on background/IO threads — it
+either hangs indefinitely (if the calling thread is itself blocked synchronously via
+`.GetAwaiter().GetResult()`, since that thread can't service the callback either) or throws
+`PSInvalidOperationException: There is no Runspace available to run scripts in this thread`.
+Confirmed by direct repro: a scriptblock that just returns `$true` never even logged that it ran.
+
+Fix: compile the logic as C# via `Add-Type` and assign a method group (`$instance.MethodName`) to
+the delegate property instead — compiled code has no runspace dependency:
+
+```powershell
+if (-not ('MyValidator' -as [type])) {
+    Add-Type -TypeDefinition @'
+public class MyValidator {
+    public bool Validate(...) { ... }
+}
+'@
+}
+$validator = [MyValidator]::new(...)
+$handler.ServerCertificateCustomValidationCallback = $validator.Validate
+```
+
+# `Add-Type` treats some obsolete .NET APIs as hard errors, not warnings
+
+Compiling `new X509Certificate2(byte[])` (or the file-path / byte[]+password overloads) inside
+`Add-Type -TypeDefinition` fails with `error SYSLIB0057: ... is obsolete` — a compile error, not a
+warning, unlike calling the same obsolete constructor from plain PowerShell (silently allowed there).
+Use `[X509CertificateLoader]::LoadCertificate(bytes)` / `LoadPkcs12FromFile(path, password)` instead
+inside `Add-Type` blocks.
+
+# Windows SChannel rejects PEM-loaded cert+key pairs as TLS server certs ("ephemeral keys")
+
+`X509Certificate2.CreateFromPemFile(certPath, keyPath)` loads correctly (readable, `HasPrivateKey`
+true), but its key is "ephemeral" — not backed by a persisted CAPI/CNG key container. Using that
+cert as the server certificate in `SslStream.AuthenticateAsServer(...)` on Windows fails with
+`AuthenticationException: Authentication failed because the platform does not support ephemeral
+keys` (inner: `Win32Exception: No credentials are available in the security package`). Windows/
+SChannel-specific — doesn't affect Linux/macOS, and doesn't affect real servers using their own TLS
+stack (e.g. llama-server's OpenSSL). Re-exporting through a PFX
+(`X509CertificateLoader.LoadPkcs12FromFile`, or `new X509Certificate2(cert.Export(Pfx))`) did not
+reliably resolve it under a sandboxed/restricted account either (`Access denied` / "credentials ...
+not recognized"). If a test needs a real TLS server and the project already has one with its own TLS
+stack, drive that instead of standing up an `SslStream` server from a PEM cert.
+
 # $PSScriptRoot-relative paths when moving a script
 
 Before writing a moved script to its new location, audit every `$PSScriptRoot`-relative path —
