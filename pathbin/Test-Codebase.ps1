@@ -23,6 +23,10 @@ param(
     [switch] $UseAlternateCollector
 )
 
+# Make this runnable from a harness that launches `pwsh -NoProfile` (e.g. an agent tool),
+# where the prat profile — and functions like Get-PratProject / Expand-TildePath — aren't loaded.
+. "$PSScriptRoot\..\lib\profile\Initialize-PratScriptEnvironment.ps1"
+
 if (!$Focus) { $Focus = (Get-Location).Path }
 else {
     $Focus = Expand-TildePath $Focus
