@@ -33,6 +33,13 @@ standard settings hierarchy with no on-disk residue. Use this for per-launch ove
 `/mcp` in CC reconnects to an MCP server and restarts the server process — use it to pick up code
 changes to an MCP server without restarting CC.
 
+Some roles deny the Bash and/or PowerShell tools outright via `permissions.deny` in
+`.claude/settings.local.json` (typically to force a different execution path, e.g. a sandboxed
+alternative). A denied tool doesn't surface via ToolSearch either — a search for it returns zero
+matches, the same as a tool that was never registered. If ToolSearch can't find an execution tool
+you'd expect to exist, check `.claude/settings.local.json` for `permissions.deny` before concluding
+it's absent or searching further.
+
 Read rejects a second call on a file already read unchanged ("Wasted call — file unchanged since your
 last Read") — confirmed real by inspecting the session's jsonl transcript. This can trigger even
 when the earlier successful Read isn't in what you'd narrate as "this conversation" — e.g. buried in an
