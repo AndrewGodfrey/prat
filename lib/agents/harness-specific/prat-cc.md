@@ -32,3 +32,11 @@ standard settings hierarchy with no on-disk residue. Use this for per-launch ove
 
 `/mcp` in CC reconnects to an MCP server and restarts the server process — use it to pick up code
 changes to an MCP server without restarting CC.
+
+Read rejects a second call on a file already read unchanged ("Wasted call — file unchanged since your
+last Read") — confirmed real by inspecting the session's jsonl transcript. This can trigger even
+when the earlier successful Read isn't in what you'd narrate as "this conversation" — e.g. buried in an
+earlier parallel tool-call batch during exploration —
+so don't assume a rejected Read means the file was never fetched; check whether you already have its
+content before concluding otherwise. Workaround to get the content again: `Grep` with pattern `.` and
+`output_mode: "content"`.

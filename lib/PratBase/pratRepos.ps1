@@ -278,6 +278,11 @@ function Get-PratRepo {
 #
 # Other properties added to the returned object:
 #   subdir: path of $Location relative to the project root
+#
+# A $null return is ambiguous between "genuinely unregistered" and "junction-island mismatch"
+# (see Get-PratRepoIndex's junction-restriction comment). On a miss, this checks
+# Find-JunctionIslandMismatch and Write-Warnings if that's the actual cause, so a caller relying on
+# the $null return (e.g. a script probing whether it's in a project) isn't broken by the warning.
 function Get-PratProject {
     [CmdletBinding()]
     param([string] $Location = $pwd)
@@ -288,7 +293,16 @@ function Get-PratProject {
     if ($null -eq $index) { return $null }
 
     $item = Find-BestMatch $index.repos.Values $Location
-    if ($null -eq $item) { return $null }
+    if ($null -eq $item) {
+        $mismatch = Find-JunctionIslandMismatch -Location $Location
+        if ($null -ne $mismatch) {
+            Write-Warning ("'$Location' matches project '$($mismatch.id)' (root: $($mismatch.root)) " +
+                "only after resolving NTFS junctions - this is a junction-island mismatch, not an " +
+                "unregistered project. Pass a path in the same junction island the project registry " +
+                "was built from.")
+        }
+        return $null
+    }
 
     $item.subdir = Get-RelativePath $item.root $Location
     return $item

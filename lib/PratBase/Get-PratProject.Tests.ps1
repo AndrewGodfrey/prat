@@ -105,5 +105,27 @@ Describe "Get-PratProject" {
 
             (Get-PratProject -Location "$root/realrepo") | Should -BeNull
         }
+
+        It "Warns when a null result is actually a junction-island mismatch, not a real unknown project" {
+            New-Item -ItemType Directory "$root/realrepo" -Force | Out-Null
+            New-Item -ItemType Junction  "$root/junction" -Target "$root/realrepo" | Out-Null
+            makeTestProfile "@{ root = '$root/junction' }"
+
+            $result = Get-PratProject -Location "$root/realrepo" -WarningVariable warnings -WarningAction SilentlyContinue
+
+            $result      | Should -BeNull
+            $warnings    | Should -Not -BeNullOrEmpty
+            $warnings[0] | Should -Match 'junction-island mismatch'
+        }
+
+        It "Does not warn when the location genuinely isn't a registered project" {
+            New-Item -ItemType Directory "$root/unrelated" -Force | Out-Null
+            makeTestProfile "@{ root = '$root/myrepo' }"
+
+            $result = Get-PratProject -Location "$root/unrelated" -WarningVariable warnings -WarningAction SilentlyContinue
+
+            $result   | Should -BeNull
+            $warnings | Should -BeNullOrEmpty
+        }
     }
 }
