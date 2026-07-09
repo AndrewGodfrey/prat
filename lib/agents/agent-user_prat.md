@@ -4,22 +4,20 @@ Source: prat/lib/agents/agent-user_prat.md
 
 ## Environment facts
 
-These are stable — no periodic review needed.
+### Useful pwsh commands
 
-### Useful tools
+These are PowerShell functions/aliases, not tool-calling tools.
 
 - `glp [range]` — compact git log (date, author, hash, message). Prefer over `git log --oneline`
   when reviewing history. Example: `glp main...localAgentSandbox`.
   Features: Omits author where irrelevant; automatically adds `--graph` where relevant.
-  **Note:** `glp` is a PowerShell function. In bash contexts, invoke it via `pwsh -c 'glp ...'`.  
-- `ude` — Update-DevEnvironment
 - `c` — Set-LocationUsingShortcut (navigate by repo shortcut)
 
 ### Pratified projects
 
 To check if a project is pratified, `Get-PratProject (Get-Location)` — returns `$null` if not registered.
 
-When telling the user to run something, prefer these aliases over full command names:
+When telling the user to run something, prefer these pwsh aliases over full command names:
 
 - `d` — Deploy-Codebase (pratified projects only — see below)
 - `t` — Test-Codebase (pratified projects only — see below)
@@ -90,35 +88,6 @@ verified green) alongside file changes. These are distinct states with different
 ---
 
 ## agent harness workarounds for Windows
-
-### Harnesses that use Bash
-
-**Bash-vs-PowerShell confusion** is a persistent, recurring problem — e.g. passing `C:\` paths to
-bash, or `/c/` paths to PowerShell, which occurs especially often with `~` or `$HOME`.
-
-In Git bash:
-- `~` and `$HOME` expand to `/c/...` (POSIX) forms. Git bash converts those to Windows paths only in
-  some contexts (bare command parameters) but not inside strings; Windows-native programs (including
-  git) reject POSIX forms. Use `pwsh -c '...'` (where `~` expands to a Windows path), or a full
-  `C:/...` path. In pwsh you can freely use `~/prefs`, `cd ~/prat`, etc.
-- `\` is bash's escape character, so use forward slashes everywhere: `~/prat` not `~\prat`.
-- Double quotes do not protect against interpolation. This pattern fails:
-  ```
-  pwsh -c "Get-Item '$HOME/foo'"
-  ```
-  `$HOME` expands to a POSIX form bash can't convert inside the string. Use single quotes instead:
-  `pwsh -c '...'`. PowerShell variables (`$home`, `$env:USERNAME`, etc.) must stay in single quotes —
-  bash expands them to empty.
-
-In Pwsh:
-- `/c/...` paths aren't recognized.
-- `~` is supported internally, but .NET and most external programs don't understand it. This is mostly
-  hidden by a patchwork — `Resolve-Path` translates it (but can't be used on non-existent paths);
-  sometimes we spackle it using `Expand-TildePath`.
-
-For multi-statement scripts or anything complex, write to a temp file with the Write tool and run
-`pwsh -File <path>`. The `pwsh -File - <<'PWSH'` heredoc approach is unreliable — pwsh can treat
-stdin as interactive and print prompts instead of running the script.
 
 ### Editing files
 (Particularly bad on Windows because of CRLF vs LF)
@@ -219,6 +188,10 @@ confirm before asserting again.
 If you tell the user something worked, that claim should be backed by evidence — not just "the script
 exited cleanly". Either the action was self-evidently verifiable (e.g. the Edit tool confirmed a
 match), or you checked the result. If you haven't checked, don't claim success.
+
+The same discipline applies in reverse: don't assert that something is still pending or unresolved
+without naming the concrete check behind it — echoing a checklist item's own phrasing back is not
+evidence that work remains.
 
 For performance comparisons ("X is faster"), measure both before and after from the same execution
 path. Don't use failure-path timings as a proxy.
