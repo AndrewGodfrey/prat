@@ -24,9 +24,12 @@ Instead, update the step in the plan to document what's done and what remains, t
 - **Move the completed step.** Cut the completed step description from the active plan and append
   it to the corresponding `*_done.md` file. Do not leave a copy in both files.
 
-- **If the plan is now complete:**. Consider the remaining content in the plan file (title, background, design section, etc.)
-  It might have permanent design info that belongs in a document - move that if so. Then, move all remaining content to the
-  done file as a header block, then delete the plan file. Skip `/plan-refine-next-step`.
+- **If the plan is now complete:**. 
+  - Consider the remaining content in the plan file (title, background, design section, etc.)
+    It might have permanent design info that belongs in a document - move that if so. 
+  - Then, move all remaining content to the  done file as a header block, then delete the plan file.
+  - Skip `/plan-refine-next-step`.
+  - Update `~/prat/auto/context/db.json`: If it still has an entry with a matching `planFile`, delete that entry.
 
 - Otherwise: invoke `/plan-refine-next-step`.
 
