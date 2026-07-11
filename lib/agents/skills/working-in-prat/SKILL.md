@@ -12,3 +12,13 @@ before each long-running operation (network downloads, elevated installs, etc.) 
 progress visibility.
 
 Also, for architecture overview, dev loop commands, and codebase structure: read @`$HOME/prat/README.md`
+
+## Repo registry merge semantics
+
+`Get-PratRepoIndex` (`lib/PratBase/pratRepos.ps1`) merges same-id repo entries across
+`codebaseProfile_*.ps1` files by whole-node replacement (last file processed wins), not per-field —
+unlike shortcuts, which have explicit first-file-wins protection. A repo's own file is always
+processed last for its own id, so a field a public repo (e.g. prat, prefs) declares on its own
+entry can never be overridden by a downstream clone. Before adding a field to a repo's own entry,
+check whether that repo is public/multi-clone — if so, have consumers hand-list it instead of
+relying on the registry.
