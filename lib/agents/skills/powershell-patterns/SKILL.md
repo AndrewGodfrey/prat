@@ -70,6 +70,45 @@ Start with `$x = @()` and use `$x +=` to add elements. Do not use `[array]$sourc
 might come from an `if`/`else` expression — PowerShell's pipeline can collapse an empty `@()` to
 `$null`, so `[array]$null` gives `@($null)` (one null element) instead of an empty array.
 
+# Consuming an array from a function call or property chain
+
+A function returning a single-element array collapses to the bare element when the caller captures
+it: `function Test-Ret { return @(@{a=1}) }; $r = Test-Ret` gives `$r` as a `Hashtable`, not an
+array.
+
+Chaining `@(FunctionCall).property` compounds this: it goes through array member-enumeration
+(since `@(FunctionCall)` is an array), not ordinary property access, which collapses the
+property's own value the same way — a single-element value collapses to a bare scalar, and an
+*empty* value collapses to `$null` (then `@($null)` is a 1-element array containing `$null`, not
+an empty array — see "Accumulating into an array" above).
+
+Fix: assign to a variable first, then access properties normally — plain scalar property access,
+immune to member-enumeration collapse:
+
+```powershell
+# Broken - collapses on both a single-element AND an empty .read
+function getAgentRoPaths() {
+    return @(Get-PratAgentGrantedPaths).read + @(Get-AgentRoPaths)
+}
+
+# Correct
+function getAgentRoPaths() {
+    $granted = Get-PratAgentGrantedPaths
+    return @($granted.read) + @(Get-AgentRoPaths)
+}
+```
+
+The empty case surfaces downstream as `Cannot bind argument to parameter 'Path' because it is an
+empty string`, wherever the resulting array gets passed to something that binds each element as a
+path.
+
+A related but separate trap: `ConvertTo-Json $arr -AsArray` where `$arr` is passed positionally
+(not piped). `-AsArray` wraps whatever's bound to `-InputObject` in an *additional* array layer —
+correct for a scalar (the pipeline single-item-collapse case `-AsArray` is meant to fix), but wrong
+once `$arr` is already a genuine array: `ConvertTo-Json @(1,2) -Depth 5 -AsArray` produces
+`[[1,2]]`, not `[1,2]`. If `$arr` is already a real array (built via `@()`/`+=`, not piped in), omit
+`-AsArray`.
+
 # Parameter forwarding in wrapper functions
 
 When writing a thin wrapper function that forwards all arguments to a script or another function,
