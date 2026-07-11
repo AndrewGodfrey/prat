@@ -11,6 +11,10 @@ unclear.
   the plan is complete but the plan file still shows an unfinished step, read the code before
   deferring it — prior sessions may have implemented it without wrapping.
 
+  Before picking, scan every other step in the file for a done-marker (✓) or explicit "not done"
+  language. Don't default to whatever is thematically closest to the step just closed — an earlier,
+  unrelated open item can be higher priority and is easy to miss that way.
+
 - **Flesh out the next step.** Expand the next step entry from terse bullets into actionable
   detail — enough that a fresh agent session starting with "do the next step of this plan" can
   proceed without ambiguity.
