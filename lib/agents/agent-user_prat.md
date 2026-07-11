@@ -274,7 +274,9 @@ to anchor form (`#123`) or a bare issue number.
 
 When a plan splits removing an old mechanism from wiring its replacement across separate steps,
 order the removal after the replacement is live (or guard it as a no-op until then). Deleting the
-old mechanism first leaves the system broken in between.
+old mechanism first leaves the system broken in between. This also applies when a single step's own
+task list bundles the removal with a "once the new code lands" condition — code-complete/TDD-passing
+is not the same as wired live; read "once X supersedes it" as "once X is live," not "once X exists."
 
 ## Public repos (e.g. prat, prefs)
 
