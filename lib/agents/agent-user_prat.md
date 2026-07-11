@@ -185,6 +185,13 @@ restate it — either produce evidence or investigate. Repeating an unverified c
 erodes trust and wastes turns. Add diagnostic logging, check timestamps, or find another way to
 confirm before asserting again.
 
+### Preserving investigation evidence
+
+Don't delete artifacts an investigation produced (downloaded models, server logs, raw request/response
+transcripts) once you're reporting a conclusion they back — even though scratch/experiment files are
+otherwise yours to clean up freely. Keep them until the user confirms they're done reviewing, or ask
+first.
+
 ### Claiming success
 
 If you tell the user something worked, that claim should be backed by evidence — not just "the script
