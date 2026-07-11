@@ -33,8 +33,9 @@ then move the whole phase to `_done.md`.
 architecture diagrams, "what stays where" lists. Agents read this at task start, not when
 updating the plan.
 
-**`_done.md`** — completed phases, preserved for context and rationale. Move a phase here once
-all its steps are struck through.
+**`_done.md`** — completed phases, preserved for context and rationale. Move a phase here once all its steps 
+are struck through. Note: This file lives in `plans/done/YYYY-Qn/`, where YYYY and n give the year and quarter when
+the done file was created.
 
 Split content into a companion file when it would make agents re-read stable material every time
 they update the plan. If content changes alongside the action steps, keep it in the main file.
