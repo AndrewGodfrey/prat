@@ -80,6 +80,8 @@ the subagent or accessing its full output.
 When context is compacted/summarized, record the state of each test run (not yet run / verified red /
 verified green) alongside file changes. These are distinct states with different implications.
 
+There is no such thing as "indirect" test coverage: a coverage tool only reports a line as covered if it actually executed, so a function every test replaces with a mock is uncovered, regardless of how often it's referenced.
+
 ### Dev environment
 
 - Managed by the `de` and `prat` repos. Each `de` repo is user-specific. If a user says "the" de repo
@@ -198,6 +200,10 @@ path. Don't use failure-path timings as a proxy.
 
 When explaining *why* a pattern exists in data, present competing hypotheses — don't assert one.
 The data shows what happened; the cause is a separate claim that needs its own evidence.
+
+The same discipline applies to code-behavior claims. Before claiming a function "never raises" or
+"handles all failure modes," trace every I/O/external call inside it — don't generalize from the
+exception types its existing try/except already names.
 
 When claiming a trend from time-series data, normalize against volume first. A declining count
 may just mean less activity — show the *rate* before calling it a signal.
