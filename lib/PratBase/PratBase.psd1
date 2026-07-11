@@ -76,6 +76,7 @@ FunctionsToExport = @('Get-CurrentUserIsElevated', 'Get-RelativePath', 'Import-P
                       'New-Subfolder', 'New-FolderAndParents', 'Get-HtmlFromClipboard', 'Invoke-PesterAsJob',
                       'Get-DevToolPath',
                       'Get-PratRepo', 'Get-PratProject', 'Get-PratTestTargetsUnder', 'Resolve-ProjectTestScript',
+                      'Get-PratAgentGrantedPaths',
                       'Get-DetectedTestFrameworks', 'Get-ProjectTestOutputDir', 'Find-ProjectShortcut', 'Resolve-JunctionInPath',
                       'Find-JunctionIslandMismatch',
                       'Expand-TildePath',

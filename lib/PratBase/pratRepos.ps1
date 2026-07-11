@@ -382,6 +382,32 @@ function Get-PratTestTargetsUnder {
 }
 
 # .SYNOPSIS
+# Top-level repo roots that declare a `grantAgentAccess` value ('rw' | 'read') on their
+# codebaseProfile entry, grouped by that value. Single source of truth for "which repos an agent
+# may touch" — callers (e.g. sandboxed_pwsh ACL grants, the agent-permission hook's policy data)
+# derive their path lists from this instead of each hand-listing repos independently.
+#
+# .OUTPUTS
+# @{ rw = [string[]]; read = [string[]] } — absolute repo root paths (registry's forward-slash
+# form), each array sorted for deterministic output.
+function Get-PratAgentGrantedPaths {
+    [CmdletBinding()]
+    param()
+
+    $index = Get-PratRepoIndex (Get-RepoProfileFiles)
+    $rw   = @()
+    $read = @()
+    if ($null -ne $index) {
+        foreach ($repo in $index.repos.Values) {
+            if ($repo.ContainsKey('parentId')) { continue }
+            if ($repo['grantAgentAccess'] -eq 'rw') { $rw += $repo.root }
+            elseif ($repo['grantAgentAccess'] -eq 'read') { $read += $repo.root }
+        }
+    }
+    return @{ rw = @($rw | Sort-Object); read = @($read | Sort-Object) }
+}
+
+# .SYNOPSIS
 # Diagnostic for a Get-PratProject miss: checks whether $Location would match a registered
 # project once NTFS junctions are resolved on both sides. A match here means the caller passed
 # a path in a different "junction island" than the one the registry was built from (see the
