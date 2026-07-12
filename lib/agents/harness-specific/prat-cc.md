@@ -27,8 +27,16 @@ Verified flag (not prominent in docs): `claude --settings <path>` loads an addit
 standard settings hierarchy with no on-disk residue. Use this for per-launch overrides (e.g. session-specific
 `skillOverrides`) rather than writing to `.claude/settings.local.json`.
 
-`/mcp` in CC reconnects to an MCP server and restarts the server process — use it to pick up code
-changes to an MCP server without restarting CC.
+Picking up a change depends on which file it lands in:
+
+- Settings source fragments (`Get-ClaudeUserSettings_*.ps1` — hook registrations, permissions):
+  `d` regenerates `~/.claude/settings.json`, and CC picks the new content up mid-session — no
+  restart (verified 2026-07-11: a newly registered PostToolUse hook fired without one).
+- MCP server code: `/mcp` reconnects and restarts the server process — no CC restart.
+- Hook script code (the `.ps1` a registered command points at): nothing — the command runs the
+  source file, so edits are live on the next hook fire.
+- Instruction files (CLAUDE.md sources, `agent-user_*.md`): `d` to deploy, then end and resume the
+  CC session — instructions are read at session start.
 
 Some roles deny the Bash and/or PowerShell tools outright via `permissions.deny` in
 `.claude/settings.local.json` (typically to force a different execution path, e.g. a sandboxed
