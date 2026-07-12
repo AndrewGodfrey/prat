@@ -133,6 +133,15 @@ Describe "InstallationStage" {
         $stage.GetIsStepComplete("versionstep2:2.0") | Should -Be $true
     }
 
+    It "SetStepState then GetStepState round-trips a multi-line value" {
+        $stage.SetStepState("mystate", "line1`nline2")
+        $stage.GetStepState("mystate") | Should -BeExactly "line1`nline2"
+    }
+
+    It "GetStepState returns null for an unset item" {
+        $stage.GetStepState("neverset") | Should -BeNull
+    }
+
     It "EnsureManualStep skips when step is already complete" {
         $stage.SetStepComplete("manualstep1")
         $stage.EnsureManualStep("manualstep1", "do the thing")

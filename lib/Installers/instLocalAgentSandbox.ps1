@@ -129,6 +129,106 @@ function applyAncestorTraverseGrants($agentUser, $paths) {
     }
 }
 
+# Remove the agent's grant on a path that has dropped out of the desired spec. /T so descendants that
+# got their own explicit ACEs are cleared too; /C so a single locked file doesn't abort the deploy. A
+# descendant still covered by a surviving ancestor grant reverts to that ancestor's permission via
+# inheritance. No-op if the path no longer exists - nothing to revoke.
+function revokePathGrant($agentUser, $path) {
+    $normPath = $path -replace '/', '\'
+    if (-not (Test-Path $normPath)) { return }
+    Invoke-Gsudo {
+        icacls $using:normPath /remove:g $using:agentUser /T /C | Out-Null
+    }
+}
+
+# Lexical path canonicalization for ACL-spec comparison and nesting checks: collapse ./.. and doubled
+# separators, normalize '/' to '\', lowercase for case-insensitive matching (equivalent to Python's
+# os.path.normcase(os.path.normpath(p))). Lexical only - does NOT resolve junctions/symlinks; the grant
+# roots are already resolved paths. A separate agent-access policy layer may canonicalize the same
+# roots for its own matching - it must use these same lexical rules for the two to agree.
+function Get-CanonicalAclPath([string] $path) {
+    return ([System.IO.Path]::GetFullPath($path)).TrimEnd('\').ToLowerInvariant()
+}
+
+# True if $child is $parent or a descendant of it. Inputs must already be canonical (see
+# Get-CanonicalAclPath). Path-segment aware: 'c:\deFoo' is not under 'c:\de'.
+function Test-AclPathIsUnder([string] $child, [string] $parent) {
+    return $child -eq $parent -or $child.StartsWith($parent + '\', [System.StringComparison]::Ordinal)
+}
+
+# Sort canonical paths ascending, ordinal - guarantees a parent sorts before any descendant (the
+# parent is a strict string prefix). Culture-aware sort does not guarantee that, so don't use it here.
+function sortAclPathsOrdinal([string[]] $paths) {
+    $arr = [string[]]$paths
+    [System.Array]::Sort($arr, [System.StringComparer]::Ordinal)
+    return $arr
+}
+
+# The desired ACL grant set as a canonical, deduped, parent-before-child ordered list of
+# { Access = 'rw'|'ro'; Path = <canonical> }. This is the "concise description of what we want to
+# apply" that gets diffed against the saved copy from the last apply (see Compare-AgentAclSpec).
+function Get-AgentAclSpec([string[]] $rwPaths = @(), [string[]] $roPaths = @()) {
+    # ro first, then rw, so rw wins on an exact-duplicate path (matches applyPathGrants' apply order).
+    $accessByPath = @{}
+    foreach ($p in $roPaths) { $accessByPath[(Get-CanonicalAclPath $p)] = 'ro' }
+    foreach ($p in $rwPaths) { $accessByPath[(Get-CanonicalAclPath $p)] = 'rw' }
+
+    # Build with an explicit list (not a pipeline): sortAclPathsOrdinal collapses an empty result to
+    # $null, and '$null | ForEach-Object' would iterate once and emit a bogus null-path entry.
+    $spec = [System.Collections.Generic.List[object]]::new()
+    foreach ($p in (sortAclPathsOrdinal([string[]]$accessByPath.Keys))) {
+        $spec.Add([pscustomobject]@{ Access = $accessByPath[$p]; Path = $p })
+    }
+    return @($spec)
+}
+
+# Serialize / parse the spec for the saved-state file. One 'access<TAB>path' line per entry.
+function Format-AgentAclSpec($spec) {
+    return ((@($spec | Where-Object { $null -ne $_ }) | ForEach-Object { "$($_.Access)`t$($_.Path)" }) -join "`n")
+}
+function ConvertFrom-AgentAclSpecText([string] $text) {
+    if ([string]::IsNullOrWhiteSpace($text)) { return @() }
+    return @(($text -split "`r?`n") | Where-Object { $_ -ne '' } | ForEach-Object {
+        $parts = $_ -split "`t", 2
+        [pscustomobject]@{ Access = $parts[0]; Path = $parts[1] }
+    })
+}
+
+# Diff the desired spec against what was applied last time. Returns:
+#   Apply  - desired entries that are new or whose access changed, parent-before-child order
+#            (icacls /grant:r, so a deeper root's explicit ACE overrides the shallower's inherited one).
+#   Revoke - paths no longer desired, reduced to the OUTERMOST removed roots (a removed root nested
+#            under another removed root is already covered by the parent's recursive /remove). A
+#            removed child nested under a SURVIVING root stays in Revoke - removing its explicit ACE
+#            reverts it to the surviving parent's permission via inheritance.
+function Compare-AgentAclSpec($Saved, $Desired) {
+    # Normalize away PowerShell's empty/1-element-array collapse: an empty spec (e.g. first-ever run
+    # with no saved copy, or a caller whose @()-returning call collapsed to $null) arrives as $null,
+    # and a 1-entry spec as a bare object. '@($x | Where { $null -ne $_ })' yields a clean array in
+    # every case ('$null | Where' iterates once with a null item, which the filter drops).
+    $Saved   = @($Saved   | Where-Object { $null -ne $_ })
+    $Desired = @($Desired | Where-Object { $null -ne $_ })
+
+    $savedAccessByPath = @{}
+    foreach ($e in $Saved)   { $savedAccessByPath[$e.Path]   = $e.Access }
+    $desiredPaths = @{}
+    foreach ($e in $Desired) { $desiredPaths[$e.Path] = $true }
+
+    $apply = @($Desired | Where-Object { $savedAccessByPath[$_.Path] -ne $_.Access })
+
+    $removed = @($Saved | Where-Object { -not $desiredPaths.ContainsKey($_.Path) } | ForEach-Object { $_.Path })
+    $outermost = [System.Collections.Generic.List[string]]::new()
+    foreach ($p in (sortAclPathsOrdinal([string[]]$removed))) {
+        $coveredByKept = $false
+        foreach ($kept in $outermost) {
+            if (Test-AclPathIsUnder $p $kept) { $coveredByKept = $true; break }
+        }
+        if (-not $coveredByKept) { $outermost.Add($p) }
+    }
+
+    return @{ Apply = $apply; Revoke = @($outermost) }
+}
+
 # .SYNOPSIS
 # Set up a sandboxed local Windows account for running an AI coding agent.
 #
@@ -207,17 +307,40 @@ function Install-LocalAgentSandbox {
         $stage.SetStepComplete("localAgentSandbox/$($agentUser)")
     }
 
-    # Config-dependent setup: NTFS grants, junctions, profile, gitconfig, SSH keys.
-    # Separated from the one-time block so adding a path to rwPaths only requires bumping this
-    # step's version (e.g. "sandboxacls/$($agentUser):2.0"), not re-running account creation.
-    if (-not $stage.GetIsStepComplete("sandboxacls/$($agentUser):4.0")) {
+    # NTFS grants — diff the desired grant spec against what we applied last time on this machine
+    # (stored in the instDb) and act only on the delta: (re)grant new/changed roots, revoke dropped
+    # ones. Runs every deploy but does real icacls work only when the spec changed, so a
+    # grantAgentAccess edit is picked up (the old static version gate never re-ran on such a change)
+    # without re-ACLing the whole tree. First run under this mechanism has no saved spec, so it
+    # re-applies everything once, then records the spec.
+    $aclStateId  = "sandboxacls/$($agentUser)"
+    $desiredSpec = Get-AgentAclSpec -rwPaths $rwPaths -roPaths $roPaths
+    $savedSpec   = ConvertFrom-AgentAclSpecText ($stage.GetStepState($aclStateId))
+    $aclDelta    = Compare-AgentAclSpec -Saved $savedSpec -Desired $desiredSpec
 
-        # NTFS grants — roPaths first, then rwPaths so rwPaths wins when paths overlap (e.g. a roPath
-        # parent of an rwPath). /grant:r avoids duplicate ACEs on re-runs.
+    if (@($aclDelta.Apply).Count -gt 0 -or @($aclDelta.Revoke).Count -gt 0) {
+        $stage.OnChange()
+
+        # Revoke dropped roots first, then (re)grant in parent-before-child order (Apply is pre-sorted)
+        # so a deeper root's explicit ACE overrides the inherited one from a shallower root.
         # Run elevated so icacls can traverse subdirectories owned by the agent account.
-        applyPathGrants $agentUser $roPaths 'RX'
-        applyPathGrants $agentUser $rwPaths 'F'
-        applyAncestorTraverseGrants $agentUser ($roPaths + $rwPaths)
+        foreach ($p in $aclDelta.Revoke) { revokePathGrant $agentUser $p }
+        foreach ($e in $aclDelta.Apply) {
+            $perm = if ($e.Access -eq 'rw') { 'F' } else { 'RX' }
+            applyPathGrants $agentUser @($e.Path) $perm
+        }
+        # Ancestor-traverse grants for the applied roots only. A revoked root's ancestor grant is left
+        # in place: it only lets the agent list a parent dir's immediate child names (no recursion, see
+        # applyAncestorTraverseGrants), parents are often shared between roots, so refcounting removal
+        # isn't worth it.
+        applyAncestorTraverseGrants $agentUser @($aclDelta.Apply.Path)
+
+        $stage.SetStepState($aclStateId, (Format-AgentAclSpec $desiredSpec))
+    }
+
+    # Home-account setup: junctions, PowerShell profile, gitconfig, SSH authorized_keys. Version-gated
+    # (these inputs change rarely); the internally idempotent writers self-correct if re-run.
+    if (-not $stage.GetIsStepComplete("sandboxHomeSetup/$($agentUser):1.0")) {
 
         # Home directory junctions — make ~/name resolve to the target from the agent's perspective.
         # Andrew has Modify on agentHome (granted above) so no elevation needed.
@@ -270,6 +393,6 @@ function Install-LocalAgentSandbox {
             }
         }
 
-        $stage.SetStepComplete("sandboxacls/$($agentUser):4.0")
+        $stage.SetStepComplete("sandboxHomeSetup/$($agentUser):1.0")
     }
 }

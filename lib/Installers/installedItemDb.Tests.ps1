@@ -51,6 +51,15 @@ Describe "getForkpointCacheStateFilePath" {
     }
 }
 
+Describe "getItemStateFilePath" {
+    It "Concatenates" {
+        getItemStateFilePath "db" "id" | Should -Be "db\_state\id.txt"
+    }
+    It "ThrowsWhenInvalidIdChars" {
+        {getItemStateFilePath "db" "#a"} | Should -Throw "Unsupported format for itemId '#a'. Use only alphanumeric, underscore and slash; first char an alphanumeric."
+    }
+}
+
 Describe "Test-InstalledItemVersion" {
     BeforeEach {
         Mock Get-InstalledItemVersion {"9.7"}
@@ -115,6 +124,24 @@ Describe "TestsUsingTestDrive" {
 
             Test-Path "$dbLocation\parent\item.txt" | Should -BeFalse
             Test-Path "$dbLocation\parent" | Should -BeTrue # It doesn't fully clean up
+        }
+    }
+    Context "Set/Get-InstalledItemState" {
+        It "RoundTripsAMultiLineStringExactly" {
+            Mock checkSchemaVersion {}
+            $value = "rw`tc:\a`nro`tc:\b"
+
+            Set-InstalledItemState $dbLocation "sandboxacls/agent" $value
+
+            Test-Path "$dbLocation\_state\sandboxacls\agent.txt" | Should -BeTrue
+            Get-InstalledItemState $dbLocation "sandboxacls/agent" | Should -BeExactly $value
+        }
+        It "ReturnsNullWhenNotSet" {
+            Mock checkSchemaVersion {}
+            Get-InstalledItemState $dbLocation "idNotExist" | Should -BeNull
+        }
+        It "ReturnsNullWhenDbLocationDoesNotExist" {
+            Get-InstalledItemState "$dbLocation\notExist" "id" | Should -BeNull
         }
     }
     Context "ensureDb" {

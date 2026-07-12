@@ -119,6 +119,17 @@ class InstallationTracker {
         Remove-InstalledItem $this.installationDatabaseLocation $stepId
     }
 
+    # Arbitrary-string state for a step, compared by equality (vs. the numeric versioning of
+    # GetIsStepComplete). For "what did we apply last time on this machine" that doesn't fit a
+    # monotonic version - e.g. the agent ACL grant spec. $null if never set.
+    [string] GetStepState($itemId) {
+        return Get-InstalledItemState $this.installationDatabaseLocation $itemId
+    }
+
+    [Void] SetStepState($itemId, $value) {
+        Set-InstalledItemState $this.installationDatabaseLocation $itemId $value
+    }
+
     # Return true if the given forkpoint-cache entry is valid (vs. needing to be invalidated, including if '-Force' was specified for this installation).
     #
     # This is for expensive work that needs to be redone in situations like (for example):
@@ -238,6 +249,19 @@ class InstallationStage {
     [Void] SetStepComplete($stepIdAndVersion) {
         ($stepId, $version) = $this.ParseStepIdAndVersion($stepIdAndVersion)
         $this.parent.SetStepComplete($stepId, $version)
+    }
+
+    # Arbitrary-string per-item state (see InstallationTracker.GetStepState). $itemId is NOT
+    # ':version'-parsed like a step-completion id - state is equality-compared, so the numeric
+    # ordering/downgrade guard doesn't apply. Schema changes are still covered: a changed encoding
+    # self-invalidates (the saved string won't equal the new desired one, so it safely re-applies),
+    # and for a hard reset independent of content, bump a version segment in the itemId (e.g. '.../v2').
+    [string] GetStepState($itemId) {
+        return $this.parent.GetStepState($itemId)
+    }
+
+    [Void] SetStepState($itemId, $value) {
+        $this.parent.SetStepState($itemId, $value)
     }
 
     # If the given manual step hasn't been completed,

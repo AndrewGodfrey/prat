@@ -45,7 +45,14 @@ function getForkpointCacheStateFilePath($dbLocation, $itemId) {
     if ($itemId -notmatch '^[a-z0-9][a-z0-9_/\\]*$') {
         throw "Unsupported format for itemId '$itemId'. Use only alphanumeric, underscore and slash; first char an alphanumeric."
     }
-    return "$dbLocation\_forkpointCache\$itemId.ps1" 
+    return "$dbLocation\_forkpointCache\$itemId.ps1"
+}
+
+function getItemStateFilePath($dbLocation, $itemId) {
+    if ($itemId -notmatch '^[a-z0-9][a-z0-9_/\\]*$') {
+        throw "Unsupported format for itemId '$itemId'. Use only alphanumeric, underscore and slash; first char an alphanumeric."
+    }
+    return "$dbLocation\_state\$itemId.txt"
 }
 
 # Set/update a version record for a given installed item.
@@ -74,6 +81,29 @@ function Get-InstalledItemVersion($dbLocation, $itemId) {
     if (-not (Test-Path $stateFilePath)) { return $null }
     $currentVersion = Get-Content $stateFilePath
     return $currentVersion
+}
+
+# Arbitrary-string state for an item, compared by equality (not the numeric version-ordering of
+# Set/Get-InstalledItemVersion). Use for "what did we apply last time on this machine" state that
+# doesn't fit a monotonic version - e.g. the agent ACL grant spec (see Install-LocalAgentSandbox).
+# Stored under _state\ (mirrors _forkpointCache\); read with -Raw so multi-line content round-trips.
+function Set-InstalledItemState($dbLocation, $itemId, $value) {
+    ensureDb $dbLocation
+    checkSchemaVersion $dbLocation
+
+    $stateFilePath = getItemStateFilePath $dbLocation $itemId
+    New-FolderAndParents (Split-Path $stateFilePath -parent)
+    Set-Content $stateFilePath $value -NoNewline
+}
+
+# Get an item's state string ($null if the db or the item's state file is absent).
+function Get-InstalledItemState($dbLocation, $itemId) {
+    if (-not (Test-Path -PathType Container $dbLocation)) { return $null }
+    checkSchemaVersion $dbLocation
+
+    $stateFilePath = getItemStateFilePath $dbLocation $itemId
+    if (-not (Test-Path $stateFilePath)) { return $null }
+    return (Get-Content $stateFilePath -Raw)
 }
 
 # Note: Throws if the installed version is GREATER than expected. We expect version numbers to always go up.

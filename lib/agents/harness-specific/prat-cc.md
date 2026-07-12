@@ -37,6 +37,10 @@ matches, the same as a tool that was never registered. If ToolSearch can't find 
 you'd expect to exist, check `.claude/settings.local.json` for `permissions.deny` before concluding
 it's absent or searching further.
 
+Glob can return no matches when the pattern embeds parent directories (observed: pattern
+`lib/agents/skills/**/*.md` with `path` set to the repo root found nothing despite matching files
+existing). Put the full directory in `path` and start the pattern at `**/`.
+
 Read rejects a second call on a file already read unchanged ("Wasted call — file unchanged since your
 last Read") — confirmed real by inspecting the session's jsonl transcript. This can trigger even
 when the earlier successful Read isn't in what you'd narrate as "this conversation" — e.g. buried in an
