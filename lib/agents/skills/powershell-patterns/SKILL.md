@@ -109,6 +109,15 @@ once `$arr` is already a genuine array: `ConvertTo-Json @(1,2) -Depth 5 -AsArray
 `[[1,2]]`, not `[1,2]`. If `$arr` is already a real array (built via `@()`/`+=`, not piped in), omit
 `-AsArray`.
 
+# `ConvertTo-Json` on a `[hashtable]` emits keys in per-process-random order
+
+When serializing to a generated file that's later compared as text (e.g. `Install-TextToFile`) or
+committed, build the object with `[ordered]@{}`, not `@{}`. .NET randomizes `String.GetHashCode`
+per-process, so a plain `[hashtable]`'s enumeration order — and thus `ConvertTo-Json`'s key order —
+varies from run to run; identical data then serializes to different text, and a text-diff comparison
+sees a spurious change every time (this made an installer stage report "updating" on every deploy).
+`[ordered]` (OrderedDictionary) preserves insertion order, so the output is deterministic.
+
 # Parameter forwarding in wrapper functions
 
 When writing a thin wrapper function that forwards all arguments to a script or another function,
