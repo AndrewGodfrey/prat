@@ -343,7 +343,6 @@ function Install-LocalAgentSandbox {
     if (-not $stage.GetIsStepComplete("sandboxHomeSetup/$($agentUser):1.0")) {
 
         # Home directory junctions — make ~/name resolve to the target from the agent's perspective.
-        # Andrew has Modify on agentHome (granted above) so no elevation needed.
         foreach ($name in $homeJunctions.Keys) {
             $jLink   = "$agentHome\$name"
             $jTarget = $homeJunctions[$name] -replace '/', '\'
@@ -367,7 +366,7 @@ function Install-LocalAgentSandbox {
         Install-TextToFile $stage $agentGitconfig (Get-AgentGitconfigContent $safeDirectories) -SudoOnWrite
 
         # SSH authorized_keys — enables loopback SSH access from the managing user.
-        # Done entirely elevated: after first run the file is owned by agentUser with no ACE for andrew,
+        # Done entirely elevated: after first run the file is owned by agentUser with no ACE for the user,
         # so non-elevated reads/writes would fail on re-runs.
         if ($sshPublicKeyPath) {
             $sshDir         = "$agentHome\.ssh"

@@ -150,7 +150,7 @@ Describe "Get-CanonicalAclPath" {
 
     It "lowercases the path (case-insensitive matching, mirroring the permission hook)" {
         InModuleScope Installers {
-            Get-CanonicalAclPath 'C:\Users\Andrew\DE' | Should -BeExactly 'c:\users\andrew\de'
+            Get-CanonicalAclPath 'C:\Users\Me\MyRepo' | Should -BeExactly 'c:\users\me\myrepo'
         }
     }
 
@@ -162,7 +162,7 @@ Describe "Get-CanonicalAclPath" {
 
     It "normalizes forward slashes to backslashes" {
         InModuleScope Installers {
-            Get-CanonicalAclPath 'C:/Users/andrew/de' | Should -BeExactly 'c:\users\andrew\de'
+            Get-CanonicalAclPath 'C:/Users/me/myrepo' | Should -BeExactly 'c:\users\me\myrepo'
         }
     }
 
