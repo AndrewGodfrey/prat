@@ -8,9 +8,6 @@ When a subagent's summary doesn't have enough detail, three recovery paths:
 - Improve the agent instructions to request more detail in the summary, then redo (may not be
   practical if the work was expensive or has side effects)
 
-When /compact summarizes a session, record the state of each test run (not yet run / verified red /
-verified green) alongside file changes. These are distinct states with different implications.
-
 ---
 
 ## Model workarounds — CC-specific

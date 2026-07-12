@@ -7,6 +7,11 @@ description: Use when the user asks the agent to remember or note something for 
 
 ## Where to save
 
+Prefer homes that load only when relevant over always-loaded files. Always-loaded context degrades
+the agent's work as it grows: each rule dilutes attention on the others, and contradictory
+instructions are especially costly. Reserve always-loaded agent-user files for rules that must be
+active before their trigger could be recognized.
+
 - **harness-specific** → `prat/lib/agents/harness-specific/` (e.g. `cc/prat-cc.md`). See "What is not
   harness-specific" below — don't over-classify.
 - **Truly universal** (any prat user on any machine) → `prat/lib/agents/agent-user_prat.md`
@@ -17,6 +22,8 @@ description: Use when the user asks the agent to remember or note something for 
 - **User-specific, or only relevant when editing prat/prefs/de** → the user's de repo
   (`de/lib/agents/agent-user_de.md`), if they have one
 - **Triggerable procedures** → create or modify a skill
+- **Tool-usage notes** → the tool's own description where the mechanism allows (e.g. an MCP tool) —
+  it loads exactly when the tool does
 
 ## What is not harness-specific
 
@@ -42,5 +49,12 @@ flag for confirmation before capturing.
 
 ## How to write entries
 
+Before adding, search the target file for an existing entry on the same theme. If one exists,
+generalize it — restate the shared principle and keep the one or two sharpest examples — rather
+than appending another instance. Prefer pairing an addition with a removal: propose an entry the
+addition subsumes, or one that looks stale, as a candidate to retire.
+
 State the rule. Omit obvious implications — if the consequence follows directly from the
-instruction, a reader will infer it. One sentence where possible.
+instruction, a reader will infer it. One sentence where possible. Don't tack on a closing
+explanatory sentence unless it heads off a specific competing interpretation — if the rule's
+reasoning is obvious from the rule itself, the closer is filler.

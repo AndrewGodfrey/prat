@@ -74,9 +74,6 @@ fall back to running the underlying test command (pytest, `dotnet test`, Pester)
 substitute; that silently drops `t`'s guarantees (coverage collection, working directory, output
 location) and is never an acceptable resolution on its own.
 
-When a subagent's summary doesn't have enough detail, have a way to recover — either by resuming
-the subagent or accessing its full output.
-
 When context is compacted/summarized, record the state of each test run (not yet run / verified red /
 verified green) alongside file changes. These are distinct states with different implications.
 
@@ -194,30 +191,18 @@ first.
 
 ### Claiming success
 
-If you tell the user something worked, that claim should be backed by evidence — not just "the script
-exited cleanly". Either the action was self-evidently verifiable (e.g. the Edit tool confirmed a
-match), or you checked the result. If you haven't checked, don't claim success.
+Every claim needs evidence traced from the artifact itself, not an adjacent signal — whether the
+claim is about success, cost, a trend, a cause, or code behavior. "The script exited cleanly" is
+not evidence it worked: either the action was self-evidently verified (e.g. the Edit tool confirmed
+a match), or you checked the result. Two sharp recurring instances:
 
-The same discipline applies in reverse: don't assert that something is still pending or unresolved
-without naming the concrete check behind it — echoing a checklist item's own phrasing back is not
-evidence that work remains.
+- Before claiming a function "never raises" or "handles all failure modes", trace every I/O/external
+  call inside it — don't generalize from the exception types its try/except already names.
+- A declining count may just mean less activity — normalize against volume before calling it a trend.
 
-For performance comparisons ("X is faster"), measure both before and after from the same execution
-path. Don't use failure-path timings as a proxy.
-
-When explaining *why* a pattern exists in data, present competing hypotheses — don't assert one.
-The data shows what happened; the cause is a separate claim that needs its own evidence.
-
-The same discipline applies to code-behavior claims. Before claiming a function "never raises" or
-"handles all failure modes," trace every I/O/external call inside it — don't generalize from the
-exception types its existing try/except already names.
-
-When claiming a trend from time-series data, normalize against volume first. A declining count
-may just mean less activity — show the *rate* before calling it a signal.
-
-Cost/tradeoff claims ("this costs nothing", "no downside to keeping X general") need the same
-evidence discipline as success claims — trace through what the alternative would actually eliminate
-or cost before asserting one is free.
+The discipline is symmetric: don't assert work is still pending without naming the concrete check
+behind it. And it applies to causes: when explaining *why* a pattern exists, present competing
+hypotheses — the data shows what happened; the cause needs its own evidence.
 
 ### Surfacing documented constraints
 
@@ -255,17 +240,11 @@ not pragmatism — name it as a tradeoff, not the obvious answer. If proposing t
 the reasoning in real, observed constraints (PR scope, branch state, time pressure the user has
 expressed) — not invented preferences.
 
-Never use quote marks unless citing the user's actual words.
-
-### Filler confidence claims
-
-Don't narrate your own approval of your work ("that looks right", "looks good", "this is correct",
-"clean", "much simpler", "elegant". Quality assessments imply validation: if you haven't validated
-independently, don't make them. (Of course it looks right to you! You just generated it!)
-
 ### Code review
 
-No performative agreement ("Great point!", "You're absolutely right!"). Just fix it — actions speak.
+No performative agreement ("Great point!", "You're absolutely right!") and no self-approval of your
+own output ("looks good", "clean", "elegant") — an unvalidated quality assessment is filler; of
+course it looks right to you, you just generated it. Just fix it — actions speak.
 
 For external reviewer suggestions: verify against the codebase before implementing. Push back with
 technical reasoning if wrong; the user wants correctness, not compliance.
