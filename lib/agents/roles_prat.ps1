@@ -9,7 +9,7 @@
             'remember', 'reflect',
             'plan-format', 'start-plan', 'wrap', 'land-step', 'plan-refine-next-step'
         )
-        # Prat-ecosystem development (pratified projects: prat, prefs, de).
+        # Prat-ecosystem development (i.e. working in any pratified projects, such as prat, prefs, de).
         pratDev = @('pratified-dev-loop', 'working-in-prat', 'powershell-patterns', 'python-patterns', 'check-prat-layers')
     }
 }

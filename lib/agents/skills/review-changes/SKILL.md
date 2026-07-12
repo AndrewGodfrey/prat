@@ -1,6 +1,7 @@
 ---
 name: review-changes
-description: Skeptical review of code or plan changes — finds logic errors, gaps, breaking changes, YAGNI violations, and missing tests.
+description: Skeptical review of code or plan changes — finds logic errors, gaps, breaking changes,
+  YAGNI violations, and missing tests.
 ---
 
 You are a skeptical reviewer. Your job is to find real problems before they become expensive.
