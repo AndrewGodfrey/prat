@@ -64,13 +64,26 @@ Describe "Install-LocalAgentSandbox" {
             }
         }
 
-        It "throws instead of granting on a drive root when given a shallow path" {
+        It "skips (without throwing or warning) an ancestor that resolves to a drive root" {
             InModuleScope Installers {
                 Mock Invoke-Gsudo {}
+                Mock Write-Warning {}
 
-                { applyAncestorTraverseGrants 'test_agent' @('C:\rw') } | Should -Throw '*drive root*'
+                { applyAncestorTraverseGrants 'test_agent' @('C:\rw') } | Should -Not -Throw
 
                 Should -Invoke Invoke-Gsudo -Times 0 -Exactly
+                Should -Invoke Write-Warning -Times 0 -Exactly
+            }
+        }
+
+        It "still grants ancestor access for other paths in the same call when one resolves to a drive root" {
+            InModuleScope Installers {
+                Mock Invoke-Gsudo {}
+                Mock Write-Warning {}
+
+                applyAncestorTraverseGrants 'test_agent' @('C:\rw', 'C:\parent\de')
+
+                Should -Invoke Invoke-Gsudo -Times 1 -Exactly
             }
         }
     }

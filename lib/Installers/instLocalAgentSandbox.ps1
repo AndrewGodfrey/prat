@@ -110,11 +110,16 @@ function applyPathGrants($agentUser, $paths, $permission) {
 function applyAncestorTraverseGrants($agentUser, $paths) {
     $ancestors = $paths | ForEach-Object { Split-Path ($_ -replace '/', '\') -Parent } | Sort-Object -Unique
     foreach ($dir in $ancestors) {
-        # A shallow path (e.g. 'C:\rw') has its parent resolve to the drive root itself. Granting
-        # (RX) there would let the agent list the entire drive's top-level contents — a much larger
-        # blast radius than "list this one grant's siblings". Fail loud instead of silently doing that.
+        # A shallow path (e.g. 'C:\rw') has its parent resolve to the drive root itself. Skip
+        # rather than explicitly granting there, instead of failing the whole call: an explicit
+        # grant would assume every machine's drive root ACL is at least as permissive as the
+        # agent needs, which doesn't hold universally, but on a typical Windows install
+        # BUILTIN\Users already has (RX) on the drive root by default - so an explicit grant is
+        # usually redundant anyway. Cost: Node-style fs.realpathSync-based tooling may still EPERM
+        # walking up from a path this shallow - narrower than the alternative of not being able to
+        # grant such a path at all.
         if ($dir -match '^[A-Za-z]:\\?$') {
-            throw "applyAncestorTraverseGrants: '$dir' is a drive root — refusing to grant (RX) there. Path too shallow: check the input path list."
+            continue
         }
         $grant = "${agentUser}:(RX)"
         Invoke-Gsudo {
