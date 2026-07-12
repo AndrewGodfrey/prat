@@ -22,3 +22,11 @@ processed last for its own id, so a field a public repo (e.g. prat, prefs) decla
 entry can never be overridden by a downstream clone. Before adding a field to a repo's own entry,
 check whether that repo is public/multi-clone — if so, have consumers hand-list it instead of
 relying on the registry.
+
+## Layered config: finding all contributors
+
+Layer fragments are discovered by *filename* (`Resolve-PratLibFile 'lib/inst/Get-X.ps1' -ListAll`
+returns every layer's `Get-X_<layer>.ps1`), and a fragment's content needn't mention its own name —
+so content-grepping for the base name can miss contributors entirely. To enumerate them, glob for
+the filename pattern across the layer repos, or read the generated artifact (e.g.
+`~/.claude/settings.json`), which shows every fragment's contribution merged.
