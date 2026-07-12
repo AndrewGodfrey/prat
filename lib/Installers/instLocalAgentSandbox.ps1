@@ -168,7 +168,7 @@ function sortAclPathsOrdinal([string[]] $paths) {
 # { Access = 'rw'|'ro'; Path = <canonical> }. This is the "concise description of what we want to
 # apply" that gets diffed against the saved copy from the last apply (see Compare-AgentAclSpec).
 function Get-AgentAclSpec([string[]] $rwPaths = @(), [string[]] $roPaths = @()) {
-    # ro first, then rw, so rw wins on an exact-duplicate path (matches applyPathGrants' apply order).
+    # ro first, then rw, so rw wins when a path is listed in both rwPaths and roPaths.
     $accessByPath = @{}
     foreach ($p in $roPaths) { $accessByPath[(Get-CanonicalAclPath $p)] = 'ro' }
     foreach ($p in $rwPaths) { $accessByPath[(Get-CanonicalAclPath $p)] = 'rw' }
