@@ -13,6 +13,25 @@ progress visibility.
 
 Also, for architecture overview, dev loop commands, and codebase structure: read @`$HOME/prat/README.md`
 
+## Deploy stages
+
+### Forcing a deploy stage to re-run
+
+Some deploy stages track state in instDb files. For those, to force a re-run:
+`rppr <stepId> && d`. The step ID is the file path within the instDb directory (without the version suffix).
+- For stages using `GetIsStepComplete` directly, the step ID is the string before the `:` — e.g. `rppr agentDeploy`.
+- For `Install-PratPackage`, the step ID is `pkg/{packageId}` — e.g. `rppr "pkg/python"`.
+  This differs from the stage name passed to `StartStage` (`Install-PratPackage(python)`).
+
+### Removing a deploy stage
+
+When removing code that previously deployed an artifact, add a migration step that cleans up
+existing deployments on other machines. The local machine isn't the only consumer of `d`.
+
+Migration step pattern: call `$stage.NoteMigrationStep((Get-Date "YYYY-MM-DD"))` (today's date),
+then use idempotent checks (e.g. `if (Test-Path ...)`) before making changes. The framework warns
+after 30 days — signal to remove the step.
+
 ## Repo registry merge semantics
 
 `Get-PratRepoIndex` (`lib/PratBase/pratRepos.ps1`) merges same-id repo entries across

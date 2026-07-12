@@ -118,6 +118,16 @@ varies from run to run; identical data then serializes to different text, and a 
 sees a spurious change every time (this made an installer stage report "updating" on every deploy).
 `[ordered]` (OrderedDictionary) preserves insertion order, so the output is deterministic.
 
+# Inspecting rich objects — select fields, don't serialize the whole thing
+
+Objects built by tooling often carry live machinery that inspection renders badly: a member holding
+a scriptblock makes `ConvertTo-Json` emit the scriptblock's entire AST (kilobytes of noise per
+scriptblock — e.g. a `Get-PratProject` descriptor), and `Format-Table`/`Format-List` output needs a
+console width, so it can come back blank in non-interactive sessions (pipe through
+`Out-String -Width <N>`). To inspect, name the fields you want — `$p.id`, or
+`$p | Select-Object id, root, parentId` — and reserve whole-object serialization for objects you
+built yourself from plain data.
+
 # Parameter forwarding in wrapper functions
 
 When writing a thin wrapper function that forwards all arguments to a script or another function,

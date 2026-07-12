@@ -27,23 +27,6 @@ When telling the user to run something, prefer these pwsh aliases over full comm
 For usage details, load the `pratified-dev-loop` skill.
 
 
-### Forcing a deploy stage to re-run
-
-Some deploy stages track state in instDb files. For those, to force a re-run:
-`rppr <stepId> && d`. The step ID is the file path within the instDb directory (without the version suffix).
-- For stages using `GetIsStepComplete` directly, the step ID is the string before the `:` — e.g. `rppr agentDeploy`.
-- For `Install-PratPackage`, the step ID is `pkg/{packageId}` — e.g. `rppr "pkg/python"`.
-  This differs from the stage name passed to `StartStage` (`Install-PratPackage(python)`).
-
-### Removing a deploy stage
-
-When removing code that previously deployed an artifact, add a migration step that cleans up
-existing deployments on other machines. The local machine isn't the only consumer of `d`.
-
-Migration step pattern: call `$stage.NoteMigrationStep((Get-Date "YYYY-MM-DD"))` (today's date),
-then use idempotent checks (e.g. `if (Test-Path ...)`) before making changes. The framework warns
-after 30 days — signal to remove the step.
-
 ### Testing
 
 Write the test first, and run it to verify it fails in the expected way. Only implement after that.
@@ -77,7 +60,9 @@ location) and is never an acceptable resolution on its own.
 When context is compacted/summarized, record the state of each test run (not yet run / verified red /
 verified green) alongside file changes. These are distinct states with different implications.
 
-There is no such thing as "indirect" test coverage: a coverage tool only reports a line as covered if it actually executed, so a function every test replaces with a mock is uncovered, regardless of how often it's referenced.
+There is no such thing as "indirect" test coverage: a coverage tool only reports a line as covered
+if it actually executed, so a function every test replaces with a mock is uncovered, regardless of
+how often it's referenced.
 
 ### Dev environment
 
@@ -86,17 +71,7 @@ There is no such thing as "indirect" test coverage: a coverage tool only reports
 
 ---
 
-## agent harness workarounds for Windows
-
-### Editing files
-(Particularly bad on Windows because of CRLF vs LF)
-
-To undo an edit you just made: make ONE Edit call, with `old_string` and `new_string` literally
-swapped from your prior Edit call as stored in working memory. Do not re-read the file. Do not
-reconstruct content from memory. Do not make multiple approximating edits. Reach for git only when
-you have specific reason to distrust your working memory (file externally modified, many turns
-elapsed, suspect CRLF handling, or your prior edit overlapped other changes you need to preserve).
-Don't use `git checkout <file>` — it can wipe accumulated work.
+## Editing files
 
 When inserting content, anchor on the **smallest unique string** at the insertion point. Don't pull
 surrounding unchanged content into `old_string` — it causes a noisier diff and is more likely to
@@ -104,30 +79,6 @@ fail on CRLF files.
 
 Re-read a file whenever it may have changed since you last read it — e.g. the user has edited it,
 or time has passed. Don't rely on a stale read.
-
-For renaming a token across multiple files, use multiple Edit `replace_all` calls rather than a
-single pwsh heredoc with `-replace` + `Set-Content`. The pwsh approach can silently produce no
-change on some files (likely CRLF/encoding interaction); Edit is reliable.
-
-Before using `replace_all`, scan the file and confirm every occurrence should be replaced —
-string literals, `Describe`/`Context` labels, and comments can all contain the token without
-being targets. If any occurrence should be left untouched, use targeted individual Edits instead.
-
-For multi-line string replacements in pwsh scripts, use `.IndexOf()` + `.Substring()` rather than
-`.Replace()` with multi-line literals. Single-quoted PS strings don't expand `` `r`n ``, so `.Replace()`
-silently fails on CRLF content. Index-based splicing is reliable regardless of line endings.
-
-When replacing a large block of text in a Windows file (CRLF line endings), the Edit tool's
-string matching can fail even when the content looks correct — "String to replace not found."
-Workaround for large deletions:
-1. Insert marker comments using small targeted Edits (short unique strings match reliably):
-   - Before the block: `<!-- DELETE_FROM_HERE -->`
-   - After the block: `<!-- DELETE_TO_HERE -->`
-2. Run the helper script:
-   ```bash
-   pwsh -File ~/prat/lib/agents/Remove-MarkedBlock.ps1 -Path 'C:/path/to/file.md'
-   ```
-   Custom markers: add `-From '<!-- MY_START -->' -To '<!-- MY_END -->'`.
 
 ---
 

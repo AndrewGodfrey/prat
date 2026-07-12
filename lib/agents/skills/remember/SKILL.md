@@ -12,8 +12,10 @@ the agent's work as it grows: each rule dilutes attention on the others, and con
 instructions are especially costly. Reserve always-loaded agent-user files for rules that must be
 active before their trigger could be recognized.
 
-- **harness-specific** → `prat/lib/agents/harness-specific/` (e.g. `cc/prat-cc.md`). See "What is not
-  harness-specific" below — don't over-classify.
+- **harness-specific** → `prat/lib/agents/harness-specific/` (e.g. `prat-cc.md`). A workaround for
+  observed harness behavior defaults here even if it looks general — promote to a harness-agnostic
+  home only once the same behavior is seen in another harness. Concepts and conventions are
+  different: see "What is not harness-specific" below — don't over-classify those.
 - **Truly universal** (any prat user on any machine) → `prat/lib/agents/agent-user_prat.md`
   Note: this file loads in **every session**, not just when working in prat/prefs/de. Don't put
   guidance here that's only relevant when editing those repos — it will pollute unrelated sessions.
@@ -21,7 +23,9 @@ active before their trigger could be recognized.
 - **User-specific preferences** → the user's prefs repo (`prefs/lib/agents/agent-user_prefs.md`), if they have one
 - **User-specific, or only relevant when editing prat/prefs/de** → the user's de repo
   (`de/lib/agents/agent-user_de.md`), if they have one
-- **Triggerable procedures** → create or modify a skill
+- **Triggerable procedures** → create or modify a skill. Write the trigger as concrete
+  symptoms/situations, and check that a proactive "before X" clause doesn't match every session in
+  practice — that makes the skill effectively always-loaded
 - **Tool-usage notes** → the tool's own description where the mechanism allows (e.g. an MCP tool) —
   it loads exactly when the tool does
 
