@@ -1,6 +1,6 @@
 ---
 name: wrap
-description: Finalize the completed plan step and set up the next one. User-invocable only — do not trigger autonomously.
+description: Finalize the completed plan step. User-invocable only — do not trigger autonomously.
 ---
 
 The "active plan" is the plan file most relevant to this session — infer from context, or ask if
@@ -22,16 +22,13 @@ Instead, update the step in the plan to document what's done and what remains, t
 ## 2. Update plan
 
 - **Move the completed step.** Cut the completed step description from the active plan and append
-  it to the corresponding `*_done.md` file. Do not leave a copy in both files.
+  it to the end of the corresponding `*_done.md` file. Do not leave a copy in both files.
 
 - **If the plan is now complete:**. 
   - Consider the remaining content in the plan file (title, background, design section, etc.)
     It might have permanent design info that belongs in a document - move that if so. 
   - Then, move all remaining content to the  done file as a header block, then delete the plan file.
-  - Skip `/plan-refine-next-step`.
   - Update `~/prat/auto/context/db.json`: If it still has an entry with a matching `planFile`, delete that entry.
-
-- Otherwise: invoke `/plan-refine-next-step`.
 
 ## 3. Reflect
 
