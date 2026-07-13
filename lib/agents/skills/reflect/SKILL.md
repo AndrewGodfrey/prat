@@ -1,6 +1,7 @@
 ---
 name: reflect
-description: End-of-session self-improvement sweep. User-invocable only — do not trigger autonomously.
+description: End-of-session self-improvement sweep. Runs as part of the wrap, wrap-session, and
+  code-complete flows; outside those, user-invocable only — do not trigger autonomously.
 ---
 
 Review this session for improvements worth capturing. Two categories:

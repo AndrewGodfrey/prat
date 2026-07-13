@@ -7,7 +7,7 @@ The "active plan" is the plan file most recently created or restructured — inf
 
 ## 1. Handle companion file creation
 
-If the plan was created by splitting an existing file (e.g. extracting a `_ref.md` from an existing
+If the plan was created by splitting an existing file (e.g. extracting a `_background.md` from an existing
 plan file), load `working-with-git` and follow the rename pattern before writing any content:
 `git mv` the original to the new name, commit as a pure rename, then write new content in a
 second change.

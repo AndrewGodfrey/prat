@@ -1,6 +1,9 @@
 ---
 name: plan-format
-description: Use when creating or restructuring a working-coordination plan file — an iterative-work plan shared by user + agent, with no audience beyond them. For published plans (design docs, roadmaps, deliverable plans), don't apply this format; ask the user about structure instead.
+description: Use when creating or restructuring a working-coordination plan file — an
+  iterative-work plan shared by user + agent, with no audience beyond them. For published plans
+  (design docs, roadmaps, deliverable plans), don't apply this format; ask the user about
+  structure instead.
 ---
 
 A working-coordination plan file should be action-focused — easy to update, easy to resume from.
@@ -9,40 +12,56 @@ is done; it's not appropriate for plans intended for a wider audience.
 
 ## Structure
 
-**Opening lines** — pointers to companion files (if they exist):
+**Frontmatter** — the plan's lifecycle state, owned by the state script:
+
 ```
-See `fooPlan_ref.md` for background: <one-line summary of what's there>.
-See `fooPlan_done.md` for completed phases and design rationale.
+---
+state: ready-to-implement
+next-step: "Step 2: <brief label>"
+---
 ```
 
-**Next step** — prominent, at the top of the action content:
+A `refined` list may also appear — steps beyond the pointer already planned to implementable
+detail. Read these keys freely; never hand-edit them — write only via
+`. "$home/prat/lib/agents/Set-PlanState.ps1"; Set-PlanState ...`. There is no `## Next step:`
+heading in this format; the frontmatter pointer replaces it. (Older plans may still have the
+heading — treat it as the pointer, migrate it into frontmatter via the script, and delete it.)
+
+**Opening lines** — pointers to companion files (if they exist):
 ```
-## Next step: Phase N: <brief label>
+See `fooPlan_background.md` for settled design: <one-line summary>. Audience: planning sessions —
+step specs are self-contained without it.
+See `fooPlan_done.md` for completed steps and design rationale.
 ```
 
 **Wrap list** — small checklist of things to verify before marking a step done (e.g. "check
 changes don't reference private files"). Stays near the top so it's visible when finishing work.
 
-**Phases** — action steps. Label each sub-step `[AGENT]` or `[USER]`. Strike through completed
-items inline (`~~item~~ ✓ Done`) rather than deleting them, until the phase is fully done —
-then move the whole phase to `_done.md`.
+**Steps** — the action units. A step is the unit one `/wrap` closes: planned in one refine pass,
+implemented in one session, reviewed in one pass — if it doesn't fit that, split it. Headings
+must start with `Step` (e.g. `### Step 2: <brief label>`); the state script locates steps by
+matching `^##+ Step`. Label each sub-item `[AGENT]` or `[USER]`. Strike through completed items
+inline (`~~item~~ ✓ Done`) rather than deleting them, until the step is fully done — then move
+the whole step to `_done.md`.
 
 ## Companion files
 
-**`_ref.md`** — stable background that rarely changes: design rationale, naming conventions,
-architecture diagrams, "what stays where" lists. Agents read this at task start, not when
-updating the plan.
+**`_background.md`** — settled design. Once design discussion closes, move everything between the
+opening pointers and the steps here. Audience is planning sessions; implementation sessions
+shouldn't need it, because the refine pass makes step specs self-contained — an implementation
+session reaching for the background signals an under-specified step. (Older plans may have a
+`_ref.md` companion instead — same role; leave the name as is.)
 
-**`_done.md`** — completed phases, preserved for context and rationale. Move a phase here once all its steps 
+**`_done.md`** — completed steps, preserved for context and rationale. Move a step here once all its items
 are struck through. Note: This file lives in `plans/done/YYYY-Qn/`, where YYYY and n give the year and quarter when
 the done file was created.
 
 Split content into a companion file when it would make agents re-read stable material every time
 they update the plan. If content changes alongside the action steps, keep it in the main file.
 
-If splitting an existing plan file to create a `_ref.md`, load `working-with-git` first and follow
-the rename pattern: `git mv` the original to the new name, commit as a pure rename, then write new
-content in a second change.
+If splitting an existing plan file to create a `_background.md`, load `working-with-git` first and
+follow the rename pattern: `git mv` the original to the new name, commit as a pure rename, then
+write new content in a second change.
 
 ## After creating the plan structure
 

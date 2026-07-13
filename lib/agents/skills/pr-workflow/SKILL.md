@@ -14,9 +14,11 @@ section in the active plan:
 
 - Cut the completed step from its current location in the plan.
 - Add it under `## In review` (create the section if it doesn't exist, between "Wrap list" and
-  "Completed"). Include a post-coding checklist:
+  "Completed"). Drop the leading `Step N: ` from the heading — the state script counts any
+  `^##+ Step` heading as remaining work, and in-review entries aren't. Include a post-coding
+  checklist:
   ```
-  ### <step label> | branch <branchname>
+  ### <brief label> | branch <branchname>
   - [ ] PR published
   - [ ] PR completed
   ```
@@ -35,13 +37,13 @@ checklist tracking post-coding work. `/wrap` moves steps here; `/land-step` move
 ```
 ## In review
 
-### Phase N: <brief label> | branch u/user/branchname
+### <brief label> | branch u/user/branchname
 - [x] PR published
 - [ ] PR completed
 ```
 Delete inapplicable checklist items rather than leaving them unchecked.
 
-Phases move: active plan → **In review** (via `/wrap`) → `_done.md` (via `/land-step`).
+Steps move: active plan → **In review** (via `/wrap`) → `_done.md` (via `/land-step`).
 In non-PR projects they move: active plan → `_done.md` (via `/wrap`) directly.
 
 ## `/land-step` user command
