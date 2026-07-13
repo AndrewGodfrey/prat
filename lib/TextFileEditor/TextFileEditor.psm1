@@ -103,7 +103,11 @@ class LineArray {
     [LineArray] GetLines($range) {
         $laNew  = [LineArray]::new($this.nl)
 
-        $laNew.lines = $this.lines[$range.idxFirst..$range.idxLast]
+        if ($range.idxFirst -le $range.idxLast) {
+            $laNew.lines = $this.lines[$range.idxFirst..$range.idxLast]
+        } else {
+            $laNew.lines = @()
+        }
         return $laNew
     }
 }

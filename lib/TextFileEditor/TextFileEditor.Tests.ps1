@@ -122,6 +122,22 @@ Describe "Read-Lines" {
     It "returns the given lines" {
         Read-Lines "a`nb`nc`nd`ne`nf" @{idxFirst=1; idxLast=3} | Should -Be "b`nc`nd"
     }
+
+    It "returns an empty string for an empty range (idxLast = idxFirst - 1)" {
+        Read-Lines "a`nb`nc`nd" @{idxFirst=2; idxLast=1} | Should -Be ""
+    }
+}
+
+Describe "[LineArray]::GetLines" {
+    It "returns the given lines" {
+        $la = [LineArray]::new("a`nb`nc`nd")
+        $la.GetLines(@{idxFirst=1; idxLast=2}) | Should -Be "b`nc"
+    }
+
+    It "returns an empty LineArray for an empty range (idxLast = idxFirst - 1)" {
+        $la = [LineArray]::new("a`nb`nc`nd")
+        $la.GetLines(@{idxFirst=2; idxLast=1}).IsEmpty() | Should -BeTrue
+    }
 }
 
 Describe "Add-Lines" {
