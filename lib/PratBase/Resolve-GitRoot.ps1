@@ -7,6 +7,8 @@ function Resolve-GitRoot {
         if (Test-Path -PathType Container $FromPath) { $FromPath } else { Split-Path $FromPath -Parent }
     } else { '.' }
     if (-not $dir) { $dir = '.' }
+    # git -C can't read a literal '~'; expand it while staying in the caller's junction island.
+    $dir = Expand-TildePath $dir
 
     # --show-toplevel resolves junctions (it computes an absolute real path), which pulls the
     # result out of the caller's junction island. --show-cdup returns a relative offset instead

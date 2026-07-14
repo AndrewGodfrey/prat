@@ -70,6 +70,25 @@ Describe "Resolve-GitRoot" {
         }
     }
 
+    It "Expands a leading '~' before resolving (git -C cannot read a literal '~')" {
+        # ~ only expands relative to $HOME, so the repo must live under $HOME for this to exercise
+        # the tilde path. Created and cleaned up here rather than in TestDrive.
+        $tildeRepoName = "resolveGitRootTest_$([guid]::NewGuid().ToString('N'))"
+        $realTildeRepo = Join-Path $HOME $tildeRepoName
+        try {
+            New-Item -ItemType Directory $realTildeRepo | Out-Null
+            git -C $realTildeRepo init -q
+            New-Item "$realTildeRepo/file.txt" | Out-Null
+            git -C $realTildeRepo add . 2>$null
+            git -C $realTildeRepo -c user.email="t@t" -c user.name="t" commit -q -m "init" 2>$null
+
+            $result = Resolve-GitRoot "~/$tildeRepoName/file.txt"
+            $result | Should -Be (($realTildeRepo -replace '\\', '/').TrimEnd('/'))
+        } finally {
+            Remove-Item $realTildeRepo -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
     It "Stays in the caller's path space when the path traverses a junction (does not resolve to the real target)" {
         $realRepoDir = "$realTestDrive/realRepo"
         New-Item -ItemType Directory $realRepoDir | Out-Null
