@@ -384,7 +384,7 @@ function Get-PratTestTargetsUnder {
 # .SYNOPSIS
 # Top-level repo roots that declare a `grantAgentAccess` value ('rw' | 'read') on their
 # codebaseProfile entry, grouped by that value. Single source of truth for "which repos an agent
-# may touch" — callers (e.g. sandboxed_pwsh ACL grants, the agent-permission hook's policy data)
+# may touch" — callers (e.g. sandbox ACL grants, the agent-permission hook's policy data)
 # derive their path lists from this instead of each hand-listing repos independently.
 #
 # .OUTPUTS
