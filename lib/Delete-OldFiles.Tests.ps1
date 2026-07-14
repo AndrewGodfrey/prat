@@ -55,12 +55,16 @@ Describe "Delete-OldFiles" {
                     Get-Item $path | Set-ItemProperty -Name CreationTime -Value $creationTime
                 }
             }
+
+            # Shadows icacls.exe so access-grant attempts never touch real ACLs (tests Mock this).
+            function icacls { }
         }
         BeforeEach {
             $now = Get-Date
             $past = $now.AddDays(-8)
             Push-Location $testRoot
             Mock Get-Date { $now }
+            Mock icacls { }
         }
         AfterEach {
             Pop-Location
@@ -89,6 +93,55 @@ Describe "Delete-OldFiles" {
             Test-Path "p3\c" | Should -Be $true
             Test-Path "$testRoot\deletion_report.txt" | Should -Be $true
         }
+        It "Retries a denied deletion after granting access, without warning" {
+            CreateDir "pr"
+            CreateFile "pr\flaky.txt" $past
+            # First call throws (simulated access-denied); the retry after the grant "succeeds" (no-op).
+            # $global: because MockWith bodies don't share this file's $script: scope.
+            $global:denyOnce = $true
+            Mock Remove-Item -ParameterFilter { "$Path" -like '*flaky.txt' } -MockWith {
+                if ($global:denyOnce) { $global:denyOnce = $false; throw [System.UnauthorizedAccessException]::new("Access is denied.") }
+            }
+
+            $output = &$scriptToTest -Path $testRoot -RetentionDays 7 *>&1
+
+            Should -Invoke Remove-Item -Times 2 -Exactly -ParameterFilter { "$Path" -like '*flaky.txt' }
+            Should -Invoke icacls -Times 1 -Exactly
+            @($output | Where-Object { $_ -is [System.Management.Automation.WarningRecord] }).Count | Should -Be 0
+            Remove-Variable denyOnce -Scope Global -ErrorAction SilentlyContinue
+        }
+
+        It "Warns when deletion fails even after granting access" {
+            CreateDir "pw"
+            CreateFile "pw\stuck.txt" $past
+            Mock Remove-Item -ParameterFilter { "$Path" -like '*stuck.txt' } -MockWith {
+                throw [System.UnauthorizedAccessException]::new("Access is denied.")
+            }
+
+            $output = &$scriptToTest -Path $testRoot -RetentionDays 7 *>&1
+
+            Test-Path "pw\stuck.txt" | Should -Be $true
+            $warnings = @($output | Where-Object { $_ -is [System.Management.Automation.WarningRecord] })
+            $warnings.Count | Should -Be 1
+            "$($warnings[0])" | Should -BeLike '*stuck.txt*'
+        }
+
+        It "RemoveOldFiles returns the paths it could not delete and deletes the rest" {
+            CreateDir "pd"
+            CreateFile "pd\denied.txt" $past
+            CreateFile "pd\ok.txt" $past
+            Mock Remove-Item -ParameterFilter { "$Path" -like '*denied.txt' } -MockWith {
+                throw [System.UnauthorizedAccessException]::new("Access is denied.")
+            }
+
+            $failed = @(RemoveOldFiles "$testRoot\pd" ($now.AddDays(-7)) "deletion_report.txt" "")
+
+            $failed.Count | Should -Be 1
+            $failed[0] | Should -BeLike '*denied.txt'
+            Test-Path "pd\ok.txt" | Should -Be $false
+            Test-Path "pd\denied.txt" | Should -Be $true
+        }
+
         It "Ignores non-container paths" {
             $subRoot = "$testRoot\foo"
             New-Item -Path $subRoot -ItemType File -Value "test" | Out-Null
