@@ -96,6 +96,56 @@ Describe "Find-LongLinesInContent" {
             $result | Should -HaveCount 0
         }
     }
+
+    Context "unwrappable links and URLs" {
+        It "does not flag a line dominated by an over-length markdown link" {
+            $url = 'https://example.com/' + ('a' * 120)
+            $line = "[some link text]($url)"
+            $line.Length | Should -BeGreaterThan 120
+            $result = @(Find-LongLinesInContent -Content $line -RelPath "foo.md" -MaxLength 120)
+
+            $result | Should -HaveCount 0
+        }
+
+        It "does not flag a line dominated by an over-length bare URL" {
+            $line = 'https://example.com/' + ('b' * 120)
+            $line.Length | Should -BeGreaterThan 120
+            $result = @(Find-LongLinesInContent -Content $line -RelPath "foo.md" -MaxLength 120)
+
+            $result | Should -HaveCount 0
+        }
+
+        It "exempts an over-length markdown link whose text contains spaces (link is atomic)" {
+            $url = 'https://example.com/org/proj/_git/repo/pullrequest/' + ('9' * 90)
+            $line = "[Pull request 12345: a fairly long descriptive title that has several words]($url)."
+            $line.Length | Should -BeGreaterThan 120
+            $result = @(Find-LongLinesInContent -Content $line -RelPath "foo.md" -MaxLength 120)
+
+            $result | Should -HaveCount 0
+        }
+
+        It "still flags a long line of wrappable prose (all tokens short)" {
+            $line = (('word ' * 30)).Trim()
+            $line.Length | Should -BeGreaterThan 120
+            $result = @(Find-LongLinesInContent -Content $line -RelPath "foo.md" -MaxLength 120)
+
+            $result | Should -HaveCount 1
+        }
+
+        It "still flags a long line whose only link is short enough to wrap (link + prose)" {
+            $line = "[Story 12345](https://example.com/story/12345): " + (('word ' * 20)).Trim()
+            $line.Length | Should -BeGreaterThan 120
+            $result = @(Find-LongLinesInContent -Content $line -RelPath "foo.md" -MaxLength 120)
+
+            $result | Should -HaveCount 1
+        }
+
+        It "still flags a long non-URL unbroken token (only real links/URLs are exempt)" {
+            $result = @(Find-LongLinesInContent -Content ('a' * 121) -RelPath "foo.md" -MaxLength 120)
+
+            $result | Should -HaveCount 1
+        }
+    }
 }
 
 Describe "Get-LongMarkdownLineFindings" {

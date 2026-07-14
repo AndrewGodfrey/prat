@@ -4,7 +4,11 @@
 # .DESCRIPTION
 # Reports markdown lines longer than -MaxLength characters. Lines inside fenced code
 # blocks (``` or ~~~) and table rows (starting with `|`) are exempt, since neither can
-# be line-wrapped. Use to enforce the 120-char markdown wrap rule on files you edit.
+# be line-wrapped. Lines are also exempt when they contain a markdown link `[text](url)`
+# or a bare URL that is itself longer than -MaxLength: such a token is atomic (no newline
+# may be inserted inside it), so the line cannot be wrapped under the limit however it is
+# broken. A link/URL shorter than the limit does NOT exempt the line — the surrounding
+# prose can still be wrapped. Use to enforce the 120-char markdown wrap rule on files you edit.
 #
 # Emits one finding object per offending line with Path, Line, Length and Text. This is
 # the common format consumed by line-oriented filters (e.g. a "changed lines only"
@@ -21,6 +25,28 @@ param (
     [string] $Path = (Get-Location).Path,
     [int]    $MaxLength = 120
 )
+
+function Test-LineHasUnwrappableLink {
+    # A markdown link [text](url) or a bare URL cannot have a newline inserted inside it,
+    # so if either is itself longer than $MaxLength the whole line is unwrappable. The link
+    # text may contain spaces, so the link must be matched as a whole rather than split on
+    # whitespace. A link/URL that fits within the limit does not exempt the line.
+    param (
+        [string] $Line,
+        [int]    $MaxLength = 120
+    )
+
+    foreach ($m in [regex]::Matches($Line, '\[[^\]]*\]\([^)\s]*\)')) {
+        if ($m.Value.Length -gt $MaxLength) { return $true }
+    }
+
+    # Bare URLs not already inside a markdown link's parentheses.
+    foreach ($m in [regex]::Matches($Line, '(?<!\()https?://\S+')) {
+        if ($m.Value.Length -gt $MaxLength) { return $true }
+    }
+
+    return $false
+}
 
 function Find-LongLinesInContent {
     param (
@@ -59,6 +85,9 @@ function Find-LongLinesInContent {
         if ($line -match '^\s*\|') { continue }
 
         if ($line.Length -gt $MaxLength) {
+            # Exempt lines whose length is forced by an atomic (unbreakable) link or URL.
+            if (Test-LineHasUnwrappableLink -Line $line -MaxLength $MaxLength) { continue }
+
             $findings.Add([PSCustomObject]@{
                 Path   = $RelPath
                 Line   = $i + 1
