@@ -151,6 +151,12 @@ flag `-NoCoverage:` and a separate positional argument `False`. The called scrip
 
 `@PSBoundParameters` forwards named parameters correctly, including switches with explicit values.
 
+# Inconsistent ~ handling
+Unlike `$home`, Powershell doesn't expand `~` before passing it to things that don't understand it - like external
+programs or .NET APIs. So we have to be carefuly to expand it ourselves, in such cases.
+Another somewhat surprising case is `pwsh -File ~/...` - that too doesn't expand `~`.
+
+
 # Checking whether a path is absolute
 
 Call `Expand-TildePath $path` before `[System.IO.Path]::IsPathRooted` — .NET doesn't understand
