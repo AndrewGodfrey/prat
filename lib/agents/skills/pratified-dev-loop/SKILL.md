@@ -1,6 +1,7 @@
 ---
 name: pratified-dev-loop
-description: Use in any pratified project for build/test/deploy/prebuild work — b, d, pb, t with absolute-path support and coverage tools.
+description: Use in any pratified project for build/test/deploy/prebuild work — b, d, pb, t with
+  absolute-path support and coverage tools.
 ---
 
 How to pratify a project? See the `pratify-a-project` skill.
@@ -54,6 +55,13 @@ t foo/myproject                                     # .NET (csproj directory)
 - `pwsh -c "..."` requires escaping every `$` which agents consistently get wrong
 - Pester 5 parameter sets are tricky
 
+## Integration-tagged tests are excluded by default
+
+Without `-Integration`/`-IncludeIntegrationTests`, tests tagged `Integration` are filtered out
+and counted as **NotRun** — visible in `test-run.txt` but not in the console one-liner, whose
+"Passed" count therefore understates the discovered total. Before treating a passed-count drop
+across runs as a regression, check `test-run.txt` for the NotRun count.
+
 ## Cached summary vs. fresh run
 
 Read `auto/testRuns/last/summary.txt` instead of re-running when no code has changed and you only
@@ -69,8 +77,8 @@ Every run writes to `auto/testRuns/last/`:
 | `summary.txt` | One-line summary: coverage % and pass/fail counts |
 | `coverage.xml` | Coverage data, in CoverageGutters format (omitted when using `-NoCoverage`) |
 
-- "CoverageGutters format" means one that the vscode coverage-gutters extension can read. It can read JaCoCo or Cobertura,
-  but with particular requirements.
+- "CoverageGutters format" means one that the vscode coverage-gutters extension can read. It can
+  read JaCoCo or Cobertura, but with particular requirements.
 
 Previous runs are rotated to `auto/testRuns/<timestamp>/`.
 
