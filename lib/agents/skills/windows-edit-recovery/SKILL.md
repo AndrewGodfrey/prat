@@ -33,8 +33,8 @@ Workaround for large deletions:
 1. Insert marker comments using small targeted Edits (short unique strings match reliably):
    - Before the block: `<!-- DELETE_FROM_HERE -->`
    - After the block: `<!-- DELETE_TO_HERE -->`
-2. Run the helper script:
-   ```bash
-   pwsh -File ~/prat/lib/agents/Remove-MarkedBlock.ps1 -Path 'C:/path/to/file.md'
+2. Run the helper script from a pwsh session:
+   ```powershell
+   & $home/prat/lib/agents/Remove-MarkedBlock.ps1 -Path 'C:/path/to/file.md'
    ```
    Custom markers: add `-From '<!-- MY_START -->' -To '<!-- MY_END -->'`.
