@@ -13,7 +13,8 @@
 #
 # .PARAMETER Config
 # Hashtable with a 'bannedPatterns' array. Each entry: @{ pattern = '...'; description = '...' }
-# Pattern is matched as a literal string (case-insensitive). Defaults to $defaultPratConfig.
+# Pattern is matched as a case-insensitive regex — escape metacharacters for literal matches;
+# alternation lets one rule cover several identifiers. Defaults to $defaultPratConfig.
 
 param (
     [string]    $Path = (Get-Location).Path,
@@ -39,7 +40,7 @@ function Find-LayerViolationsInContent {
     foreach ($rule in $Config.bannedPatterns) {
         $matchedLines = [System.Collections.Generic.List[int]]::new()
         for ($i = 0; $i -lt $lines.Count; $i++) {
-            if ($lines[$i] -match [regex]::Escape($rule.pattern)) {
+            if ($lines[$i] -match $rule.pattern) {
                 $matchedLines.Add($i + 1)
             }
         }

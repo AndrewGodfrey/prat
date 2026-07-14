@@ -83,6 +83,35 @@ Describe 'Build-PratEffectiveConfig' {
         }
     }
 
+    Context 'top-level bannedPatterns of higher layers (banned in that layer and below)' {
+        It 'applies prefs own patterns to the prat scan' {
+            $result = Build-PratEffectiveConfig $script:pratBase $script:prefsBase $null
+
+            $result.bannedPatterns | Should -HaveCount 2
+            $result.bannedPatterns[1].pattern | Should -Be 'prefs-rule'
+        }
+
+        It 'applies de top-level patterns to the prat scan' {
+            $deConfig = @{ bannedPatterns = @(@{ pattern = 'de-rule'; description = 'de rule' }) }
+
+            $result = Build-PratEffectiveConfig $script:pratBase $null $deConfig
+
+            $result.bannedPatterns | Should -HaveCount 2
+            $result.bannedPatterns[1].pattern | Should -Be 'de-rule'
+        }
+
+        It 'merges de top-level and augmentPrat patterns together' {
+            $deConfig = @{
+                bannedPatterns = @(@{ pattern = 'de-rule'; description = 'de rule' })
+                augmentPrat    = $script:augPrat
+            }
+
+            $result = Build-PratEffectiveConfig $script:pratBase $null $deConfig
+
+            $result.bannedPatterns | Should -HaveCount 3
+        }
+    }
+
     Context 'prat config with excludedPaths' {
         It 'propagates excludedPaths from prat config' {
             $pratWithExclusions = @{ bannedPatterns = @(); excludedPaths = @('auto/') }
@@ -147,6 +176,28 @@ Describe 'Build-PrefsEffectiveConfig' {
             $result = Build-PrefsEffectiveConfig $script:prefsBase @{ augmentPrefs = @{ } }
 
             $result.bannedPatterns | Should -HaveCount 1
+        }
+    }
+
+    Context 'de config with top-level bannedPatterns' {
+        It 'applies de top-level patterns to the prefs scan' {
+            $deConfig = @{ bannedPatterns = @(@{ pattern = 'de-rule'; description = 'de rule' }) }
+
+            $result = Build-PrefsEffectiveConfig $script:prefsBase $deConfig
+
+            $result.bannedPatterns | Should -HaveCount 2
+            $result.bannedPatterns[1].pattern | Should -Be 'de-rule'
+        }
+
+        It 'merges de top-level and augmentPrefs patterns together' {
+            $deConfig = @{
+                bannedPatterns = @(@{ pattern = 'de-rule'; description = 'de rule' })
+                augmentPrefs   = $script:augPrefs
+            }
+
+            $result = Build-PrefsEffectiveConfig $script:prefsBase $deConfig
+
+            $result.bannedPatterns | Should -HaveCount 3
         }
     }
 }

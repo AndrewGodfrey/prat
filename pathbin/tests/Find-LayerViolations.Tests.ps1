@@ -101,6 +101,24 @@ Describe "Find-LayerViolationsInContent" {
         }
     }
 
+    Context "regex patterns" {
+        It "matches an alternation covering several identifiers with one rule" {
+            $config = @{ bannedPatterns = @(@{ pattern = 'FOO_VAR|BAR_VAR'; description = 'upper-layer identifier' }) }
+
+            $result = @(Find-LayerViolationsInContent -Content "uses BAR_VAR here" -RelPath "x.md" -Config $config)
+
+            $result | Should -HaveCount 1
+            $result[0] | Should -Match 'upper-layer identifier'
+        }
+
+        It "respects word boundaries" {
+            $config = @{ bannedPatterns = @(@{ pattern = '\bfoo\b'; description = 'foo identifier' }) }
+
+            @(Find-LayerViolationsInContent -Content "food fight" -RelPath "x.md" -Config $config) | Should -HaveCount 0
+            @(Find-LayerViolationsInContent -Content "call foo here" -RelPath "x.md" -Config $config) | Should -HaveCount 1
+        }
+    }
+
     Context "multiple violations" {
         It "returns one finding per violated rule" {
             $content = "ref $($script:dePattern)foo and $($script:prefsPattern)bar"

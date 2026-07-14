@@ -1,10 +1,18 @@
+# A layer's top-level bannedPatterns apply to that layer's scan and every scanned layer below it;
+# augmentX patterns apply to layer X only.
 function Build-PratEffectiveConfig($pratConfig, $prefsConfig, $deConfig) {
     $eff = @{
         bannedPatterns = [array]$pratConfig.bannedPatterns
         excludedPaths  = if ($pratConfig.excludedPaths) { $pratConfig.excludedPaths } else { @() }
     }
+    if ($null -ne $prefsConfig -and $prefsConfig.bannedPatterns) {
+        $eff.bannedPatterns += $prefsConfig.bannedPatterns
+    }
     if ($null -ne $prefsConfig -and $prefsConfig.augmentPrat.bannedPatterns) {
         $eff.bannedPatterns += $prefsConfig.augmentPrat.bannedPatterns
+    }
+    if ($null -ne $deConfig -and $deConfig.bannedPatterns) {
+        $eff.bannedPatterns += $deConfig.bannedPatterns
     }
     if ($null -ne $deConfig -and $deConfig.augmentPrat.bannedPatterns) {
         $eff.bannedPatterns += $deConfig.augmentPrat.bannedPatterns
@@ -14,8 +22,11 @@ function Build-PratEffectiveConfig($pratConfig, $prefsConfig, $deConfig) {
 
 function Build-PrefsEffectiveConfig($prefsConfig, $deConfig) {
     $eff = @{ bannedPatterns = @() }
-    if ($null -ne $prefsConfig) {
+    if ($null -ne $prefsConfig -and $prefsConfig.bannedPatterns) {
         $eff.bannedPatterns += [array]$prefsConfig.bannedPatterns
+    }
+    if ($null -ne $deConfig -and $deConfig.bannedPatterns) {
+        $eff.bannedPatterns += $deConfig.bannedPatterns
     }
     if ($null -ne $deConfig -and $deConfig.augmentPrefs.bannedPatterns) {
         $eff.bannedPatterns += $deConfig.augmentPrefs.bannedPatterns
