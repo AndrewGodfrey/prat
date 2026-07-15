@@ -1,8 +1,8 @@
 ---
 name: wrap-session
 description: Close out a session whose step is still in progress — checkpoint done/remaining into
-  the plan, reflect, set state checkpointed. /wrap-session closes a session; /wrap closes a step.
-  User-invocable only — do not trigger autonomously.
+  the plan, reflect, set state checkpointed. /wrap-session closes a session; /wrap advances the
+  plan a lifecycle notch. User-invocable only — do not trigger autonomously.
 ---
 
 Use before abandoning or pausing a session mid-step — e.g. before a long break, or when a session

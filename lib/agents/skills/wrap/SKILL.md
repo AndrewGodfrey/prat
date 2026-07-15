@@ -1,26 +1,46 @@
 ---
 name: wrap
-description: Finalize the completed plan step. /wrap closes a step; /wrap-session closes a
-  session. User-invocable only — do not trigger autonomously.
+description: Advances the active plan one lifecycle notch — records the user's approval of a
+  refined step (at ready-to-plan) or closes a completed one (at code-complete) — and always runs
+  /reflect. /wrap-session closes a session instead. User-invocable only — do not trigger
+  autonomously.
 ---
 
 The "active plan" is the plan file most relevant to this session — infer from context, or ask if
 unclear.
 
-## 0. Is the step complete?
+## 0. Read the state
 
-If the session is ending but the step is still in progress, don't wrap — invoke `/wrap-session`
-instead.
+```powershell
+. "$home/prat/lib/agents/Set-PlanState.ps1"
+Get-PlanState -PlanFile <active plan>
+```
 
-## 1. Finalize current step
+Dispatch on `state`:
+
+## `ready-to-plan` → advance to ready-to-implement
+
+Invoking `/wrap` here is itself the user's approval of the refined step — this skill doesn't ask,
+it acts.
+
+Before writing anything, sanity-check that the pointed-at step's spec is implementable — if it's
+still terse bullets or has open design questions, say so and stop rather than advance.
+
+Otherwise:
+1. Invoke `/reflect` — planning lessons.
+2. Only once open questions (including any raised during that `/reflect` conversation) are
+   resolved — never in the same turn as an open question:
+   ```powershell
+   Set-PlanState -PlanFile <active plan> -State ready-to-implement
+   ```
+
+## `code-complete` → close the step
 
 - **Check the wrap list.** Look for a "## Wrap list" section near the top of the active plan.
   If present, work through each item in it.
 
 - **Public repo check.** If any changes in this step touch a public repo (prefs, prat),
   invoke `/check-prat-layers`.
-
-## 2. Update plan
 
 - **Move the completed step.** Cut the completed step from the active plan and append it to the
   end of the corresponding `*_done.md` file, condensed to final outcomes — what changed and why,
@@ -30,22 +50,29 @@ instead.
   - Consider the remaining content in the plan file (title, background, design section, etc.)
     It might have permanent design info that belongs in a document - move that if so.
   - Then, move all remaining content to the done file as a header block, then delete the plan
-    file. Skip section 4 — there is nothing to advance.
+    file. Skip the pointer-advance step below — there is nothing to advance.
 
-## 3. Reflect
+- Invoke `/reflect` — review lessons; the implementation `/reflect` already ran at code-complete.
 
-Invoke `/reflect` — review learnings; the implementation `/reflect` already ran at code-complete.
+- **Advance the pointer.** Only once open questions (including any from the `/reflect`
+  conversation) are resolved — never in the same turn as an open question:
+  ```powershell
+  Set-PlanState -PlanFile <active plan> -Advance
+  ```
+  Defaults to the next remaining step; if the user named a different step to do next, add
+  `-ToStep 'Step N'`. The script sets `state` itself: `ready-to-implement` if the new pointer was
+  already refined, else `ready-to-plan`.
 
-## 4. Advance the pointer
+- **Report the result.** Name the new pointer and its resulting state. If the pointer came off
+  the `refined` list (state now `ready-to-implement`), say so explicitly — the user should know
+  the next step was pre-planned.
 
-Only once open questions (including any from the `/reflect` conversation) are resolved — never in
-the same turn as an open question:
+## `ready-to-implement` or `checkpointed` → misfire guard
 
-```powershell
-. "$home/prat/lib/agents/Set-PlanState.ps1"
-Set-PlanState -PlanFile <active plan> -Advance
-```
+The step is mid-lifecycle — don't proceed. Point the user at `/code-complete` (implementation
+finished this session) or `/wrap-session` (pausing mid-step).
 
-Defaults to the next remaining step; if the user named a different step to do next, add
-`-ToStep 'Step N'`. The script sets `state` itself: `ready-to-implement` if the new pointer was
-already refined, else `ready-to-plan`.
+## Missing or unrecognized state
+
+An older plan without frontmatter, or a state this skill doesn't recognize. Ask the user which
+close applies rather than guessing.

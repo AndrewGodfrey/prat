@@ -1,7 +1,7 @@
 ---
 name: plan-refine-next-step
 description: Set up the next step in a plan — verify the pointer, flesh out detail, add coverage
-  and review-changes steps, then mark it ready to implement.
+  and review-changes steps, then report it ready for review.
 ---
 
 The "active plan" is the plan file most relevant to this session — infer from context, or ask if
@@ -38,8 +38,12 @@ dot-sourced; read the current state with `Get-PlanState -PlanFile <plan>`.
     - Run `/review-changes`, and address its feedback. If there's a lot of ambiguity left,
       consider running it **one** more time.
 
-- **Mark it ready.** `Set-PlanState -PlanFile <plan> -State ready-to-implement`.
-
-- **If you refined further steps beyond the pointer** (to the same fresh-session standard), record
+- **If you refined further steps beyond the pointer** *and the user asked to plan ahead*, record
   them: read the current `Refined` list via `Get-PlanState`, append the newly refined step ids,
   and write the result back with `Set-PlanState -PlanFile <plan> -Refined <updated list>`.
+
+- **Report and hand off.** Tell the user the pointed-at step is refined and ready for their
+  review. State stays `ready-to-plan` until they've reviewed it; `/wrap` is how they record their
+  approval and advance to `ready-to-implement` — don't propose running it, that's the user's call
+  to make and initiate. If any further steps were refined ahead, name them in the report so the
+  user knows more than one step got planned.

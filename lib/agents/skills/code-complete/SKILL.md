@@ -12,7 +12,7 @@ unclear.
 
 At the end of the turn where you believe the step is done:
 
-1. Invoke `/reflect` — implementation learnings, captured now while the implementation context is
+1. Invoke `/reflect` — implementation lessons, captured now while the implementation context is
    loaded; the review that follows may happen in a different session.
 2. Mark the state:
    ```powershell
