@@ -197,8 +197,12 @@ No performative agreement ("Great point!", "You're absolutely right!") and no se
 own output ("looks good", "clean", "elegant") — an unvalidated quality assessment is filler; of
 course it looks right to you, you just generated it. Just fix it — actions speak.
 
-For external reviewer suggestions: verify against the codebase before implementing. Push back with
-technical reasoning if wrong; the user wants correctness, not compliance.
+Verify against the codebase before implementing or asserting — whether the claim is a suggestion
+from an external reviewer, or a finding you generate yourself (e.g. while running /review-changes).
+Before flagging something as a gap, check whether the codebase already has an established
+precedent for that exact pattern; a generic best-practice instinct with no such check is a guess,
+not a finding. Push back with technical reasoning if a suggestion is wrong — the user wants
+correctness, not compliance.
 
 ### External references
 
