@@ -1,7 +1,7 @@
 ---
 name: pwsh-coding
-description: Use when writing PowerShell code. Covers gotchas with arrays, argument passing, string
-  handling, and common patterns in this codebase.
+description: Use when writing PowerShell code or Pester tests. Covers gotchas with arrays,
+  argument passing, string handling, Pester mocking, and common patterns in this codebase.
 ---
 
 # Cryptographically secure random bytes
@@ -108,6 +108,16 @@ correct for a scalar (the pipeline single-item-collapse case `-AsArray` is meant
 once `$arr` is already a genuine array: `ConvertTo-Json @(1,2) -Depth 5 -AsArray` produces
 `[[1,2]]`, not `[1,2]`. If `$arr` is already a real array (built via `@()`/`+=`, not piped in), omit
 `-AsArray`.
+
+**The mirror-image trap**: a function that force-returns an array via the leading-comma idiom
+(`return ,@(...)`, to stop a single/zero-element array from collapsing per above) breaks if the
+*caller* also wraps the call in `@(...)`. The function already emits the array as one pipeline
+object; the caller's `@()` then collects that single object into an *outer* 1-element array,
+silently nesting it. E.g. `function getModelArgs { ...; return ,@() }` — calling
+`@(getModelArgs $null)` yields `@(@())` (Count 1, containing an empty array), not the intended
+empty array; `Should -HaveCount 0` fails while printing identically to the correct case. Fix:
+assign directly (`$r = getModelArgs $null`) and work from `$r`/`$r.Count` — never wrap a
+comma-forced call in `@()`.
 
 # `ConvertTo-Json` on a `[hashtable]` emits keys in per-process-random order
 
@@ -292,6 +302,82 @@ stack (e.g. llama-server's OpenSSL). Re-exporting through a PFX
 reliably resolve it under a sandboxed/restricted account either (`Access denied` / "credentials ...
 not recognized"). If a test needs a real TLS server and the project already has one with its own TLS
 stack, drive that instead of standing up an `SslStream` server from a PEM cert.
+
+# Pester: shadowing module functions for standalone scripts
+
+Pester's `Mock` only works for module-exported functions called within a module scope — it cannot
+intercept calls made by a standalone `.ps1` script invoked with `& $script`. To fake a dependency
+for those scripts, define a plain function with the same name in a `BeforeAll` or `It` block:
+
+```powershell
+Context "subproject path inference" {
+    BeforeAll {
+        function Get-PratProject { param($Location) @{ id = 'myproject'; parentId = 'parent' } }
+        # ...setup fixtures...
+    }
+    It "..." { $result = & $script -FilePath $path; ... }
+}
+```
+
+PowerShell's scope chain makes the locally-defined function visible inside `& $script` calls, and it
+shadows the module-exported function of the same name. Confirmed empirically in Pester v5 — a function
+defined in `Context BeforeAll` shadows the module export for `It` blocks within that context.
+
+# Capturing hook invocations in Pester tests
+
+Capture what a hook received via a **reference type closed over in the hook** — not `$script:`.
+`$script:` doesn't reliably propagate back when the hook runs inside the tested script's scope
+chain (see "Scriptblocks passed as hooks" above — variable capture and shadowing). Pester `Mock`
+scriptblocks are different: Pester's own machinery puts them in a scope where `$script:` resolves
+correctly.
+
+```powershell
+$captured = @{}
+$hook = { param($x) $captured.x = $x }
+```
+
+# Pester 5 gotchas
+
+**`TestDrive:` is shared within a `Context` block** — it is NOT reset between `It` blocks. Use distinct
+subdirectory paths per test (e.g. `"TestDrive:\db-test1"`, `"TestDrive:\db-test2"`) to avoid
+cross-test contamination when multiple tests in the same `Context` write to the filesystem.
+
+**`Should -Invoke X -Times 0`**: the mock must still be defined in scope — Pester cannot track
+calls to an un-mocked command. Add `Mock X { }` in `BeforeEach` even when the test only verifies
+the command was never called.
+
+**`(Get-Item "TestDrive:\").FullName` has a trailing backslash.** After replacing `\\` with `/` you
+get a trailing `/`, so `"$realTestDrive/subdir"` becomes `...//subdir`. This silently breaks path
+matching when other tools (git, `Resolve-Path`) normalize to single slashes. Always trim:
+`((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')`.
+
+**Bare top-level code (outside any `Describe`/`BeforeAll`) only runs during discovery**, not during
+the run phase. A helper `function` defined at the top of the file, outside `Describe`, exists during
+discovery but is gone by the time `It` blocks execute — `CommandNotFoundException`. Move such helpers
+inside the outermost `BeforeAll` so they're redefined at run time, in the scope `It` blocks can see.
+
+**`InModuleScope` + `-Focus`**: `InModuleScope` is evaluated at discovery time, but `BeforeAll` runs
+at execution time. When the focused file is the first to be discovered, the module isn't loaded yet
+and discovery fails. Fix: add a `BeforeDiscovery` block (in addition to `BeforeAll`) to load the
+module at discovery time:
+
+```powershell
+BeforeDiscovery {
+    Import-Module "$PSScriptRoot/PratBase.psd1" -Force
+}
+BeforeAll {
+    Import-Module "$PSScriptRoot/PratBase.psd1" -Force
+}
+```
+
+**`Mock` on a simple (`$args`-using, non-advanced) function reconstructs its declared named
+parameters as extra synthetic tokens appended to `$args`.** E.g. mocking
+`function foo([string]$harness,[string]$cwd,[string]$planFile)` and calling
+`foo 'H' 'C' 'P' 'extra'` inside the mock body yields
+`$args = @('extra', '-harness:', 'H', '-cwd:', 'C', '-planFile:', 'P')`, not just `@('extra')`.
+This is a Pester mock-proxy artifact, absent from real (unmocked) execution. Never assert exact
+full-array equality (`Should -Be @(...)`) against a mocked function's captured `$args`/overflow-args
+— check specific indices or use `-Contains` instead.
 
 # $PSScriptRoot-relative paths when moving a script
 
