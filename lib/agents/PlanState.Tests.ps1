@@ -1,9 +1,9 @@
 BeforeDiscovery {
-    . "$PSScriptRoot/Set-PlanState.ps1"
+    . "$PSScriptRoot/PlanState.ps1"
 }
 
 BeforeAll {
-    . "$PSScriptRoot/Set-PlanState.ps1"
+    . "$PSScriptRoot/PlanState.ps1"
     $script:testDriveRoot = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
 
     function writeRaw([string] $path, [string] $content) {

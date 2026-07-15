@@ -1,6 +1,6 @@
 using module ..\TextFileEditor\TextFileEditor.psd1
 
-# Set-PlanState.ps1
+# PlanState.ps1
 # CRLF-safe create/read/update for the three plan-lifecycle frontmatter keys: state, next-step,
 # refined. The model never hand-edits these — only this script writes them.
 #

@@ -12,7 +12,7 @@ unclear.
 ## 0. Read the state
 
 ```powershell
-. "$home/prat/lib/agents/Set-PlanState.ps1"
+. "$home/prat/lib/agents/PlanState.ps1"
 Get-PlanState -PlanFile <active plan>
 ```
 

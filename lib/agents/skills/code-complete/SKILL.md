@@ -16,7 +16,7 @@ At the end of the turn where you believe the step is done:
    loaded; the review that follows may happen in a different session.
 2. Mark the state:
    ```powershell
-   . "$home/prat/lib/agents/Set-PlanState.ps1"
+   . "$home/prat/lib/agents/PlanState.ps1"
    Set-PlanState -PlanFile <active plan> -State code-complete
    ```
 

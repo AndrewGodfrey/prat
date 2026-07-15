@@ -24,7 +24,7 @@ Invoke `/reflect`.
 ## 3. Set state
 
 ```powershell
-. "$home/prat/lib/agents/Set-PlanState.ps1"
+. "$home/prat/lib/agents/PlanState.ps1"
 Set-PlanState -PlanFile <active plan> -State checkpointed
 ```
 

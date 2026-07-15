@@ -5,7 +5,7 @@ description: Set up the next step in a plan — verify the pointer, flesh out de
 ---
 
 The "active plan" is the plan file most relevant to this session — infer from context, or ask if
-unclear. State-script calls below assume `. "$home/prat/lib/agents/Set-PlanState.ps1"` has been
+unclear. State-script calls below assume `. "$home/prat/lib/agents/PlanState.ps1"` has been
 dot-sourced; read the current state with `Get-PlanState -PlanFile <plan>`.
 
 - **Verify the next-step pointer.** `/wrap` already advanced the frontmatter `next-step` when the

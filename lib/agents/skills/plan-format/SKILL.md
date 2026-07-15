@@ -23,7 +23,7 @@ next-step: "Step 2: <brief label>"
 
 A `refined` list may also appear — steps beyond the pointer already planned to implementable
 detail. Read these keys freely; never hand-edit them — write only via
-`. "$home/prat/lib/agents/Set-PlanState.ps1"; Set-PlanState ...`. There is no `## Next step:`
+`. "$home/prat/lib/agents/PlanState.ps1"; Set-PlanState ...`. There is no `## Next step:`
 heading in this format; the frontmatter pointer replaces it. (Older plans may still have the
 heading — treat it as the pointer, migrate it into frontmatter via the script, and delete it.)
 
