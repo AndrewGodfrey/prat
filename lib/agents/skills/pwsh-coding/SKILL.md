@@ -370,6 +370,15 @@ BeforeAll {
 }
 ```
 
+**A standalone script invoked directly (`& $script`, not dot-sourced) that calls PratBase-exported
+functions (e.g. `Initialize-TestRunDir`, `Write-TestRunResult`) needs
+`Import-Module "$PSScriptRoot/PratBase/PratBase.psd1" -Force` in the test's `BeforeAll` first** —
+the script itself doesn't import its own module dependencies, so without this the failure surfaces
+as a `CommandNotFoundException` several stack frames deep, not at the call site that needed the
+import. Sibling adapter tests (`Invoke-DotnetTestWithSummary.Tests.ps1`,
+`Invoke-PesterWithSummary.Tests.ps1`) already do this — follow the same pattern for any new
+`Invoke-*WithSummary.ps1` test that runs the script for real rather than mocking around it.
+
 **`Mock` on a simple (`$args`-using, non-advanced) function reconstructs its declared named
 parameters as extra synthetic tokens appended to `$args`.** E.g. mocking
 `function foo([string]$harness,[string]$cwd,[string]$planFile)` and calling

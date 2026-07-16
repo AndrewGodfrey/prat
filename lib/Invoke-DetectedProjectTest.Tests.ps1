@@ -2,7 +2,7 @@ BeforeAll {
     Import-Module "$PSScriptRoot/PratBase/PratBase.psd1" -Force
     $scriptToTest = "$PSScriptRoot/Invoke-DetectedProjectTest.ps1"
     function Invoke-PytestWithSummary(
-        [string[]]$Modules, [string[]]$TestArgs, [string]$OutputDir, [string]$RepoRoot,
+        [string[]]$TestArgs, [string]$OutputDir, [string]$RepoRoot,
         [string]$WorkingDir, [switch]$NoCoverage, [switch]$PassThru) {}
     function Invoke-DotnetTestWithSummary(
         [string[]]$TestArgs, [string]$OutputDir, [string]$RepoRoot, [string]$WorkingDir,
@@ -28,11 +28,6 @@ Describe "Invoke-DetectedProjectTest.ps1 (pytest)" {
     It "wires OutputDir through from Get-ProjectTestOutputDir" {
         & $scriptToTest $project -CommandParameters @{}
         Should -Invoke Invoke-PytestWithSummary -ParameterFilter { $OutputDir -eq (Get-ProjectTestOutputDir $project) }
-    }
-
-    It "does not pass -Modules — inference is left to Invoke-PytestWithSummary.ps1" {
-        & $scriptToTest $project -CommandParameters @{}
-        Should -Invoke Invoke-PytestWithSummary -ParameterFilter { $null -eq $Modules }
     }
 
     It "supports -NoCoverage" {

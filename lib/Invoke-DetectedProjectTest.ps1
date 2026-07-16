@@ -7,7 +7,7 @@
 param($project, [hashtable]$CommandParameters = @{})
 
 function Invoke-PytestWithSummary {
-    param([string[]]$Modules, [string[]]$TestArgs, [string]$OutputDir, [string]$RepoRoot,
+    param([string[]]$TestArgs, [string]$OutputDir, [string]$RepoRoot,
           [string]$WorkingDir, [switch]$NoCoverage, [switch]$PassThru)
     & "$PSScriptRoot/Invoke-PytestWithSummary.ps1" @PSBoundParameters
 }

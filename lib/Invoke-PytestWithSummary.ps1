@@ -3,11 +3,6 @@
 #
 # Parallels Invoke-DotnetTestWithSummary.ps1 for Python test projects.
 #
-# .PARAMETER Modules
-# Module name(s) to collect branch coverage for (--cov=<module> each). If omitted, inferred from
-# $WorkingDir (or cwd): every top-level `*.py` file and `__init__.py`-containing directory,
-# excluding `test_*.py`/`conftest.py`.
-#
 # .PARAMETER TestArgs
 # Additional arguments to pass to pytest (e.g. a focus path).
 #
@@ -22,7 +17,6 @@
 
 [CmdletBinding()]
 param(
-    [string[]] $Modules,
     [string[]] $TestArgs = @(),
     [string]   $OutputDir,
     [string]   $RepoRoot,
@@ -30,21 +24,6 @@ param(
     [switch]   $NoCoverage,
     [switch]   $PassThru
 )
-
-# Top-level pytest-coverable modules/packages under $dir: a `*.py` file's base name, or a
-# directory's name if it has `__init__.py`. Excludes `test_*.py`/`conftest.py`.
-function Get-InferredPytestModules($dir) {
-    $modules = @()
-    foreach ($item in Get-ChildItem -LiteralPath $dir) {
-        if ($item.PSIsContainer) {
-            if (Test-Path (Join-Path $item.FullName '__init__.py')) { $modules += $item.Name }
-        } elseif ($item.Extension -eq '.py' -and $item.Name -ne '__init__.py' -and
-                  $item.BaseName -ne 'conftest' -and $item.BaseName -notlike 'test_*') {
-            $modules += $item.BaseName
-        }
-    }
-    $modules
-}
 
 function parsePytestSummary($line) {
     if ($line -notmatch '^=') { return $null }
@@ -69,17 +48,17 @@ if ($MyInvocation.InvocationName -ne '.') {
 
     $runState = @{ passed = $null; failed = $null; failuresSeen = 0; exitCode = 0 }
 
-    $noCoverageLocal = $NoCoverage
-    $modulesLocal    = if ($PSBoundParameters.ContainsKey('Modules')) { $Modules } else { Get-InferredPytestModules ($WorkingDir ? $WorkingDir : (Get-Location).Path) }
-    $testArgsLocal   = $TestArgs
-    $workingDirLocal = $WorkingDir
+    $noCoverageLocal    = $NoCoverage
+    $testArgsLocal      = $TestArgs
+    $workingDirLocal    = $WorkingDir
+    $coverageConfigPath = "$PSScriptRoot/pytestCoverage.cfg" -replace '\\', '/'
 
     & "$PSScriptRoot/Invoke-TestWithSummary.ps1" `
         -StartTime    $startTime `
         -RepoRoot     $RepoRoot `
         -OutputDir    $OutputDir `
         -InitialState $runState `
-        -LogHeader    @("RepoRoot: $RepoRoot", "Modules: $($modulesLocal -join ', ')", "") `
+        -LogHeader    @("RepoRoot: $RepoRoot", "") `
         -PassThru:$PassThru `
         -TestCommand {
             if ($workingDirLocal) { Push-Location $workingDirLocal }
@@ -87,8 +66,8 @@ if ($MyInvocation.InvocationName -ne '.') {
             try {
                 $pytestArgs = @('-v', '-p', 'no:cacheprovider') + $testArgsLocal
                 if (-not $noCoverageLocal) {
-                    foreach ($m in $modulesLocal) { $pytestArgs += "--cov=$m" }
-                    $pytestArgs += @('--cov-branch', "--cov-report=xml:$($runState.runDir)/coverage.xml")
+                    $pytestArgs += @('--cov=.', '--cov-branch', "--cov-config=$coverageConfigPath",
+                                     "--cov-report=xml:$($runState.runDir)/coverage.xml")
                 }
                 python -B -m pytest @pytestArgs 2>&1
             } finally {
