@@ -440,6 +440,37 @@ Describe "Get-CoverageData" {
             $result.perFileReport["C:/myrepo/src/Bar.cs"].LINE.missed | Should -Be 1
         }
 
+        It "leaves a relative filename bare when there is no source root and no RepoRoot" {
+            $xml = @'
+<coverage>
+  <packages>
+    <package name="MyPackage">
+      <classes>
+        <class filename="src/Bare.cs">
+          <methods>
+            <method name="Run" signature="()">
+              <lines>
+                <line number="1" hits="1" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="1" hits="1" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $f = "$TestDrive/cobertura-bare-relative.xml"
+            $xml | Set-Content $f
+
+            $result = & $script -CoverageFile $f
+
+            $result.perFileReport.Keys | Should -Contain "src/Bare.cs"
+        }
+
         It "ignores source element when it is '.'" {
             $dotSourceXml = @'
 <coverage>

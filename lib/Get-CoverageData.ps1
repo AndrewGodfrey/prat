@@ -109,13 +109,29 @@ if ($format -eq 'report') {
     }
 } else {
     # Cobertura format
-    # Determine source root: if <sources><source> is present and not '.', filenames are relative to it.
-    $sourceNodes = $xml.SelectNodes("/coverage/sources/source")
-    $sourceRoot = if ($sourceNodes.Count -eq 1 -and $sourceNodes[0].InnerText -ne '.') {
-        ($sourceNodes[0].InnerText -replace '\\', '/').TrimEnd('/')
-    } else { $null }
+    # Determine source roots: <sources><source> entries (other than '.') that relative filenames
+    # resolve against. coverage.py stores every filename relative to the first root; a class only
+    # needs a later root when the first root's copy of that relative path doesn't exist on disk.
+    $sourceRoots = @(
+        $xml.SelectNodes("/coverage/sources/source") |
+            ForEach-Object { ($_.InnerText -replace '\\', '/').TrimEnd('/') } |
+            Where-Object { $_ -and $_ -ne '.' }
+    )
 
     $normalizedRepoRoot = if ($RepoRoot) { ($RepoRoot -replace '\\', '/').TrimEnd('/') } else { $null }
+
+    function resolveCoberturaFilePath($filename) {
+        if ([System.IO.Path]::IsPathRooted($filename)) { return $filename }
+        if ($sourceRoots.Count -gt 0) {
+            foreach ($root in $sourceRoots) {
+                $candidate = "$root/$filename"
+                if (Test-Path -LiteralPath $candidate) { return $candidate }
+            }
+            return "$($sourceRoots[0])/$filename"
+        }
+        if ($normalizedRepoRoot) { return "$normalizedRepoRoot/$filename" }
+        return $filename
+    }
 
     function countCoberturaLines($lines) {
         $methodLines = @($lines | Where-Object { $_ })
@@ -167,15 +183,7 @@ if ($format -eq 'report') {
     foreach ($package in $xml.coverage.packages.package) {
         foreach ($class in $package.classes.class) {
             $filename = $class.filename -replace '\\', '/'
-            $filePath = if ([System.IO.Path]::IsPathRooted($filename)) {
-                $filename
-            } elseif ($sourceRoot) {
-                "$sourceRoot/$filename"
-            } elseif ($normalizedRepoRoot) {
-                "$normalizedRepoRoot/$filename"
-            } else {
-                $filename
-            }
+            $filePath = resolveCoberturaFilePath $filename
 
             if ($null -eq $perFileReport[$filePath]) {
                 $perFileReport[$filePath]     = newCounters

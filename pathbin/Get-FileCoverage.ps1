@@ -35,7 +35,10 @@ $unitName = $data.instructionUnit ?? "Instructions"
 $resolved = Resolve-Path $FilePath -ErrorAction SilentlyContinue
 $normalizedPath = ($resolved ? $resolved.Path : $FilePath).Replace('\', '/')
 $methods = $data.perFileMethodData[$normalizedPath]
-if ($null -eq $methods) { return @() }
+if ($null -eq $methods) {
+    Write-Warning "No coverage data for '$normalizedPath' in '$CoverageFile'."
+    return @()
+}
 
 if ($Function) { $methods = $methods | Where-Object { $_.name -eq $Function } }
 

@@ -48,10 +48,13 @@ Describe "Get-FileCoverage" {
         $result[2].Missed        | Should -Be 6
     }
 
-    It "returns empty when file is not in coverage data" {
-        $result = & $script -FilePath "C:/repo/pathbin/NotInReport.ps1" -CoverageFile $coverageFile
+    It "returns empty and warns what it looked for when file is not in coverage data" {
+        $result = & $script -FilePath "C:/repo/pathbin/NotInReport.ps1" -CoverageFile $coverageFile `
+            -WarningVariable warnings -WarningAction SilentlyContinue
 
         $result | Should -HaveCount 0
+        $warnings | Should -HaveCount 1
+        $warnings[0] | Should -Match "NotInReport.ps1"
     }
 
     It "names the instruction column 'Branches' for Cobertura input" {
@@ -87,6 +90,117 @@ Describe "Get-FileCoverage" {
         $result | Should -HaveCount 1
         $result[0].Branches | Should -Be 1
         $result[0].Missed   | Should -Be 1
+    }
+
+    Context "Cobertura relative filename resolution" {
+        It "resolves a relative filename against a single <source> root" {
+            $root = "$TestDrive/single-root"
+            New-Item -ItemType Directory -Path "$root/pkg" -Force | Out-Null
+            "content" | Set-Content "$root/pkg/Foo.py"
+
+            $xml = @"
+<coverage>
+  <sources>
+    <source>$root</source>
+  </sources>
+  <packages>
+    <package name="pkg">
+      <classes>
+        <class filename="pkg/Foo.py">
+          <methods/>
+          <lines>
+            <line number="1" hits="1" />
+            <line number="2" hits="0" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+"@
+            $coverageFile = "$TestDrive/single-root-coverage.xml"
+            $xml | Set-Content $coverageFile
+
+            $result = & $script -FilePath "$root/pkg/Foo.py" -CoverageFile $coverageFile
+
+            $result | Should -HaveCount 1
+            $result[0].Branches | Should -Be 1
+            $result[0].Missed   | Should -Be 1
+        }
+
+        It "prefers the first <source> root when a relative filename exists under multiple roots" {
+            $root1 = "$TestDrive/multi-root-1"
+            $root2 = "$TestDrive/multi-root-2"
+            New-Item -ItemType Directory -Path "$root1/pkg" -Force | Out-Null
+            New-Item -ItemType Directory -Path "$root2/pkg" -Force | Out-Null
+            "content" | Set-Content "$root1/pkg/Foo.py"
+            "content" | Set-Content "$root2/pkg/Foo.py"
+
+            $xml = @"
+<coverage>
+  <sources>
+    <source>$root1</source>
+    <source>$root2</source>
+  </sources>
+  <packages>
+    <package name="pkg">
+      <classes>
+        <class filename="pkg/Foo.py">
+          <methods/>
+          <lines>
+            <line number="1" hits="1" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+"@
+            $coverageFile = "$TestDrive/multi-root-ambiguous.xml"
+            $xml | Set-Content $coverageFile
+
+            $result = & $script -FilePath "$root1/pkg/Foo.py" -CoverageFile $coverageFile
+            $result | Should -HaveCount 1
+
+            $missResult = & $script -FilePath "$root2/pkg/Foo.py" -CoverageFile $coverageFile -WarningAction SilentlyContinue
+            $missResult | Should -HaveCount 0
+        }
+
+        It "falls back to the second <source> root when the file is not found under the first" {
+            $root1 = "$TestDrive/fallback-root-1"
+            $root2 = "$TestDrive/fallback-root-2"
+            New-Item -ItemType Directory -Path $root1 -Force | Out-Null
+            New-Item -ItemType Directory -Path "$root2/providers" -Force | Out-Null
+            "content" | Set-Content "$root2/providers/Bar.py"
+
+            $xml = @"
+<coverage>
+  <sources>
+    <source>$root1</source>
+    <source>$root2</source>
+  </sources>
+  <packages>
+    <package name="providers">
+      <classes>
+        <class filename="providers/Bar.py">
+          <methods/>
+          <lines>
+            <line number="1" hits="1" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+"@
+            $coverageFile = "$TestDrive/fallback-coverage.xml"
+            $xml | Set-Content $coverageFile
+
+            $result = & $script -FilePath "$root2/providers/Bar.py" -CoverageFile $coverageFile
+
+            $result | Should -HaveCount 1
+            $result[0].Branches | Should -Be 1
+        }
     }
 
     Context "-Detail" {
