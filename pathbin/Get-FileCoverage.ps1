@@ -7,8 +7,8 @@
 #
 # .PARAMETER CoverageFile
 # Path to the coverage XML file. Supports JaCoCo, CoverageGutters, and Cobertura formats.
-# Defaults to <git repo root>/auto/testRuns/[<subproject>/]last/coverage.xml, inferred via
-# Get-PratProject and Resolve-GitRoot.
+# Defaults to <repo root>/auto/testRuns/<project leaf>/last/coverage.xml, inferred via
+# Get-PratProject and Get-ProjectTestOutputDir.
 
 param (
     [Parameter(Mandatory)] $FilePath,
@@ -18,15 +18,11 @@ param (
 )
 
 if ($null -eq $CoverageFile) {
-    $repoRoot = Resolve-GitRoot $FilePath
-    if (-not $repoRoot) { throw "Cannot infer coverage file: not in a git repo." }
-    $project  = try { Get-PratProject -Location $FilePath } catch { $null }
-    $isNested = $project -and (
-        $project.ContainsKey('parentId') -or
-        ($project.root -replace '\\', '/') -ine $repoRoot
-    )
-    $subDir = if ($isNested) { "$($project.id)/" } else { '' }
-    $CoverageFile = "$repoRoot/auto/testRuns/$($subDir)last/coverage.xml"
+    $project = try { Get-PratProject -Location $FilePath } catch { $null }
+    if (-not $project) {
+        throw "Cannot infer coverage file: $FilePath is not in a registered prat project. Pass -CoverageFile explicitly."
+    }
+    $CoverageFile = "$(Get-ProjectTestOutputDir $project)/last/coverage.xml"
 }
 
 $data = & "$PSScriptRoot/../lib/Get-CoverageData.ps1" -CoverageFile $CoverageFile

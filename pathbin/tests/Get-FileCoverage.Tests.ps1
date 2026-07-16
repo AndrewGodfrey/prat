@@ -303,7 +303,12 @@ Describe "Get-FileCoverage" {
             New-Item -ItemType Directory -Path $srcDir | Out-Null
             "content" | Set-Content "$srcDir/Bar.ps1"
 
-            $coverageDir = "$repoDir/auto/testRuns/last"
+            function Get-PratProject {
+                param($Location)
+                if ($Location -replace '\\', '/' -like "$repoDir*") { @{ id = 'inferrepo'; root = $repoDir } }
+            }
+
+            $coverageDir = "$repoDir/auto/testRuns/inferrepo/last"
             New-Item -ItemType Directory -Path $coverageDir -Force | Out-Null
             @"
 <report name="test">
@@ -320,21 +325,21 @@ Describe "Get-FileCoverage" {
 "@ | Set-Content "$coverageDir/coverage.xml"
         }
 
-        It "infers coverage file from FilePath's git repo root when CoverageFile is not supplied" {
+        It "infers coverage file from FilePath's registered project when CoverageFile is not supplied" {
             $result = & $script -FilePath "$repoDir/src/Bar.ps1"
 
             $result | Should -HaveCount 1
             $result[0].Instructions | Should -Be 7
         }
 
-        It "throws when FilePath is not in a git repo" {
-            { & $script -FilePath "/no-git-repo-here/SomeFile.ps1" } | Should -Throw "*not in a git repo*"
+        It "throws when FilePath is not in a registered prat project" {
+            { & $script -FilePath "/no-git-repo-here/SomeFile.ps1" } | Should -Throw "*not in a registered prat project*"
         }
     }
 
     Context "subproject coverage path inference - parentId" {
         BeforeAll {
-            function Get-PratProject { param($Location) @{ id = 'myproject'; parentId = 'parent' } }
+            function Get-PratProject { param($Location) @{ id = 'myproject'; parentId = 'parent'; root = $repoDir } }
 
             $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
             $repoDir = "$realTestDrive/subprojrepo"
