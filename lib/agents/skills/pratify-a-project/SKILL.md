@@ -14,7 +14,8 @@ Ask for more guidance in this case — it's not fully fleshed out here. One exam
 see `prat/codebaseProfile_prat.ps1`.
 
 Otherwise — for external projects, put prat configuration in another repo:
-- `de/codebaseProfile_de.ps1` — environment-specific (for projects tied to one dev environment e.g. school / personal / work)
+- `de/codebaseProfile_de.ps1` — environment-specific (for projects tied to one dev environment e.g.
+  school / personal / work)
 - `prefs/codebaseProfile_prefs.ps1` — user-global (for projects shared across all the user's environments)
 
 For projects whose source lives *inside* `prefs` or `de` (e.g. `de/lib/projects/myproject`), register them
@@ -218,6 +219,13 @@ package.
 - Run the full test suite (or a relevant subset if the project has a concept of that)
 - Exit non-zero on failure; prat will surface this to the user
 - Receive `$project` and `$CommandParameters`
+- **Coverage is part of the `t` interface, not best-effort.** `t`'s coverage summary and
+  `Get-FileCoverage`/`gcr` must be *correct*, and verified against a real run — after wiring `t`, run it and then
+  `Get-FileCoverage` on a real source file (or `gcr` for the project report), confirming actual per-file
+  line/branch numbers rather than empty output. Coverage formats have edge cases that silently blank the result
+  (e.g. coverage.py emits methodless classes a naive parser drops), so a plausible-looking script is not evidence
+  it works. Measure all non-test source: test files excluded, and files that no test exercises still counted (at
+  0%), not dropped.
 
 ## `deploy`: purpose and requirements
 
