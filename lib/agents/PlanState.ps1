@@ -1,8 +1,8 @@
 using module ..\TextFileEditor\TextFileEditor.psd1
 
 # PlanState.ps1
-# CRLF-safe create/read/update for the three plan-lifecycle frontmatter keys: state, next-step,
-# refined. The model never hand-edits these — only this script writes them.
+# CRLF-safe create/read/update for the plan-lifecycle frontmatter: current-step (with nested name
+# and state) and refined. The model never hand-edits these — only this script writes them.
 #
 # Line-ending detection/preservation and range-based splicing are delegated to TextFileEditor's
 # LineArray class; this file only owns the YAML shape and the step-pointer/advance logic.
@@ -25,10 +25,15 @@ function ConvertFrom-PlanFrontmatterYaml([string[]] $Lines) {
     $i = 0
     while ($i -lt $Lines.Count) {
         $line = $Lines[$i]
-        if ($line -match '^state:\s*(.*)$') {
-            $result.State = ConvertFrom-PlanYamlScalar $matches[1]
-        } elseif ($line -match '^next-step:\s*(.*)$') {
-            $result.NextStep = ConvertFrom-PlanYamlScalar $matches[1]
+        if ($line -match '^current-step:\s*$') {
+            $j = $i + 1
+            while ($j -lt $Lines.Count -and $Lines[$j] -match '^\s+(\S+):\s*(.*)$') {
+                $k = $matches[1]; $v = $matches[2]
+                if     ($k -eq 'name')  { $result.NextStep = ConvertFrom-PlanYamlScalar $v }
+                elseif ($k -eq 'state') { $result.State    = ConvertFrom-PlanYamlScalar $v }
+                $j++
+            }
+            $i = $j - 1
         } elseif ($line -match '^refined:\s*$') {
             $items = @()
             $j = $i + 1
@@ -46,8 +51,11 @@ function ConvertFrom-PlanFrontmatterYaml([string[]] $Lines) {
 
 function ConvertTo-PlanFrontmatterYaml([hashtable] $Frontmatter) {
     $out = @()
-    if ($Frontmatter.State) { $out += "state: $($Frontmatter.State)" }
-    if ($Frontmatter.NextStep) { $out += "next-step: $(ConvertTo-PlanYamlScalar $Frontmatter.NextStep)" }
+    if ($Frontmatter.NextStep -or $Frontmatter.State) {
+        $out += "current-step:"
+        if ($Frontmatter.NextStep) { $out += "  name: $(ConvertTo-PlanYamlScalar $Frontmatter.NextStep)" }
+        if ($Frontmatter.State)    { $out += "  state: $($Frontmatter.State)" }
+    }
     if (@($Frontmatter.Refined).Count -gt 0) {
         $out += "refined:"
         foreach ($item in @($Frontmatter.Refined)) {

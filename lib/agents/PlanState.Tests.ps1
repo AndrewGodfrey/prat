@@ -31,8 +31,9 @@ Describe "Get-PlanState" {
         $path = "$script:testDriveRoot/with-fm.md"
         writeRaw $path @"
 ---
-state: ready-to-implement
-next-step: "Step 3: skills"
+current-step:
+  name: "Step 3: skills"
+  state: ready-to-implement
 refined:
   - "Step 4: launcher"
   - "Step 5: docs"
@@ -51,8 +52,9 @@ refined:
         $path = "$script:testDriveRoot/no-refined.md"
         writeRaw $path @"
 ---
-state: ready-to-plan
-next-step: "Step 2: state script"
+current-step:
+  name: "Step 2: state script"
+  state: ready-to-plan
 ---
 # My Plan
 "@
@@ -84,7 +86,7 @@ Describe "Get-PlanState edge cases" {
 
     It "handles a frontmatter block with no body after it" {
         $path = "$script:testDriveRoot/no-body.md"
-        writeRaw $path "---`r`nstate: ready-to-plan`r`n---"
+        writeRaw $path "---`r`ncurrent-step:`r`n  state: ready-to-plan`r`n---"
 
         (Get-PlanState $path).State | Should -Be 'ready-to-plan'
     }
@@ -134,8 +136,9 @@ Describe "Set-PlanState direct field updates" {
         $path = "$script:testDriveRoot/partial-update.md"
         writeRaw $path @"
 ---
-state: ready-to-plan
-next-step: "Step 2: state script"
+current-step:
+  name: "Step 2: state script"
+  state: ready-to-plan
 ---
 # My Plan
 "@
@@ -170,7 +173,8 @@ next-step: "Step 2: state script"
         $path = "$script:testDriveRoot/replace-refined.md"
         writeRaw $path @"
 ---
-state: ready-to-plan
+current-step:
+  state: ready-to-plan
 refined:
   - "Step 4: launcher"
 ---
@@ -202,8 +206,9 @@ Describe "Set-PlanState -Advance" {
         $path = "$script:testDriveRoot/advance-next.md"
         writeRaw $path @"
 ---
-state: code-complete
-next-step: "Step 1: alpha"
+current-step:
+  name: "Step 1: alpha"
+  state: code-complete
 ---
 # Plan
 
@@ -220,7 +225,8 @@ next-step: "Step 1: alpha"
         $path = "$script:testDriveRoot/advance-levels.md"
         writeRaw $path @"
 ---
-next-step: "Step 1: alpha"
+current-step:
+  name: "Step 1: alpha"
 ---
 # Plan
 
@@ -237,7 +243,8 @@ next-step: "Step 1: alpha"
         $path = "$script:testDriveRoot/advance-tostep.md"
         writeRaw $path @"
 ---
-next-step: "Step 1: alpha"
+current-step:
+  name: "Step 1: alpha"
 ---
 # Plan
 
@@ -255,7 +262,8 @@ next-step: "Step 1: alpha"
         $path = "$script:testDriveRoot/advance-pop-refined.md"
         writeRaw $path @"
 ---
-next-step: "Step 1: alpha"
+current-step:
+  name: "Step 1: alpha"
 refined:
   - "Step 2: beta"
   - "Step 3: gamma"
@@ -279,7 +287,8 @@ refined:
         $path = "$script:testDriveRoot/advance-not-refined.md"
         writeRaw $path @"
 ---
-next-step: "Step 1: alpha"
+current-step:
+  name: "Step 1: alpha"
 ---
 # Plan
 
@@ -296,7 +305,8 @@ next-step: "Step 1: alpha"
         $path = "$script:testDriveRoot/advance-last.md"
         writeRaw $path @"
 ---
-next-step: "Step 2: beta"
+current-step:
+  name: "Step 2: beta"
 ---
 # Plan
 
@@ -357,8 +367,32 @@ Describe "Get-PlanState HasFrontmatter" {
 
     It "is true when frontmatter carries state" {
         $path = "$script:testDriveRoot/hasfm-state.md"
-        writeRaw $path "---`r`nstate: ready-to-plan`r`n---`r`n# Title`r`n"
+        writeRaw $path "---`r`ncurrent-step:`r`n  state: ready-to-plan`r`n---`r`n# Title`r`n"
 
         (Get-PlanState $path).HasFrontmatter | Should -Be $true
+    }
+}
+
+Describe "current-step nested schema" {
+    It "writes state and next-step nested under current-step" {
+        $path = "$script:testDriveRoot/nested-write.md"
+        writeRaw $path "# Plan`n"
+        Set-PlanState -PlanFile $path -State 'ready-to-implement' -NextStep 'Step 3: skills' | Out-Null
+        $raw = readRaw $path
+        $raw | Should -Match '(?m)^current-step:'
+        $raw | Should -Match '(?m)^  name: "Step 3: skills"'
+        $raw | Should -Match '(?m)^  state: ready-to-implement'
+        $raw | Should -Not -Match '(?m)^state:'
+        $raw | Should -Not -Match '(?m)^next-step:'
+    }
+
+    It "round-trips state, next-step and refined through the nested schema" {
+        $path = "$script:testDriveRoot/nested-roundtrip.md"
+        writeRaw $path "# Plan`n"
+        Set-PlanState -PlanFile $path -State 'ready-to-plan' -NextStep 'Step 1: alpha' -Refined @('Step 2: beta') | Out-Null
+        $r = Get-PlanState $path
+        $r.State    | Should -Be 'ready-to-plan'
+        $r.NextStep | Should -Be 'Step 1: alpha'
+        @($r.Refined) | Should -Be @('Step 2: beta')
     }
 }

@@ -16,8 +16,9 @@ is done; it's not appropriate for plans intended for a wider audience.
 
 ```
 ---
-state: ready-to-implement
-next-step: "Step 2: <brief label>"
+current-step:
+  name: "Step 2: <brief label>"
+  state: ready-to-implement
 ---
 ```
 
