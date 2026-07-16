@@ -203,6 +203,78 @@ Describe "Get-FileCoverage" {
         }
     }
 
+    Context "Cobertura methodless class (coverage.py)" {
+        It "returns one '(file)' row with branch counts" {
+            $coberturaXml = @'
+<coverage>
+  <packages>
+    <package name="pkg">
+      <classes>
+        <class filename="C:/repo/pkg/foo.py">
+          <methods/>
+          <lines>
+            <line number="1" hits="1" />
+            <line number="2" hits="0" />
+            <line number="5" hits="2" branch="True" condition-coverage="50% (1/2)" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $coberturaFile = "$TestDrive/fcov-methodless.xml"
+            $coberturaXml | Set-Content $coberturaFile
+
+            $result = & $script -FilePath "C:/repo/pkg/foo.py" -CoverageFile $coberturaFile
+
+            $result | Should -HaveCount 1
+            $result[0].Function | Should -Be "(file)"
+            $result[0].Line     | Should -Be 1
+            $result[0].Branches | Should -Be 2
+            $result[0].Missed   | Should -Be 2
+        }
+
+        It "-Detail returns covered/missed line ranges for the synthesized method" {
+            $coberturaXml = @'
+<coverage>
+  <packages>
+    <package name="pkg">
+      <classes>
+        <class filename="C:/repo/pkg/foo.py">
+          <methods/>
+          <lines>
+            <line number="1" hits="1" />
+            <line number="2" hits="1" />
+            <line number="3" hits="0" />
+            <line number="4" hits="0" />
+            <line number="5" hits="1" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $coberturaFile = "$TestDrive/fcov-methodless-detail.xml"
+            $coberturaXml | Set-Content $coberturaFile
+
+            $result = & $script -FilePath "C:/repo/pkg/foo.py" -CoverageFile $coberturaFile -Detail
+
+            $result | Should -HaveCount 3
+            $result[0].Function  | Should -Be "(file)"
+            $result[0].StartLine | Should -Be 1
+            $result[0].EndLine   | Should -Be 2
+            $result[0].Status    | Should -Be "covered"
+            $result[1].StartLine | Should -Be 3
+            $result[1].EndLine   | Should -Be 4
+            $result[1].Status    | Should -Be "missed"
+            $result[2].StartLine | Should -Be 5
+            $result[2].EndLine   | Should -Be 5
+            $result[2].Status    | Should -Be "covered"
+        }
+    }
+
     Context "-Detail" {
         BeforeAll {
             $detailXml = @'
