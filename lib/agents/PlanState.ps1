@@ -100,6 +100,7 @@ function Get-PlanState([string] $PlanFile) {
         State    = $found.Frontmatter.State
         NextStep = $found.Frontmatter.NextStep
         Refined  = @($found.Frontmatter.Refined)
+        HasFrontmatter = ($found.Range.idxLast -ge 0)
     }
 }
 

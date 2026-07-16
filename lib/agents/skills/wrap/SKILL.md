@@ -72,7 +72,16 @@ Otherwise:
 The step is mid-lifecycle — don't proceed. Point the user at `/code-complete` (implementation
 finished this session) or `/wrap-session` (pausing mid-step).
 
-## Missing or unrecognized state
+## No frontmatter block → treat as ready-to-plan
 
-An older plan without frontmatter, or a state this skill doesn't recognize. Ask the user which
-close applies rather than guessing.
+If `Get-PlanState` reports `HasFrontmatter` false, the plan predates the state mechanism and is
+being wrapped for the first time. Treat it as `ready-to-plan` and run that flow — `Set-PlanState`
+initializes the frontmatter. This is safe under the convention that implementation goes through
+`/code-complete` first (which sets a state), so a plan reaching `/wrap` with no frontmatter is one
+where planning just finished. Exception: if this session actually wrote implementation code for the
+step, use the `code-complete` close instead.
+
+## Unrecognized state → ask
+
+`HasFrontmatter` is true but `state` is a value this skill doesn't handle. Ask the user which close
+applies rather than guessing.

@@ -335,3 +335,30 @@ Describe "Get-PlanStepId" {
         Get-PlanStepId 'gamma' | Should -Be (Get-PlanStepId 'GAMMA')
     }
 }
+
+Describe "Get-PlanState HasFrontmatter" {
+    It "is false when the file has no frontmatter block" {
+        $path = "$script:testDriveRoot/hasfm-none.md"
+        writeRaw $path "# My Plan`r`n`r`nbody`r`n"
+
+        (Get-PlanState $path).HasFrontmatter | Should -Be $false
+    }
+
+    It "is false when the file does not exist" {
+        (Get-PlanState "$script:testDriveRoot/hasfm-missing.md").HasFrontmatter | Should -Be $false
+    }
+
+    It "is true for an empty frontmatter block with no keys" {
+        $path = "$script:testDriveRoot/hasfm-empty.md"
+        writeRaw $path "---`r`n---`r`n# Title`r`n"
+
+        (Get-PlanState $path).HasFrontmatter | Should -Be $true
+    }
+
+    It "is true when frontmatter carries state" {
+        $path = "$script:testDriveRoot/hasfm-state.md"
+        writeRaw $path "---`r`nstate: ready-to-plan`r`n---`r`n# Title`r`n"
+
+        (Get-PlanState $path).HasFrontmatter | Should -Be $true
+    }
+}
