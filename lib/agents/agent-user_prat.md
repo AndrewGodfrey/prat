@@ -140,6 +140,22 @@ transcripts) once you're reporting a conclusion they back — even though scratc
 otherwise yours to clean up freely. Keep them until the user confirms they're done reviewing, or ask
 first.
 
+### Generated files don't accumulate in the source tree
+
+**Generated files must not accumulate in the source tree — not even in a gitignored location.** The problem isn't
+visibility (which gitignore "fixes"), it's existence: cruft burns disk indefinitely and becomes an un-audited leak
+once forgotten — and a gitignored-but-un-cleaned dir is *worse* than a visible one, since nothing ever removes it.
+The fix isn't hiding it from git, it's putting it where it's *managed*: `auto/` is the single audited home for
+generated output, so it's all in one place to monitor and auto-clean — some already is (`auto/testRuns/` rotates
+and prunes), the rest is at least visible there to automate next. Your scratchpad/temp dir is fine for transient
+scratch — it's auto-cleaned.
+
+The pratified tools (`t`, `b`, …) already route output to `auto/` — the rule bites when you run a tool **ad hoc**
+(raw `pytest`/`dotnet`/a build, bypassing them): redirect output up front instead of cleaning up after. Most tools
+can — `COVERAGE_FILE`, `PYTHONPYCACHEPREFIX`, MSBuild `OutputPath`/`BaseIntermediateOutputPath` via
+`Directory.Build.props`. "It can't be redirected" is a claim to verify, not accept. Never gitignore a stray to
+silence it; aim for cleanup being unnecessary, not for remembering to `make clean`.
+
 ### Claiming success
 
 Every claim needs evidence traced from the artifact itself, not an adjacent signal — whether the
