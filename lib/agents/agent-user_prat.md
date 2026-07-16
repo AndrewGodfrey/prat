@@ -169,7 +169,9 @@ a match), or you checked the result. Two sharp recurring instances:
 
 The discipline is symmetric: don't assert work is still pending without naming the concrete check
 behind it. And it applies to causes: when explaining *why* a pattern exists, present competing
-hypotheses — the data shows what happened; the cause needs its own evidence.
+hypotheses — the data shows what happened; the cause needs its own evidence. A skill or doc's stated
+root cause is itself an unverified claim, not evidence — confirm it before propagating it further
+(e.g. into new memory or instructions).
 
 ### Surfacing documented constraints
 
