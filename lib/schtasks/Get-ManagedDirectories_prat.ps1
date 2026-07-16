@@ -12,6 +12,11 @@ if ($AddRecommendedDirectories) {
     @{ path = "$env:userprofile\Downloads\"; days = 14 }
     @{ path = "C:\tmp"; days = 60 }
     @{ path = $env:temp; days = 60 }
+
+    $agentTemp = "C:\Users\${UserName}_agent\AppData\Local\Temp"
+    if (Test-Path $agentTemp) {
+        @{ path = $agentTemp; days = 14 }
+    }
 }
 
 
