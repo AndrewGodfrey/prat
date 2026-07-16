@@ -25,7 +25,7 @@ if ($null -eq $CoverageFile) {
     $CoverageFile = "$(Get-ProjectTestOutputDir $project)/last/coverage.xml"
 }
 
-$data = & "$PSScriptRoot/../lib/Get-CoverageData.ps1" -CoverageFile $CoverageFile
+$data = & "$PSScriptRoot/../lib/Get-CoverageDetails.ps1" -CoverageFile $CoverageFile
 $unitName = $data.instructionUnit ?? "Instructions"
 
 $resolved = Resolve-Path $FilePath -ErrorAction SilentlyContinue

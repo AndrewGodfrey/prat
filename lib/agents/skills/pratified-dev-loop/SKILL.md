@@ -97,7 +97,7 @@ project — `<repoRoot>/auto/testRuns/[<subprojectId>/]last/coverage.xml` — in
 segment when the target is inside a registered subproject. To point at a different run, pass the
 file explicitly: `Get-FileCoverage ... -CoverageFile <path>` / `gcr -coverageFile <path>`.
 
-`Get-CoverageData` and `gcr` support JaCoCo/CoverageGutters and Cobertura XML formats.
+`Get-CoverageDetails` and `gcr` support JaCoCo/CoverageGutters and Cobertura XML formats.
 
 ## Fixing Failures
 

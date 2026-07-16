@@ -84,7 +84,7 @@ FunctionsToExport = @('Get-CurrentUserIsElevated', 'Get-RelativePath', 'Import-P
                       'Format-Duration',
                       'Initialize-TestRunDir', 'Format-AnsiText', 'Write-TestRunResult',
                       'Convert-CoberturaXmlFile', 'Get-PathPrefixesFromWorkspace',
-                      'Get-CoverageData', 'Format-CoverageData', 'Merge-TestSummary', 'Get-TestDispatch')
+                      'Get-CoverageSummary', 'Format-CoverageData', 'Merge-TestSummary', 'Get-TestDispatch')
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()

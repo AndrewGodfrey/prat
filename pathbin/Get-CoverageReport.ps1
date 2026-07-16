@@ -42,7 +42,7 @@ function LoadCoverageReport($coverageFile, $reporoot) {
         Write-Error "Coverage file not found: $coverageFile"
         exit 1
     }
-    return & "$PSScriptRoot/../lib/Get-CoverageData.ps1" -CoverageFile $coverageFile -RepoRoot $reporoot
+    return & "$PSScriptRoot/../lib/Get-CoverageDetails.ps1" -CoverageFile $coverageFile -RepoRoot $reporoot
 }
 
 function CalculateCoverage($counter, [switch] $AsDouble) {

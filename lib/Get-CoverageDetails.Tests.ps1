@@ -1,8 +1,8 @@
 BeforeAll {
-    $script = "$PSScriptRoot/Get-CoverageData.ps1"
+    $script = "$PSScriptRoot/Get-CoverageDetails.ps1"
 }
 
-Describe "Get-CoverageData" {
+Describe "Get-CoverageDetails" {
     It "parses CoverageGutters format into per-file report with absolute paths" {
         $xml = @'
 <report name="test">

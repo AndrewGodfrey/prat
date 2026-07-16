@@ -12,7 +12,7 @@ function Get-CoveragePercentTarget {
 # -CoverageUnitForJaCoco: optional label for the JaCoCo INSTRUCTION counter ('commands', 'lines',
 # 'instructions'). Defaults to 'instructions'. Not valid for Cobertura — that format is
 # self-describing and its unit is derived from the XML content.
-function Get-CoverageData {
+function Get-CoverageSummary {
     param($Path, [string] $CoverageUnitForJaCoco = '')
 
     if (-not $Path -or !(Test-Path $Path)) { return $null }
@@ -34,7 +34,7 @@ function Get-CoverageData {
     } elseif ($xml.DocumentElement.LocalName -eq 'coverage') {
         # Cobertura is self-describing: unit derived from XML; -CoverageUnitForJaCoco is not applicable.
         if ($CoverageUnitForJaCoco) {
-            throw "Get-CoverageData: -CoverageUnitForJaCoco is not valid for Cobertura format (unit is derived from XML content)"
+            throw "Get-CoverageSummary: -CoverageUnitForJaCoco is not valid for Cobertura format (unit is derived from XML content)"
         }
         $branchesValid = [int]$xml.coverage.'branches-valid'
         if ($branchesValid -gt 0) {
@@ -51,14 +51,14 @@ function Get-CoverageData {
         if ($total -eq 0) { return $null }
         $fileCount = ($xml.coverage.packages.package.classes.class | Measure-Object).Count
     } else {
-        throw "Get-CoverageData: unrecognized XML root element '$($xml.DocumentElement.LocalName)'"
+        throw "Get-CoverageSummary: unrecognized XML root element '$($xml.DocumentElement.LocalName)'"
     }
 
     @{ Covered = $covered; Total = $total; FileCount = $fileCount; Pct = $pct; Unit = $unit; Target = $target }
 }
 
 # .SYNOPSIS
-# Formats a CoverageData hashtable (from Get-CoverageData) as a human-readable summary string.
+# Formats a CoverageData hashtable (from Get-CoverageSummary) as a human-readable summary string.
 # Returns null if $Data is null.
 function Format-CoverageData {
     param($Data)

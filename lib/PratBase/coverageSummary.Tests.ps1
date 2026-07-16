@@ -13,17 +13,17 @@ Describe "Format-CoverageData" {
     }
 }
 
-Describe "Get-CoverageData" {
+Describe "Get-CoverageSummary" {
     BeforeAll {
         Mock Get-CoveragePercentTarget -ModuleName PratBase { return 70 }
     }
 
     It "returns null for null path" {
-        Get-CoverageData -Path $null | Should -BeNullOrEmpty
+        Get-CoverageSummary -Path $null | Should -BeNullOrEmpty
     }
 
     It "returns null for non-existent file" {
-        Get-CoverageData -Path "$TestDrive/nonexistent.xml" | Should -BeNullOrEmpty
+        Get-CoverageSummary -Path "$TestDrive/nonexistent.xml" | Should -BeNullOrEmpty
     }
 
     It "parses JaCoCo format: returns Covered, Total, FileCount, Pct, Unit, Target" {
@@ -36,7 +36,7 @@ Describe "Get-CoverageData" {
 </report>
 "@ | Set-Content $f -Encoding utf8NoBOM
 
-        $result = Get-CoverageData -Path $f -CoverageUnitForJaCoco 'commands'
+        $result = Get-CoverageSummary -Path $f -CoverageUnitForJaCoco 'commands'
 
         $result.Covered   | Should -Be 150
         $result.Total     | Should -Be 200
@@ -61,7 +61,7 @@ Describe "Get-CoverageData" {
 </coverage>
 "@ | Set-Content $f -Encoding utf8NoBOM
 
-        $result = Get-CoverageData -Path $f
+        $result = Get-CoverageSummary -Path $f
 
         $result.Covered   | Should -Be 85
         $result.Total     | Should -Be 100
@@ -81,7 +81,7 @@ Describe "Get-CoverageData" {
 </report>
 "@ | Set-Content $f -Encoding utf8NoBOM
 
-        Get-CoverageData -Path $f -CoverageUnitForJaCoco 'commands' | Should -BeNullOrEmpty
+        Get-CoverageSummary -Path $f -CoverageUnitForJaCoco 'commands' | Should -BeNullOrEmpty
     }
 
     It "parses Cobertura format: uses branch coverage when branches-valid > 0" {
@@ -97,7 +97,7 @@ Describe "Get-CoverageData" {
 </coverage>
 "@ | Set-Content $f -Encoding utf8NoBOM
 
-        $result = Get-CoverageData -Path $f
+        $result = Get-CoverageSummary -Path $f
 
         $result.Covered   | Should -Be 30
         $result.Total     | Should -Be 50
@@ -120,7 +120,7 @@ Describe "Get-CoverageData" {
 </coverage>
 "@ | Set-Content $f -Encoding utf8NoBOM
 
-        { Get-CoverageData -Path $f -CoverageUnitForJaCoco 'commands' } | Should -Throw "*CoverageUnitForJaCoco*"
+        { Get-CoverageSummary -Path $f -CoverageUnitForJaCoco 'commands' } | Should -Throw "*CoverageUnitForJaCoco*"
     }
 
     It "returns null for Cobertura with zero lines-valid" {
@@ -132,14 +132,14 @@ Describe "Get-CoverageData" {
 </coverage>
 "@ | Set-Content $f -Encoding utf8NoBOM
 
-        Get-CoverageData -Path $f | Should -BeNullOrEmpty
+        Get-CoverageSummary -Path $f | Should -BeNullOrEmpty
     }
 
     It "returns null for empty XML file (no root element)" {
         $f = "$TestDrive/gcd-empty.xml"
         "" | Set-Content $f -Encoding utf8NoBOM
 
-        Get-CoverageData -Path $f | Should -BeNullOrEmpty
+        Get-CoverageSummary -Path $f | Should -BeNullOrEmpty
     }
 
     It "throws for unrecognized XML root element" {
@@ -149,6 +149,6 @@ Describe "Get-CoverageData" {
 <summary foo="bar" />
 "@ | Set-Content $f -Encoding utf8NoBOM
 
-        { Get-CoverageData -Path $f } | Should -Throw -ExpectedMessage "*unrecognized*"
+        { Get-CoverageSummary -Path $f } | Should -Throw -ExpectedMessage "*unrecognized*"
     }
 }
