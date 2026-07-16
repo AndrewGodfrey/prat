@@ -117,6 +117,53 @@ if ($format -eq 'report') {
 
     $normalizedRepoRoot = if ($RepoRoot) { ($RepoRoot -replace '\\', '/').TrimEnd('/') } else { $null }
 
+    function countCoberturaLines($lines) {
+        $methodLines = @($lines | Where-Object { $_ })
+        $lineCovered = ($methodLines | Where-Object { [int]$_.hits -gt 0 }).Count
+        $lineMissed  = $methodLines.Count - $lineCovered
+        $startLine = if ($methodLines.Count -gt 0) {
+            [int]($methodLines | ForEach-Object { [int]$_.number } | Measure-Object -Minimum).Minimum
+        } else { 0 }
+
+        $instrCovered = 0; $instrMissed = 0
+        foreach ($line in $methodLines) {
+            if ($line.branch -eq 'True' -and $line.'condition-coverage' -match '\((\d+)/(\d+)\)') {
+                $instrCovered += [int]$Matches[1]
+                $instrMissed  += [int]$Matches[2] - [int]$Matches[1]
+            } else {
+                if ([int]$line.hits -gt 0) { $instrCovered++ } else { $instrMissed++ }
+            }
+        }
+
+        @{ lineCovered = $lineCovered; lineMissed = $lineMissed; startLine = $startLine
+           instrCovered = $instrCovered; instrMissed = $instrMissed }
+    }
+
+    function addCoberturaMethodEntry($filePath, $name, $counts) {
+        $methodCovered = if ($counts.lineCovered -gt 0) { 1 } else { 0 }
+        $methodMissed  = 1 - $methodCovered
+
+        $perFileReport[$filePath].LINE.covered        += $counts.lineCovered
+        $perFileReport[$filePath].LINE.missed         += $counts.lineMissed
+        $perFileReport[$filePath].INSTRUCTION.covered += $counts.instrCovered
+        $perFileReport[$filePath].INSTRUCTION.missed  += $counts.instrMissed
+        $perFileReport[$filePath].METHOD.covered      += $methodCovered
+        $perFileReport[$filePath].METHOD.missed       += $methodMissed
+        $totals.LINE.covered        += $counts.lineCovered
+        $totals.LINE.missed         += $counts.lineMissed
+        $totals.INSTRUCTION.covered += $counts.instrCovered
+        $totals.INSTRUCTION.missed  += $counts.instrMissed
+        $totals.METHOD.covered      += $methodCovered
+        $totals.METHOD.missed       += $methodMissed
+
+        [void]$perFileMethodData[$filePath].Add(@{
+            name        = $name
+            startLine   = $counts.startLine
+            INSTRUCTION = @{missed=$counts.instrMissed; covered=$counts.instrCovered}
+            LINE        = @{missed=$counts.lineMissed;  covered=$counts.lineCovered}
+        })
+    }
+
     foreach ($package in $xml.coverage.packages.package) {
         foreach ($class in $package.classes.class) {
             $filename = $class.filename -replace '\\', '/'
@@ -136,45 +183,16 @@ if ($format -eq 'report') {
             }
 
             foreach ($method in $class.methods.method) {
-                $methodLines = @($method.lines.line | Where-Object { $_ })
-                $lineCovered = ($methodLines | Where-Object { [int]$_.hits -gt 0 }).Count
-                $lineMissed  = $methodLines.Count - $lineCovered
-                $startLine = if ($methodLines.Count -gt 0) {
-                    [int]($methodLines | ForEach-Object { [int]$_.number } | Measure-Object -Minimum).Minimum
-                } else { 0 }
+                addCoberturaMethodEntry $filePath $method.name (countCoberturaLines $method.lines.line)
+            }
 
-                $instrCovered = 0; $instrMissed = 0
-                foreach ($line in $methodLines) {
-                    if ($line.branch -eq 'True' -and $line.'condition-coverage' -match '\((\d+)/(\d+)\)') {
-                        $instrCovered += [int]$Matches[1]
-                        $instrMissed  += [int]$Matches[2] - [int]$Matches[1]
-                    } else {
-                        if ([int]$line.hits -gt 0) { $instrCovered++ } else { $instrMissed++ }
-                    }
+            if ($null -eq $class.methods.method) {
+                # coverage.py's Cobertura output emits an empty <methods/> element for every class;
+                # synthesize one pseudo-method from the class's own line data so it isn't dropped.
+                $classLines = @($class.lines.line | Where-Object { $_ })
+                if ($classLines.Count -gt 0) {
+                    addCoberturaMethodEntry $filePath "(file)" (countCoberturaLines $classLines)
                 }
-
-                $methodCovered = if ($lineCovered -gt 0) { 1 } else { 0 }
-                $methodMissed  = 1 - $methodCovered
-
-                $perFileReport[$filePath].LINE.covered        += $lineCovered
-                $perFileReport[$filePath].LINE.missed         += $lineMissed
-                $perFileReport[$filePath].INSTRUCTION.covered += $instrCovered
-                $perFileReport[$filePath].INSTRUCTION.missed  += $instrMissed
-                $perFileReport[$filePath].METHOD.covered      += $methodCovered
-                $perFileReport[$filePath].METHOD.missed       += $methodMissed
-                $totals.LINE.covered        += $lineCovered
-                $totals.LINE.missed         += $lineMissed
-                $totals.INSTRUCTION.covered += $instrCovered
-                $totals.INSTRUCTION.missed  += $instrMissed
-                $totals.METHOD.covered      += $methodCovered
-                $totals.METHOD.missed       += $methodMissed
-
-                [void]$perFileMethodData[$filePath].Add(@{
-                    name        = $method.name
-                    startLine   = $startLine
-                    INSTRUCTION = @{missed=$instrMissed; covered=$instrCovered}
-                    LINE        = @{missed=$lineMissed;  covered=$lineCovered}
-                })
             }
 
             $perFileLineData[$filePath] = @(

@@ -677,6 +677,70 @@ Describe "Get-CoverageData" {
             $result.totals.LINE.covered | Should -Be 1
             $result.totals.LINE.missed  | Should -Be 1
         }
+
+        It "synthesizes a pseudo-method for methodless classes (coverage.py output)" {
+            $xml = @'
+<coverage>
+  <packages>
+    <package name="prigTools">
+      <classes>
+        <class filename="C:/repo/pkg/prigTools.py">
+          <methods/>
+          <lines>
+            <line number="1" hits="1" branch="False" />
+            <line number="2" hits="0" branch="False" />
+            <line number="5" hits="2" branch="True" condition-coverage="50% (1/2)" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $f = "$TestDrive/cobertura-methodless.xml"
+            $xml | Set-Content $f
+
+            $result = & $script -CoverageFile $f
+
+            $methods = $result.perFileMethodData["C:/repo/pkg/prigTools.py"]
+            $methods | Should -HaveCount 1
+            $methods[0].name                    | Should -Be "(file)"
+            $methods[0].startLine               | Should -Be 1
+            $methods[0].LINE.covered             | Should -Be 2
+            $methods[0].LINE.missed              | Should -Be 1
+            $methods[0].INSTRUCTION.covered      | Should -Be 2
+            $methods[0].INSTRUCTION.missed       | Should -Be 2
+
+            $result.perFileReport["C:/repo/pkg/prigTools.py"].LINE.covered | Should -Be 2
+            $result.perFileReport["C:/repo/pkg/prigTools.py"].LINE.missed  | Should -Be 1
+            $result.perFileReport["C:/repo/pkg/prigTools.py"].METHOD.covered | Should -Be 1
+            $result.perFileReport["C:/repo/pkg/prigTools.py"].METHOD.missed  | Should -Be 0
+            $result.totals.LINE.covered | Should -Be 2
+            $result.totals.LINE.missed  | Should -Be 1
+        }
+
+        It "does not synthesize a pseudo-method for a methodless class with no line data" {
+            $xml = @'
+<coverage>
+  <packages>
+    <package name="prigTools">
+      <classes>
+        <class filename="C:/repo/pkg/Empty.py">
+          <methods/>
+          <lines></lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $f = "$TestDrive/cobertura-methodless-empty.xml"
+            $xml | Set-Content $f
+
+            $result = & $script -CoverageFile $f
+
+            $result.perFileMethodData["C:/repo/pkg/Empty.py"] | Should -HaveCount 0
+        }
     }
 
     It "returns instructionUnit = 'Instructions' for JaCoCo/CoverageGutters format" {
