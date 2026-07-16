@@ -102,6 +102,7 @@ function Write-PlanFrontmatter([string] $PlanFile, [LineArray] $LineArray, $Rang
 }
 
 function Get-PlanState([string] $PlanFile) {
+    $PlanFile = Expand-TildePath $PlanFile
     $raw = if (Test-Path $PlanFile) { [System.IO.File]::ReadAllText($PlanFile) } else { '' }
     $found = Find-PlanFrontmatter ([LineArray]::new($raw))
     return [pscustomobject]@{
@@ -139,6 +140,7 @@ function Set-PlanState {
         [string] $ToStep
     )
 
+    $PlanFile = Expand-TildePath $PlanFile
     $raw = if (Test-Path $PlanFile) { [System.IO.File]::ReadAllText($PlanFile) } else { '' }
     $la = [LineArray]::new($raw)
     $found = Find-PlanFrontmatter $la

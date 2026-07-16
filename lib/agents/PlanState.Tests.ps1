@@ -65,6 +65,33 @@ current-step:
     }
 }
 
+Describe "Get-PlanState tilde paths" {
+    It "expands a leading '~' before resolving (raw File I/O cannot read a literal '~')" {
+        # ~ only expands relative to $HOME, so the plan file must live under $HOME for this to
+        # exercise the tilde path. Created and cleaned up here rather than in TestDrive.
+        $tildeDirName = "planStateTest_$([guid]::NewGuid().ToString('N'))"
+        $realTildeDir = Join-Path $HOME $tildeDirName
+        try {
+            New-Item -ItemType Directory $realTildeDir | Out-Null
+            $path = "$realTildeDir/plan.md"
+            writeRaw $path @"
+---
+current-step:
+  name: "Step 1: tilde test"
+  state: ready-to-implement
+---
+# My Plan
+"@
+
+            $result = Get-PlanState "~/$tildeDirName/plan.md"
+
+            $result.State | Should -Be 'ready-to-implement'
+        } finally {
+            Remove-Item $realTildeDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 Describe "Get-PlanState edge cases" {
     It "returns nulls when the file does not exist" {
         $result = Get-PlanState "$script:testDriveRoot/does-not-exist.md"
