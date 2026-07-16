@@ -202,6 +202,19 @@ Describe "Set-PlanState -Advance" {
         (Get-PlanState $path).NextStep | Should -Be 'Step 1: alpha'
     }
 
+    It "picks the only step heading when the plan has exactly one" {
+        $path = "$script:testDriveRoot/advance-single.md"
+        writeRaw $path @"
+# Plan
+
+## Step 1: alpha
+"@
+
+        Set-PlanState -PlanFile $path -Advance | Out-Null
+
+        (Get-PlanState $path).NextStep | Should -Be 'Step 1: alpha'
+    }
+
     It "advances to the heading after the current pointer" {
         $path = "$script:testDriveRoot/advance-next.md"
         writeRaw $path @"

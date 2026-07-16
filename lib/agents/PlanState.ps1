@@ -147,7 +147,7 @@ function Set-PlanState {
 
     if ($Advance) {
         $bodyRange = @{ idxFirst = $range.idxLast + 1; idxLast = $la.GetLineCount() - 1 }
-        $headings = Get-PlanStepHeadings $la $bodyRange
+        $headings = @(Get-PlanStepHeadings $la $bodyRange)
         if (@($headings).Count -eq 0) {
             throw "Set-PlanState: no step headings found in '$PlanFile' - cannot advance."
         }
