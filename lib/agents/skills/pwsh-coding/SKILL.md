@@ -303,6 +303,15 @@ reliably resolve it under a sandboxed/restricted account either (`Access denied`
 not recognized"). If a test needs a real TLS server and the project already has one with its own TLS
 stack, drive that instead of standing up an `SslStream` server from a PEM cert.
 
+# ProcessStartInfo UTF8 encoding writes a BOM that breaks a child pwsh's parser
+
+Setting `StandardInputEncoding`/`StandardOutputEncoding` on a `System.Diagnostics.ProcessStartInfo`
+to `[System.Text.Encoding]::UTF8` writes a BOM preamble onto the stream. If the child process reads
+that stdin with `[scriptblock]::Create($text)` (or otherwise parses it as PowerShell source), the
+BOM becomes part of the first token, breaking parsing: `The term '<BOM>[pscustomobject]@' is not
+recognized as a name of a cmdlet...`. Use `[System.Text.UTF8Encoding]::new($false)` (BOM-less)
+instead for both properties.
+
 # Pester: shadowing module functions for standalone scripts
 
 Pester's `Mock` only works for module-exported functions called within a module scope — it cannot
