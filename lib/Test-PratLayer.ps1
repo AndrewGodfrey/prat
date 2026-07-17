@@ -17,6 +17,7 @@ $repoRoot = if ($CommandParameters.ContainsKey('RepoRoot')) {
     $project.root
 }
 $repoRoot   = $repoRoot -replace '\\', '/'
+$outputDir  = if ($CommandParameters['OutputDir']) { $CommandParameters['OutputDir'] } else { Get-ProjectTestOutputDir $project }
 $pathToTest = &"$HOME/prat/lib/Resolve-TestFocus" $CommandParameters['Focus'] $repoRoot
 
 $subTargets = @(Get-PratTestTargetsUnder $repoRoot)
@@ -28,7 +29,7 @@ if ($subTargets.Count -eq 0) {
         -NoCoverage:$CommandParameters['NoCoverage'] `
         -PathToTest $pathToTest `
         -RepoRoot $repoRoot `
-        -OutputDir $CommandParameters['OutputDir'] `
+        -OutputDir $outputDir `
         -IncludeIntegrationTests:$CommandParameters['IncludeIntegrationTests'] `
         -Integration:$CommandParameters['Integration'] `
         -UseAlternateCollector:$CommandParameters['UseAlternateCollector'] `
@@ -44,7 +45,7 @@ if ($subTargets.Count -eq 0) {
             -NoCoverage:$CommandParameters['NoCoverage'] `
             -PathToTest $pathToTest `
             -RepoRoot $repoRoot `
-            -OutputDir $CommandParameters['OutputDir'] `
+            -OutputDir $outputDir `
             -IncludeIntegrationTests:$CommandParameters['IncludeIntegrationTests'] `
             -Integration:$CommandParameters['Integration'] `
             -UseAlternateCollector:$CommandParameters['UseAlternateCollector'] `

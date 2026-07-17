@@ -26,7 +26,7 @@ exit /b 0
         $savedPath = $env:PATH
         $env:PATH = "$script:fakeDotnetDir;$env:PATH"
         try {
-            $output = & $script:dotnetScript -TestArgs @("fake.csproj") -NoCoverage -RepoRoot $repoRoot
+            $output = & $script:dotnetScript -TestArgs @("fake.csproj") -NoCoverage -RepoRoot $repoRoot -OutputDir "$repoRoot/auto/testRuns"
         } finally {
             $env:PATH = $savedPath
         }
@@ -40,7 +40,7 @@ exit /b 0
         $savedPath = $env:PATH
         $env:PATH = "$script:fakeDotnetDir;$env:PATH"
         try {
-            $output = & $script:dotnetScript -TestArgs @("fake.csproj") -NoCoverage -RepoRoot $repoRoot
+            $output = & $script:dotnetScript -TestArgs @("fake.csproj") -NoCoverage -RepoRoot $repoRoot -OutputDir "$repoRoot/auto/testRuns"
         } finally {
             $env:PATH = $savedPath
         }
@@ -55,7 +55,7 @@ exit /b 0
         $savedPath = $env:PATH
         $env:PATH = "$script:fakeDotnetDir;$env:PATH"
         try {
-            $warnings = & $script:dotnetScript -TestArgs @("fake.csproj") -RepoRoot $repoRoot 3>&1 |
+            $warnings = & $script:dotnetScript -TestArgs @("fake.csproj") -RepoRoot $repoRoot -OutputDir "$repoRoot/auto/testRuns" 3>&1 |
                 Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
         } finally {
             $env:PATH = $savedPath

@@ -131,7 +131,7 @@ Describe "Invoke-PesterWithSummary summary file" {
 '@ | Set-Content $coverageDest
         }
 
-        & $coverageScript -PathToTest "somePath" -RepoRoot $testRoot
+        & $coverageScript -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
 
         $summaryPath = "$testRoot/auto/testRuns/last/summary.txt"
         $summaryPath | Should -Exist
@@ -145,7 +145,7 @@ Describe "Invoke-PesterWithSummary summary file" {
     It "writes summary.txt to testRuns/last when coverage is disabled" {
         $testRoot = "$TestDrive/disabled-test"
 
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
 
         $summaryPath = "$testRoot/auto/testRuns/last/summary.txt"
         $summaryPath | Should -Exist
@@ -167,7 +167,7 @@ Describe "Invoke-PesterWithSummary summary file" {
     It "echoes summary.txt after every run" {
         $testRoot = "$TestDrive/summary-always-test"
 
-        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
 
         $output | Where-Object { $_ -match "Passed: 5" } | Should -Not -BeNullOrEmpty
         $output | Where-Object { $_ -match "Failed: 2" } | Should -Not -BeNullOrEmpty
@@ -199,7 +199,7 @@ Describe "Invoke-PesterWithSummary smart filter" {
         Mock Write-Progress {} -Verifiable
         $testRoot = "$TestDrive/filter-pass"
 
-        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
 
         $output | Where-Object { $_ -match '\[\+\]' } | Should -BeNullOrEmpty
         Should -Invoke -CommandName Write-Progress -Times 1 -ParameterFilter {$Status -match 'test\.Tests\.ps1'}
@@ -214,7 +214,7 @@ Describe "Invoke-PesterWithSummary smart filter" {
             [PSCustomObject]@{ PassedCount = 1; FailedCount = 0 }
         }
 
-        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
 
         $output | Where-Object { $_ -match 'Starting test run' } | Should -BeNullOrEmpty
         $output | Where-Object { $_ -match 'verbose line' } | Should -BeNullOrEmpty
@@ -228,7 +228,7 @@ Describe "Invoke-PesterWithSummary smart filter" {
             [PSCustomObject]@{ PassedCount = 0; FailedCount = 1 }
         }
 
-        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
 
         $output | Where-Object { $_ -match '\[-\]' } | Should -Not -BeNullOrEmpty
         $output | Where-Object { $_ -match "Expected 'foo'" } | Should -Not -BeNullOrEmpty
@@ -241,7 +241,7 @@ Describe "Invoke-PesterWithSummary smart filter" {
             [PSCustomObject]@{ PassedCount = 0; FailedCount = 1 }
         }
 
-        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
 
         $output | Should -Not -Contain "`e[92mOK`e[0m"
     }
@@ -253,7 +253,7 @@ Describe "Invoke-PesterWithSummary smart filter" {
             [PSCustomObject]@{ PassedCount = 0; FailedCount = 7 }
         }
 
-        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
 
         $output | Where-Object { $_ -match 'suppressed' }    | Should -Not -BeNullOrEmpty
         $output | Where-Object { $_ -match 'test-run\.txt' } | Should -Not -BeNullOrEmpty
@@ -266,7 +266,7 @@ Describe "Invoke-PesterWithSummary smart filter" {
             [PSCustomObject]@{ PassedCount = 0; FailedCount = 1 }
         }
 
-        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
 
         $output | Where-Object { $_ -match 'test-run\.txt' } | Should -Not -BeNullOrEmpty
         $output | Where-Object { $_ -match 'suppressed' }    | Should -BeNullOrEmpty
@@ -279,7 +279,7 @@ Describe "Invoke-PesterWithSummary smart filter" {
             [PSCustomObject]@{ PassedCount = 3; FailedCount = 0 }
         }
 
-        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
 
         $output | Where-Object { $_ -match 'test-run\.txt' } | Should -BeNullOrEmpty
     }
@@ -288,7 +288,7 @@ Describe "Invoke-PesterWithSummary smart filter" {
         $testRoot = "$TestDrive/exception-propagate"
         Mock Invoke-PesterAsJob { throw "Pester crashed" }
 
-        { & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot } |
+        { & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns" } |
             Should -Throw "Pester crashed"
     }
 
@@ -296,7 +296,7 @@ Describe "Invoke-PesterWithSummary smart filter" {
         $testRoot = "$TestDrive/exception-log"
         Mock Invoke-PesterAsJob { throw "Pester crashed" }
 
-        try { & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot } catch {}
+        try { & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns" } catch {}
 
         "$testRoot/auto/testRuns/last/test-run.txt" | Should -Exist
     }
@@ -310,7 +310,7 @@ Describe "Invoke-PesterWithSummary smart filter" {
         }
         Mock Write-Progress {} -Verifiable
 
-        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        $output = & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
 
         # Combined line must not appear
         $output | Where-Object { $_ -match '\[\+\] some/test\.Tests\.ps1 1\.23s' } | Should -BeNullOrEmpty
@@ -337,7 +337,7 @@ Describe "Invoke-PesterWithSummary test run directory management" {
     It "creates test-run.txt log file in testRuns/last" {
         $testRoot = "$TestDrive/log-test"
 
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
 
         "$testRoot/auto/testRuns/last/test-run.txt" | Should -Exist
     }
@@ -345,8 +345,8 @@ Describe "Invoke-PesterWithSummary test run directory management" {
     It "rotates previous testRuns/last to a timestamped directory on second run" {
         $testRoot = "$TestDrive/rotate-test"
 
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
 
         $timestampDirs = Get-ChildItem "$testRoot/auto/testRuns" -Directory |
             Where-Object { $_.Name -ne 'last' }
@@ -357,7 +357,7 @@ Describe "Invoke-PesterWithSummary test run directory management" {
     It "records PathToTest and RepoRoot at the top of test-run.txt" {
         $testRoot = "$TestDrive/params-header-test"
 
-        & $coverageScript -NoCoverage -PathToTest "focusedPath" -RepoRoot $testRoot
+        & $coverageScript -NoCoverage -PathToTest "focusedPath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
 
         $logContent = Get-Content "$testRoot/auto/testRuns/last/test-run.txt"
         $logContent[0] | Should -Match "RepoRoot:.*$([regex]::Escape($testRoot))"
@@ -369,10 +369,10 @@ Describe "Invoke-PesterWithSummary test run directory management" {
 
         # Run 4 times: run 1 creates 'last'; runs 2-4 rotate it to timestamp dirs.
         # With N=2: after run 4 there are 3 timestamp dirs, so the oldest is deleted.
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
-        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
+        & $coverageScript -NoCoverage -PathToTest "somePath" -RepoRoot $testRoot -OutputDir "$testRoot/auto/testRuns"
 
         $timestampDirs = Get-ChildItem "$testRoot/auto/testRuns" -Directory |
             Where-Object { $_.Name -ne 'last' }

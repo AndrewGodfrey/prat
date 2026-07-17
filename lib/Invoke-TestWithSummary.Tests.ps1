@@ -16,8 +16,8 @@ BeforeAll {
             GetCoverageFile = $extra.ContainsKey('GetCoverageFile') ? $extra.GetCoverageFile : { param($rd) $null }
             GetTestResult   = $extra.ContainsKey('GetTestResult')   ? $extra.GetTestResult   : { param($s) @{ Passed = 3; Failed = 0; FatalError = $null } }
         }
+        $p.OutputDir = $extra.ContainsKey('OutputDir') ? $extra.OutputDir : "$TestDrive/output-$(New-Guid)"
         if ($extra.ContainsKey('LogHeader'))     { $p.LogHeader     = $extra.LogHeader }
-        if ($extra.ContainsKey('OutputDir'))     { $p.OutputDir     = $extra.OutputDir }
         if ($extra.ContainsKey('PassThru'))      { $p.PassThru      = $extra.PassThru }
         & $script:harness @p
     }
@@ -31,19 +31,33 @@ Describe "Invoke-TestWithSummary" {
         Mock getRetention { 5 }
     }
 
-    It "creates runDir under <RepoRoot>/auto/testRuns/last" {
-        $root = "$TestDrive/repo-rundir"
-        invokeHarness @{ RepoRoot = $root }
-        "$root/auto/testRuns/last" | Should -Exist
+    It "creates runDir under <OutputDir>/last" {
+        $outputDir = "$TestDrive/repo-rundir"
+        invokeHarness @{ OutputDir = $outputDir }
+        "$outputDir/last" | Should -Exist
+    }
+
+    It "throws when -OutputDir is not supplied (no bare-root fallback)" {
+        $p = @{
+            StartTime       = [DateTimeOffset]::UtcNow
+            RepoRoot        = "$TestDrive/repo-missing-outputdir"
+            InitialState    = @{ failuresSeen = 0 }
+            TestCommand     = { }
+            ProcessLine     = { param($l, $s) $null }
+            RenderResult    = { param($s) }
+            GetCoverageFile = { param($rd) $null }
+            GetTestResult   = { param($s) @{ Passed = 0; Failed = 0; FatalError = $null } }
+        }
+        { & $script:harness @p } | Should -Throw "*-OutputDir is required*"
     }
 
     It "writes LogHeader lines to test-run.txt" {
-        $root = "$TestDrive/repo-header"
+        $outputDir = "$TestDrive/repo-header"
         invokeHarness @{
-            RepoRoot  = $root
-            LogHeader = @("RepoRoot: $root", "TestArgs: foo.csproj", "")
+            OutputDir = $outputDir
+            LogHeader = @("RepoRoot: something", "TestArgs: foo.csproj", "")
         }
-        $log = Get-Content "$root/auto/testRuns/last/test-run.txt"
+        $log = Get-Content "$outputDir/last/test-run.txt"
         $log[0] | Should -Match 'RepoRoot:'
         $log[1] | Should -Be "TestArgs: foo.csproj"
     }
@@ -79,23 +93,16 @@ Describe "Invoke-TestWithSummary" {
     }
 
     It "injects state.logFile for use by ProcessLine" {
-        $root  = "$TestDrive/repo-logfile"
+        $outputDir = "$TestDrive/repo-logfile"
         $state = @{ failuresSeen = 0 }
         invokeHarness @{
-            RepoRoot     = $root
+            OutputDir    = $outputDir
             InitialState = $state
             TestCommand  = { "hello" }
             ProcessLine  = { param($l, $s) $s.capturedLogFile = $s.logFile; $null }
         }
         $state.capturedLogFile | Should -Match 'test-run\.txt$'
-        $state.capturedLogFile | Should -Match 'auto.testRuns.last'
-    }
-
-    It "uses -OutputDir directly instead of auto/testRuns" {
-        $customDir = "$TestDrive/custom-runs"
-        New-Item $customDir -ItemType Directory | Out-Null
-        invokeHarness @{ OutputDir = $customDir }
-        "$customDir/last" | Should -Exist
+        $state.capturedLogFile | Should -Match ([regex]::Escape($outputDir))
     }
 
     It "returns result object and skips Write-TestRunResult when -PassThru is set" {

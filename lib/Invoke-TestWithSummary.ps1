@@ -38,19 +38,13 @@ param(
     [switch]      $PassThru
 )
 
-function getAutoDir($root) {
-    # TODO: Also check if .gitignore is set up to ignore it.
-    # TODO: Share code with other scripts that use auto
-    $dir = "$root/auto"
-    if (!(Test-Path $dir)) { New-Item $dir -ItemType Directory | Out-Null }
-    $dir
-}
-
 function getRetention() { & (Resolve-PratLibFile "lib/Get-TestRunRetention.ps1") }
 
-$resolvedOutputDir = if ($OutputDir) { $OutputDir } else { "$(getAutoDir $RepoRoot)/testRuns" }
-if (!(Test-Path $resolvedOutputDir)) { New-Item $resolvedOutputDir -ItemType Directory | Out-Null }
-$runDir  = Initialize-TestRunDir -OutputDir $resolvedOutputDir -Retention (getRetention)
+if (-not $OutputDir) {
+    throw "Invoke-TestWithSummary: -OutputDir is required (e.g. via Get-ProjectTestOutputDir)"
+}
+if (!(Test-Path $OutputDir)) { New-Item $OutputDir -ItemType Directory | Out-Null }
+$runDir  = Initialize-TestRunDir -OutputDir $OutputDir -Retention (getRetention)
 $logFile = "$runDir/test-run.txt"
 $LogHeader | Out-File $logFile -Encoding utf8NoBOM
 

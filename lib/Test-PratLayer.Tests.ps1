@@ -15,7 +15,7 @@ BeforeAll {
 Describe "Test-PratLayer.ps1" {
     BeforeAll {
         Mock Invoke-PesterWithSummary {}
-        $project = @{ root = "C:/test/repo" }
+        $project = @{ root = "C:/test/repo"; id = "repo"; repo = @{ root = "C:/test/repo" } }
     }
 
     It "runs coverage by default" {
@@ -36,6 +36,16 @@ Describe "Test-PratLayer.ps1" {
     It "forwards an explicit -RepoRoot" {
         & $scriptToTest $project -CommandParameters @{RepoRoot = "customRoot"}
         Should -Invoke Invoke-PesterWithSummary -ParameterFilter { $RepoRoot -eq "customRoot" }
+    }
+
+    It "computes OutputDir via Get-ProjectTestOutputDir when not specified" {
+        & $scriptToTest $project -CommandParameters @{}
+        Should -Invoke Invoke-PesterWithSummary -ParameterFilter { $OutputDir -eq (Get-ProjectTestOutputDir $project) }
+    }
+
+    It "forwards an explicit -OutputDir instead of computing one" {
+        & $scriptToTest $project -CommandParameters @{OutputDir = "custom/output/dir"}
+        Should -Invoke Invoke-PesterWithSummary -ParameterFilter { $OutputDir -eq "custom/output/dir" }
     }
 
     It "forwards -IncludeIntegrationTests" {
@@ -66,7 +76,7 @@ Describe "Test-PratLayer.ps1 sub-target aggregation" {
         New-Item -ItemType Directory "$root/repo/lib/unrelated" -Force | Out-Null
         $runDir = "$root/runDir"
         New-Item -ItemType Directory $runDir -Force | Out-Null
-        $project = @{ root = "$root/repo" }
+        $project = @{ root = "$root/repo"; id = "repo"; repo = @{ root = "$root/repo" } }
 
         # A fake sub-target: `.test` can be a scriptblock (same as a script path, from `&`'s POV).
         function subTargets() {
