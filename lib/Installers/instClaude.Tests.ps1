@@ -125,6 +125,32 @@ Describe "Install-ClaudeSkillSet" {
         "$destDir\my-skill" | Should -Exist
     }
 
+    It "removes a stale file from a deployed skill dir when its source no longer exists" {
+        mkdir "$srcDir\my-skill" | Out-Null
+        "content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
+        # Pre-existing deployed skill dir carrying a stale, read-only file (prior deploys set read-only)
+        mkdir "$destDir\my-skill" | Out-Null
+        "old" | Out-File "$destDir\my-skill\SKILL.md" -Encoding utf8NoBOM
+        $stale = "$destDir\my-skill\Old-Helper.ps1"
+        "stale" | Out-File $stale -Encoding utf8NoBOM
+        Set-ItemProperty $stale -Name IsReadOnly -Value $true
+
+        Install-ClaudeSkillSet $stage @(@{ set = @("my-skill"); srcDir = $srcDir }) $destDir
+
+        $stale | Should -Not -Exist
+    }
+
+    It "retains a deployed file whose source still exists" {
+        mkdir "$srcDir\my-skill" | Out-Null
+        "content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM
+        "helper" | Out-File "$srcDir\my-skill\Helper.ps1" -Encoding utf8NoBOM
+        mkdir $destDir | Out-Null
+
+        Install-ClaudeSkillSet $stage @(@{ set = @("my-skill"); srcDir = $srcDir }) $destDir
+
+        "$destDir\my-skill\Helper.ps1" | Should -Exist
+    }
+
     It "throws if a skill in the set does not exist in srcDir" {
         mkdir "$srcDir\real-skill" | Out-Null
         "content" | Out-File "$srcDir\real-skill\SKILL.md" -Encoding utf8NoBOM

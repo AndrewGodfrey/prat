@@ -68,6 +68,7 @@ function Install-ClaudeSkillSet($stage, $sources, [string] $destDir) {
             if ($entry.set -contains $skillDir.Name) {
                 $destSkillDir = Join-Path $destDir $skillDir.Name
                 Install-Folder $stage $destSkillDir
+                $deployedNames = @()
                 foreach ($file in Get-ChildItem -File $skillDir.FullName) {
                     # Skip test files; they're for source-side validation, not deployment.
                     if ($file.Name -like '*.Tests.ps1') { continue }
@@ -90,6 +91,15 @@ function Install-ClaudeSkillSet($stage, $sources, [string] $destDir) {
                         $newContent = $header + "`n`n" + $content
                     }
                     Install-TextToFile $stage (Join-Path $destSkillDir $file.Name) $newContent -SetReadOnly
+                    $deployedNames += $file.Name
+                }
+                # Remove stale files whose source no longer exists (e.g. a script moved to another skill).
+                foreach ($destFile in Get-ChildItem -File $destSkillDir -ErrorAction SilentlyContinue) {
+                    if ($destFile.Name -notin $deployedNames) {
+                        $stage.OnChange()
+                        Set-ItemProperty $destFile.FullName -Name IsReadOnly -Value $false -ErrorAction SilentlyContinue
+                        Remove-Item $destFile.FullName -Force
+                    }
                 }
             }
         }
