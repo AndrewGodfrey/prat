@@ -93,7 +93,7 @@ Describe "Find-LayerViolationsInContent" {
 
         It "flags /q/src/ work path when in config" {
             # Mirrors: prat-run-tests/SKILL.md example added in pending-layer-violations branch
-            $content = "t $($script:workPathPat)CloudTest/private/Services/Foo/UnitTests   # .NET"
+            $content = "t $($script:workPathPat)Foo/private/Services/Foo/UnitTests   # .NET"
             $result = @(Find-LayerViolationsInContent -Content $content -RelPath "lib/agents/skills/prat-run-tests/SKILL.md" -Config $script:augmentedConfig)
 
             $result | Should -HaveCount 1
