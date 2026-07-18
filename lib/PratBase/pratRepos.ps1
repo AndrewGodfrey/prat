@@ -188,6 +188,15 @@ function Get-PratRepoIndex {
     }
 }
 
+# Resolve a registered repo id to its root path, or $null if the id isn't registered
+# (or there's no repo index). Unlike Get-PratRepo/Get-PratProject (which resolve by location),
+# this looks a repo up by its declared id.
+function Get-PratRepoRoot([string] $id) {
+    $index = Get-PratRepoIndex (Get-RepoProfileFiles)
+    if ($null -eq $index -or -not $index.repos.ContainsKey($id)) { return $null }
+    return $index.repos[$id].root
+}
+
 # Resolve-JunctionInPath: if $path itself or any ancestor is a Windows NTFS junction,
 # returns the path with that junction replaced by its target. Otherwise returns $path.
 #
