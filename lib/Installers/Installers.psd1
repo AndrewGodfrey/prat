@@ -79,7 +79,7 @@ FunctionsToExport = @(
     'Install-DailyScheduledTask', 'Install-AtLogonScheduledTask',
 	'Install-InteractiveAlias', 'Remove-InteractiveAlias',
     'Get-DotnetSdkRequirement',
-	'Install-PratPackage',
+	'Install-PratPackage', 'Set-ClaudePinnedVersion',
 	'Install-WingetPackage',
 	'Install-NugetPackage', 'Add-NugetPackageType',
     'Install-StartAutoHotKeyScript',

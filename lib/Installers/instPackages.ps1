@@ -189,6 +189,12 @@ function isClaudeRunning() {
 }
 
 $script:claudeGcsBucketUrl = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases"
+$script:claudePinnedVersion = $null
+
+# Pin Claude to a specific version instead of always tracking latest. Pass $null to resume tracking latest.
+function Set-ClaudePinnedVersion([string] $Version) {
+    $script:claudePinnedVersion = $Version
+}
 
 function getInstalledClaudeVersion() {
     $output = (claude --version 2>&1)
@@ -231,6 +237,7 @@ function installClaude($stage, $targetVersion) {
 function getClaudeInstaller() {
     return @{
         getLatestVersion = {
+            if ($script:claudePinnedVersion) { return $script:claudePinnedVersion }
             try { (Invoke-RestMethod "$script:claudeGcsBucketUrl/latest").Trim() }
             catch { $null }
         }

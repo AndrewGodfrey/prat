@@ -260,6 +260,20 @@ Describe "getClaudeInstaller" {
 
             $result | Should -BeNullOrEmpty
         }
+
+        It "returns the pinned version instead of hitting GCS when one is set" {
+            Mock -ModuleName Installers Invoke-RestMethod { throw "should not be called" }
+            InModuleScope Installers { Set-ClaudePinnedVersion "1.2.3" }
+
+            $result = InModuleScope Installers { &((getClaudeInstaller).getLatestVersion) }
+
+            $result | Should -Be "1.2.3"
+            Should -Not -Invoke Invoke-RestMethod -ModuleName Installers
+        }
+
+        AfterEach {
+            InModuleScope Installers { Set-ClaudePinnedVersion $null }
+        }
     }
 }
 
