@@ -75,7 +75,7 @@ FunctionsToExport = @('Get-CurrentUserIsElevated', 'Get-RelativePath', 'Import-P
                       'Get-CurrentGitForkpoint', 'Get-ForkpointCacheIsValid', 'Set-ForkpointCache', 'Get-ForkpointRelationship',
                       'New-Subfolder', 'New-FolderAndParents', 'Get-HtmlFromClipboard', 'Invoke-PesterAsJob',
                       'Get-DevToolPath',
-                      'Get-PratRepo', 'Get-PratProject', 'Get-PratRepoRoot', 'Get-PratTestTargetsUnder', 'Resolve-ProjectTestScript',
+                      'Get-PratRepo', 'Get-PratProject', 'Get-PratRepoRoot', 'Get-PratRepoEntry', 'Get-PratTestTargetsUnder', 'Resolve-ProjectTestScript',
                       'Get-PratAgentGrantedPaths',
                       'Get-AgentRoles', 'Sync-RepoSkillJunctions', 'Sync-RoleAgents',
                       'Get-DetectedTestFrameworks', 'Get-ProjectTestOutputDir', 'Find-ProjectShortcut', 'Resolve-JunctionInPath',
