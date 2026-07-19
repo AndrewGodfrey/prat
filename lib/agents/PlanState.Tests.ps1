@@ -3,6 +3,7 @@ BeforeDiscovery {
 }
 
 BeforeAll {
+    Import-Module "$PSScriptRoot/../PratBase/PratBase.psd1" -Force
     . "$PSScriptRoot/PlanState.ps1"
     $script:testDriveRoot = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
 
