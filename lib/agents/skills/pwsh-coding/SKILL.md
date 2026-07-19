@@ -119,6 +119,14 @@ empty array; `Should -HaveCount 0` fails while printing identically to the corre
 assign directly (`$r = getModelArgs $null`) and work from `$r`/`$r.Count` — never wrap a
 comma-forced call in `@()`.
 
+# `@{}` hashtable keys are case-insensitive by default
+
+A plain `@{}` (`System.Collections.Hashtable`) uses a case-insensitive string comparer: `$h=@{};
+$h['foo']='x'; $h['Foo']` returns `'x'`, and `ContainsKey` matches the same way. Relying on
+this for an id lookup across differently-cased keys needs no extra normalization — but it only
+holds for plain `@{}` tables, not `[ordered]@{}` or an explicitly-constructed .NET dictionary with
+a case-sensitive comparer.
+
 # `ConvertTo-Json` on a `[hashtable]` emits keys in per-process-random order
 
 When serializing to a generated file that's later compared as text (e.g. `Install-TextToFile`) or
