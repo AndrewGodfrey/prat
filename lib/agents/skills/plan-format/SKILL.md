@@ -10,6 +10,13 @@ A working-coordination plan file should be action-focused — easy to update, ea
 The format here is for plans the user and agent iterate on together and discard after the work
 is done; it's not appropriate for plans intended for a wider audience.
 
+## Before creating: search for overlapping plans
+
+Search the plans directory the new file is going into — all subdirectories except `done/` — for the
+new plan's key terms. Note real overlaps in the new plan as a short "Related plans" list. If the new
+plan supersedes an existing one, fold its still-live content in and retire it now, rather than
+leaving two plans covering one topic.
+
 ## Structure
 
 **Frontmatter** — the plan's lifecycle state, owned by the state script:
