@@ -74,7 +74,7 @@ FunctionsToExport = @(
 	'Find-XmlSection', 'Update-XmlSection',
 	'Find-JsonSection', 'Update-JsonSection', 'Move-JsonArrayElementToFirst',
 	'Get-IndentLevel', 'Find-MatchingLine', 'Find-CorrespondingIndent', 'Get-SubIndent', 'Format-ReplaceMatchingLines',
-	'Test-IsSingleLinePowershellBlock', 'Find-MatchingPowershellBlock', 'Add-HashTableItemInPowershellScript', 'Test-HashTableItemInPowershellScript', 'Edit-HashOfArraysItemInPowershellScript'
+	'Test-IsSingleLinePowershellBlock', 'Find-MatchingPowershellBlock', 'Add-HashTableItemInPowershellScript', 'Add-NestedHashTableItemInPowershellScript', 'Test-HashTableItemInPowershellScript', 'Edit-HashOfArraysItemInPowershellScript'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.

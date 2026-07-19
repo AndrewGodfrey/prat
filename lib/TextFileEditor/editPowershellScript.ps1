@@ -57,20 +57,33 @@ function Find-MatchingPowershellBlock(
 #      foo = @(
 #          1,
 #          2)
+#    - a single-line key=value pair written with no space after '=' (e.g. "a=1"). The update path requires
+#      a space there (e.g. "a = 1") to find the line again; on first insert either form is written verbatim.
 function Add-HashTableItemInPowershellScript(
     $lineArray,
     [string]$tableName,
     [string]$newKey,
-    $newValue) 
+    $newValue)
 {
     # TODO: Add a required comment to this type of hashtable declaration, to make the reader aware of the limited syntax
     $tablePattern = '^\s*\$' + $tableName + ' *= *@{\s*$'
     $tableRange = Find-MatchingPowershellBlock $lineArray $null $tablePattern
     if ($null -eq $tableRange) {
-        throw "Initialization not found for table '$tableName'"
+        throw "Not found: table '$tableName'"
     }
 
-    $subIndent = Get-SubIndent $lineArray $tableRange
+    Set-HashTableItemInPowershellScriptRange $lineArray $tableRange $newKey $newValue
+}
+
+# Shared tail of Add-HashTableItemInPowershellScript / Add-NestedHashTableItemInPowershellScript:
+# given a range already known to be a hashtable's `@{ ... }` block, add/replace/remove $newKey within it.
+function Set-HashTableItemInPowershellScriptRange(
+    $lineArray,
+    $range,
+    [string]$newKey,
+    $newValue)
+{
+    $subIndent = Get-SubIndent $lineArray $range
 
     # Create the new lines to insert
     if ($null -ne $newValue) {
@@ -81,14 +94,44 @@ function Add-HashTableItemInPowershellScript(
     }
 
     $itemPattern = '^\s*' + $newKey + ' *= '
-    $itemRange = Find-MatchingPowershellBlock $lineArray $tableRange $itemPattern
+    $itemRange = Find-MatchingPowershellBlock $lineArray $range $itemPattern
     if ($null -eq $itemRange) {
         # Insert case - need to find where to insert it
         # TODO: Keep items sorted. For now, insert at the end.
-        $lineArray.InsertLines($tableRange.idxLast, $laNewCode)
+        $lineArray.InsertLines($range.idxLast, $laNewCode)
     } else {
         $lineArray.ReplaceLines($itemRange, $laNewCode)
     }
+}
+
+# Given a Powershell script in $lineArray, consisting of one anonymous top-level hashtable literal
+# (`@{ ... }`, with no preceding `$var =` line - e.g. a whole file that's just one big config literal),
+# walk down through $path - a list of nested keys, each exactly as it appears in the source, including
+# surrounding quotes if the source quotes that key (see Add-HashTableItemInPowershellScript's NYI note) -
+# and add, update, or remove (if $newValue is $null) $newKey at that level. $path may be empty, in which
+# case $newKey is added directly to the anonymous root table.
+#
+# NYI: same limitations as Add-HashTableItemInPowershellScript.
+function Add-NestedHashTableItemInPowershellScript(
+    $lineArray,
+    [string[]] $path,
+    [string] $newKey,
+    $newValue)
+{
+    $range = Find-MatchingPowershellBlock $lineArray $null '^\s*@{\s*$'
+    if ($null -eq $range) {
+        throw "Not found: anonymous root table"
+    }
+
+    foreach ($segment in $path) {
+        $segmentPattern = '^\s*' + $segment + ' *= *@{\s*$'
+        $range = Find-MatchingPowershellBlock $lineArray $range $segmentPattern
+        if ($null -eq $range) {
+            throw "Not found: table '$segment'"
+        }
+    }
+
+    Set-HashTableItemInPowershellScriptRange $lineArray $range $newKey $newValue
 }
 
 # Given a Powershell script in $lineArray, having an initialization for $tableName formatted as expected (w.r.t. line breaks and indentation), 
@@ -104,7 +147,7 @@ function Test-HashTableItemInPowershellScript(
     $tablePattern = '^\s*\$' + $tableName + ' *= *@{\s*$'
     $tableRange = Find-MatchingPowershellBlock $lineArray $null $tablePattern
     if ($null -eq $tableRange) {
-        throw "Initialization not found for table '$tableName'"
+        throw "Not found: table '$tableName'"
     }
 
     $itemPattern = '^\s*' + $key + ' *= '
@@ -147,7 +190,7 @@ function Edit-HashOfArraysItemInPowershellScript (
     $tablePattern = '^\s*\$' + $tableName + ' *= *@{\s*$'
     $tableRange = Find-MatchingPowershellBlock $lineArray $null $tablePattern
     if ($null -eq $tableRange) {
-        throw "Initialization not found for table '$tableName'"
+        throw "Not found: table '$tableName'"
     }
 
     $hashItemPattern = '^\s*' + $key + ' *= *@\(\s*$'
