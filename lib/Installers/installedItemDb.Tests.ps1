@@ -37,8 +37,11 @@ Describe "getStateFilePath" {
     It "Concatenates" {
         getStateFilePath "db" "id" | Should -Be "db\id.txt"
     }
+    It "AllowsHyphens" {
+        getStateFilePath "db" "fork/open-a" | Should -Be "db\fork/open-a.txt"
+    }
     It "ThrowsWhenInvalidIdChars" {
-        {getStateFilePath "db" "#a"} | Should -Throw "Unsupported format for itemId '#a'. Use only alphanumeric, underscore and slash; first char an alphanumeric."
+        {getStateFilePath "db" "#a"} | Should -Throw "Unsupported format for itemId '#a'. Use only alphanumeric, underscore, hyphen and slash; first char an alphanumeric."
     }
 }
 
@@ -47,7 +50,7 @@ Describe "getForkpointCacheStateFilePath" {
         getForkpointCacheStateFilePath "db" "id_" | Should -Be "db\_forkpointCache\id_.ps1"
     }
     It "ThrowsWhenInvalidIdChars" {
-        {getForkpointCacheStateFilePath "db" "_a"} | Should -Throw "Unsupported format for itemId '_a'. Use only alphanumeric, underscore and slash; first char an alphanumeric."
+        {getForkpointCacheStateFilePath "db" "_a"} | Should -Throw "Unsupported format for itemId '_a'. Use only alphanumeric, underscore, hyphen and slash; first char an alphanumeric."
     }
 }
 
@@ -56,7 +59,7 @@ Describe "getItemStateFilePath" {
         getItemStateFilePath "db" "id" | Should -Be "db\_state\id.txt"
     }
     It "ThrowsWhenInvalidIdChars" {
-        {getItemStateFilePath "db" "#a"} | Should -Throw "Unsupported format for itemId '#a'. Use only alphanumeric, underscore and slash; first char an alphanumeric."
+        {getItemStateFilePath "db" "#a"} | Should -Throw "Unsupported format for itemId '#a'. Use only alphanumeric, underscore, hyphen and slash; first char an alphanumeric."
     }
 }
 

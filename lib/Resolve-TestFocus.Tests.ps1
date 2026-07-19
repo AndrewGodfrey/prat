@@ -34,6 +34,24 @@ Describe "Resolve-TestFocus" {
             Should -Be "$repoRoot/lib/Foo.Tests.ps1"
     }
 
+    It "prefers the co-located .Tests.ps1 over the source file itself, when both exist" {
+        New-Item "TestDrive:\lib" -ItemType Directory -Force | Out-Null
+        "# source" | Out-File "TestDrive:\lib\Foo.ps1"
+        "# test" | Out-File "TestDrive:\lib\Foo.Tests.ps1"
+        $repoRoot = (Get-Item "TestDrive:\").FullName.TrimEnd('\', '/') -replace '\\', '/'
+        &$scriptToTest -Focus "lib/Foo.ps1" -RepoRoot $repoRoot |
+            Should -Be "$repoRoot/lib/Foo.Tests.ps1"
+    }
+
+    It "prefers a tests/ subdirectory sibling over the source file itself (pathbin convention)" {
+        New-Item "TestDrive:\pathbin\tests" -ItemType Directory -Force | Out-Null
+        "# source" | Out-File "TestDrive:\pathbin\Bar.ps1"
+        "# test" | Out-File "TestDrive:\pathbin\tests\Bar.Tests.ps1"
+        $repoRoot = (Get-Item "TestDrive:\").FullName.TrimEnd('\', '/') -replace '\\', '/'
+        &$scriptToTest -Focus "pathbin/Bar.ps1" -RepoRoot $repoRoot |
+            Should -Be "$repoRoot/pathbin/tests/Bar.Tests.ps1"
+    }
+
     It "throws when neither path nor .Tests.ps1 exists" {
         { &$scriptToTest -Focus "C:/NoSuchDirXYZ_ThisPathCannotExist/Foo" } | Should -Throw "*Focus path not*"
     }

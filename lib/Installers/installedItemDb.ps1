@@ -3,7 +3,7 @@
 # Keeps track of what version of each item has been installed e.g. for the current user.
 #
 # Formats:
-# $itemId: A string containing [A-Za-z0-9_/]+.
+# $itemId: A string containing [A-Za-z0-9_/-]+.
 #    '/' symbols are for nesting and (in the current schema at least) create actual subdirectories.
 # 
 # Examples for $itemIdAndVersion:
@@ -35,22 +35,22 @@ function ensureDb($dbLocation) {
 }
 
 function getStateFilePath($dbLocation, $itemId) { 
-    if ($itemId -notmatch '^[a-z0-9][a-z0-9_/\\]*$') {
-        throw "Unsupported format for itemId '$itemId'. Use only alphanumeric, underscore and slash; first char an alphanumeric."
+    if ($itemId -notmatch '^[a-z0-9][a-z0-9_/\\-]*$') {
+        throw "Unsupported format for itemId '$itemId'. Use only alphanumeric, underscore, hyphen and slash; first char an alphanumeric."
     }
     return "$dbLocation\$itemId.txt" 
 }
 
 function getForkpointCacheStateFilePath($dbLocation, $itemId) {
-    if ($itemId -notmatch '^[a-z0-9][a-z0-9_/\\]*$') {
-        throw "Unsupported format for itemId '$itemId'. Use only alphanumeric, underscore and slash; first char an alphanumeric."
+    if ($itemId -notmatch '^[a-z0-9][a-z0-9_/\\-]*$') {
+        throw "Unsupported format for itemId '$itemId'. Use only alphanumeric, underscore, hyphen and slash; first char an alphanumeric."
     }
     return "$dbLocation\_forkpointCache\$itemId.ps1"
 }
 
 function getItemStateFilePath($dbLocation, $itemId) {
-    if ($itemId -notmatch '^[a-z0-9][a-z0-9_/\\]*$') {
-        throw "Unsupported format for itemId '$itemId'. Use only alphanumeric, underscore and slash; first char an alphanumeric."
+    if ($itemId -notmatch '^[a-z0-9][a-z0-9_/\\-]*$') {
+        throw "Unsupported format for itemId '$itemId'. Use only alphanumeric, underscore, hyphen and slash; first char an alphanumeric."
     }
     return "$dbLocation\_state\$itemId.txt"
 }

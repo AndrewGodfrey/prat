@@ -5,9 +5,9 @@
 Use the `prat-run-tests` agent (for delegation) or `t` directly. Key invocations:
 
 ```bash
-t ~/prat -NoCoverage                    # full suite, skip coverage
-t ~/prat/lib/Foo.ps1 -NoCoverage        # focused run (absolute path auto-derives repo)
-t C:/abs/path/to/File.ps1 -NoCoverage   # absolute path: auto-derives RepoRoot
+t ~/prat -NoCoverage                          # full suite, skip coverage
+t ~/prat/lib/Foo.Tests.ps1 -NoCoverage        # focused run (absolute path auto-derives repo)
+t C:/abs/path/to/File.Tests.ps1 -NoCoverage   # absolute path: auto-derives RepoRoot
 ```
 
 After adding or modifying test files, scan for anti-patterns:
