@@ -1,7 +1,7 @@
 ---
 name: pratified-dev-loop
-description: Use in any pratified project for build/test/deploy/prebuild work — b, d, pb, t with
-  absolute-path support and coverage tools.
+description: Use in any pratified project for build/test/deploy/prebuild work — b, d, pb, t.
+  Includes coverage tools (Get-FileCoverage, Get-CoverageDetails, Get-CoverageReport).
 ---
 
 How to pratify a project? See the `pratify-a-project` skill.
