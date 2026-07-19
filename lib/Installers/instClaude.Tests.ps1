@@ -572,4 +572,36 @@ Describe "Install-AgentRoles" {
         "$destParent\llamacpp\.claude\skills\git\SKILL.md"   | Should -Exist
         "$destParent\llamacpp\.claude\skills\cmake"          | Should -Not -Exist
     }
+
+    Context "git repo scaffolding (uniform for every role dir)" {
+        It "makes each role dir a git repo" {
+            newSkill $pratSrc 'test'
+
+            Install-AgentRoles $stage @{
+                default  = @{ skills = @('test') }
+                llamacpp = @{ skills = @('test') }
+            } $destParent -skillSources @($pratSrc)
+
+            "$destParent\default\.git"  | Should -Exist
+            "$destParent\llamacpp\.git" | Should -Exist
+        }
+
+        It "writes a .gitignore that ignores everything" {
+            newSkill $pratSrc 'test'
+
+            Install-AgentRoles $stage @{ default = @{ skills = @('test') } } $destParent -skillSources @($pratSrc)
+
+            (Get-Content "$destParent\default\.gitignore") | Should -Contain '*'
+        }
+
+        It "does not re-init or overwrite an existing git repo / .gitignore" {
+            newSkill $pratSrc 'test'
+            mkdir "$destParent\default\.git" -Force | Out-Null
+            "sentinel" | Out-File "$destParent\default\.gitignore" -Encoding utf8NoBOM
+
+            Install-AgentRoles $stage @{ default = @{ skills = @('test') } } $destParent -skillSources @($pratSrc)
+
+            Get-Content "$destParent\default\.gitignore" | Should -Be 'sentinel'
+        }
+    }
 }

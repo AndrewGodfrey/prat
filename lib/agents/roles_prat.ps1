@@ -14,3 +14,4 @@
         pratDev = @('pratified-dev-loop', 'working-in-prat', 'pwsh-coding', 'python-patterns', 'check-prat-layers')
     }
 }
+# OmitFromCoverageReport: a unit test would just restate it - static skill-group data

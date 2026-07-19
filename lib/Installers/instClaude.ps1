@@ -115,7 +115,8 @@ function Install-ClaudeSkillSet($stage, $sources, [string] $destDir) {
 # Resolve layered agent-role definitions into a flat per-role skill map.
 # (moved to PratBase/Get-AgentRoles.ps1 — needed at launch, not just deploy)
 
-# Deploy per-role skill dirs to <destParent>/<roleName>/.claude/skills/.
+# Deploy per-role skill dirs to <destParent>/<roleName>/.claude/skills/, and make each role dir a
+# git repo (see Install-RoleDirGitRepo).
 # Skill sources are discovered from the installed layers (prat -> prefs -> de); each role's skills
 # are grouped by the source dir that provides them and handed to Install-ClaudeSkillSet.
 # Throws if a role names a skill that no source provides (catches typos and source drift).
@@ -155,6 +156,7 @@ function Install-AgentRoles($stage, [hashtable] $roles, [string] $destParent = "
         }
 
         Install-ClaudeSkillSet $stage $sources "$roleDest/.claude/skills"
+        Install-RoleDirGitRepo $stage $roleDest
     }
 
     # Remove role dirs no longer defined.
@@ -163,6 +165,24 @@ function Install-AgentRoles($stage, [hashtable] $roles, [string] $destParent = "
             $stage.OnChange()
             Remove-Item $existing.FullName -Recurse -Force
         }
+    }
+}
+
+# Make a role dir a git repo with an ignore-everything .gitignore. Uniform across roles, so harness
+# behavior doesn't vary by role config — some harnesses need the repo (e.g. copilot resolves
+# .github/agents only inside one). Nothing in a role dir is meant to be committed.
+function Install-RoleDirGitRepo($stage, [string] $roleDir) {
+    if (-not (Test-Path -LiteralPath (Join-Path $roleDir '.git'))) {
+        $stage.OnChange()
+        git -C $roleDir init --quiet 2>&1 | Out-Null
+    }
+    $gitignore = Join-Path $roleDir '.gitignore'
+    if (-not (Test-Path -LiteralPath $gitignore)) {
+        $stage.OnChange()
+        @(
+            '# Role dirs are git repos only for harness compatibility. Nothing in them is meant to be committed.'
+            '*'
+        ) -join "`n" | Set-Content -LiteralPath $gitignore -Encoding utf8NoBOM
     }
 }
 

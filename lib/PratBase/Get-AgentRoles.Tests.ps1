@@ -109,6 +109,29 @@ Describe "Get-AgentRoles" {
         $roles.default.ContainsKey('repoSkills') | Should -BeFalse
     }
 
+    It "carries a role's repoAgents through" {
+        $contribs = @(
+            @{ skillGroups = @{ core = @('git') } }
+            @{ roles = @{ myrole = @{ skillGroups = @('core'); repoAgents = @(@{ repo = 'myrepo'; from = '.github/agents' }) } } }
+        )
+
+        $roles = Get-AgentRoles -Contributions $contribs
+
+        $roles.myrole.repoAgents[0].repo | Should -Be 'myrepo'
+        $roles.myrole.repoAgents[0].from | Should -Be '.github/agents'
+    }
+
+    It "omits repoAgents for roles without any" {
+        $contribs = @(
+            @{ skillGroups = @{ core = @('git') } }
+            @{ roles = @{ default = @{ skillGroups = @('core') } } }
+        )
+
+        $roles = Get-AgentRoles -Contributions $contribs
+
+        $roles.default.ContainsKey('repoAgents') | Should -BeFalse
+    }
+
     It "throws when a role references an unknown skillGroup" {
         $contribs = @(
             @{ skillGroups = @{ core = @('git') } }
