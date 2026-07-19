@@ -27,7 +27,7 @@ This catches unguarded env var mutations and writes to `$home`. Run it before wr
   is where the source lives), but don't need `InModuleScope`.
 
 ### Testing helper functions in deploy scripts
-Deploy scripts guard their entrypoint so they can be dot-sourced for testing — see `powershell-patterns`
+Deploy scripts guard their entrypoint so they can be dot-sourced for testing — see `pwsh-coding`
 skill for the mechanism. Inline helper functions at the top of the script rather than creating a
 separate file to hold them for a single script.
 
