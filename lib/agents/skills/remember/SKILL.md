@@ -58,6 +58,13 @@ generalize it — restate the shared principle and keep the one or two sharpest 
 than appending another instance. Prefer pairing an addition with a removal: propose an entry the
 addition subsumes, or one that looks stale, as a candidate to retire.
 
+This search isn't just for duplicate specific entries — check whether a broader principle already
+stated elsewhere in the file (e.g. a section's closing summary sentence) already covers most of
+what you're adding. When it does, find the smallest addition that plugs the remaining gap: often
+just one example, or one item appended to an existing list of examples (e.g. "parseable strings" as
+another entry in a list of things to check) — not a new paragraph that narrates the general
+principle again with its own worked example.
+
 State the rule. Omit obvious implications — if the consequence follows directly from the
 instruction, a reader will infer it. One sentence where possible. Don't tack on a closing
 explanatory sentence unless it heads off a specific competing interpretation — if the rule's

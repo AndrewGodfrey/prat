@@ -51,6 +51,7 @@ Anti-patterns:
 - Collection-processing code tested only with one item (zero and two-plus unchecked)
 - Relative path with implicit current-directory dependency
 - Numeric edge cases (zero, overflow)
+- Generated code/config text checked only by string match, never verified to actually parse
 - **"Value is restored" tests:** when asserting that X is restored to its original value, ensure
   the pre-test value of X is distinct from what the code would leave it at without restoration —
   otherwise a coincidental match makes the test pass when it should fail. Set an explicit starting
