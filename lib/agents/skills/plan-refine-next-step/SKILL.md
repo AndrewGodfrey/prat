@@ -16,6 +16,9 @@ dot-sourced; read the current state with `Get-PlanState -PlanFile <plan>`.
   `Set-PlanState -PlanFile <plan> -Advance -ToStep 'Step N'`.
   If the plan has no pointer yet (a brand-new plan), run
   `Set-PlanState -PlanFile <plan> -Advance` — with no prior pointer it targets the first step.
+  If the plan has no `## Step` headings at all (e.g. a notes/design doc being promoted to a
+  working plan), it needs structure before a pointer can exist: invoke `plan-format`, then
+  `start-plan`, instead of continuing here.
   If the user says the plan is complete but the plan file still shows an unfinished step, read the
   code before deferring it — prior sessions may have implemented it without wrapping.
 
