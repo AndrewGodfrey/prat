@@ -17,6 +17,9 @@ new plan's key terms. Note real overlaps in the new plan as a short "Related pla
 plan supersedes an existing one, fold its still-live content in and retire it now, rather than
 leaving two plans covering one topic.
 
+Also grep `done/` for the same terms — a prior decision recorded there can constrain or contradict
+the new plan's design. Cite such records in "Related plans"; never fold or retire them.
+
 ## Structure
 
 **Frontmatter** — the plan's lifecycle state, owned by the state script:
