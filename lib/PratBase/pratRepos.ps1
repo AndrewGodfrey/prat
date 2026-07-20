@@ -426,6 +426,31 @@ function Get-PratAgentGrantedPaths {
 }
 
 # .SYNOPSIS
+# Top-level repos that declare `trustAgentInstructions = $true` on their codebaseProfile entry,
+# each paired with its resolved instructions filename (`agentInstructionsFile` if set, else
+# "AGENTS.md").
+#
+# .OUTPUTS
+# @{ root; instructionsFile }[], sorted by root for deterministic output.
+function Get-PratTrustedInstructionRepos {
+    [CmdletBinding()]
+    param()
+
+    $index = Get-PratRepoIndex (Get-RepoProfileFiles)
+    $result = @()
+    if ($null -ne $index) {
+        foreach ($repo in $index.repos.Values) {
+            if ($repo.ContainsKey('parentId')) { continue }
+            if ($repo['trustAgentInstructions'] -eq $true) {
+                $instructionsFile = if ($repo['agentInstructionsFile']) { $repo['agentInstructionsFile'] } else { 'AGENTS.md' }
+                $result += @{ root = $repo.root; instructionsFile = $instructionsFile }
+            }
+        }
+    }
+    return @($result | Sort-Object { $_.root })
+}
+
+# .SYNOPSIS
 # Diagnostic for a Get-PratProject miss: checks whether $Location would match a registered
 # project once NTFS junctions are resolved on both sides. A match here means the caller passed
 # a path in a different "junction island" than the one the registry was built from (see the

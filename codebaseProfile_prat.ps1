@@ -17,6 +17,7 @@ function makeTestCommand([string]$cmd) {
         repos = @{
             prat   = @{
                 root   = $PSScriptRoot
+                trustAgentInstructions = $true
                 test   = "lib/Test-PratLayer.ps1"
                 deploy = {
                     param($project, [hashtable]$CommandParameters = @{})

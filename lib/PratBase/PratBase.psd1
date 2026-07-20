@@ -76,7 +76,7 @@ FunctionsToExport = @('Get-CurrentUserIsElevated', 'Get-RelativePath', 'Import-P
                       'New-Subfolder', 'New-FolderAndParents', 'Get-HtmlFromClipboard', 'Invoke-PesterAsJob',
                       'Get-DevToolPath',
                       'Get-PratRepo', 'Get-PratProject', 'Get-PratRepoRoot', 'Get-PratRepoEntry', 'Get-PratTestTargetsUnder', 'Resolve-ProjectTestScript',
-                      'Get-PratAgentGrantedPaths',
+                      'Get-PratAgentGrantedPaths', 'Get-PratTrustedInstructionRepos',
                       'Get-AgentRoles', 'Sync-RepoSkillJunctions', 'Sync-RoleAgents',
                       'Get-DetectedTestFrameworks', 'Get-ProjectTestOutputDir', 'Find-ProjectShortcut', 'Resolve-JunctionInPath',
                       'Find-JunctionIslandMismatch',
