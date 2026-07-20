@@ -55,6 +55,14 @@ t foo/myproject                                     # .NET (csproj directory)
 - `pwsh -c "..."` requires escaping every `$` which agents consistently get wrong
 - Pester 5 parameter sets are tricky
 
+## If `t` itself errors
+
+An error from `t` itself (e.g. "Unknown project") is friction in tooling — a defect to address, not
+a cost to route around: debug and fix the root cause. Do not fall back to running the underlying
+test command (pytest, `dotnet test`, Pester) directly as a substitute; that silently drops `t`'s
+guarantees (coverage collection, working directory, output location) and is never an acceptable
+resolution on its own.
+
 ## Integration-tagged tests are excluded by default
 
 Without `-Integration`/`-IncludeIntegrationTests`, tests tagged `Integration` are filtered out

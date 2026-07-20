@@ -56,7 +56,3 @@ earlier parallel tool-call batch during exploration —
 so don't assume a rejected Read means the file was never fetched; check whether you already have its
 content before concluding otherwise. Workaround to get the content again: `Grep` with pattern `.` and
 `output_mode: "content"`.
-
-`ScheduleWakeup` is scoped to `/loop` dynamic-mode pacing only — it requires a `prompt` tied to
-re-entering the loop skill and errors without one. Don't call it as a general way to "wait" for a
-background Agent/Task outside a `/loop` session; just let the automatic task-notification arrive.

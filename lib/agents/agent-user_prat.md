@@ -51,12 +51,6 @@ See the `testing` skill for more detail. Assume all repos are pratified — use 
 either in its own `AGENTS.md` (e.g. `**Pratified:** No`) or in the user's personal instructions
 (for repos where editing `AGENTS.md` isn't possible).
 
-If `t` itself errors (e.g. "Unknown project"), that's a case of "friction in tooling is a defect to
-address, not a cost to route around" (see Model workarounds) — debug and fix the root cause. Do not
-fall back to running the underlying test command (pytest, `dotnet test`, Pester) directly as a
-substitute; that silently drops `t`'s guarantees (coverage collection, working directory, output
-location) and is never an acceptable resolution on its own.
-
 When context is compacted/summarized, record the state of each test run (not yet run / verified red /
 verified green) alongside file changes. These are distinct states with different implications.
 
@@ -116,6 +110,10 @@ doesn't exist yet — rather than deferring with no tracking mechanism.
 Applies equally to prose content (notes, musings, rationale) in plan files — when restructuring a
 step, either carry such content forward or explicitly decide to discard it; don't drop it by reference.
 
+When removing a mechanism/class entirely, a "confirmed zero remaining references" check must also
+grep the plan file's own not-yet-done steps, not just source code — otherwise design notes describing
+the removed mechanism linger in open steps until the user notices.
+
 ### Debugging
 
 Find root cause before fixing. If three fixes have failed, stop and question the approach rather
@@ -142,19 +140,14 @@ first.
 
 ### Generated files don't accumulate in the source tree
 
-**Generated files must not accumulate in the source tree — not even in a gitignored location.** The problem isn't
-visibility (which gitignore "fixes"), it's existence: cruft burns disk indefinitely and becomes an un-audited leak
-once forgotten — and a gitignored-but-un-cleaned dir is *worse* than a visible one, since nothing ever removes it.
-The fix isn't hiding it from git, it's putting it where it's *managed*: `auto/` is the single audited home for
-generated output, so it's all in one place to monitor and auto-clean — some already is (`auto/testRuns/` rotates
-and prunes), the rest is at least visible there to automate next. Your scratchpad/temp dir is fine for transient
-scratch — it's auto-cleaned.
-
-The pratified tools (`t`, `b`, …) already route output to `auto/` — the rule bites when you run a tool **ad hoc**
-(raw `pytest`/`dotnet`/a build, bypassing them): redirect output up front instead of cleaning up after. Most tools
-can — `COVERAGE_FILE`, `PYTHONPYCACHEPREFIX`, MSBuild `OutputPath`/`BaseIntermediateOutputPath` via
-`Directory.Build.props`. "It can't be redirected" is a claim to verify, not accept. Never gitignore a stray to
-silence it; aim for cleanup being unnecessary, not for remembering to `make clean`.
+Generated files must not accumulate in the source tree — not even gitignored: a gitignored but
+un-cleaned dir is *worse* than a visible one, since nothing ever removes it. Put generated output
+where it's managed: `auto/` (the audited, auto-cleaned home) or your scratchpad for transient
+scratch. The pratified tools (`t`, `b`, …) already route output to `auto/`; the rule bites on ad-hoc
+runs (raw `pytest`/`dotnet`/a build) — redirect output up front (`COVERAGE_FILE`,
+`PYTHONPYCACHEPREFIX`, MSBuild `OutputPath`/`BaseIntermediateOutputPath` via
+`Directory.Build.props`). "It can't be redirected" is a claim to verify, not accept. Never gitignore
+a stray to silence it.
 
 ### Claiming success
 
@@ -167,11 +160,9 @@ a match), or you checked the result. Two sharp recurring instances:
   call inside it — don't generalize from the exception types its try/except already names.
 - A declining count may just mean less activity — normalize against volume before calling it a trend.
 
-The discipline is symmetric: don't assert work is still pending without naming the concrete check
-behind it. And it applies to causes: when explaining *why* a pattern exists, present competing
-hypotheses — the data shows what happened; the cause needs its own evidence. A skill or doc's stated
-root cause is itself an unverified claim, not evidence — confirm it before propagating it further
-(e.g. into new memory or instructions).
+The same discipline covers pending-work claims (name the concrete check) and causes: the data shows
+what happened, but a cause — including one stated in a skill or doc — is a hypothesis until it has
+its own evidence.
 
 ### Surfacing documented constraints
 
@@ -215,12 +206,9 @@ No performative agreement ("Great point!", "You're absolutely right!") and no se
 own output ("looks good", "clean", "elegant") — an unvalidated quality assessment is filler; of
 course it looks right to you, you just generated it. Just fix it — actions speak.
 
-Verify against the codebase before implementing or asserting — whether the claim is a suggestion
-from an external reviewer, or a finding you generate yourself (e.g. while running /review-changes).
-Before flagging something as a gap, check whether the codebase already has an established
-precedent for that exact pattern; a generic best-practice instinct with no such check is a guess,
-not a finding. Push back with technical reasoning if a suggestion is wrong — the user wants
-correctness, not compliance.
+Verify against the codebase before implementing or asserting — whether the claim comes from an
+external reviewer or is a finding you generated yourself. Push back with technical reasoning if a
+suggestion is wrong — the user wants correctness, not compliance.
 
 ### External references
 
