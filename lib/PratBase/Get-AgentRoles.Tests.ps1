@@ -132,6 +132,75 @@ Describe "Get-AgentRoles" {
         $roles.default.ContainsKey('repoAgents') | Should -BeFalse
     }
 
+    Context "harness filtering" {
+        It "drops skills whose skillHarnesses allowlist excludes the harness" {
+            $contribs = @(
+                @{ skillGroups = @{ core = @('git', 'ccOnly') }; skillHarnesses = @{ ccOnly = @('cc') } }
+                @{ roles = @{ default = @{ skillGroups = @('core') } } }
+            )
+
+            $roles = Get-AgentRoles -Contributions $contribs -Harness myharness
+
+            $roles.default.skills | Should -Be @('git')
+        }
+
+        It "keeps skills whose allowlist includes the harness" {
+            $contribs = @(
+                @{ skillGroups = @{ core = @('multi') }; skillHarnesses = @{ multi = @('cc', 'myharness') } }
+                @{ roles = @{ default = @{ skillGroups = @('core') } } }
+            )
+
+            $roles = Get-AgentRoles -Contributions $contribs -Harness myharness
+
+            $roles.default.skills | Should -Be @('multi')
+        }
+
+        It "keeps skills absent from the skillHarnesses map (allowlist default)" {
+            $contribs = @(
+                @{ skillGroups = @{ core = @('git') } }
+                @{ roles = @{ default = @{ skillGroups = @('core') } } }
+            )
+
+            $roles = Get-AgentRoles -Contributions $contribs -Harness myharness
+
+            $roles.default.skills | Should -Be @('git')
+        }
+
+        It "does not filter when -Harness is omitted" {
+            $contribs = @(
+                @{ skillGroups = @{ core = @('git', 'ccOnly') }; skillHarnesses = @{ ccOnly = @('cc') } }
+                @{ roles = @{ default = @{ skillGroups = @('core') } } }
+            )
+
+            $roles = Get-AgentRoles -Contributions $contribs
+
+            $roles.default.skills | Should -Be @('git', 'ccOnly')
+        }
+
+        It "merges skillHarnesses maps base-first (higher layer wins per skill)" {
+            $contribs = @(
+                @{ skillGroups = @{ core = @('sk') }; skillHarnesses = @{ sk = @('cc') } }       # base
+                @{ skillHarnesses = @{ sk = @('cc', 'myharness') } }                                 # higher — wins
+                @{ roles = @{ default = @{ skillGroups = @('core') } } }
+            )
+
+            $roles = Get-AgentRoles -Contributions $contribs -Harness myharness
+
+            $roles.default.skills | Should -Be @('sk')
+        }
+
+        It "filters a role's explicit skills, not just group-sourced ones" {
+            $contribs = @(
+                @{ skillGroups = @{ core = @('git') }; skillHarnesses = @{ extra = @('cc') } }
+                @{ roles = @{ default = @{ skillGroups = @('core'); skills = @('extra') } } }
+            )
+
+            $roles = Get-AgentRoles -Contributions $contribs -Harness myharness
+
+            $roles.default.skills | Should -Be @('git')
+        }
+    }
+
     It "throws when a role references an unknown skillGroup" {
         $contribs = @(
             @{ skillGroups = @{ core = @('git') } }

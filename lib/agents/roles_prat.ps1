@@ -13,5 +13,11 @@
         # Prat-ecosystem development (i.e. working in any pratified projects, such as prat, prefs, de).
         pratDev = @('pratified-dev-loop', 'working-in-prat', 'pwsh-coding', 'python-patterns', 'check-prat-layers')
     }
+    # Harness allowlists — skills only applicable to specific harnesses. A skill absent from this map,
+    # applies to every harness. See Get-AgentRoles.
+    skillHarnesses = @{
+        'windows-edit-recovery' = @('cc')
+        'pwsh-tool'             = @('cc')
+    }
 }
 # OmitFromCoverageReport: a unit test would just restate it - static skill-group data
