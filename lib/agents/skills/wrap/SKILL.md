@@ -42,8 +42,8 @@ Otherwise:
 - **Public repo check.** If any changes in this step touch a public repo (prefs, prat),
   invoke `/check-prat-layers`.
 
-- **Move the completed step.** Cut the completed step from the active plan and append it to the
-  end of the corresponding `*_done.md` file, condensed to final outcomes — what changed and why,
+- **Move the completed step.** Cut the completed step from the active plan and prepend it to the
+  start of the corresponding `*_done.md` file, condensed to final outcomes — what changed and why,
   not the step's task list or how conclusions were reached. Do not leave a copy in both files.
 
 - **If the plan is now complete:**
