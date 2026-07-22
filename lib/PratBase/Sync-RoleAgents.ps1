@@ -27,6 +27,7 @@ function Sync-RoleAgents {
     [CmdletBinding()]
     param(
         [object[]] $RepoAgents,
+        [object[]] $RepoInstructions,
         [Parameter(Mandatory)] [string] $RoleDir,
         [Parameter(Mandatory)] [scriptblock] $ResolveRepoRoot
     )
@@ -41,6 +42,19 @@ function Sync-RoleAgents {
     }
     syncAgentJunctionLink (Join-Path $RoleDir '.claude\agents') $subagentsTarget
     syncAgentJunctionLink (Join-Path $RoleDir '.github\agents') $subagentsTarget
+
+    # Instructions sync — same pattern as agents, but only when the parameter is explicitly passed.
+    if ($PSBoundParameters.ContainsKey('RepoInstructions')) {
+        $subinstructionsDir = Join-Path $RoleDir 'subinstructions'
+        $desiredInstructions = resolveDesiredAgentFiles $RepoInstructions $ResolveRepoRoot
+        syncOwnedAgentFiles $subinstructionsDir $desiredInstructions
+
+        $subinstructionsTarget = $null
+        if (Test-Path -LiteralPath $subinstructionsDir -PathType Container) {
+            $subinstructionsTarget = (Get-Item -LiteralPath $subinstructionsDir).FullName.TrimEnd('\')
+        }
+        syncAgentJunctionLink (Join-Path $RoleDir '.github\instructions') $subinstructionsTarget
+    }
 }
 
 # Builds the desired map: relative path (under each entry's source dir) -> absolute source file path.

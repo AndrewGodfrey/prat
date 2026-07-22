@@ -291,4 +291,62 @@ Describe "Sync-RoleAgents" {
             linkTarget $link | Should -Be ([System.IO.Path]::GetFullPath($subagentsDir).TrimEnd('\'))
         }
     }
+
+    Context "instructions sync (RepoInstructions parameter)" {
+        BeforeAll {
+            function newInstructionsSource($repoRoot, $from, [string] $name = 'kusto.instructions.md', [string] $content = 'instructions body') {
+                $d = Join-Path $repoRoot $from
+                New-Item -ItemType Directory -Path $d -Force | Out-Null
+                $content | Out-File (Join-Path $d $name) -Encoding utf8NoBOM
+                $d
+            }
+        }
+
+        BeforeEach {
+            $script:subinstructionsDir = Join-Path $roleDir 'subinstructions'
+            $script:instructionsLink   = Join-Path $roleDir '.github\instructions'
+        }
+
+        It "copies instruction files into subinstructions and creates .github/instructions junction" {
+            newInstructionsSource $repoA '.github\instructions' | Out-Null
+            Sync-RoleAgents -RoleDir $roleDir -ResolveRepoRoot $resolver `
+                -RepoInstructions @(@{ repo = 'repoA'; from = '.github\instructions' })
+
+            Get-Content (Join-Path $subinstructionsDir 'kusto.instructions.md') | Should -Be 'instructions body'
+            linkType $instructionsLink | Should -Be 'Junction'
+            linkTarget $instructionsLink | Should -Be ([System.IO.Path]::GetFullPath($subinstructionsDir).TrimEnd('\'))
+        }
+
+        It "removes subinstructions and junction when no longer desired" {
+            newInstructionsSource $repoA '.github\instructions' | Out-Null
+            Sync-RoleAgents -RoleDir $roleDir -ResolveRepoRoot $resolver `
+                -RepoInstructions @(@{ repo = 'repoA'; from = '.github\instructions' })
+            $subinstructionsDir | Should -Exist
+
+            Sync-RoleAgents -RoleDir $roleDir -ResolveRepoRoot $resolver -RepoInstructions @()
+            $subinstructionsDir | Should -Not -Exist
+            $instructionsLink | Should -Not -Exist
+        }
+
+        It "operates independently of RepoAgents" {
+            newAgentsSource $repoA '.github\agents' | Out-Null
+            newInstructionsSource $repoB '.github\instructions' | Out-Null
+
+            Sync-RoleAgents -RoleDir $roleDir -ResolveRepoRoot $resolver `
+                -RepoAgents @(@{ repo = 'repoA'; from = '.github\agents' }) `
+                -RepoInstructions @(@{ repo = 'repoB'; from = '.github\instructions' })
+
+            Join-Path $subagentsDir 'sample-reviewer.agent.md' | Should -Exist
+            Join-Path $subinstructionsDir 'kusto.instructions.md' | Should -Exist
+        }
+
+        It "does nothing for instructions when RepoInstructions is not passed" {
+            newAgentsSource $repoA '.github\agents' | Out-Null
+            Sync-RoleAgents -RoleDir $roleDir -ResolveRepoRoot $resolver `
+                -RepoAgents @(@{ repo = 'repoA'; from = '.github\agents' })
+
+            $subinstructionsDir | Should -Not -Exist
+            $instructionsLink | Should -Not -Exist
+        }
+    }
 }

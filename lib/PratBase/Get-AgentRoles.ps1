@@ -1,7 +1,7 @@
 # Resolve layered agent-role definitions into a flat per-role skill map.
 #
 # Each layer contributes a `lib/agents/roles_<layer>.ps1` returning
-#   @{ skillGroups = @{ <groupName> = @(<skill>...) }; skillHarnesses = @{ <skill> = @(<harness>...) }; roles = @{ <roleName> = @{ skillGroups=@(...); skills=@(...); repo=...; repoSkills=@(...); repoAgents=@(...) } } }
+#   @{ skillGroups = @{ <groupName> = @(<skill>...) }; skillHarnesses = @{ <skill> = @(<harness>...) }; roles = @{ <roleName> = @{ skillGroups=@(...); skills=@(...); repo=...; repoSkills=@(...); repoAgents=@(...); repoInstructions=@(...) } } }
 # Lower layers (prat) define skill groups; the top layer (de) composes roles from them.
 # Groups, harness maps, and roles merge base-first, so a higher layer wins on a name collision.
 #
@@ -11,7 +11,7 @@
 # Lives in PratBase (not the Installers module) because it's pure config resolution needed in two
 # contexts: at deploy (Install-AgentRoles) and at launch (resolving a role's repoSkills).
 #
-# Returns @{ <roleName> = @{ skills = @(<resolved skill names>); repo = <optional>; repoSkills = <optional>; repoAgents = <optional> } }.
+# Returns @{ <roleName> = @{ skills = @(<resolved skill names>); repo = <optional>; repoSkills = <optional>; repoAgents = <optional>; repoInstructions = <optional> } }.
 # Test seams: -Contributions injects already-evaluated definitions (base-first); -RolesFiles injects
 # the file list (highest-first, as Resolve-PratLibFile returns it). Normally both are read from disk.
 function Get-AgentRoles {
@@ -51,9 +51,10 @@ function Get-AgentRoles {
         }
 
         $entry = @{ skills = @($skills | Select-Object -Unique) }
-        if ($role.repo)       { $entry.repo       = $role.repo }
-        if ($role.repoSkills) { $entry.repoSkills = $role.repoSkills }
-        if ($role.repoAgents) { $entry.repoAgents = $role.repoAgents }
+        if ($role.repo)             { $entry.repo             = $role.repo }
+        if ($role.repoSkills)       { $entry.repoSkills       = $role.repoSkills }
+        if ($role.repoAgents)       { $entry.repoAgents       = $role.repoAgents }
+        if ($role.repoInstructions) { $entry.repoInstructions = $role.repoInstructions }
         $resolved[$roleName] = $entry
     }
     return $resolved
