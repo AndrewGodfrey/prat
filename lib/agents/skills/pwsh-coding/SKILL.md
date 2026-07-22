@@ -405,6 +405,41 @@ This is a Pester mock-proxy artifact, absent from real (unmocked) execution. Nev
 full-array equality (`Should -Be @(...)`) against a mocked function's captured `$args`/overflow-args
 — check specific indices or use `-Contains` instead.
 
+# A `-NoNewWindow` child can kill the parent's own script via Ctrl-C
+
+`Start-Process -NoNewWindow` makes the child inherit the console directly. Windows broadcasts a
+keyboard Ctrl-C (`CTRL_C_EVENT`) to *every* process attached to that console by default — including
+the parent script itself, even while it's blocked in `$proc.WaitForExit()`. If the parent is pwsh,
+its own default Ctrl-C handling can abort the parent's script execution the instant the user
+interrupts the *child*, even though the child handles the interrupt fine on its own (confirmed: a
+child that clearly manages its own Ctrl-C — requiring two presses, no `^C` echo — didn't trigger
+this; a child with no such handling did).
+
+Fix: make the parent ignore Ctrl-C only for the duration of the wait, via P/Invoke — nothing on
+`System.Diagnostics.Process`/`Start-Process` exposes this directly:
+
+```powershell
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class ConsoleCtrl {
+    [DllImport("kernel32.dll", SetLastError=true)]
+    public static extern bool SetConsoleCtrlHandler(IntPtr HandlerRoutine, bool Add);
+}
+"@
+[ConsoleCtrl]::SetConsoleCtrlHandler([IntPtr]::Zero, $true)   # this process ignores Ctrl-C
+try {
+    $proc = Start-Process @spParams
+    $proc.WaitForExit()
+} finally {
+    [ConsoleCtrl]::SetConsoleCtrlHandler([IntPtr]::Zero, $false)   # restore normal handling
+}
+```
+
+`SetConsoleCtrlHandler(NULL, TRUE)` only affects the *calling* process — the child (and its own
+Ctrl-C handling, if any) is untouched, since each process manages its own handler chain
+independently.
+
 # $PSScriptRoot-relative paths when moving a script
 
 Before writing a moved script to its new location, audit every `$PSScriptRoot`-relative path —
