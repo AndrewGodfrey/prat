@@ -34,7 +34,7 @@ function p($Target) {
 # Tab-completion still doesn't work, but "w -di" does.
 function ls {(dir @args) | Format-Wide -AutoSize}
 
-function ds { dir | sort -Property LastWriteTime }
+function ds { dir @args | sort -Property LastWriteTime }
 
 # .SYNOPSIS
 # Show the biggest n files in the directory.
