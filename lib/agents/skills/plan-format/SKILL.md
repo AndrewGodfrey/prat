@@ -34,9 +34,14 @@ current-step:
 
 A `refined` list may also appear — steps beyond the pointer already planned to implementable
 detail. Read these keys freely; never hand-edit them — write only via
-`. "$home/prat/lib/agents/PlanState.ps1"; Set-PlanState ...`. There is no `## Next step:`
-heading in this format; the frontmatter pointer replaces it. (Older plans may still have the
-heading — treat it as the pointer, migrate it into frontmatter via the script, and delete it.)
+`. "$home/prat/lib/agents/PlanState.ps1"; Set-PlanState ...`. Never set `ready-to-implement`
+yourself, even for a step whose design was settled in conversation — that transition is `/wrap`'s,
+which records the user's approval of the written spec; a new or reworked step is `ready-to-plan`
+until then.
+
+There is no `## Next step:` heading in this format; the frontmatter pointer replaces it. 
+(Older plans may still have the heading — treat it as the pointer, migrate it into
+frontmatter via the script, and delete it.)
 
 **Opening lines** — pointers to companion files (if they exist):
 ```
