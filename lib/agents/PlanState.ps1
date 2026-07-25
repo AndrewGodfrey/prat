@@ -1,4 +1,5 @@
 using module ..\TextFileEditor\TextFileEditor.psd1
+using module ..\PratBase\PratBase.psd1
 
 # PlanState.ps1
 # CRLF-safe create/read/update for the plan-lifecycle frontmatter: current-step (with nested name
