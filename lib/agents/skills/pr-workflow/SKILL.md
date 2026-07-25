@@ -1,6 +1,6 @@
 ---
 name: pr-workflow
-description: Load when working on a project where changes are submitted via pull request rather
+description: Use when working on a project where changes are submitted via pull request rather
   than committed directly — e.g. an external repo like llamacpp. Modifies wrap and plan-format
   behavior to track the PR lifecycle.
 ---

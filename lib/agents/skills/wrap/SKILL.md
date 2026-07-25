@@ -1,13 +1,14 @@
 ---
 name: wrap
-description: Advances the active plan one lifecycle notch — records the user's approval of a
-  refined step (at ready-to-plan) or closes a completed one (at code-complete) — and always runs
-  /reflect. /wrap-session closes a session instead. User-invocable only — do not trigger
-  autonomously.
+description: Wraps up a step/substep in the active plan. User-invocable only — do not trigger autonomously.
 ---
 
 The "active plan" is the plan file most relevant to this session — infer from context, or ask if
 unclear.
+
+This skill advances the active plan one lifecycle notch — records the user's approval of a
+refined step (at ready-to-plan) or closes a completed one (at code-complete) — and always runs
+/reflect. /wrap-session closes a session instead. 
 
 ## 0. Read the state
 

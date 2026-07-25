@@ -1,7 +1,6 @@
 ---
 name: plan-refine-next-step
-description: Set up the next step in a plan — verify the pointer, flesh out detail, add coverage
-  and review-changes steps, then report it ready for review.
+description: Set up the next step in a plan.
 ---
 
 The "active plan" is the plan file most relevant to this session — infer from context, or ask if

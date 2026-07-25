@@ -1,9 +1,14 @@
 ---
 name: reviewing-a-pr
-description: Use when reviewing a pull request or feature branch — e.g. the user invokes `/review`,
+description: Use when reviewing a pull request or feature branch — e.g. the user invokes `/review-changes`,
   pastes a PR URL, or says "review this branch". Picks git ranges that stay clean even when the
-  branch has merged from its base, so the diff reflects the feature work rather than base churn.
+  branch has merged from its base, so the diff excludes base churn.
 ---
+
+# When this doesn't apply
+
+- Reviewing a single commit → `git show <sha>`.
+- Reviewing local uncommitted changes → `/review-changes`.
 
 # The problem
 
@@ -42,7 +47,3 @@ correctly, this skill is not needed.
 3. For per-file diffs during review, keep three-dot:
    `git diff origin/<base>...origin/<branch> -- <path>`.
 
-# When this doesn't apply
-
-- Reviewing a single commit → `git show <sha>`.
-- Reviewing local uncommitted changes → `/review-changes`.

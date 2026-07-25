@@ -1,6 +1,6 @@
 ---
 name: check-prat-layers
-description: Pre-commit check for prat-ecosystem public repos (prat, prefs). Runs Find-SensitiveData and Find-LayerViolations with merged configs. De contributes augmentation rules but is not scanned.
+description: Pre-commit check for prat-ecosystem public repos (prat, prefs).
 ---
 
 # check-prat-layers

@@ -1,12 +1,14 @@
 ---
 name: python-patterns
-description: Use when setting up a Python project in the prat ecosystem — Python version,
-  dependencies, caching.
+description: Use when writing Python code.
 ---
+
+Some of these are specific to the Prat ecosystem, some are general Python conventions.
 
 # Python version and compatibility
 
-Python is pinned to **3.12**. See the comment in `instPackages.ps1` for the compatibility rationale.
+In the prat ecosystem, Python is currently pinned to **3.12**. See the comment in `instPackages.ps1` for the
+compatibility rationale.
 
 # sys.path and PYTHONPATH
 

@@ -1,7 +1,6 @@
 ---
 name: pwsh-coding
-description: Use when writing PowerShell code or Pester tests. Covers gotchas with arrays,
-  argument passing, string handling, Pester mocking, and common patterns in this codebase.
+description: Use when writing PowerShell code or Pester tests. Covers gotchas and common patterns.
 ---
 
 # Cryptographically secure random bytes
@@ -168,6 +167,12 @@ flag `-NoCoverage:` and a separate positional argument `False`. The called scrip
 "A positional parameter cannot be found that accepts argument 'False'."
 
 `@PSBoundParameters` forwards named parameters correctly, including switches with explicit values.
+
+# Inconsistent ~ handling
+Unlike `$home`, Powershell doesn't expand `~` before passing it to things that don't understand it - like external
+programs or .NET APIs. So we have to be carefuly to expand it ourselves, in such cases.
+Another somewhat surprising case is `pwsh -File ~/...` - that too doesn't expand `~`.
+
 
 # Checking whether a path is absolute
 

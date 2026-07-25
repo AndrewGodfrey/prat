@@ -1,10 +1,11 @@
 ---
 name: plan-format
 description: Use when creating or restructuring a working-coordination plan file — an
-  iterative-work plan shared by user + agent, with no audience beyond them. For published plans
-  (design docs, roadmaps, deliverable plans), don't apply this format; ask the user about
-  structure instead.
+  iterative-work plan shared by user + agent, with no audience beyond them.
 ---
+
+For published plans (design docs, roadmaps, deliverable plans), don't apply this format; 
+ask the user about structure instead.
 
 A working-coordination plan file should be action-focused — easy to update, easy to resume from.
 The format here is for plans the user and agent iterate on together and discard after the work

@@ -23,9 +23,9 @@ active before their trigger could be recognized.
 - **User-specific preferences** → the user's prefs repo (`prefs/lib/agents/agent-user_prefs.md`), if they have one
 - **User-specific, or only relevant when editing prat/prefs/de** → the user's de repo
   (`de/lib/agents/agent-user_de.md`), if they have one
-- **Triggerable procedures** → create or modify a skill. Write the trigger as concrete
-  symptoms/situations, and check that a proactive "before X" clause doesn't match every session in
-  practice — that makes the skill effectively always-loaded
+- **Triggerable procedures** → create or modify a skill. Write the trigger concisely - just
+  subject area and situation category. Check that the result won't match every session in
+  practice — that makes the skill effectively always-loaded.
 - **Tool-usage notes** → the tool's own description where the mechanism allows (e.g. an MCP tool) —
   it loads exactly when the tool does
 

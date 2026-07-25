@@ -1,15 +1,14 @@
 ---
 name: stepped-review
-description: Iterative review loop for a document or codebase. Linear scan top-to-bottom,
-  stop at the first issue per user-specified criteria, propose fix, wait for go/stop/revise,
-  apply, then resume from the edit position (not from the top). Use when the user asks to iterate
+description: Iterative review loop for a document or codebase. Use when the user asks to iterate
   through a document/codebase finding issues one at a time.
 ---
 
 # Stepped review loop
 
 Streamlined, iterative review pattern for a document, file, or codebase, with explicit user approval at
-each step.
+each step. Linear scan top-to-bottom, stop at the first issue per user-specified criteria,
+propose fix, wait for go/stop/revise, apply, then resume from the edit position (not from the top).
 
 ## When to invoke
 

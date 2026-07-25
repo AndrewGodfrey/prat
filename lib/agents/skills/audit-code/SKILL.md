@@ -1,7 +1,13 @@
 ---
 name: audit-code
-description: Use when producing a shareable audit deliverable that surveys many callsites of a concept, API, field, or pattern across a codebase, and classifies each callsite into one of a small set of decisions (e.g. `keep` / `switch` / `add` / `defer` / `discuss`). The deliverable is intended for review, possibly by other people too.
+description: Use when producing a shareable audit deliverable that surveys many callsites of a concept, API, field, or pattern across a codebase.
 ---
+
+For producing a shareable audit deliverable that surveys many callsites of a concept, API, field, or pattern 
+across a codebase, and classifies each callsite into one of a small set of decisions 
+(e.g. `keep` / `switch` / `add` / `defer` / `discuss`). 
+
+The deliverable is intended for review, possibly by other people too.
 
 ## Why this shape
 

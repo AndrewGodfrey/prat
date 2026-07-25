@@ -1,10 +1,9 @@
 ---
 name: land-step
-description: Part of the pr-workflow skill. Moves a landed "In review" step to the done file.
-  User-invocable only — do not trigger autonomously.
+description: Part of the pr-workflow skill. User-invocable only — do not trigger autonomously.
 ---
 
-Part of the `pr-workflow` skill — only meaningful when that skill is active.
+Part of the `pr-workflow` skill — only meaningful when that skill is active. Moves a landed "In review" step to the done file.
 
 The "active plan" is the plan file most relevant to this session — infer from context, or ask if
 unclear. The user may specify which step to land; if not, and there's only one step in "In review",
