@@ -131,6 +131,12 @@ restate it — either produce evidence or investigate. Repeating an unverified c
 erodes trust and wastes turns. Add diagnostic logging, check timestamps, or find another way to
 confirm before asserting again.
 
+When empirically verifying a hypothesis about timing (e.g. "this should resolve in ~0.5s if it
+works"), size the wait/timeout to the expected fast-path duration, not a generous worst-case
+ceiling — a much-larger-than-expected timeout only pays off when the hypothesis is wrong, which is
+exactly the case you want to find out about fast. Prefer several short-timeout attempts over one
+long one: same reliability, faster signal.
+
 ### Preserving investigation evidence
 
 Don't delete artifacts an investigation produced (downloaded models, server logs, raw request/response
