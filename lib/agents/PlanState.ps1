@@ -33,7 +33,6 @@ function ConvertTo-PlanYamlScalar([string] $value) {
     return "`"$escaped`""
 }
 
-
 function ConvertFrom-PlanFrontmatterYaml([string[]] $Lines) {
     $result = [ordered]@{ State = $null; First = $null; Last = $null; Refined = @() }
     $i = 0
@@ -97,7 +96,6 @@ function ConvertTo-PlanFrontmatterYaml([hashtable] $Frontmatter) {
         }
     }
     return $out
-
 }
 
 # Returns $LineArray's lines as a plain string array (empty array if it has none).
@@ -113,7 +111,6 @@ function Get-PlanLines([LineArray] $LineArray) {
 function Find-PlanFrontmatter([LineArray] $LineArray) {
     $fm = [ordered]@{ State = $null; First = $null; Last = $null; Refined = @() }
     $range = @{ idxFirst = 0; idxLast = -1 }
-
 
     $hasOpener = -not $LineArray.IsEmpty() -and
         ($LineArray.GetLines(@{idxFirst = 0; idxLast = 0}).ToString() -eq '---')
@@ -146,7 +143,6 @@ function Get-PlanState([string] $PlanFile) {
         First    = $found.Frontmatter.First
         Last     = $found.Frontmatter.Last
         Refined  = @($found.Frontmatter.Refined)
-
         HasFrontmatter = ($found.Range.idxLast -ge 0)
     }
 }
@@ -243,7 +239,6 @@ function Set-PlanState {
         if ($PSBoundParameters.ContainsKey('State')) { $fm.State = $State }
         if ($PSBoundParameters.ContainsKey('First')) { $fm.First = $First }
         if ($PSBoundParameters.ContainsKey('Refined')) { $fm.Refined = @($Refined) }
-
     }
 
     Write-PlanFrontmatter $PlanFile $la $range $fm

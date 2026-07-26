@@ -22,7 +22,7 @@ dot-sourced; read the current state with `Get-PlanState -PlanFile <plan>`.
   code before deferring it — prior sessions may have implemented it without wrapping.
 
   Older plans may carry a `## Next step:` heading instead of frontmatter — treat it as the
-  pointer, migrate it via `Set-PlanState -PlanFile <plan> -NextStep '<step id: label>'`, and
+  pointer, migrate it via `Set-PlanState -PlanFile <plan> -First '<step id: label>'`, and
   delete the heading.
 
 - **Flesh out the pointed-at step.** Expand it from terse bullets into actionable detail — enough
