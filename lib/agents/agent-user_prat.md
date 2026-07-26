@@ -160,11 +160,13 @@ a stray to silence it.
 Every claim needs evidence traced from the artifact itself, not an adjacent signal — whether the
 claim is about success, cost, a trend, a cause, or code behavior. "The script exited cleanly" is
 not evidence it worked: either the action was self-evidently verified (e.g. the Edit tool confirmed
-a match), or you checked the result. Two sharp recurring instances:
+a match), or you checked the result. Three sharp recurring instances:
 
 - Before claiming a function "never raises" or "handles all failure modes", trace every I/O/external
   call inside it — don't generalize from the exception types its try/except already names.
 - A declining count may just mean less activity — normalize against volume before calling it a trend.
+- A subagent's own hedge on one item ("not yet inspected", "likely") isn't covered by the rest of its
+  report's verification — chase it down yourself before relaying the overall finding as settled.
 
 The same discipline covers pending-work claims (name the concrete check) and causes: the data shows
 what happened, but a cause — including one stated in a skill or doc — is a hypothesis until it has
