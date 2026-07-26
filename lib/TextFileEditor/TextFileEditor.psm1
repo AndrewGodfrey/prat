@@ -12,12 +12,14 @@ function ConvertTo-UnixLineEndings([string] $text) {
     return $text -replace "`r`n|`r|`n", "`n"
 }
 
-# Load a text file as a string.
+# Load a text file as a string, with line endings unified to LF and any single trailing newline
+# stripped.
 function Import-TextFile($file) {
-
     $contents = (Get-Content -Raw $file)
-
-    # Weird, "Get-Content -Raw" always appends an extra newline - I see this whether or not the file ends in a newline.
+    # IIRC the following '-replace' was originally added to work around a "Get-Content -Raw" bug,
+    # it would add a trailing newline even if the file didn't have one. In pwsh 7.6 and powershell 5.1,
+    # I don't see that behavior any more. So this is probably fixable (though some callers may need
+    # changes to do it without breaking something).
     $contents = $contents -replace '\r?\n$', ''
 
     return (ConvertTo-UnixLineEndings $contents)
@@ -32,6 +34,7 @@ function Format-IndentLine(
 
 class LineArray {
     hidden [string] $nl # Newline format
+    hidden [bool] $hadTrailingNewline
     hidden $lines
 
     [string] GetNl() { return $this.nl }
@@ -46,13 +49,18 @@ class LineArray {
             $this.nl = "`n"
         }
 
-        $this.lines = (ConvertTo-UnixLineEndings $data).Split("`n")
+        $unixData = ConvertTo-UnixLineEndings $data
+        $this.hadTrailingNewline = $unixData.EndsWith("`n")
+        if ($this.hadTrailingNewline) {
+            $unixData = $unixData.Substring(0, $unixData.Length - 1)
+        }
+        $this.lines = $unixData.Split("`n")
     }
 
     [int] GetLineCount() {
         if ($this.lines.Count -gt 1) { return $this.lines.Count }
         if ($this.lines.Count -le 0) { return 0 } # Impossible I think?
-        if ($this.lines[0] -eq "") { return 0 }
+        if ($this.lines[0] -eq "" -and -not $this.hadTrailingNewline) { return 0 }
         return 1
     }
 
@@ -61,7 +69,9 @@ class LineArray {
     }
 
     [string] ToString() {
-        return [System.String]::Join($this.nl, $this.lines)
+        $result = [System.String]::Join($this.nl, $this.lines)
+        if ($this.hadTrailingNewline) { $result += $this.nl }
+        return $result
     }
 
     [Void] IndentEachLine([int] $indentLevel) {
@@ -86,6 +96,11 @@ class LineArray {
             $updatedLines += $this.lines[($range.idxLast + 1)..($this.lines.Length - 1)]
         }
         $this.lines = $updatedLines
+        if ($this.lines.Count -eq 0) {
+            # Deleted the file's entire content - there's no longer a "last line" to have a trailing
+            # terminator, so a fully-emptied LineArray must render back out as "", not a lone "`n".
+            $this.hadTrailingNewline = $false
+        }
     }
 
     # Inserts the given LineArray's contents at the given line number
@@ -102,6 +117,9 @@ class LineArray {
 
     [LineArray] GetLines($range) {
         $laNew  = [LineArray]::new($this.nl)
+        # $this.nl (e.g. "`n") is passed above only to seed the same newline style - not real data -
+        # so undo any trailing-newline detection that construction spuriously picked up from it.
+        $laNew.hadTrailingNewline = $false
 
         if ($range.idxFirst -le $range.idxLast) {
             $laNew.lines = $this.lines[$range.idxFirst..$range.idxLast]

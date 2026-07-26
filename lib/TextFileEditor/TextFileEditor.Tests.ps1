@@ -60,6 +60,43 @@ Describe "GetLineCount" {
         $lineArray = [LineArray]::new("")
         $lineArray.GetLineCount() | Should -Be 0
     }
+    It "counts a single line with a trailing newline as 1 line, not 2" {
+        $lineArray = [LineArray]::new("a`n")
+        $lineArray.GetLineCount() | Should -Be 1
+    }
+    It "distinguishes a file containing just a trailing newline (1 blank line) from an empty file" {
+        $lineArray = [LineArray]::new("`n")
+        $lineArray.GetLineCount() | Should -Be 1
+    }
+}
+
+Describe "trailing newline round-trip" {
+    It "reproduces a file with a trailing newline exactly" {
+        $lineArray = [LineArray]::new("a`nb`n")
+        $lineArray.ToString() | Should -Be "a`nb`n"
+        $lineArray.GetLineCount() | Should -Be 2
+    }
+    It "reproduces a file without a trailing newline exactly" {
+        $lineArray = [LineArray]::new("a`nb")
+        $lineArray.ToString() | Should -Be "a`nb"
+        $lineArray.GetLineCount() | Should -Be 2
+    }
+    It "doesn't add a trailing newline when editing a file that has none" {
+        $lineArray = [LineArray]::new("a`nb`nc")
+        $lineArray.ReplaceLines(@{ idxFirst = 1; idxLast = 1 }, [LineArray]::new("X"))
+        $lineArray.ToString() | Should -Be "a`nX`nc"
+    }
+    It "preserves a trailing newline through an edit that doesn't touch the last line" {
+        $lineArray = [LineArray]::new("a`nb`nc`n")
+        $lineArray.ReplaceLines(@{ idxFirst = 1; idxLast = 1 }, [LineArray]::new("X"))
+        $lineArray.ToString() | Should -Be "a`nX`nc`n"
+    }
+    It "produces a truly empty string (not a lone newline) when deleting all content from a file that had a trailing newline" {
+        $lineArray = [LineArray]::new("a`n")
+        $lineArray.ReplaceLines(@{ idxFirst = 0; idxLast = 0 }, [LineArray]::new(""))
+        $lineArray.ToString() | Should -Be ""
+        $lineArray.IsEmpty() | Should -BeTrue
+    }
 }
 
 
@@ -137,6 +174,11 @@ Describe "[LineArray]::GetLines" {
     It "returns an empty LineArray for an empty range (idxLast = idxFirst - 1)" {
         $la = [LineArray]::new("a`nb`nc`nd")
         $la.GetLines(@{idxFirst=2; idxLast=1}).IsEmpty() | Should -BeTrue
+    }
+
+    It "doesn't spuriously add a trailing newline (regression: nl string used as placeholder ctor data)" {
+        $la = [LineArray]::new("a`nb`nc`nd")
+        $la.GetLines(@{idxFirst=1; idxLast=2}).ToString() | Should -Be "b`nc"
     }
 }
 
