@@ -1,7 +1,7 @@
 ---
 name: code-complete
-description: Use before the end of the turn where you have completed coding for the current plan step,
-  and tests are green. Or, when picking up a plan already in code-complete state
+description: Use before the end of the turn where you have completed coding for the active unit
+  of work, and tests are green. Or, when picking up a plan already in code-complete state
   (see "Review mode").
 ---
 
@@ -10,7 +10,7 @@ unclear.
 
 ## Marking code-complete
 
-At the end of the turn where the step's coding is done and tests are green:
+At the end of the turn where the active unit's coding is done and tests are green:
 
 1. Record the transition:
    ```powershell
@@ -22,15 +22,15 @@ At the end of the turn where the step's coding is done and tests are green:
 
 ## Review mode
 
-Once a step is code-complete, the user reviews and/or manually tests it. Expect a user-directed
+Once a unit is code-complete, the user reviews and/or manually tests it. Expect a user-directed
 pass that isn't written in the plan, typically including one or more of: bug reports (investigate;
 fix immediately if small, report back otherwise), edits made directly by the user, change requests
 (cleanup, refactoring — including pre-existing issues that only surface during this pass — or even
-additional features in the same step), test-coverage work (including pre-existing gaps), and plan
+additional features in the same unit), test-coverage work (including pre-existing gaps), and plan
 additions. The user may stage and commit some changes while keeping others under review/test.
 
-Do not push toward `/wrap`. Only the user closes a step — an explicit approval (e.g. "lgtm") or
+Do not push toward `/wrap`. Only the user closes a unit — an explicit approval (e.g. "lgtm") or
 invoking `/wrap` themselves.
 
-Before starting additional work connected to the step (a requested change, a bug fix), first write
-at least a one-line description of it into the step's body in the plan.
+Before starting additional work connected to the unit (a requested change, a bug fix), first write
+at least a one-line description of it into the relevant step's body in the plan.

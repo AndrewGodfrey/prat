@@ -1,13 +1,14 @@
 ---
 name: wrap
-description: Wraps up a step/substep in the active plan. User-invocable only — do not trigger autonomously.
+description: Wraps up the active unit of work in the active plan. User-invocable only — do not trigger autonomously.
 ---
 
 The "active plan" is the plan file most relevant to this session — infer from context, or ask if
-unclear.
+unclear. A "unit" is the plan's current-unit pointer — a contiguous run of one or more steps
+(`first`..`last`); see PlanState.ps1's header for the design rationale.
 
 This skill advances the active plan one lifecycle notch — records the user's approval of a
-refined step (at ready-to-plan) or closes a completed one (at code-complete) — and always runs
+refined unit (at ready-to-plan) or closes a completed one (at code-complete) — and always runs
 /reflect. /wrap-session closes a session instead. 
 
 ## 0. Read the state
@@ -21,11 +22,12 @@ Dispatch on `state`:
 
 ## `ready-to-plan` → advance to ready-to-implement
 
-Invoking `/wrap` here is itself the user's approval of the refined step — this skill doesn't ask,
+Invoking `/wrap` here is itself the user's approval of the refined unit — this skill doesn't ask,
 it acts.
 
-Before writing anything, sanity-check that the pointed-at step's spec is implementable — if it's
-still terse bullets or has open design questions, say so and stop rather than advance.
+Before writing anything, sanity-check that the pointed-at unit's spec (`first`..`last`) is
+implementable — if it's still terse bullets or has open design questions, say so and stop rather
+than advance.
 
 Otherwise:
 1. Invoke `/reflect` — planning lessons.
@@ -35,17 +37,18 @@ Otherwise:
    Set-PlanState -PlanFile <active plan> -State ready-to-implement
    ```
 
-## `code-complete` → close the step
+## `code-complete` → close the unit
 
 - **Check the wrap list.** Look for a "## Wrap list" section near the top of the active plan.
   If present, work through each item in it.
 
-- **Public repo check.** If any changes in this step touch a public repo (prefs, prat),
+- **Public repo check.** If any changes in this unit touch a public repo (prefs, prat),
   invoke `/check-prat-layers`.
 
-- **Move the completed step.** Cut the completed step from the active plan and prepend it to the
-  start of the corresponding `*_done.md` file, condensed to final outcomes — what changed and why,
-  not the step's task list or how conclusions were reached. Do not leave a copy in both files.
+- **Move the completed unit.** Cut the unit's step(s) — `first` through `last` — from the active
+  plan and prepend them to the start of the corresponding `*_done.md` file, condensed to final
+  outcomes — what changed and why, not the task list or how conclusions were reached. Do not leave
+  a copy in both files.
 
 - **If the plan is now complete:**
   - Consider the remaining content in the plan file (title, background, design section, etc.)
@@ -70,8 +73,8 @@ Otherwise:
 
 ## `ready-to-implement` or `checkpointed` → misfire guard
 
-The step is mid-lifecycle — don't proceed. Point the user at `/code-complete` (implementation
-finished this session) or `/wrap-session` (pausing mid-step).
+The unit is mid-lifecycle — don't proceed. Point the user at `/code-complete` (implementation
+finished this session) or `/wrap-session` (pausing mid-unit).
 
 ## No frontmatter block → treat as ready-to-plan
 
@@ -80,7 +83,7 @@ being wrapped for the first time. Treat it as `ready-to-plan` and run that flow 
 initializes the frontmatter. This is safe under the convention that implementation goes through
 `/code-complete` first (which sets a state), so a plan reaching `/wrap` with no frontmatter is one
 where planning just finished. Exception: if this session actually wrote implementation code for the
-step, use the `code-complete` close instead.
+unit, use the `code-complete` close instead.
 
 ## Unrecognized state → ask
 

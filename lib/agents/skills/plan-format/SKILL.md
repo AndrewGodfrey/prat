@@ -27,22 +27,27 @@ the new plan's design. Cite such records in "Related plans"; never fold or retir
 
 ```
 ---
-current-step:
-  name: "Step 2: <brief label>"
+current-unit:
+  first: "Step 2: <brief label>"
+  last:  "Step 2: <brief label>"
   state: ready-to-implement
 ---
 ```
 
-A `refined` list may also appear — steps beyond the pointer already planned to implementable
-detail. Read these keys freely; never hand-edit them — write only via
-`. "$home/prat/lib/agents/PlanState.ps1"; Set-PlanState ...`. Never set `ready-to-implement`
-yourself, even for a step whose design was settled in conversation — that transition is `/wrap`'s,
-which records the user's approval of the written spec; a new or reworked step is `ready-to-plan`
-until then.
+`current-unit` points at a contiguous run of one or more steps — `first`/`last` are equal for the
+common single-step case, and differ only for a batched multi-step unit (see PlanState.ps1's header
+for the design rationale). A `refined` list may also appear — steps beyond the pointer already
+planned to implementable detail. Read these keys freely; never hand-edit `state`/`refined` —
+write only via `. "$home/prat/lib/agents/PlanState.ps1"; Set-PlanState ...`. Never set
+`ready-to-implement` yourself, even for a unit whose design was settled in conversation — that
+transition is `/wrap`'s, which records the user's approval of the written spec; a new or reworked
+unit is `ready-to-plan` until then. `last` is currently set by manual frontmatter edit when
+declaring a multi-step unit — see PlanState.ps1's header.
 
 There is no `## Next step:` heading in this format; the frontmatter pointer replaces it. 
-(Older plans may still have the heading — treat it as the pointer, migrate it into
-frontmatter via the script, and delete it.)
+(Older plans may still have the heading, or the older single-pointer `current-step` shape — treat
+either as the pointer, migrate it into `current-unit` frontmatter via the script, and delete any
+leftover heading.)
 
 **Opening lines** — pointers to companion files (if they exist):
 ```
@@ -54,12 +59,13 @@ See `fooPlan_done.md` for completed steps and design rationale.
 **Wrap list** — small checklist of things to verify before marking a step done (e.g. "check
 changes don't reference private files"). Stays near the top so it's visible when finishing work.
 
-**Steps** — the action units. A step is the unit one `/wrap` closes: planned in one refine pass,
-implemented in one session, reviewed in one pass — if it doesn't fit that, split it. Headings
-must start with `Step` (e.g. `### Step 2: <brief label>`); the state script locates steps by
-matching `^##+ Step`. Label each sub-item `[AGENT]` or `[USER]`. Strike through completed items
-inline (`~~item~~ ✓ Done`) rather than deleting them, until the step is fully done — then move
-the whole step to `_done.md`.
+**Steps** — the action items. A step is planned in one refine pass and implemented in one session
+— if it doesn't fit that, split it. `/wrap` closes a **unit**: by default one step, or a
+user-declared contiguous run of several when batching (see "Frontmatter" above). Headings must
+start with `Step` (e.g. `### Step 2: <brief label>`); the state script locates steps by matching
+`^##+ Step`. Label each sub-item `[AGENT]` or `[USER]`. Strike through completed items inline
+(`~~item~~ ✓ Done`) rather than deleting them, until the step is fully done — then move the whole
+step (or, for a multi-step unit, all its steps) to `_done.md`.
 
 ## Companion files
 
