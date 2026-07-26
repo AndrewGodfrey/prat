@@ -10,15 +10,15 @@ unclear.
 
 ## Marking code-complete
 
-At the end of the turn where you believe the step's coding is done:
+At the end of the turn where the step's coding is done and tests are green:
 
-1. Invoke `/reflect` — implementation lessons, captured now while the implementation context is
-   loaded; the review that follows may happen in a different session.
-2. Mark the state:
+1. Record the transition:
    ```powershell
    . "$home/prat/lib/agents/PlanState.ps1"
    Set-PlanState -PlanFile <active plan> -State code-complete
    ```
+2. Invoke `/reflect` — implementation lessons, captured now while the implementation context is
+   loaded. (After that, review of the current step may continue in the current session, or may start in a new session).
 
 ## Review mode
 
