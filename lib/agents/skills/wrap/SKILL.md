@@ -39,11 +39,8 @@ Otherwise:
 
 ## `code-complete` → close the unit
 
-- **Check the wrap list.** Look for a "## Wrap list" section near the top of the active plan.
-  If present, work through each item in it.
-
-- **Public repo check.** If any changes in this unit touch a public repo (prefs, prat),
-  invoke `/check-prat-layers`.
+`/code-complete` already ran the wrap list and any inline step requirements before recording this
+state — don't re-run them here.
 
 - **Move the completed unit.** Cut the unit's step(s) — `first` through `last` — from the active
   plan and prepend them to the start of the corresponding `*_done.md` file, condensed to final

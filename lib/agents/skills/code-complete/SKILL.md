@@ -10,14 +10,21 @@ unclear.
 
 ## Marking code-complete
 
-At the end of the turn where the active unit's coding is done and tests are green:
+At the end of the turn where the active unit's coding is done and tests are green, verify before
+recording the transition — once the user starts reviewing, further changes from these checks cost
+a second review pass:
 
-1. Record the transition:
+1. **Public repo check.** If any changes in this unit touch a public repo (prefs, prat), invoke
+   `/check-prat-layers`.
+2. **Wrap list + inline requirements.** Work through the plan's "## Wrap list" section (near the
+   top of the active plan) if present, and any requirement stated in the unit's own step body/bodies
+   (e.g. "Conclude with `/review-changes`"). Fix anything found, and re-verify tests are still green.
+3. Record the transition:
    ```powershell
    . "$home/prat/lib/agents/PlanState.ps1"
    Set-PlanState -PlanFile <active plan> -State code-complete
    ```
-2. Invoke `/reflect` — implementation lessons, captured now while the implementation context is
+4. Invoke `/reflect` — implementation lessons, captured now while the implementation context is
    loaded. (After that, review of the current step may continue in the current session, or may start in a new session).
 
 ## Review mode
