@@ -46,6 +46,10 @@ state — don't re-run them here.
   plan and prepend them to the start of the corresponding `*_done.md` file, condensed to final
   outcomes — what changed and why, not the task list or how conclusions were reached. Do not leave
   a copy in both files.
+  - **Match the done file's own heading convention**, not just the active plan's current one — it
+    may keep a numbering sequence the active plan stopped maintaining (e.g. older steps numbered,
+    newer ones named-only). Check the done file's existing entries and continue that sequence. If
+    the active plan itself keeps a numbered summary/index of completed steps, update that too.
 
 - **If the plan is now complete:**
   - Consider the remaining content in the plan file (title, background, design section, etc.)
