@@ -59,7 +59,7 @@ refined:
 current-unit:
   first: "Step 1: alpha"
   last: "Step 3: gamma"
-  state: code-complete
+  state: ready-for-user-review
 ---
 # My Plan
 "@
@@ -68,7 +68,7 @@ current-unit:
 
         $result.First | Should -Be 'Step 1: alpha'
         $result.Last  | Should -Be 'Step 3: gamma'
-        $result.State | Should -Be 'code-complete'
+        $result.State | Should -Be 'ready-for-user-review'
     }
 
     It "returns empty refined array when the key is absent" {
@@ -196,10 +196,10 @@ current-unit:
 # My Plan
 "@
 
-        Set-PlanState -PlanFile $path -State 'code-complete' | Out-Null
+        Set-PlanState -PlanFile $path -State 'ready-for-user-review' | Out-Null
 
         $result = Get-PlanState $path
-        $result.State    | Should -Be 'code-complete'
+        $result.State    | Should -Be 'ready-for-user-review'
         $result.First    | Should -Be 'Step 2: state script'
     }
 
@@ -215,10 +215,10 @@ current-unit:
 # My Plan
 "@
 
-        Set-PlanState -PlanFile $path -State 'code-complete' | Out-Null
+        Set-PlanState -PlanFile $path -State 'ready-for-user-review' | Out-Null
 
         $result = Get-PlanState $path
-        $result.State | Should -Be 'code-complete'
+        $result.State | Should -Be 'ready-for-user-review'
         $result.First | Should -Be 'Step 1: alpha'
         $result.Last  | Should -Be 'Step 3: gamma'
     }
@@ -307,7 +307,7 @@ Describe "Set-PlanState -Advance" {
 current-unit:
   first: "Step 1: alpha"
   last: "Step 1: alpha"
-  state: code-complete
+  state: ready-for-user-review
 ---
 # Plan
 
@@ -329,7 +329,7 @@ current-unit:
 current-unit:
   first: "Step 1: alpha"
   last: "Step 2: beta"
-  state: code-complete
+  state: ready-for-user-review
 ---
 # Plan
 

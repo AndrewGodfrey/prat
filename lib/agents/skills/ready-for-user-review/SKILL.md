@@ -1,14 +1,14 @@
 ---
-name: code-complete
+name: ready-for-user-review
 description: Use before the end of the turn where you have completed coding for the active unit
-  of work, and tests are green. Or, when picking up a plan already in code-complete state
+  of work, and tests are green. Or, when picking up a plan already in ready-for-user-review state
   (see "Review mode").
 ---
 
 The "active plan" is the plan file most relevant to this session — infer from context, or ask if
 unclear.
 
-## Marking code-complete
+## Marking ready-for-user-review
 
 At the end of the turn where the active unit's coding is done and tests are green, verify before
 recording the transition — once the user starts reviewing, further changes from these checks cost
@@ -22,14 +22,14 @@ a second review pass:
 3. Record the transition:
    ```powershell
    . "$home/prat/lib/agents/PlanState.ps1"
-   Set-PlanState -PlanFile <active plan> -State code-complete
+   Set-PlanState -PlanFile <active plan> -State ready-for-user-review
    ```
 4. Invoke `/reflect` — implementation lessons, captured now while the implementation context is
    loaded. (After that, review of the current step may continue in the current session, or may start in a new session).
 
 ## Review mode
 
-Once a unit is code-complete, the user reviews and/or manually tests it. Expect a user-directed
+Once a unit is ready-for-user-review, the user reviews and/or manually tests it. Expect a user-directed
 pass that isn't written in the plan, typically including one or more of: bug reports (investigate;
 fix immediately if small, report back otherwise), edits made directly by the user, change requests
 (cleanup, refactoring — including pre-existing issues that only surface during this pass — or even

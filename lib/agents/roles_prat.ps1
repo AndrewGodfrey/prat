@@ -7,7 +7,7 @@
             'working-with-git', 'run-tests', 'testing', 'windows-edit-recovery',
             'review-changes', 'simplify',
             'remember', 'reflect',
-            'plan-format', 'start-plan', 'wrap', 'wrap-session', 'code-complete', 'land-step',
+            'plan-format', 'start-plan', 'wrap', 'wrap-session', 'ready-for-user-review', 'land-step',
             'plan-refine-next-step'
         )
         # Prat-ecosystem development (i.e. working in any pratified projects, such as prat, prefs, de).

@@ -8,7 +8,7 @@ unclear. A "unit" is the plan's current-unit pointer — a contiguous run of one
 (`first`..`last`); see PlanState.ps1's header for the design rationale.
 
 This skill advances the active plan one lifecycle notch — records the user's approval of a
-refined unit (at ready-to-plan) or closes a completed one (at code-complete) — and always runs
+refined unit (at ready-to-plan) or closes a completed one (at ready-for-user-review) — and always runs
 /reflect. /wrap-session closes a session instead. 
 
 ## 0. Read the state
@@ -37,9 +37,9 @@ Otherwise:
    Set-PlanState -PlanFile <active plan> -State ready-to-implement
    ```
 
-## `code-complete` → close the unit
+## `ready-for-user-review` → close the unit
 
-`/code-complete` already ran the wrap list and any inline step requirements before recording this
+`/ready-for-user-review` already ran the wrap list and any inline step requirements before recording this
 state — don't re-run them here.
 
 - **Move the completed unit.** Cut the unit's step(s) — `first` through `last` — from the active
@@ -57,7 +57,7 @@ state — don't re-run them here.
   - Then, move all remaining content to the done file as a header block, then delete the plan
     file. Skip the pointer-advance step below — there is nothing to advance.
 
-- Invoke `/reflect` — review lessons; the implementation `/reflect` already ran at code-complete.
+- Invoke `/reflect` — review lessons; the implementation `/reflect` already ran at ready-for-user-review.
 
 - **Advance the pointer.** Only once open questions (including any from the `/reflect`
   conversation) are resolved — never in the same turn as an open question:
@@ -74,7 +74,7 @@ state — don't re-run them here.
 
 ## `ready-to-implement` or `checkpointed` → misfire guard
 
-The unit is mid-lifecycle — don't proceed. Point the user at `/code-complete` (implementation
+The unit is mid-lifecycle — don't proceed. Point the user at `/ready-for-user-review` (implementation
 finished this session) or `/wrap-session` (pausing mid-unit).
 
 ## No frontmatter block → treat as ready-to-plan
@@ -82,9 +82,9 @@ finished this session) or `/wrap-session` (pausing mid-unit).
 If `Get-PlanState` reports `HasFrontmatter` false, the plan predates the state mechanism and is
 being wrapped for the first time. Treat it as `ready-to-plan` and run that flow — `Set-PlanState`
 initializes the frontmatter. This is safe under the convention that implementation goes through
-`/code-complete` first (which sets a state), so a plan reaching `/wrap` with no frontmatter is one
+`/ready-for-user-review` first (which sets a state), so a plan reaching `/wrap` with no frontmatter is one
 where planning just finished. Exception: if this session actually wrote implementation code for the
-unit, use the `code-complete` close instead.
+unit, use the `ready-for-user-review` close instead.
 
 ## Unrecognized state → ask
 

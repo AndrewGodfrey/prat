@@ -244,3 +244,12 @@ function Set-PlanState {
     Write-PlanFrontmatter $PlanFile $la $range $fm
     return Get-PlanState $PlanFile
 }
+
+# Maps plan lifecycle state to a display stage label. Any other transient states are mapped back to 'planning'.
+function Get-PlanStageLabel([string] $state) {
+    switch ($state) {
+        'ready-to-implement'    { 'coding' }
+        'ready-for-user-review' { 'reviewing' }
+        default                 { 'planning' }
+    }
+}
