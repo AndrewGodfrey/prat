@@ -414,11 +414,6 @@ $pratPackages = @{
     sysinternals = @{
         install = { installPratWingetPackage "9P7KNL5RWT25"}
     }
-    marktext = @{
-        install = {
-            installPratWingetPackage "MarkText.MarkText" -NoScope
-        }
-    }
     winget = @{
         check = { $null -ne (Get-Command winget -ErrorAction SilentlyContinue) }
         install = {
