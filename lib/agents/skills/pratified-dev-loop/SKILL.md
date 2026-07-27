@@ -1,7 +1,7 @@
 ---
 name: pratified-dev-loop
 description: Use in any pratified project for build/test/deploy/prebuild work — b, d, pb, t.
-  Includes coverage tools (Get-FileCoverage, Get-CoverageDetails, Get-CoverageReport).
+  Includes coverage tools (Get-FileCoverage, Get-CoverageReport/gcr).
 ---
 
 How to pratify a project? See the `pratify-a-project` skill.
@@ -105,7 +105,9 @@ project — `<repoRoot>/auto/testRuns/[<subprojectId>/]last/coverage.xml` — in
 segment when the target is inside a registered subproject. To point at a different run, pass the
 file explicitly: `Get-FileCoverage ... -CoverageFile <path>` / `gcr -coverageFile <path>`.
 
-`Get-CoverageDetails` and `gcr` support JaCoCo/CoverageGutters and Cobertura XML formats.
+`Get-FileCoverage` and `gcr` support JaCoCo/CoverageGutters and Cobertura XML formats — both read
+through the shared `lib/Get-CoverageDetails.ps1` parser, which is an internal script, not a command
+on PATH.
 
 ## Fixing Failures
 
