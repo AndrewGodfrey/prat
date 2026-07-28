@@ -179,6 +179,36 @@ Describe "Write-TestRunResult" {
         $hint = $output | Where-Object { $_ -match 'test-run\.txt' }
         $hint | Should -Not -Match '\\'
     }
+
+    It "names every failing run's log, with its own counts, when FailureLogs has more than one entry" {
+        $runDir = "$TestDrive/wr-multi"
+        New-Item $runDir -ItemType Directory | Out-Null
+
+        $output = Write-TestRunResult -Passed 10 -Failed 9 -FailuresSeen 7 -RunDir $runDir -FailureLogs @(
+            @{ RunDir = "$TestDrive/wr-multi-pester"; Failed = 2; FailuresSeen = 2 }
+            @{ RunDir = "$TestDrive/wr-multi-pytest"; Failed = 7; FailuresSeen = 5 }
+        )
+
+        $hint = ($output | Where-Object { $_ -match 'test-run\.txt' }) -join "`n"
+        $hint | Should -Match 'wr-multi-pester/test-run\.txt'
+        $hint | Should -Match 'wr-multi-pytest/test-run\.txt'
+        # The aggregating run's own dir holds only summary.txt — pointing there is the bug this guards.
+        $hint | Should -Not -Match 'wr-multi/test-run\.txt'
+        $hint | Should -Match '2 not shown'
+    }
+
+    It "names only the failing run's log when FailureLogs has one entry" {
+        $runDir = "$TestDrive/wr-single-fl"
+        New-Item $runDir -ItemType Directory | Out-Null
+
+        $output = Write-TestRunResult -Passed 3 -Failed 7 -FailuresSeen 5 -RunDir $runDir -FailureLogs @(
+            @{ RunDir = "$TestDrive/wr-single-fl-pytest"; Failed = 7; FailuresSeen = 5 }
+        )
+
+        $hint = ($output | Where-Object { $_ -match 'test-run\.txt' }) -join "`n"
+        $hint | Should -Match 'wr-single-fl-pytest/test-run\.txt'
+        $hint | Should -Match '2 failures suppressed'
+    }
 }
 
 Describe "Convert-CoberturaXmlFile" {
@@ -482,6 +512,52 @@ Describe "Merge-TestSummary" {
 
         # 12 failures >= summed threshold 10 → red (91)
         $output | Select-Object -First 1 | Should -Match '^\x1b\[91m'
+    }
+
+    It "points the failure hint at the run that failed, not the run that owns summary.txt" {
+        # The reported bug: a repo-level `t` merges Pester (clean) with a pytest subproject (failing),
+        # and the hint named the Pester log — where none of the failures are.
+        $runDirA = "$TestDrive/ms-hint-pester"; New-Item $runDirA -ItemType Directory | Out-Null
+        $a = @{ CoverageData = $null; Passed = 266; Failed = 0
+                FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = $runDirA }
+        $b = @{ CoverageData = $null; Passed = 606; Failed = 7
+                FatalError = $null; FailuresSeen = 5; FailureThreshold = 5; RunDir = "$TestDrive/ms-hint-pytest" }
+
+        $output = Merge-TestSummary @($a, $b) ([TimeSpan]::Zero)
+
+        $hint = ($output | Where-Object { $_ -match 'test-run\.txt' }) -join "`n"
+        $hint | Should -Match 'ms-hint-pytest/test-run\.txt'
+        $hint | Should -Not -Match 'ms-hint-pester/test-run\.txt'
+        $hint | Should -Match '2 failures suppressed'
+    }
+
+    It "lists every failing run's log when more than one run failed" {
+        $runDirA = "$TestDrive/ms-hint-both-a"; New-Item $runDirA -ItemType Directory | Out-Null
+        $a = @{ CoverageData = $null; Passed = 266; Failed = 2
+                FatalError = $null; FailuresSeen = 2; FailureThreshold = 5; RunDir = $runDirA }
+        $b = @{ CoverageData = $null; Passed = 606; Failed = 7
+                FatalError = $null; FailuresSeen = 5; FailureThreshold = 5; RunDir = "$TestDrive/ms-hint-both-b" }
+
+        $output = Merge-TestSummary @($a, $b) ([TimeSpan]::Zero)
+
+        $hint = ($output | Where-Object { $_ -match 'test-run\.txt' }) -join "`n"
+        $hint | Should -Match 'ms-hint-both-a/test-run\.txt'
+        $hint | Should -Match 'ms-hint-both-b/test-run\.txt'
+        $hint | Should -Match '2 not shown'   # b's suppressed count, attributed to b's log
+    }
+
+    It "flattens FailureLogs from an already-merged result, so nested merges keep the real logs" {
+        $runDirA = "$TestDrive/ms-nested-a"; New-Item $runDirA -ItemType Directory | Out-Null
+        $inner = @{ CoverageData = $null; Passed = 10; Failed = 3
+                    FatalError = $null; FailuresSeen = 3; FailureThreshold = 5; RunDir = "$TestDrive/ms-nested-inner"
+                    FailureLogs = @(@{ RunDir = "$TestDrive/ms-nested-pytest"; Failed = 3; FailuresSeen = 3 }) }
+        $a = @{ CoverageData = $null; Passed = 5; Failed = 0
+                FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = $runDirA }
+
+        $merged = Merge-TestSummary @($a, $inner) ([TimeSpan]::Zero) -PassThru
+
+        @($merged.FailureLogs).Count | Should -Be 1
+        $merged.FailureLogs[0].RunDir | Should -Be "$TestDrive/ms-nested-pytest"
     }
 }
 

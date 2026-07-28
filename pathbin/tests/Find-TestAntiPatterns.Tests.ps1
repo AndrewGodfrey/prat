@@ -260,6 +260,54 @@ Describe "Find-TestAntiPatternsInContent" {
         }
     }
 
+    Context "Save-Env/Restore-Env pair (PratBase)" {
+        # Pester's idiom puts the save in BeforeEach and the restore in AfterEach, so the pair
+        # brackets the mutating lines in execution order but not in line order — protection is
+        # therefore per-named-variable and file-wide, not a line range.
+        It "does not flag a variable named in a Save-Env whose result is restored" {
+            $nl = [Environment]::NewLine
+            $content = "BeforeEach { `$script:saved = Save-Env @('MYVAR') }" + $nl +
+                       'AfterEach  { Restore-Env $script:saved }' + $nl +
+                       'It "x" {' + $nl +
+                       ($script:ep + 'MYVAR = "x"') + $nl +
+                       '}'
+            $result = @(Find-TestAntiPatternsInContent $content "t.Tests.ps1")
+
+            $result | Should -HaveCount 0
+        }
+
+        It "protects every variable named in one Save-Env call" {
+            $nl = [Environment]::NewLine
+            $content = "`$saved = Save-Env @('FOO', 'BAR')" + $nl +
+                       ($script:ep + 'FOO = "x"') + $nl +
+                       ($script:ep + 'BAR = "y"') + $nl +
+                       'Restore-Env $saved'
+            $result = @(Find-TestAntiPatternsInContent $content "t.Tests.ps1")
+
+            $result | Should -HaveCount 0
+        }
+
+        It "still flags a variable the Save-Env call does not name" {
+            $nl = [Environment]::NewLine
+            $content = "`$saved = Save-Env @('FOO')" + $nl +
+                       ($script:ep + 'BAR = "y"') + $nl +
+                       'Restore-Env $saved'
+            $result = @(Find-TestAntiPatternsInContent $content "t.Tests.ps1")
+
+            $result | Should -HaveCount 1
+            $result[0] | Should -Match 'BAR'
+        }
+
+        It "still flags when the Save-Env result is never restored" {
+            $nl = [Environment]::NewLine
+            $content = "`$saved = Save-Env @('FOO')" + $nl +
+                       ($script:ep + 'FOO = "x"')
+            $result = @(Find-TestAntiPatternsInContent $content "t.Tests.ps1")
+
+            $result | Should -HaveCount 1
+        }
+    }
+
     Context "# TestAntiPatternOK suppressor" {
         BeforeAll { $script:h = '$' + 'home' }
 

@@ -35,6 +35,11 @@ function Initialize-TestRunDir {
 # and emits a hint (log file path, suppression count) when there are failures.
 #
 # $Passed/$Failed accept $null to signal "no result parsed" (yellow summary, fallback text).
+#
+# $RunDir is where summary.txt goes. $FailureLogs names the run(s) whose test-run.txt actually
+# holds the failures — they differ for a merged run, where each constituent runner wrote its own
+# log and $RunDir is just the aggregation root. Each entry: @{ RunDir; Failed; FailuresSeen }.
+# Defaults to $RunDir itself, which is the single-runner case.
 function Write-TestRunResult {
     param(
         [hashtable] $CoverageData = $null,
@@ -43,6 +48,7 @@ function Write-TestRunResult {
         [TimeSpan] $Elapsed = [TimeSpan]::Zero,
         [int] $FailuresSeen = 0,
         [string] $RunDir,
+        [hashtable[]] $FailureLogs = @(),
         [int] $FailureThreshold = 5,
         [string] $FatalError = $null
     )
@@ -79,21 +85,32 @@ function Write-TestRunResult {
         Format-AnsiText $plainSummary $colorCode
     }
 
+    # @() around the whole pipeline: a bare hashtable's .Count is its key count, not 1.
+    $logs = @(@(if ($FailureLogs) { $FailureLogs } else {
+        @{ RunDir = $RunDir; Failed = $failedCount; FailuresSeen = $FailuresSeen }
+    }) | ForEach-Object {
+        @{ Log          = ("$($_.RunDir)/test-run.txt") -replace '\\', '/'
+           Failed       = [int]($_.Failed ?? 0)
+           FailuresSeen = [int]($_.FailuresSeen ?? 0) }
+    })
+
     if ($FatalError) {
-        $logFile = ("$RunDir/test-run.txt") -replace '\\', '/'
-        if (Test-Path $logFile) {
-            Get-Content $logFile -Tail 20 | ForEach-Object { Format-AnsiText $_ 91 }
+        if (Test-Path $logs[0].Log) {
+            Get-Content $logs[0].Log -Tail 20 | ForEach-Object { Format-AnsiText $_ 91 }
         }
-        Format-AnsiText "See $logFile" 93
-    } elseif ($failedCount -gt 0) {
-        $logFile = ("$RunDir/test-run.txt") -replace '\\', '/'
-        $suppressed = $failedCount - $FailuresSeen
-        $hint = if ($suppressed -gt 0) {
-            "$suppressed failure$(if ($suppressed -ne 1) {'s'}) suppressed - see $logFile"
-        } else {
-            "See $logFile"
-        }
+        Format-AnsiText "See $(($logs.Log) -join ', ')" 93
+    } elseif ($failedCount -gt 0 -and $logs.Count -eq 1) {
+        $suppressed = $failedCount - $logs[0].FailuresSeen
+        $hint = if ($suppressed -gt 0) { "$suppressed failure$(if ($suppressed -ne 1) {'s'}) suppressed - see $($logs[0].Log)" }
+                else                   { "See $($logs[0].Log)" }
         Format-AnsiText $hint 93
+    } elseif ($failedCount -gt 0) {
+        Format-AnsiText "$failedCount failures across $($logs.Count) test runs - see:" 93
+        foreach ($l in $logs) {
+            $suppressed = $l.Failed - $l.FailuresSeen
+            $detail = "$($l.Failed) failed$(if ($suppressed -gt 0) { ", $suppressed not shown above" })"
+            Format-AnsiText "  $($l.Log) ($detail)" 93
+        }
     }
 }
 
@@ -157,6 +174,16 @@ function Merge-TestSummary {
     $failureThreshold = ($Summaries | ForEach-Object { $_.FailureThreshold ?? 0 } | Measure-Object -Sum).Sum
     $runDir           = ($Summaries | Where-Object { $_.RunDir } | Select-Object -First 1).RunDir
 
+    # summary.txt lands in $runDir, but each constituent runner wrote its failures to its own
+    # test-run.txt — so carry the failing ones through for the hint. An already-merged summary
+    # contributes its own list, keeping the real logs across nested merges.
+    $failureLogs = @($Summaries | ForEach-Object {
+        if ($_.FailureLogs) { $_.FailureLogs }
+        elseif ((($_.Failed ?? 0) -gt 0) -or $_.FatalError) {
+            @{ RunDir = $_.RunDir; Failed = $_.Failed ?? 0; FailuresSeen = $_.FailuresSeen ?? 0 }
+        }
+    })
+
     if ($PassThru) {
         return @{
             CoverageData     = $covData
@@ -166,6 +193,7 @@ function Merge-TestSummary {
             FailuresSeen     = $failuresSeen
             FailureThreshold = $failureThreshold
             RunDir           = $runDir
+            FailureLogs      = $failureLogs
         }
     }
 
@@ -177,6 +205,7 @@ function Merge-TestSummary {
         -FailuresSeen     $failuresSeen `
         -FailureThreshold $failureThreshold `
         -RunDir           $runDir `
+        -FailureLogs      $failureLogs `
         -FatalError       $fatalError
 }
 

@@ -40,6 +40,10 @@ function Find-TestAntiPatternsInContent {
     #   a) Direct save: = $env:VARNAME read elsewhere in the file
     #   b) Push/pop range: $VAR = push*Environment ... pop*Environment $VAR
     #      — each well-formed pair defines a protected line range; writes inside any range are covered.
+    #   c) Save-Env/Restore-Env (PratBase): $VAR = Save-Env @('A','B') ... Restore-Env $VAR
+    #      — covers exactly the named variables, anywhere in the file. Not a line range: Pester's
+    #      idiom puts the save in BeforeEach and the restore in AfterEach, which brackets the
+    #      mutating lines in execution order but not in line order.
 
     # Build protected line ranges from well-formed push/pop pairs.
     $protectedRanges = [System.Collections.Generic.List[object]]::new()
@@ -76,8 +80,21 @@ function Find-TestAntiPatternsInContent {
         }
     }
 
+    # Variables covered by a Save-Env whose result is handed back to Restore-Env.
+    $savedVars = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($line in $lines) {
+        $m = [regex]::Match($line, '\$([\w:]+)\s*=\s*Save-Env\b(?<names>.*)$')
+        if (-not $m.Success) { continue }
+        $restorePattern = '\bRestore-Env\b.*\$' + [regex]::Escape($m.Groups[1].Value) + '\b'
+        if ($filteredContent -notmatch $restorePattern) { continue }
+        foreach ($n in [regex]::Matches($m.Groups['names'].Value, '''([^'']+)''|"([^"]+)"')) {
+            $savedVars.Add($n.Groups[1].Value + $n.Groups[2].Value) | Out-Null
+        }
+    }
+
     foreach ($kvp in $varWrites.GetEnumerator()) {
         $varName = $kvp.Key
+        if ($savedVars.Contains($varName)) { continue }
         $unprotectedLines = @($kvp.Value | Where-Object {
             $ln = $_
             -not ($protectedRanges | Where-Object { $ln -ge $_.Start -and $ln -le $_.End })
