@@ -51,6 +51,11 @@ state — don't re-run them here.
     newer ones named-only). Check the done file's existing entries and continue that sequence. If
     the active plan itself keeps a numbered summary/index of completed steps, update that too.
 
+- **Re-point what's left.** Grep the remaining steps for references to the moved unit ("see the X
+  step", "previous step", "once X lands") and for claims it just settled — a later step may still
+  warn about a cause the unit disproved, or rest on a measurement it invalidated. Update both in
+  place; a reference to a step now in the done file should name it by its done-file number.
+
 - **If the plan is now complete:**
   - Consider the remaining content in the plan file (title, background, design section, etc.)
     It might have permanent design info that belongs in a document - move that if so.
