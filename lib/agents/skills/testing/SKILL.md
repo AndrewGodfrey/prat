@@ -100,6 +100,10 @@ production code before forcing the test to fit.
 Red flag: a test passes when you expected it to fail — either the test is wrong, or the behavior was
 already present somewhere unexpected. Investigate before proceeding.
 
+Conversely, read the failure *message* of a test that fails as expected: "red" and "red for the
+intended reason" are different states, and an import error, a missing fixture or a crash in setup
+look identical from the pass/fail count.
+
 ## Mid-task verification
 
 Any message describing a change you just made is a verification moment — not just the final one. Run
