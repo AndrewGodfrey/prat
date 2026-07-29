@@ -52,6 +52,9 @@ Anti-patterns:
 - Relative path with implicit current-directory dependency
 - Numeric edge cases (zero, overflow)
 - Generated code/config text checked only by string match, never verified to actually parse
+- A predicate over text that embeds outside content (file contents, another tool's output, the
+  model's own arguments) tested only with text that *should* match — the missing case is content
+  crafted to satisfy the predicate without meaning it
 - **"Value is restored" tests:** when asserting that X is restored to its original value, ensure
   the pre-test value of X is distinct from what the code would leave it at without restoration —
   otherwise a coincidental match makes the test pass when it should fail. Set an explicit starting
