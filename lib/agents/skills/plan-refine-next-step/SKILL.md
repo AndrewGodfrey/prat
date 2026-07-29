@@ -28,8 +28,9 @@ dot-sourced; read the current state with `Get-PlanState -PlanFile <plan>`.
 - **Flesh out the pointed-at step.** Expand it from terse bullets into actionable detail — enough
   that a fresh agent session starting with "do the next step of this plan" can proceed without
   ambiguity, and without reading the plan's background file. Where the design rests on a factual
-  claim about the codebase — how often a pattern occurs, whether a case exists — measure it and
-  record the number in the step, rather than asserting it from intuition.
+  claim about the codebase or about a dependency's behaviour — how often a pattern occurs, whether a case exists,
+  what a library does on this platform, relevant platform behavior — measure it and record the number in the
+  step, rather than asserting it from intuition.
 
 - **Add a sub-item to check test coverage for modified lines.**
 
