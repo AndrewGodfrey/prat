@@ -10,6 +10,12 @@ Some of these are specific to the Prat ecosystem, some are general Python conven
 In the prat ecosystem, Python is currently pinned to **3.12**. See the comment in `instPackages.ps1` for the
 compatibility rationale.
 
+# Timing measurements
+
+`time.monotonic()` is ~15.6ms-granular on Windows (observed, 3.12) — sub-100ms intervals come back
+quantized to multiples of 15.6, so a real 47ms reads as 63.0 and a real 2ms reads as 0.0. Use
+`time.perf_counter()` for anything under ~1s.
+
 # sys.path and PYTHONPATH
 
 `python312._pth` (in the Python install dir) suppresses
