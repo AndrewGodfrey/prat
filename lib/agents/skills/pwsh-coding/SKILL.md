@@ -173,6 +173,11 @@ Unlike `$home`, Powershell doesn't expand `~` before passing it to things that d
 programs or .NET APIs. So we have to be carefuly to expand it ourselves, in such cases.
 Another somewhat surprising case is `pwsh -File ~/...` - that too doesn't expand `~`.
 
+# .NET APIs resolve relative paths against the process working directory
+
+`Set-Location`/`cd` moves PowerShell's own location, not `[Environment]::CurrentDirectory`, so
+`[IO.File]::ReadAllBytes('lib/foo.ps1')` after `cd ~/myrepo` still resolves against wherever the
+process started. Pass .NET APIs an absolute path.
 
 # Checking whether a path is absolute
 
