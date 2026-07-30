@@ -49,7 +49,11 @@ state — don't re-run them here.
   - **Match the done file's own heading convention**, not just the active plan's current one — it
     may keep a numbering sequence the active plan stopped maintaining (e.g. older steps numbered,
     newer ones named-only). Check the done file's existing entries and continue that sequence. If
-    the active plan itself keeps a numbered summary/index of completed steps, update that too.
+    the active plan itself keeps a one-line index of completed steps, add this unit to it and trim
+    the list to the 5 most recent entries — the full list is already in the done file, and every
+    session that reads the plan pays for the rest. Keep the numbers on the survivors so they still
+    match the done file. If a trimmed line carried an annotation the done file lacks ("later
+    retired in favor of X"), move it into the done entry first.
 
 - **Re-point what's left.** Grep the remaining steps for references to the moved unit ("see the X
   step", "previous step", "once X lands") and for claims it just settled — a later step may still
