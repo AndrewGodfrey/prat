@@ -49,6 +49,15 @@ despite the profile being loaded, the likely cause is a profile-less invocation.
 
 If you want no cache at all (e.g. in a test runner where compilation overhead is negligible and you want zero artifacts), add `-B` to the python invocation explicitly. 
 
+# monkeypatch mutates the shared object, not a copy
+
+`monkeypatch.setattr(module, "name", fake)` mutates `module` in place. Code that reads
+`module.name` *after* the patch — even a fresh `import module; module.name` in a later test —
+sees the fake, not the original; there is no way to "read the pre-patch value" once another test
+has already patched it. To exercise real behavior under a partially-mocked shared fixture, don't
+route through that fixture — set up the real preconditions directly instead of trying to undo one
+of its patches.
+
 # Naming
 
 | pattern | use |
