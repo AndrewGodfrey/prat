@@ -30,12 +30,12 @@ implementable — if it's still terse bullets or has open design questions, say 
 than advance.
 
 Otherwise:
-1. Invoke `/reflect` — planning lessons.
-2. Only once open questions (including any raised during that `/reflect` conversation) are
-   resolved — never in the same turn as an open question:
-   ```powershell
-   Set-PlanState -PlanFile <active plan> -State ready-to-implement
-   ```
+1. 
+```powershell
+Set-PlanState -PlanFile <active plan> -State ready-to-implement
+```
+
+2. Invoke `/reflect` — planning lessons.
 
 ## `ready-for-user-review` → close the unit
 
