@@ -62,6 +62,13 @@ Describe "Find-TestAntiPatternsInContent" {
             $result | Should -HaveCount 0
         }
 
+        It "does not flag an env-var assignment that is inside a comment" {
+            # Found live: a comment doing arithmetic ("... + $env:temp = 9") read as a write.
+            $result = @(Find-TestAntiPatternsInContent ('        # Downloads + ' + $script:ep + 'temp = 9; nine total') "t.Tests.ps1")
+
+            $result | Should -HaveCount 0
+        }
+
         It "does not flag when hashtable save pattern exists" {
             $content = '$prev = @{ myVar = $env:myVar }' + [Environment]::NewLine + ($script:ep + 'myVar = "foo"')
             $result = @(Find-TestAntiPatternsInContent $content "t.Tests.ps1")

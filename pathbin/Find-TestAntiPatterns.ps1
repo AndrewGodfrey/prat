@@ -70,7 +70,10 @@ function Find-TestAntiPatternsInContent {
     for ($i = 0; $i -lt $lines.Count; $i++) {
         $line = $lines[$i]
         if ($line -match '#\s*TestAntiPatternOK') { continue }
-        $m = [regex]::Match($line, '\$env:([A-Za-z_][A-Za-z_0-9]*)\s*=')
+        # `^[^#]*?` keeps the match on the code side of any comment: a comment doing arithmetic
+        # ("... + $env:temp = 9") is not a write. A '#' inside a string before an assignment on the
+        # same line costs a detection, which is the safe direction.
+        $m = [regex]::Match($line, '^[^#]*?\$env:([A-Za-z_][A-Za-z_0-9]*)\s*=')
         if ($m.Success) {
             $varName = $m.Groups[1].Value
             if (-not $varWrites.ContainsKey($varName)) {
