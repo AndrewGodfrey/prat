@@ -148,12 +148,14 @@ function Get-LongMarkdownLineFindings {
 if ($MyInvocation.InvocationName -ne '.') {
     $allFindings = Get-LongMarkdownLineFindings -Path $Path -MaxLength $MaxLength
 
+    # Write-Output, not Write-Host: these lines are the script's result, so `... | Where-Object`
+    # filters them rather than silently returning everything.
     if ($allFindings.Count -eq 0) {
-        Write-Host "Clean: no markdown lines over $MaxLength chars in $Path"
+        Write-Output "Clean: no markdown lines over $MaxLength chars in $Path"
         exit 0
     } else {
         foreach ($f in $allFindings) {
-            Write-Host ("{0}:{1}: {2} chars (max {3})" -f $f.Path, $f.Line, $f.Length, $MaxLength)
+            Write-Output ("{0}:{1}: {2} chars (max {3})" -f $f.Path, $f.Line, $f.Length, $MaxLength)
         }
         exit 1
     }

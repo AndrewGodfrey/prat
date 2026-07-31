@@ -200,3 +200,41 @@ Describe "Get-LongMarkdownLineFindings" {
         }
     }
 }
+
+Describe "script entry point" {
+    # Invoked with & (not dot-sourced), so the entry-point guard fires. Findings must reach the
+    # success stream: printing them with Write-Host would leave `Find-LongMarkdownLines | Where-Object`
+    # silently returning everything unfiltered.
+    BeforeAll {
+        $script:scriptPath = "$PSScriptRoot/../Find-LongMarkdownLines.ps1"
+        $script:realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+    }
+
+    It "emits each finding to the pipeline, and exits 1" {
+        $f = "$script:realTestDrive/entry-long-$([System.IO.Path]::GetRandomFileName()).md"
+        ('a' * 130) | Set-Content $f -Encoding utf8NoBOM
+        try {
+            $out = @(& $script:scriptPath -Path $f)
+
+            $out | Should -HaveCount 1
+            $out[0] | Should -BeLike "*: 130 chars (max 120)"
+            $LASTEXITCODE | Should -Be 1
+        } finally {
+            Remove-Item $f -Force
+        }
+    }
+
+    It "emits the clean message to the pipeline, and exits 0" {
+        $f = "$script:realTestDrive/entry-clean-$([System.IO.Path]::GetRandomFileName()).md"
+        "short line" | Set-Content $f -Encoding utf8NoBOM
+        try {
+            $out = @(& $script:scriptPath -Path $f)
+
+            $out | Should -HaveCount 1
+            $out[0] | Should -BeLike "Clean:*"
+            $LASTEXITCODE | Should -Be 0
+        } finally {
+            Remove-Item $f -Force
+        }
+    }
+}
