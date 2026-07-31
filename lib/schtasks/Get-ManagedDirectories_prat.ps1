@@ -1,5 +1,5 @@
 # See daily_cleanManagedDirectories.ps1
-param([switch] $AddRecommendedDirectories = $false)
+param([switch] $AddRecommendedDirectories = $false, [string] $UserName = $env:USERNAME)
 
 @{ path = "$home\prat\auto\log"; days = 14 }
 
