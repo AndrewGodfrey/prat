@@ -404,6 +404,34 @@ $pratPackages = @{
         }
         dependencies = @("sudo")
     }
+
+    # Uses GitHub release download, not winget, and placed in $home\sharedPathBin,
+    # so it that it can be used by the agent-sandbox account.
+    ripgrep = @{
+        installerVersion = "1.0"
+        install = {
+            $version = "15.2.0"
+            $rgDir   = "$home\sharedPathBin\ripgrep"
+            $rgExe   = "$rgDir\rg.exe"
+
+            $zipFile = "$env:TEMP\ripgrep-$version-x86_64-pc-windows-msvc.zip"
+            curl.exe -sL -o $zipFile "https://github.com/BurntSushi/ripgrep/releases/download/$version/ripgrep-$version-x86_64-pc-windows-msvc.zip"
+            if ($LASTEXITCODE -ne 0) { throw "ripgrep download failed (exit $LASTEXITCODE)" }
+            $extractDir = "$env:TEMP\ripgrep-$version-extract"
+            Remove-Item $extractDir -Recurse -Force -ErrorAction SilentlyContinue
+            Expand-Archive -Path $zipFile -DestinationPath $extractDir -Force
+            Remove-Item $zipFile -Force -ErrorAction SilentlyContinue
+            New-Item -ItemType Directory -Force -Path (Split-Path $rgDir -Parent) | Out-Null
+            Remove-Item $rgDir -Recurse -Force -ErrorAction SilentlyContinue
+            Move-Item "$extractDir\ripgrep-$version-x86_64-pc-windows-msvc" $rgDir
+            Remove-Item $extractDir -Recurse -Force -ErrorAction SilentlyContinue
+            if (-not (Test-Path $rgExe)) { throw "ripgrep extract failed" }
+
+            # -Prepend: guarantees this copy wins on PATH regardless of install order, ahead of any
+            # stray winget-era install left over on a machine that ran the old package definition.
+            Install-UserPathEntry $stage $rgDir -Prepend
+        }
+    }
     sudo = @{
         install = {
             installPratWingetPackage "gerardog.gsudo"
