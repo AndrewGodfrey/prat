@@ -17,22 +17,36 @@ param (
     [string] $Function
 )
 
+$project = try { Get-PratProject -Location $FilePath } catch { $null }
+
 if ($null -eq $CoverageFile) {
-    $project = try { Get-PratProject -Location $FilePath } catch { $null }
     if (-not $project) {
         throw "Cannot infer coverage file: $FilePath is not in a registered prat project. Pass -CoverageFile explicitly."
     }
     $CoverageFile = "$(Get-ProjectTestOutputDir $project)/last/coverage.xml"
 }
 
-$data = & "$PSScriptRoot/../lib/Get-CoverageDetails.ps1" -CoverageFile $CoverageFile
+# PathBase: the project root when $FilePath is registered (and the registration has a usable
+# root - guards a sloppy mock, real registrations always have one), else the git root, else $null
+# (both the query key and Get-CoverageDetails' keys then stay absolute).
+$pathBase = if ($project -and $project.root) { $project.root } else { Resolve-GitRoot $FilePath }
+$normalizedPathBase = if ($pathBase) { ([string]$pathBase -replace '\\', '/').TrimEnd('/') } else { $null }
+
+$data = & "$PSScriptRoot/../lib/Get-CoverageDetails.ps1" -CoverageFile $CoverageFile -PathBase $pathBase
 $unitName = $data.instructionUnit ?? "Instructions"
 
 $resolved = Resolve-Path $FilePath -ErrorAction SilentlyContinue
-$normalizedPath = ($resolved ? $resolved.Path : $FilePath).Replace('\', '/')
-$methods = $data.perFileMethodData[$normalizedPath]
+$absolutePath = ($resolved ? $resolved.Path : $FilePath).Replace('\', '/')
+$queryKey = if ($normalizedPathBase -and $absolutePath.StartsWith("$normalizedPathBase/", [System.StringComparison]::OrdinalIgnoreCase)) {
+    $absolutePath.Substring($normalizedPathBase.Length + 1)
+} else {
+    $absolutePath
+}
+
+$methods = $data.perFileMethodData[$queryKey]
 if ($null -eq $methods) {
-    Write-Warning "No coverage data for '$normalizedPath' in '$CoverageFile'."
+    $baseDescription = if ($normalizedPathBase) { $normalizedPathBase } else { "<none>" }
+    Write-Warning "No coverage data for key '$queryKey' (PathBase: $baseDescription) in '$CoverageFile'."
     return @()
 }
 
@@ -50,7 +64,7 @@ if (-not $Detail) {
     return
 }
 
-$lines = $data.perFileLineData[$normalizedPath]
+$lines = $data.perFileLineData[$queryKey]
 if (-not $lines) { return @() }
 
 $sortedMethods = @($methods | Sort-Object { $_.startLine })

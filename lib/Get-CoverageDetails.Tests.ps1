@@ -30,7 +30,30 @@ Describe "Get-CoverageDetails" {
         $result.perFileReport[$filePath].LINE.missed  | Should -Be 2
     }
 
-    It "parses JaCoCo format: resolves sourcefilename relative to RepoRoot" {
+    It "strips PathBase from a CoverageGutters absolute path when supplied" {
+        $xml = @'
+<report name="test">
+<package name="C:/repo/pathbin">
+  <class name="C:/repo/pathbin/Foo" sourcefilename="Foo.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="5" covered="10" />
+      <counter type="LINE" missed="2" covered="8" />
+      <counter type="METHOD" missed="1" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+'@
+        $f = "$TestDrive/cg-base.xml"
+        $xml | Set-Content $f
+
+        $result = & $script -CoverageFile $f -PathBase "C:/repo"
+
+        $result.perFileReport.Keys | Should -Contain "pathbin/Foo.ps1"
+        $result.perFileReport["pathbin/Foo.ps1"].INSTRUCTION.covered | Should -Be 10
+    }
+
+    It "parses JaCoCo format: resolves sourcefilename relative to PathBase, keyed base-relative" {
         $xml = @'
 <report name="test">
 <package name="prat/lib">
@@ -46,15 +69,14 @@ Describe "Get-CoverageDetails" {
 '@
         $f = "$TestDrive/jacoco.xml"
         $xml | Set-Content $f
-        $repoRoot = "C:/Users/andrew/prat"
+        $pathBase = "C:/Users/andrew/prat"
 
-        $result = & $script -CoverageFile $f -RepoRoot $repoRoot
+        $result = & $script -CoverageFile $f -PathBase $pathBase
 
-        $filePath = (Join-Path $repoRoot "lib/Foo.ps1").Replace('\', '/')
-        $result.perFileReport.Keys | Should -Contain $filePath
-        $result.perFileReport[$filePath].INSTRUCTION.covered | Should -Be 7
-        $result.perFileReport[$filePath].INSTRUCTION.missed  | Should -Be 3
-        $result.perFileReport[$filePath].LINE.missed  | Should -Be 1
+        $result.perFileReport.Keys | Should -Contain "lib/Foo.ps1"
+        $result.perFileReport["lib/Foo.ps1"].INSTRUCTION.covered | Should -Be 7
+        $result.perFileReport["lib/Foo.ps1"].INSTRUCTION.missed  | Should -Be 3
+        $result.perFileReport["lib/Foo.ps1"].LINE.missed  | Should -Be 1
     }
 
     It "builds per-file method data: name, start line, and instruction coverage" {
@@ -162,7 +184,7 @@ Describe "Get-CoverageDetails" {
         $lines[3].covered | Should -Be $false
     }
 
-    It "throws when RepoRoot is supplied, format is CoverageGutters, and a path is outside RepoRoot" {
+    It "throws when PathBase is supplied, format is CoverageGutters, and a path is outside PathBase" {
         $xml = @'
 <report name="test">
 <package name="C:/some/other/tree">
@@ -179,10 +201,10 @@ Describe "Get-CoverageDetails" {
         $f = "$TestDrive/mismatch.xml"
         $xml | Set-Content $f
 
-        { & $script -CoverageFile $f -RepoRoot "C:/repo" -ValidateRepoRoot } | Should -Throw "*outside RepoRoot*"
+        { & $script -CoverageFile $f -PathBase "C:/repo" -ValidatePathBase } | Should -Throw "*outside PathBase*"
     }
 
-    It "does not throw when RepoRoot is supplied, format is CoverageGutters, and all paths are under RepoRoot" {
+    It "does not throw when PathBase is supplied, format is CoverageGutters, and all paths are under PathBase" {
         $xml = @'
 <report name="test">
 <package name="C:/repo/pathbin">
@@ -199,7 +221,7 @@ Describe "Get-CoverageDetails" {
         $f = "$TestDrive/valid.xml"
         $xml | Set-Content $f
 
-        { & $script -CoverageFile $f -RepoRoot "C:/repo" -ValidateRepoRoot } | Should -Not -Throw
+        { & $script -CoverageFile $f -PathBase "C:/repo" -ValidatePathBase } | Should -Not -Throw
     }
 
     It "accumulates totals across all methods and files" {
@@ -373,7 +395,7 @@ Describe "Get-CoverageDetails" {
             $result.totals.METHOD.missed  | Should -Be 1
         }
 
-        It "absolutizes workspace-relative filenames using RepoRoot when no source root" {
+        It "leaves a relative Cobertura filename unchanged even when PathBase is supplied" {
             $relXml = @'
 <coverage>
   <packages>
@@ -399,13 +421,13 @@ Describe "Get-CoverageDetails" {
             $relFile = "$TestDrive/cobertura-rel.xml"
             $relXml | Set-Content $relFile
 
-            $result = & $script -CoverageFile $relFile -RepoRoot "C:/myrepo"
+            $result = & $script -CoverageFile $relFile -PathBase "C:/myrepo"
 
-            $result.perFileReport.Keys | Should -Contain "C:/myrepo/src/Foo.cs"
-            $result.perFileReport["C:/myrepo/src/Foo.cs"].LINE.covered | Should -Be 1
+            $result.perFileReport.Keys | Should -Contain "src/Foo.cs"
+            $result.perFileReport["src/Foo.cs"].LINE.covered | Should -Be 1
         }
 
-        It "absolutizes filenames using source root from sources element" {
+        It "ignores the <sources> element for a relative Cobertura filename" {
             $sourceXml = @'
 <coverage>
   <sources>
@@ -436,11 +458,11 @@ Describe "Get-CoverageDetails" {
 
             $result = & $script -CoverageFile $sourceFile
 
-            $result.perFileReport.Keys | Should -Contain "C:/myrepo/src/Bar.cs"
-            $result.perFileReport["C:/myrepo/src/Bar.cs"].LINE.missed | Should -Be 1
+            $result.perFileReport.Keys | Should -Contain "src/Bar.cs"
+            $result.perFileReport["src/Bar.cs"].LINE.missed | Should -Be 1
         }
 
-        It "leaves a relative filename bare when there is no source root and no RepoRoot" {
+        It "leaves a relative filename bare when there is no source root and no PathBase" {
             $xml = @'
 <coverage>
   <packages>
@@ -540,6 +562,68 @@ Describe "Get-CoverageDetails" {
             # absolute filename wins; source root not prepended
             $result.perFileReport.Keys | Should -Contain "C:/other/place/Abs.cs"
             $result.perFileReport.Keys | Should -Not -Contain "C:/myrepo/C:/other/place/Abs.cs"
+        }
+
+        It "strips PathBase from an absolute Cobertura filename under the base" {
+            $xml = @'
+<coverage>
+  <packages>
+    <package name="MyPackage">
+      <classes>
+        <class filename="C:/repo/src/UnderBase.cs">
+          <methods>
+            <method name="Run" signature="()">
+              <lines>
+                <line number="1" hits="1" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="1" hits="1" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $f = "$TestDrive/cobertura-under-base.xml"
+            $xml | Set-Content $f
+
+            $result = & $script -CoverageFile $f -PathBase "C:/repo"
+
+            $result.perFileReport.Keys | Should -Contain "src/UnderBase.cs"
+        }
+
+        It "leaves an absolute Cobertura filename outside the base unchanged" {
+            $xml = @'
+<coverage>
+  <packages>
+    <package name="MyPackage">
+      <classes>
+        <class filename="C:/other/OutsideBase.cs">
+          <methods>
+            <method name="Run" signature="()">
+              <lines>
+                <line number="1" hits="1" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="1" hits="1" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $f = "$TestDrive/cobertura-outside-base.xml"
+            $xml | Set-Content $f
+
+            $result = & $script -CoverageFile $f -PathBase "C:/repo"
+
+            $result.perFileReport.Keys | Should -Contain "C:/other/OutsideBase.cs"
         }
 
         It "handles method with missing lines element without phantom missed entries" {

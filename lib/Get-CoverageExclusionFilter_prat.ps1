@@ -7,7 +7,7 @@
 return {
     param ($fileName) 
     $f = $fileName -replace '\\', '/'
-    if ($f -match '/auto/') {
+    if ($f -match '(^|/)auto/') {
         return $true
     }
     return $false

@@ -8,16 +8,15 @@
 using namespace System.Diagnostics.CodeAnalysis
 
 param ($coverageFile = $null,
-    $repoRoot = $null,
+    $PathBase = $null,
     [string] $Path = $null,
     [switch] $ShowAll,
-    [switch] $FullPaths,
     [switch] $Unformatted,
     [switch] $Ignore_OmitFromCoverageReport,
     $CoverageGoalPercent = $(& (Resolve-PratLibFile "lib/Get-CoveragePercentTarget.ps1"))
     )
 
-if ($null -eq $coverageFile -or $null -eq $repoRoot) {
+if ($null -eq $coverageFile -or $null -eq $PathBase) {
     $resolvedPath = if ($Path) { $Path } else { (Get-Location).Path }
     $project      = try { Get-PratProject -Location $resolvedPath } catch { $null }
     $inferredRoot = Resolve-GitRoot $resolvedPath
@@ -27,22 +26,29 @@ if ($null -eq $coverageFile -or $null -eq $repoRoot) {
             $project.ContainsKey('parentId') -or
             ($project.root -replace '\\', '/') -ine $inferredRoot
         )
-        $subDir = if ($isNested) { "$($project.id)/" } else { '' }
+        # Project ids can be parent-prefixed ("myrepo/mysubproject"); the test-output dir is
+        # keyed by the leaf segment only (Get-ProjectTestOutputDir uses the same stripping).
+        $subDir = if ($isNested) { "$($project.id -replace '.*/', '')/" } else { '' }
         $coverageFile = "$inferredRoot/auto/testRuns/$($subDir)last/coverage.xml"
     }
-    if ($null -eq $repoRoot) {
-        $repoRoot = if ($inferredRoot) { $inferredRoot } else { (Resolve-Path "$PSScriptRoot\..").Path -replace '\\', '/' }
+    if ($null -eq $PathBase) {
+        # Prefer the project root (agrees with Get-FileCoverage for a nested subproject) over the
+        # git root, which only differs for a nested project. A project without a usable root
+        # (shouldn't happen for a real registration, but guards a sloppy mock) falls through
+        # rather than silently pinning PathBase to $null.
+        $PathBase = if ($project -and $project.root) { $project.root } elseif ($inferredRoot) { $inferredRoot } else { (Resolve-Path "$PSScriptRoot\..").Path -replace '\\', '/' }
     }
 }
 
+
 $exclusionFilter = & (Resolve-PratLibFile "lib/Get-CoverageExclusionFilter.ps1")
 
-function LoadCoverageReport($coverageFile, $reporoot) {
+function LoadCoverageReport($coverageFile, $pathBase) {
     if (!(Test-Path $coverageFile)) {
         Write-Error "Coverage file not found: $coverageFile"
         exit 1
     }
-    return & "$PSScriptRoot/../lib/Get-CoverageDetails.ps1" -CoverageFile $coverageFile -RepoRoot $reporoot
+    return & "$PSScriptRoot/../lib/Get-CoverageDetails.ps1" -CoverageFile $coverageFile -PathBase $pathBase
 }
 
 function CalculateCoverage($counter, [switch] $AsDouble) {
@@ -105,14 +111,16 @@ function GetLastLine($filename) {
 }
 
 function IsFileOmitted($filename) {
-    $lastLine = GetLastLine($filename)
+    # $filename is base-relative when PathBase applies; rejoin before reading from disk.
+    $fullPath = if ((Split-Path -IsAbsolute $filename) -or -not $PathBase) { $filename } else { Join-Path $PathBase $filename }
+    $lastLine = GetLastLine($fullPath)
     if ($lastLine -match '^\s*#\s*OmitFromCoverageReport\s*:\s*[^\s]') { # e.g. "# OmitFromCoverageReport: a unit test would just restate it"
         return $true
     }
     return $false
 }
 
-$report = LoadCoverageReport $coverageFile $repoRoot
+$report = LoadCoverageReport $coverageFile $PathBase
 # return $report.GetEnumerator() | Sort-Object Name
 $filesMeetingGoal = 0
 $instrUnit = $report.instructionUnit ?? "Instructions"
@@ -145,7 +153,7 @@ $mungedPerFileReport = @($report.perFileReport.GetEnumerator() | Sort-Object Nam
     }
 })
 
-if (!$FullPaths -and $mungedPerFileReport.Count -gt 1) {
+if ($mungedPerFileReport.Count -gt 1) {
     function GetCommonPrefix($s1, $s2) {
         $minLen = [math]::Min($s1.Length, $s2.Length)
         for ([int] $i=0; $i -lt $minLen; $i++) {

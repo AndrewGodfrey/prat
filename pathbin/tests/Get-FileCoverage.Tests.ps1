@@ -93,16 +93,15 @@ Describe "Get-FileCoverage" {
     }
 
     Context "Cobertura relative filename resolution" {
-        It "resolves a relative filename against a single <source> root" {
-            $root = "$TestDrive/single-root"
+        It "resolves a relative filename via the inferred PathBase" {
+            $root = "$TestDrive/base-relative-root"
             New-Item -ItemType Directory -Path "$root/pkg" -Force | Out-Null
             "content" | Set-Content "$root/pkg/Foo.py"
 
+            function Get-PratProject { param($Location) @{ id = 'baserelative'; root = $root } }
+
             $xml = @"
 <coverage>
-  <sources>
-    <source>$root</source>
-  </sources>
   <packages>
     <package name="pkg">
       <classes>
@@ -118,7 +117,7 @@ Describe "Get-FileCoverage" {
   </packages>
 </coverage>
 "@
-            $coverageFile = "$TestDrive/single-root-coverage.xml"
+            $coverageFile = "$TestDrive/base-relative-coverage.xml"
             $xml | Set-Content $coverageFile
 
             $result = & $script -FilePath "$root/pkg/Foo.py" -CoverageFile $coverageFile
@@ -128,24 +127,22 @@ Describe "Get-FileCoverage" {
             $result[0].Missed   | Should -Be 1
         }
 
-        It "prefers the first <source> root when a relative filename exists under multiple roots" {
-            $root1 = "$TestDrive/multi-root-1"
-            $root2 = "$TestDrive/multi-root-2"
-            New-Item -ItemType Directory -Path "$root1/pkg" -Force | Out-Null
-            New-Item -ItemType Directory -Path "$root2/pkg" -Force | Out-Null
-            "content" | Set-Content "$root1/pkg/Foo.py"
-            "content" | Set-Content "$root2/pkg/Foo.py"
+        It "matches regardless of the writer's <sources> value (cross-island case)" {
+            $root = "$TestDrive/cross-island-root"
+            New-Item -ItemType Directory -Path $root -Force | Out-Null
+            "content" | Set-Content "$root/mymodule.py"
 
-            $xml = @"
+            function Get-PratProject { param($Location) @{ id = 'crossisland'; root = $root } }
+
+            $xml = @'
 <coverage>
   <sources>
-    <source>$root1</source>
-    <source>$root2</source>
+    <source>C:/Users/otheruser/myrepo/lib/mypackage</source>
   </sources>
   <packages>
-    <package name="pkg">
+    <package name="mypackage">
       <classes>
-        <class filename="pkg/Foo.py">
+        <class filename="mymodule.py">
           <methods/>
           <lines>
             <line number="1" hits="1" />
@@ -155,48 +152,14 @@ Describe "Get-FileCoverage" {
     </package>
   </packages>
 </coverage>
-"@
-            $coverageFile = "$TestDrive/multi-root-ambiguous.xml"
+'@
+            $coverageFile = "$TestDrive/cross-island-coverage.xml"
             $xml | Set-Content $coverageFile
 
-            $result = & $script -FilePath "$root1/pkg/Foo.py" -CoverageFile $coverageFile
-            $result | Should -HaveCount 1
-
-            $missResult = & $script -FilePath "$root2/pkg/Foo.py" -CoverageFile $coverageFile -WarningAction SilentlyContinue
-            $missResult | Should -HaveCount 0
-        }
-
-        It "falls back to the second <source> root when the file is not found under the first" {
-            $root1 = "$TestDrive/fallback-root-1"
-            $root2 = "$TestDrive/fallback-root-2"
-            New-Item -ItemType Directory -Path $root1 -Force | Out-Null
-            New-Item -ItemType Directory -Path "$root2/providers" -Force | Out-Null
-            "content" | Set-Content "$root2/providers/Bar.py"
-
-            $xml = @"
-<coverage>
-  <sources>
-    <source>$root1</source>
-    <source>$root2</source>
-  </sources>
-  <packages>
-    <package name="providers">
-      <classes>
-        <class filename="providers/Bar.py">
-          <methods/>
-          <lines>
-            <line number="1" hits="1" />
-          </lines>
-        </class>
-      </classes>
-    </package>
-  </packages>
-</coverage>
-"@
-            $coverageFile = "$TestDrive/fallback-coverage.xml"
-            $xml | Set-Content $coverageFile
-
-            $result = & $script -FilePath "$root2/providers/Bar.py" -CoverageFile $coverageFile
+            # $root stands in for a different island (e.g. the sandbox account's path) than the
+            # <source> value the writer recorded - <source> is never read, so it can't affect the
+            # match.
+            $result = & $script -FilePath "$root/mymodule.py" -CoverageFile $coverageFile
 
             $result | Should -HaveCount 1
             $result[0].Branches | Should -Be 1
@@ -484,6 +447,83 @@ Describe "Get-FileCoverage" {
 
             $result | Should -HaveCount 1
             $result[0].Instructions | Should -Be 3
+        }
+    }
+
+    Context "PathBase fallback when the registered project has no usable root" {
+        It "falls back to the git root for the query key" {
+            $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+            $repoDir = "$realTestDrive/fcov-noroot-project"
+            New-Item -ItemType Directory -Path "$repoDir/src" -Force | Out-Null
+            "content" | Set-Content "$repoDir/src/Foo.py"
+            git init $repoDir --quiet | Out-Null
+
+            # Registered but missing 'root' - shouldn't happen for a real registration, but the
+            # query key must still be derived from the git root rather than staying $null/absolute.
+            function Get-PratProject { param($Location) @{ id = 'sub'; parentId = 'parent' } }
+
+            # Cobertura relative filenames are used as-is: only a correctly-derived PathBase
+            # produces a matching (relative) query key here - a $null PathBase would query with an
+            # absolute path and miss.
+            $xml = @"
+<coverage>
+  <packages>
+    <package name="src">
+      <classes>
+        <class filename="src/Foo.py">
+          <methods/>
+          <lines>
+            <line number="1" hits="1" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+"@
+            $coverageFile = "$repoDir/coverage.xml"
+            $xml | Set-Content $coverageFile
+
+            $result = & $script -FilePath "$repoDir/src/Foo.py" -CoverageFile $coverageFile
+
+            $result | Should -HaveCount 1
+            $result[0].Branches | Should -Be 1
+        }
+
+        It "names the inferred PathBase in the miss warning" {
+            $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+            $repoDir = "$realTestDrive/fcov-warn-pathbase"
+            New-Item -ItemType Directory -Path $repoDir | Out-Null
+            git init $repoDir --quiet | Out-Null
+            "content" | Set-Content "$repoDir/Missing.ps1"
+
+            # coverage.xml lives outside $repoDir on purpose: $CoverageFile's own path already
+            # names its own directory, so a coverage.xml placed inside $repoDir would make that
+            # assertion pass even without PathBase actually appearing in the message.
+            $coverageDir = "$realTestDrive/fcov-warn-elsewhere"
+            New-Item -ItemType Directory -Path $coverageDir -Force | Out-Null
+            $xml = @"
+<report name="test">
+<package name="$repoDir">
+  <class name="$repoDir/Other" sourcefilename="Other.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="0" covered="1" />
+      <counter type="LINE" missed="0" covered="1" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+"@
+            $coverageFile = "$coverageDir/coverage.xml"
+            $xml | Set-Content $coverageFile
+
+            $result = & $script -FilePath "$repoDir/Missing.ps1" -CoverageFile $coverageFile `
+                -WarningVariable warnings -WarningAction SilentlyContinue
+
+            $result | Should -HaveCount 0
+            $warnings[0] | Should -Match "Missing.ps1"
+            $warnings[0] | Should -Match ([regex]::Escape($repoDir))
         }
     }
 }

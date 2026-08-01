@@ -1,4 +1,5 @@
 BeforeAll {
+    Import-Module "$PSScriptRoot/../../lib/PratBase/PratBase.psd1" -Force
     . $PSScriptRoot\cbTest.common.ps1
     $script = "$PSScriptRoot/../Get-CoverageReport.ps1"
 
@@ -154,6 +155,36 @@ Describe "default coverageFile inference" {
         $fileRow | Should -Not -BeNullOrEmpty
     }
 
+    It "strips the parent prefix from a parent-prefixed project id when locating the test output dir" {
+        function Get-PratProject { param($Location) @{ id = 'myrepo/mysubproject'; parentId = 'myrepo' } }
+
+        $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+        $repoDir = "$realTestDrive/gcr-parentprefixedrepo"
+        New-Item -ItemType Directory -Path $repoDir | Out-Null
+        git init $repoDir --quiet | Out-Null
+
+        $projectDir = "$repoDir/auto/testRuns/mysubproject/last"
+        New-Item -ItemType Directory -Path $projectDir -Force | Out-Null
+        @"
+<report name="test">
+<package name="$repoDir/src">
+  <class name="$repoDir/src/Baz" sourcefilename="Baz.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="0" covered="1" />
+      <counter type="LINE" missed="0" covered="1" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+"@ | Set-Content "$projectDir/coverage.xml"
+
+        $result = & $script -Path $repoDir -ShowAll -CoverageGoalPercent 0 -Unformatted -Ignore_OmitFromCoverageReport
+
+        $fileRow = $result | Where-Object { $_.PSObject.Properties['File'] -and $_.File -like '*Baz.ps1' }
+        $fileRow | Should -Not -BeNullOrEmpty
+    }
+
     It "uses project subdirectory when project root is nested inside git root" {
         $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
         $repoDir   = "$realTestDrive/gcr-testcsproject"
@@ -182,7 +213,41 @@ Describe "default coverageFile inference" {
         $result = & $script -Path $nestedDir -ShowAll -CoverageGoalPercent 0 -Unformatted -Ignore_OmitFromCoverageReport
 
         $fileRow = $result | Where-Object { $_.PSObject.Properties['File'] -and $_.File -like '*Greeter.cs' }
-        $fileRow | Should -Not -BeNullOrEmpty
+        # Exact (not wildcard) check: PathBase resolved to the project root (not the git root),
+        # so the key is relative to $nestedDir specifically.
+        $fileRow.File | Should -Be 'src/Greeter.cs'
+    }
+
+    It "falls back to the git root for PathBase when the registered project has no usable root" {
+        $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+        $repoDir = "$realTestDrive/gcr-noroot-project"
+        New-Item -ItemType Directory -Path $repoDir | Out-Null
+        git init $repoDir --quiet | Out-Null
+
+        # Nested (has parentId) but missing 'root' - shouldn't happen for a real registration, but
+        # PathBase must still fall through to the git root rather than silently staying $null.
+        function Get-PratProject { param($Location) @{ id = 'sub'; parentId = 'parent' } }
+
+        $projectDir = "$repoDir/auto/testRuns/sub/last"
+        New-Item -ItemType Directory -Path $projectDir -Force | Out-Null
+        @"
+<report name="test">
+<package name="$repoDir/src">
+  <class name="$repoDir/src/Foo" sourcefilename="Foo.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="0" covered="1" />
+      <counter type="LINE" missed="0" covered="1" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+"@ | Set-Content "$projectDir/coverage.xml"
+
+        $result = & $script -Path $repoDir -ShowAll -CoverageGoalPercent 0 -Unformatted -Ignore_OmitFromCoverageReport
+
+        $fileRow = $result | Where-Object { $_.PSObject.Properties['File'] -and $_.File -like '*Foo.ps1' }
+        $fileRow.File | Should -Be 'src/Foo.ps1'
     }
 
     It "throws when not in a git repo" {
@@ -240,6 +305,68 @@ Describe "Per-file suppression" {
         
         shouldMatchRow $result[0] @{File='UnitTestFile1.ps1'; Methods=0; Lines=0; Instructions=0}
         shouldMatchRow $result[1] @{File='UnitTestFile2.ps1'; Methods=0; Lines=0; Instructions=0}
+    }
+}
+Describe "Per-file suppression with PathBase" {
+    It "rejoins the base-relative key before reading the file for OmitFromCoverageReport" {
+        $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+        $root = "$realTestDrive/gcr-omit-base"
+        New-Item -ItemType Directory -Path "$root/pkg" -Force | Out-Null
+
+        $sourceFileText = @"
+            a
+            b
+            # OmitFromCoverageReport: unit test
+"@
+        $sourceFileText | Set-Content "$root/pkg/Omitted.ps1"
+
+        $coverageFile = @"
+<report name="test">
+<package name="$root/pkg">
+  <class name="$root/pkg/Omitted" sourcefilename="Omitted.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="1" covered="0" />
+      <counter type="LINE" missed="1" covered="0" />
+      <counter type="METHOD" missed="1" covered="0" />
+    </method>
+  </class>
+</package>
+</report>
+"@
+        $coverageFile = createTestFile $coverageFile.Trim() ".xml"
+
+        $result = & $script $coverageFile -PathBase $root -ShowAll -CoverageGoalPercent 70 -Unformatted
+
+        shouldMatchRow $result[0] @{File='pkg/Omitted.ps1'; Methods=0; Lines=0; Instructions=0}
+        $result[2] | Should -Be 'Files meeting goal: 1'
+    }
+}
+
+Describe "auto/ exclusion with PathBase" {
+    It "excludes a file under auto/ at PathBase from the report" {
+        $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+        $root = "$realTestDrive/gcr-auto-exclusion"
+        New-Item -ItemType Directory -Path "$root/auto/testRuns" -Force | Out-Null
+
+        $coverageFile = @"
+<report name="test">
+<package name="$root/auto/testRuns">
+  <class name="$root/auto/testRuns/Generated" sourcefilename="Generated.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="0" covered="1" />
+      <counter type="LINE" missed="0" covered="1" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+"@
+        $coverageFile = createTestFile $coverageFile.Trim() ".xml"
+
+        $result = & $script $coverageFile -PathBase $root -ShowAll -CoverageGoalPercent 0 -Unformatted
+
+        $fileRow = $result | Where-Object { $_.PSObject.Properties['File'] }
+        $fileRow | Should -BeNullOrEmpty
     }
 }
 

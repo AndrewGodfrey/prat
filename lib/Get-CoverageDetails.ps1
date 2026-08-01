@@ -3,8 +3,9 @@
 #
 # Returns @{ totals; perFileReport; perFileMethodData; instructionUnit }:
 #   totals            - @{ INSTRUCTION; LINE; METHOD } aggregated across all files
-#   perFileReport     - hashtable keyed by absolute file path → @{ INSTRUCTION; LINE; METHOD }
-#   perFileMethodData - hashtable keyed by absolute file path → list of
+#   perFileReport     - hashtable keyed by file path (base-relative when -PathBase applies,
+#                        else absolute) → @{ INSTRUCTION; LINE; METHOD }
+#   perFileMethodData - hashtable keyed the same way → list of
 #                       @{ name; startLine; INSTRUCTION=@{missed;covered}; LINE=@{missed;covered} }
 #   instructionUnit   - "Instructions" for JaCoCo/CoverageGutters; "Branches" for Cobertura
 #
@@ -15,15 +16,21 @@
 # .PARAMETER CoverageFile
 # Path to the coverage XML file. Auto-detects format from the root element.
 #
-# .PARAMETER RepoRoot
-# Repository root. Required for JaCoCo format (sourcefilenames are relative to it) and for
-# Cobertura files with workspace-relative filenames and no <sources><source> element.
-# Not needed for CoverageGutters or Cobertura files with absolute filenames.
+# .PARAMETER PathBase
+# The directory that relative paths in the coverage artifact are relative to, and that output
+# keys are expressed relative to. Required for JaCoCo format (sourcefilenames are relative to
+# it). For CoverageGutters and Cobertura, when supplied, a resulting key under PathBase is
+# stripped to base-relative (forward slashes, no leading "./"); a key outside PathBase (or when
+# PathBase is $null) stays absolute. A Cobertura filename that is already relative is used as-is
+# regardless of PathBase - coverage.py writes those project-relative already.
+#
+# .PARAMETER ValidatePathBase
+# Throw if a resolved path falls outside PathBase, instead of leaving it absolute.
 
 param (
     $CoverageFile,
-    $RepoRoot = $null,
-    [switch] $ValidateRepoRoot
+    $PathBase = $null,
+    [switch] $ValidatePathBase
 )
 
 if (!(Test-Path $CoverageFile)) { throw "Coverage file not found: $CoverageFile" }
@@ -45,22 +52,32 @@ function addCounters($target, $counters) {
     }
 }
 
+$normalizedPathBase = if ($PathBase) { ([string]$PathBase -replace '\\', '/').TrimEnd('/') } else { $null }
+
+# Strips $normalizedPathBase from the front of an already forward-slashed absolute path, when the
+# path is under it (case-insensitive - Windows paths differ in case between writers). A path
+# outside the base, or when there is no base, is left as-is unless -ValidatePathBase is set.
+function stripBase($absPath) {
+    if (-not $normalizedPathBase) { return $absPath }
+    $prefix = "$normalizedPathBase/"
+    if ($absPath.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        return $absPath.Substring($prefix.Length)
+    }
+    if ($ValidatePathBase) {
+        throw "Coverage file path '$absPath' is outside PathBase '$normalizedPathBase'"
+    }
+    return $absPath
+}
+
 function resolveFilePath($package, $class) {
     if (Split-Path -IsAbsolute $package.name) {
         # CoverageGutters: class.name is absolute path without extension; sourcefilename is leaf
         $path = Join-Path (Split-Path -Parent $class.name) $class.sourcefilename
     } else {
-        # JaCoCo: sourcefilename is relative from RepoRoot
-        $path = Join-Path $RepoRoot $class.sourcefilename
+        # JaCoCo: sourcefilename is relative from PathBase
+        $path = Join-Path $PathBase $class.sourcefilename
     }
-    $normalized = $path.Replace('\', '/')
-    if ($ValidateRepoRoot -and $RepoRoot -and (Split-Path -IsAbsolute $package.name)) {
-        $normalizedRoot = ([string]$RepoRoot).Replace('\', '/').TrimEnd('/')
-        if (-not $normalized.StartsWith("$normalizedRoot/")) {
-            throw "Coverage file path '$normalized' is outside RepoRoot '$normalizedRoot'"
-        }
-    }
-    return $normalized
+    return stripBase ($path.Replace('\', '/'))
 }
 
 $totals        = newCounters
@@ -108,30 +125,10 @@ if ($format -eq 'report') {
         }
     }
 } else {
-    # Cobertura format
-    # Determine source roots: <sources><source> entries (other than '.') that relative filenames
-    # resolve against. coverage.py stores every filename relative to the first root; a class only
-    # needs a later root when the first root's copy of that relative path doesn't exist on disk.
-    $sourceRoots = @(
-        $xml.SelectNodes("/coverage/sources/source") |
-            ForEach-Object { ($_.InnerText -replace '\\', '/').TrimEnd('/') } |
-            Where-Object { $_ -and $_ -ne '.' }
-    )
-
-    $normalizedRepoRoot = if ($RepoRoot) { ($RepoRoot -replace '\\', '/').TrimEnd('/') } else { $null }
-
-    function resolveCoberturaFilePath($filename) {
-        if ([System.IO.Path]::IsPathRooted($filename)) { return $filename }
-        if ($sourceRoots.Count -gt 0) {
-            foreach ($root in $sourceRoots) {
-                $candidate = "$root/$filename"
-                if (Test-Path -LiteralPath $candidate) { return $candidate }
-            }
-            return "$($sourceRoots[0])/$filename"
-        }
-        if ($normalizedRepoRoot) { return "$normalizedRepoRoot/$filename" }
-        return $filename
-    }
+    # Cobertura format. The <sources><source> element is not read: coverage.py already writes
+    # every filename relative to the project root (fixPythonCoverage's single-source `--cov=.`),
+    # so a relative filename is used as-is; an absolute filename (dotnet-coverage/coverlet style)
+    # goes through stripBase like the other formats.
 
     function countCoberturaLines($lines) {
         $methodLines = @($lines | Where-Object { $_ })
@@ -183,7 +180,7 @@ if ($format -eq 'report') {
     foreach ($package in $xml.coverage.packages.package) {
         foreach ($class in $package.classes.class) {
             $filename = $class.filename -replace '\\', '/'
-            $filePath = resolveCoberturaFilePath $filename
+            $filePath = if ([System.IO.Path]::IsPathRooted($filename)) { stripBase $filename } else { $filename }
 
             if ($null -eq $perFileReport[$filePath]) {
                 $perFileReport[$filePath]     = newCounters
