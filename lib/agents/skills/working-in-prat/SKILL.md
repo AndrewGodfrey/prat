@@ -11,6 +11,14 @@ When writing `install` scriptblocks in `$pratPackages`, add `$stage.SetSubstage(
 before each long-running operation (network downloads, elevated installs, etc.) to give the user
 progress visibility.
 
+`installerVersion` (like any bare `GetIsStepComplete`/`SetStepComplete` marker) is a monotonic
+version number, not an arbitrary label — `Test-InstalledItemVersion` casts both sides to
+`[System.Version]` and throws if a machine's recorded value is ever higher than the code's declared
+value. Keep it independent of any version the package itself pins (e.g. a pinned upstream release):
+bump `installerVersion` for a change to the install *logic*, even without a pinned-version bump, or
+a real fix silently won't reach a machine that already recorded the old value complete. To force a
+re-run without a version bump, use `rppr` (below) rather than hand-editing/deleting instDb files.
+
 Also, for architecture overview, dev loop commands, and codebase structure: read @`$HOME/prat/README.md`
 
 ## Deploy stages
