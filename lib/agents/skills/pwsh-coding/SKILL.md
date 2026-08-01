@@ -373,6 +373,10 @@ cross-test contamination when multiple tests in the same `Context` write to the 
 calls to an un-mocked command. Add `Mock X { }` in `BeforeEach` even when the test only verifies
 the command was never called.
 
+**`Should -Invoke X -Times N` without `-Exactly` means "at least N," not "exactly N."** A regression
+test asserting a call happens only once (e.g. proving something is gated/cached) silently passes
+even when the code under test calls it twice — add `-Exactly` to actually assert the count.
+
 **`(Get-Item "TestDrive:\").FullName` has a trailing backslash.** After replacing `\\` with `/` you
 get a trailing `/`, so `"$realTestDrive/subdir"` becomes `...//subdir`. This silently breaks path
 matching when other tools (git, `Resolve-Path`) normalize to single slashes. Always trim:
