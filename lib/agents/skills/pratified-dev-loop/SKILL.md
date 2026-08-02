@@ -24,8 +24,9 @@ if given a subdirectory. To use a non-default build command: `b -CommandName cle
 
 # Running tests
 
-Use the `t` bash script with an absolute path — no `cd` required.
-Permission is granted as `Bash(t *)`.
+Run `t` with an absolute path — no `cd` required — through whatever execution tool the harness
+provides; `Bash`/`PowerShell` are denied in the agent harness configs, so `t` is not invoked as a
+shell command.
 
 `t` works for any pratified codebase. It dispatches to the appropriate runner
 (Pester for `.Tests.ps1`, `dotnet test` for `.csproj`) based on the target.
@@ -51,9 +52,20 @@ t foo/myproject                                     # .NET (csproj directory)
 | `-OutputDir <path>` | Direct parent of `last/` run dir (default: `auto/testRuns/`) |
 
 **Avoid invoking `Invoke-Pester` or `pwsh -c` directly** — reasons:
-- Using the `t` bash script is more user-friendly — the user can issue the same command easily
+- Using `t` is more user-friendly — the user can issue the same command easily
 - `pwsh -c "..."` requires escaping every `$` which agents consistently get wrong
 - Pester 5 parameter sets are tricky
+
+## Running every layer's tests at once (`ta`)
+
+`Test-AllLayers` (alias `ta`) runs every installed layer (de/prefs/prat, whichever are present) concurrently —
+one job per layer — and prints a merged summary once every layer has finished. Reach for it for a
+whole-stack check; reach for plain `t` for the inner loop on one repo.
+
+Exit code: `0` = every layer completed with zero failures; `1` = a layer reported test failures and no
+layer was fatal; `2` = a layer was fatal (its job failed, timed out, or completed with no result) — `2`
+wins when both occur. A `2` means the harness itself broke (read the per-layer detail `ta` prints, not
+just the summary line); a `1` means read the failing layer's own `test-run.txt`, same as a `t` failure.
 
 ## If `t` itself errors
 

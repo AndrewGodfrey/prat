@@ -86,7 +86,10 @@ function Write-TestRunResult {
     }
 
     # @() around the whole pipeline: a bare hashtable's .Count is its key count, not 1.
-    $logs = @(@(if ($FailureLogs) { $FailureLogs } else {
+    # Fall back to $RunDir only when the caller didn't supply -FailureLogs at all: an explicitly
+    # empty list (e.g. a fatal constituent with no RunDir of its own) must stay empty, since
+    # synthesising an entry from $RunDir would point at a test-run.txt this run never writes.
+    $logs = @(@(if ($PSBoundParameters.ContainsKey('FailureLogs')) { $FailureLogs } else {
         @{ RunDir = $RunDir; Failed = $failedCount; FailuresSeen = $FailuresSeen }
     }) | ForEach-Object {
         @{ Log          = ("$($_.RunDir)/test-run.txt") -replace '\\', '/'
@@ -95,10 +98,12 @@ function Write-TestRunResult {
     })
 
     if ($FatalError) {
-        if (Test-Path $logs[0].Log) {
-            Get-Content $logs[0].Log -Tail 20 | ForEach-Object { Format-AnsiText $_ 91 }
+        if ($logs.Count -gt 0) {
+            if (Test-Path $logs[0].Log) {
+                Get-Content $logs[0].Log -Tail 20 | ForEach-Object { Format-AnsiText $_ 91 }
+            }
+            Format-AnsiText "See $(($logs.Log) -join ', ')" 93
         }
-        Format-AnsiText "See $(($logs.Log) -join ', ')" 93
     } elseif ($failedCount -gt 0 -and $logs.Count -eq 1) {
         $suppressed = $failedCount - $logs[0].FailuresSeen
         $hint = if ($suppressed -gt 0) { "$suppressed failure$(if ($suppressed -ne 1) {'s'}) suppressed - see $($logs[0].Log)" }
@@ -170,16 +175,24 @@ function Merge-TestSummary {
         }
     }
 
-    $failuresSeen     = ($Summaries | ForEach-Object { $_.FailuresSeen     ?? 0 } | Measure-Object -Sum).Sum
-    $failureThreshold = ($Summaries | ForEach-Object { $_.FailureThreshold ?? 0 } | Measure-Object -Sum).Sum
+    $failuresSeen = ($Summaries | ForEach-Object { $_.FailuresSeen ?? 0 } | Measure-Object -Sum).Sum
+    # Each constituent's threshold governs only its own failure count, so the merged threshold is
+    # the max across constituents, not their sum — summing would make red-vs-yellow escalation
+    # require ever more failures as more constituents are merged in. Floored at 5, the same default
+    # Write-TestRunResult's own $FailureThreshold param uses, so a merge of constituents that supply
+    # none behaves the same as a single unspecified run.
+    $maxThreshold     = ($Summaries | ForEach-Object { $_.FailureThreshold ?? 0 } | Measure-Object -Maximum).Maximum ?? 0
+    $failureThreshold = [Math]::Max(5, $maxThreshold)
     $runDir           = ($Summaries | Where-Object { $_.RunDir } | Select-Object -First 1).RunDir
 
     # summary.txt lands in $runDir, but each constituent runner wrote its failures to its own
     # test-run.txt — so carry the failing ones through for the hint. An already-merged summary
-    # contributes its own list, keeping the real logs across nested merges.
+    # contributes its own list, keeping the real logs across nested merges. A constituent with no
+    # RunDir of its own (e.g. a synthesised fatal layer) contributes no entry: there is no log to
+    # point at.
     $failureLogs = @($Summaries | ForEach-Object {
         if ($_.FailureLogs) { $_.FailureLogs }
-        elseif ((($_.Failed ?? 0) -gt 0) -or $_.FatalError) {
+        elseif ($_.RunDir -and ((($_.Failed ?? 0) -gt 0) -or $_.FatalError)) {
             @{ RunDir = $_.RunDir; Failed = $_.Failed ?? 0; FailuresSeen = $_.FailuresSeen ?? 0 }
         }
     })

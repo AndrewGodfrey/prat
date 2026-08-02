@@ -332,9 +332,11 @@ instead for both properties.
 
 # Pester: shadowing module functions for standalone scripts
 
-Pester's `Mock` only works for module-exported functions called within a module scope — it cannot
-intercept calls made by a standalone `.ps1` script invoked with `& $script`. To fake a dependency
-for those scripts, define a plain function with the same name in a `BeforeAll` or `It` block:
+A command only becomes mockable once something has made it exist as a PowerShell **function** in
+scope — a cmdlet or a real module-exported function already qualifies, but a name that only
+resolves via `$env:Path` as an `.ps1` file (e.g. a `pathbin` script invoked by bare name, not `&
+path`) does not. For that case, pre-declare an empty shadow function of the same name before
+`Mock`ing it:
 
 ```powershell
 Context "subproject path inference" {
@@ -348,15 +350,25 @@ Context "subproject path inference" {
 
 PowerShell's scope chain makes the locally-defined function visible inside `& $script` calls, and it
 shadows the module-exported function of the same name. Confirmed empirically in Pester v5 — a function
-defined in `Context BeforeAll` shadows the module export for `It` blocks within that context.
+defined in `Context BeforeAll` shadows the module export for `It` blocks within that context. This
+also works when the *production* code under test defines its own same-named function internally
+(e.g. a mock-seam helper) — the test's shadow, defined first, still wins.
+
+**Mocking a cmdlet keeps its original parameter types.** `Mock` generates a proxy that mimics the
+real command's parameter sets, including their declared types — so binding a plain test-double
+object to a strongly-typed parameter (e.g. `Wait-Job`/`Receive-Job`/`Remove-Job`'s `-Job <Job[]>`)
+throws `Cannot convert ... to type "System.Management.Automation.Job"`, even though the call is
+mocked. If the cmdlet has an alternate parameter set built on a plain type (e.g. `-Name
+<string[]>`), mock through that instead — the production code can identify objects by name too.
 
 # Capturing hook invocations in Pester tests
 
 Capture what a hook received via a **reference type closed over in the hook** — not `$script:`.
-`$script:` doesn't reliably propagate back when the hook runs inside the tested script's scope
-chain (see "Scriptblocks passed as hooks" above — variable capture and shadowing). Pester `Mock`
-scriptblocks are different: Pester's own machinery puts them in a scope where `$script:` resolves
-correctly.
+`$script:` resolves against whichever `.ps1` file is *executing* when the hook fires, not the file
+that defined the hook — so it comes back `$null` once the call crosses into another script (e.g. a
+`Mock` firing from inside a different script invoked via `& $script`). A plain variable, closed over
+lexically with no `$script:`/`$using:` prefix, works regardless of which file is executing; no
+`.GetNewClosure()` needed.
 
 ```powershell
 $captured = @{}

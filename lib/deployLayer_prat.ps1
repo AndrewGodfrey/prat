@@ -58,6 +58,7 @@ function instInteractiveAliases($it) {
     Install-InteractiveAlias $stage 'pb' 'Prebuild-Codebase'
     Install-InteractiveAlias $stage 'b' 'Build-Codebase'
     Install-InteractiveAlias $stage 't' 'Test-Codebase'
+    Install-InteractiveAlias $stage 'ta' 'Test-AllLayers'
     Install-InteractiveAlias $stage 'd' 'Deploy-Codebase'
     Install-InteractiveAlias $stage 'x' 'Start-CodebaseDevLoop'
 

@@ -20,7 +20,8 @@ param(
     [switch] $IncludeIntegrationTests,
     [switch] $Integration,
     $OutputDir = $null,
-    [switch] $UseAlternateCollector
+    [switch] $UseAlternateCollector,
+    [switch] $PassThru
 )
 
 # Make this runnable from a harness that launches `pwsh -NoProfile` (e.g. an agent tool),

@@ -21,6 +21,7 @@ See [INSTALLATION.md](INSTALLATION.md) for installation and customization instru
 
 ```powershell
 Test-Codebase         # alias: t — runs Pester tests; -NoCoverage to skip coverage; -IncludeIntegrationTests to include integration tests; -Integration to run only integration tests
+Test-AllLayers        # alias: ta — runs every installed layer's tests concurrently; see the `pratified-dev-loop` skill for its exit-code contract
 Deploy-Codebase       # alias: d — installs profile, scheduled tasks, Pester
 Start-CodebaseDevLoop # alias: x — runs prebuild → build → test → deploy
 ```

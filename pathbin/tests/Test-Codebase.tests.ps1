@@ -32,6 +32,13 @@ Describe "Test-Codebase" {
         $result | Should -Be "testCb: test: bar: Focus=$testCbDir NoCoverage=True RepoRoot=$testCbDir"
     }
 
+    It "Forwards -PassThru through to CommandParameters" {
+        New-Item -Type Directory "TestDrive:\passthru-test" | Out-Null
+        Push-Location "TestDrive:\passthru-test"
+        $result = & $script $testCbDir -NoCoverage -PassThru
+        $result | Should -Be "testCb: test: bar: Focus=$testCbDir NoCoverage=True PassThru=True RepoRoot=$testCbDir"
+    }
+
     It "Tilde-prefixed Focus is expanded to absolute path" {
         $tildeFocusFile = "~" + "$testCbDir\testCb_fileWithTests.ps1".Substring($home.Length)
         New-Item -Type Directory "TestDrive:\tilde-test" | Out-Null

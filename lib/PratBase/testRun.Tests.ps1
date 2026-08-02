@@ -209,6 +209,16 @@ Describe "Write-TestRunResult" {
         $hint | Should -Match 'wr-single-fl-pytest/test-run\.txt'
         $hint | Should -Match '2 failures suppressed'
     }
+
+    It "omits the See-logfile hint, and does not error, when FailureLogs is explicitly empty with FatalError set" {
+        $runDir = "$TestDrive/wr-fatal-empty-faillogs"
+        New-Item $runDir -ItemType Directory | Out-Null
+
+        $output = Write-TestRunResult -RunDir $runDir -FailureLogs @() -FatalError "de: boom"
+
+        $output | Select-Object -First 1 | Should -Match '^\x1b\[91m'
+        $output | Where-Object { $_ -match 'See ' } | Should -BeNullOrEmpty
+    }
 }
 
 Describe "Convert-CoberturaXmlFile" {
@@ -497,7 +507,7 @@ Describe "Merge-TestSummary" {
         "$TestDrive/ms-pt-a/summary.txt" | Should -Not -Exist
     }
 
-    It "sums FailureThreshold from both results" {
+    It "renders red once failures reach the floor threshold, not a summed one" {
         $runDir = "$TestDrive/ms-threshold"; New-Item $runDir -ItemType Directory | Out-Null
         $a = @{
             CoverageData = $null; Passed = 0; Failed = 12
@@ -510,9 +520,34 @@ Describe "Merge-TestSummary" {
 
         $output = Merge-TestSummary @($a, $b) ([TimeSpan]::Zero)
 
-        # 12 failures >= summed threshold 10 → red (91)
+        # 12 failures >= max threshold 5 → red (91)
         $output | Select-Object -First 1 | Should -Match '^\x1b\[91m'
     }
+
+    It "takes the max of FailureThreshold across summaries, not the sum" {
+        $a = @{ CoverageData = $null; Passed = 0; Failed = 0
+                FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-thresh-max-a" }
+        $b = @{ CoverageData = $null; Passed = 0; Failed = 0
+                FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-thresh-max-b" }
+        $c = @{ CoverageData = $null; Passed = 0; Failed = 0
+                FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-thresh-max-c" }
+
+        $result = Merge-TestSummary @($a, $b, $c) ([TimeSpan]::Zero) -PassThru
+
+        $result.FailureThreshold | Should -Be 5
+    }
+
+    It "floors FailureThreshold at 5 when no constituent supplies one" {
+        $a = @{ CoverageData = $null; Passed = 0; Failed = 0
+                FatalError = $null; FailuresSeen = 0; RunDir = "$TestDrive/ms-thresh-floor-a" }
+        $b = @{ CoverageData = $null; Passed = 0; Failed = 0
+                FatalError = $null; FailuresSeen = 0; RunDir = "$TestDrive/ms-thresh-floor-b" }
+
+        $result = Merge-TestSummary @($a, $b) ([TimeSpan]::Zero) -PassThru
+
+        $result.FailureThreshold | Should -Be 5
+    }
+
 
     It "points the failure hint at the run that failed, not the run that owns summary.txt" {
         # The reported bug: a repo-level `t` merges Pester (clean) with a pytest subproject (failing),
@@ -558,6 +593,17 @@ Describe "Merge-TestSummary" {
 
         @($merged.FailureLogs).Count | Should -Be 1
         $merged.FailureLogs[0].RunDir | Should -Be "$TestDrive/ms-nested-pytest"
+    }
+
+    It "omits a FailureLogs entry for a fatal constituent that has no RunDir" {
+        $a = @{ CoverageData = $null; Passed = $null; Failed = $null
+                FatalError = "de: boom"; FailuresSeen = 0; FailureThreshold = 5; RunDir = $null }
+        $b = @{ CoverageData = $null; Passed = 3; Failed = 0
+                FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-fatal-norundir-b" }
+
+        $result = Merge-TestSummary @($a, $b) ([TimeSpan]::Zero) -PassThru
+
+        @($result.FailureLogs).Count | Should -Be 0
     }
 }
 
