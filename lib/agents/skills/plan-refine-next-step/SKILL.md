@@ -30,7 +30,19 @@ dot-sourced; read the current state with `Get-PlanState -PlanFile <plan>`.
   ambiguity, and without reading the plan's background file. Where the design rests on a factual
   claim about the codebase or about a dependency's behaviour — how often a pattern occurs, whether a case exists,
   what a library does on this platform, relevant platform behavior — measure it and record the number in the
-  step, rather than asserting it from intuition.
+  step, rather than asserting it from intuition. A decision recorded in a plan file is not a
+  substitute: plans record what was decided, not the evidence for it.
+
+  Measure against the real dependency when one is reachable — ask for it to be started if it isn't.
+  A stand-in reproduces the happy path but rarely the failure modes, and error-handling branches
+  on exactly those: two stand-ins for the same condition can raise different exception types. If
+  only a stand-in is available, label the number as a proxy in the step.
+
+- **Check the level of the change.** Before a step adds a mechanism — a retry, a connection or
+  resource lifecycle, a cache, cancellation plumbing — to one module, count the sibling call sites
+  that already own that concern. Grep for it; don't estimate. If several do, the step is probably
+  an extraction, and planning it as a local tweak silently commits every future sibling to
+  reimplementing the mechanism.
 
 - **Add a sub-item to check test coverage for modified lines.**
 
