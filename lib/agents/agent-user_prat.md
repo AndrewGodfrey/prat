@@ -117,7 +117,9 @@ the removed mechanism linger in open steps until the user notices.
 ### Debugging
 
 Find root cause before fixing. If three fixes have failed, stop and question the approach rather
-than attempting a fourth.
+than attempting a fourth. A root-cause claim needs the original failure reproduced under it — an
+adjacent measurement improving, or the symptom not recurring after some unrelated change, is
+correlation.
 
 After proposing a code fix, consider what else it affects beyond the target problem.
 
