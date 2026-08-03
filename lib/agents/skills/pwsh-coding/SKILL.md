@@ -126,6 +126,27 @@ this for an id lookup across differently-cased keys needs no extra normalization
 holds for plain `@{}` tables, not `[ordered]@{}` or an explicitly-constructed .NET dictionary with
 a case-sensitive comparer.
 
+# Variable names are case-insensitive too — a loop local can silently destroy a parameter
+
+`$parentId` and `$ParentId` are the same variable, so a loop body that assigns to a differently-cased
+spelling of one of the function's own parameters overwrites the caller's argument:
+
+```powershell
+function Get-Descendants([int] $ParentId) {
+    foreach ($p in Get-Process) {
+        $parentId = $null           # this IS $ParentId
+        try { $parentId = $p.Parent.Id } catch {}
+        ...
+    }
+    walkFrom $ParentId              # the last process's parent, not what the caller passed
+}
+```
+
+Compounding trap: a `param()` type constraint persists on the variable, so `$parentId = $null` on an
+`[int]` parameter stores `0`, not `$null` — which also makes a later `if ($null -ne $parentId)` guard
+dead. Both failures are silent. Give loop locals distinct names, and don't null-guard a variable
+carrying a value-type constraint.
+
 # `ConvertTo-Json` on a `[hashtable]` emits keys in per-process-random order
 
 When serializing to a generated file that's later compared as text (e.g. `Install-TextToFile`) or
@@ -329,6 +350,27 @@ that stdin with `[scriptblock]::Create($text)` (or otherwise parses it as PowerS
 BOM becomes part of the first token, breaking parsing: `The term '<BOM>[pscustomobject]@' is not
 recognized as a name of a cmdlet...`. Use `[System.Text.UTF8Encoding]::new($false)` (BOM-less)
 instead for both properties.
+
+# `StandardOutput.ReadToEnd()` is unbounded, and a grandchild can pin the pipe open forever
+
+`ReadToEnd()` returns at EOF, and EOF arrives only once **every** process holding the write end of
+that pipe has closed it. A child started with `UseShellExecute = $false` and no redirection of its
+own inherits the parent's handles, so a wedged grandchild keeps the pipe open after you kill the
+child — `WaitForExit(ms)` and `Kill()` don't help, because neither closes a handle another process
+holds. A `WaitForExit(ms)` placed *after* a `ReadToEnd()` is therefore not a bound at all; it is
+unreachable in exactly the case it was written for.
+
+For a process whose descendants may outlive it, don't hand it a pipe. Redirect to files and poll:
+
+```powershell
+$p = Start-Process -FilePath pwsh -ArgumentList ... -PassThru `
+     -RedirectStandardOutput $outFile -RedirectStandardError $errFile
+if (-not $p.WaitForExit(20000)) { $p.Kill() }
+$stdout = Get-Content $outFile -Raw
+```
+
+`Start-Process -RedirectStandardInput` takes a file path too, so stdin-fed children are covered the
+same way. File handles can't deadlock the reader.
 
 # Pester: shadowing module functions for standalone scripts
 
