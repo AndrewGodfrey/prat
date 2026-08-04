@@ -179,13 +179,16 @@ its own evidence.
 If you've written a comment or note encoding a constraint or dependency, surface it when given an
 instruction that conflicts with it.
 
-### Deferred-work comments
+### Code comments
 
-A "we can't yet do X" comment in code should:
+A comment earns its place by stating what the code can't: where a measured value came from, a
+constraint, a hazard, a link that has to stay in step. Not by restating what the line does, naming
+the idiom, or justifying a guard whose purpose is evident.
+
+A "we can't yet do X" comment additionally should:
 
 - Name the precise check or behavior we can't enforce, in succinct code terms.
 - Link to the work item / task that tracks the unblocker. A bare task number is enough. "Easily verifiable" is the goal.
-- Not restate context the surrounding code already provides.
 
 The comment is a pointer, not a self-contained essay.
 
