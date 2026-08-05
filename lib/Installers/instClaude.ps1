@@ -289,42 +289,6 @@ function Install-ClaudeAgentSandbox {
 
     # Create symlinks after Install-LocalAgentSandbox has set ACLs and ensured targets exist.
     $agentHome = "$env:SystemDrive\Users\$agentUser"
-
-    # Migration: .claude junction management moved to de layer. Remove prat-managed junction.
-    $stage.NoteMigrationStep((Get-Date "2026-06-27"))
-    $jLink = "$agentHome\.claude"
-    $jItem = Get-Item $jLink -ErrorAction SilentlyContinue
-    if ($null -ne $jItem -and $jItem.LinkType -eq 'Junction') {
-        $stage.OnChange()
-        Invoke-Gsudo { Remove-Item -Force -Recurse $using:jLink }
-    }
-
-    # Migration: remove .claude.json.backup symlink (no longer running CC from sandbox account).
-    $stage.NoteMigrationStep((Get-Date "2026-06-28"))
-    $sLink = "$agentHome\.claude.json.backup"
-    $sItem = Get-Item $sLink -ErrorAction SilentlyContinue
-    if ($null -ne $sItem -and $sItem.LinkType -eq 'SymbolicLink') {
-        $stage.OnChange()
-        Invoke-Gsudo { Remove-Item -Force $using:sLink }
-    }
-
-    # Migration: .local\bin junction management moved to de layer. Remove prat-managed junction.
-    $stage.NoteMigrationStep((Get-Date "2026-06-27"))
-    $localBin = "$agentHome\.local\bin"
-    $jItem = Get-Item $localBin -ErrorAction SilentlyContinue
-    if ($null -ne $jItem -and $jItem.LinkType -eq 'Junction') {
-        $stage.OnChange()
-        Remove-Item -Force -Recurse $localBin
-    }
-
-    # Migration: revoke (AD) ACE on claudeHome granted so the agent could create .claude.lock.
-    # CC creates .claude.lock as the running user, not the agent, so this right is no longer needed.
-    $stage.NoteMigrationStep((Get-Date "2026-06-28"))
-    if (-not $stage.GetIsStepComplete("claudeAgentSandbox/lockGrant/$($agentUser):2.0")) {
-        $stage.OnChange()
-        Invoke-Gsudo { icacls $using:claudeHome /remove:g $using:agentUser | Out-Null }
-        $stage.SetStepComplete("claudeAgentSandbox/lockGrant/$($agentUser):2.0")
-    }
 }
 
 function Install-ClaudeUserSettings($stage, [string] $claudeDir = "$home\.claude") {
