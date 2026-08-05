@@ -212,14 +212,37 @@ if ($PSVersiontable.PSEdition -eq "Core") {
    }
 }
 
-# Invoke-PesterAsJob: Like Invoke-Pester, but from a separate job, which allows it to test newly-changed class definitions.
+# Read-JobStreams: Drains a job's Output, Information and Error streams to the pipeline, polling
+# until the job finishes, then once more for whatever landed after the last poll.
+#
+# $Job is anything exposing .Finished.WaitOne(ms) and .ChildJobs[0].{Output,Information,Error},
+# each with ReadAll() — a real Job, or a test double.
 #
 # Uses ChildJobs[0].*.ReadAll() polling rather than Receive-Job -Wait, for two reasons:
 #   1. Receive-Job -Wait writes InformationRecords directly to $Host.UI, bypassing $InformationPreference
 #      and any stream redirection — causing direct console writes that duplicate the smart filter's output.
 #   2. Receive-Job -Wait also emits InformationRecords as RemotingInformationRecord on stream 6; with 6>&1
 #      at the call site these flow through the filter as a second copy, compounding the duplication.
-# ReadAll() returns objects on the pipeline only, with no host side-effects.
+# ReadAll() returns objects on the pipeline only, with no host side-effects. Error is drained
+# alongside the other two: a terminating error inside the job (e.g. Pester finding no test files)
+# lands there and nowhere else, so dropping it loses the only account of why the run produced
+# nothing.
+function Read-JobStreams {
+    param($Job)
+
+    $child = $Job.ChildJobs[0]
+    while (-not $Job.Finished.WaitOne(200)) {
+        $child.Output.ReadAll()
+        $child.Information.ReadAll()
+        $child.Error.ReadAll()
+    }
+    # Drain remaining output after completion
+    $child.Output.ReadAll()
+    $child.Information.ReadAll()
+    $child.Error.ReadAll()
+}
+
+# Invoke-PesterAsJob: Like Invoke-Pester, but from a separate job, which allows it to test newly-changed class definitions.
 function Invoke-PesterAsJob {
     [CmdletBinding()]
     param(
@@ -243,13 +266,7 @@ function Invoke-PesterAsJob {
         Invoke-Pester @using:params
     }
     try {
-        while (-not $job.Finished.WaitOne(200)) {
-            $job.ChildJobs[0].Output.ReadAll()
-            $job.ChildJobs[0].Information.ReadAll()
-        }
-        # Drain remaining output after completion
-        $job.ChildJobs[0].Output.ReadAll()
-        $job.ChildJobs[0].Information.ReadAll()
+        Read-JobStreams $job
     } finally {
         Remove-Job $job -Force
     }

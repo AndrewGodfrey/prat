@@ -62,4 +62,22 @@ Describe 'Get-TestDispatch' {
         $r.RunPester | Should -BeTrue
         $r.Targets.Count | Should -Be 0
     }
+
+    It 'sub-targets will run and the focus holds no .ps1 tests: the catch-all Pester leg is dropped' {
+        $r = Get-TestDispatch $root $targets $false
+        $r.RunPester | Should -BeFalse
+        $r.Targets.Count | Should -Be 2
+    }
+
+    It 'nothing else would run and the focus holds no .ps1 tests: Pester still runs, and reports it' {
+        # Dropping the leg here would leave the run with nothing dispatched and nothing to report.
+        $r = Get-TestDispatch "$root/lib/deu" $targets $false
+        $r.RunPester | Should -BeTrue
+        $r.Targets.Count | Should -Be 0
+    }
+
+    It 'a .ps1 focus runs Pester whatever the scan found' {
+        $r = Get-TestDispatch "$root/lib/deu/Foo.Tests.ps1" $targets $false
+        $r.RunPester | Should -BeTrue
+    }
 }

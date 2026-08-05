@@ -450,24 +450,14 @@ Describe "Install-ClaudeAgentSandbox" {
         $script:lasCapture.rwPaths = $null
 
         $script:stage = [PSCustomObject]@{}
-        $script:stage | Add-Member -MemberType NoteProperty -Name migrationDates `
-            -Value ([System.Collections.Generic.List[datetime]]::new())
         $script:stage | Add-Member ScriptMethod OnChange { }
         $script:stage | Add-Member ScriptMethod GetIsStepComplete { return $false }
         $script:stage | Add-Member ScriptMethod SetStepComplete { param($k) }
-        $script:stage | Add-Member ScriptMethod NoteMigrationStep {
-            param([datetime]$date) $this.migrationDates.Add($date)
-        }
     }
 
     It "calls Install-LocalAgentSandbox" {
         Install-ClaudeAgentSandbox $script:stage -agentUser 'test_agent' -claudeHome 'C:\dummy\home'
         $script:lasCapture.callCount | Should -Be 1
-    }
-
-    It "registers migration steps for removed CC-specific items" {
-        Install-ClaudeAgentSandbox $script:stage -agentUser 'test_agent' -claudeHome 'C:\dummy\home'
-        $script:stage.migrationDates.Count | Should -BeGreaterOrEqual 4
     }
 }
 

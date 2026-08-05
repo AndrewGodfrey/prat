@@ -210,8 +210,14 @@ $testCommand = if (-not $NoCoverage -and $coverageCollectorLocal -eq "dotnet-cov
     -GetTestResult {
         param($state)
         $failedTool = if ($coverageCollectorLocal -eq "dotnet-coverage") { "dotnet-coverage" } else { "dotnet test" }
-        $fatalError = if ($null -eq $state.result -and $state.exitCode -ne 0) {
-            "$failedTool exit code: $($state.exitCode)"
+        # A run that discovered nothing (e.g. a --filter matching no test) exits 0, so the counts
+        # are the only signal that nothing executed — and measured against a real project it prints
+        # no result summary at all, leaving no counts either. Both shapes are failures to run.
+        $fatalError = if ($null -eq $state.result) {
+            if ($state.exitCode -ne 0) { "$failedTool exit code: $($state.exitCode)" }
+            else { "no tests discovered — $failedTool produced no result summary" }
+        } elseif ($state.result.Total -eq 0) {
+            "no tests discovered — $failedTool reported 0 tests"
         } else { $null }
         @{
             Passed     = if ($null -ne $state.result) { $state.result.Passed } else { $null }

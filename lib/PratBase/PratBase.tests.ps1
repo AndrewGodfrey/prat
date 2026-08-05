@@ -241,3 +241,65 @@ Describe "Invoke-PesterAsJob" {
         Get-Content $transcriptPath | Where-Object { $_ -match 'leak-marker' } | Should -BeNullOrEmpty
     }
 }
+
+Describe "Read-JobStreams" {
+    BeforeAll {
+        # A job-like double: ChildJobs[0].{Output,Information,Error}.ReadAll() plus
+        # .Finished.WaitOne(ms). No real job and no waiting — WaitOne just counts calls.
+        function newFakeStream([object[]] $items) {
+            $s = [PSCustomObject]@{ Queue = [System.Collections.Generic.Queue[object]]::new() }
+            foreach ($i in $items) { $s.Queue.Enqueue($i) }
+            $s | Add-Member -MemberType ScriptMethod -Name ReadAll -PassThru -Value {
+                $out = @()
+                while ($this.Queue.Count -gt 0) { $out += $this.Queue.Dequeue() }
+                $out
+            }
+        }
+
+        # $pollsBeforeFinished = 0 means the job is already finished, so only the post-completion
+        # drain runs; 1 means one pass through the poll loop first.
+        function newFakeJob($output, $information, $errorItems, $pollsBeforeFinished = 1) {
+            $finished = [PSCustomObject]@{ Calls = 0; Polls = $pollsBeforeFinished }
+            $finished | Add-Member -MemberType ScriptMethod -Name WaitOne -Value {
+                param($ms)
+                $this.Calls++
+                $this.Calls -gt $this.Polls
+            }
+            [PSCustomObject]@{
+                Finished  = $finished
+                ChildJobs = @([PSCustomObject]@{
+                    Output      = newFakeStream $output
+                    Information = newFakeStream $information
+                    Error       = newFakeStream $errorItems
+                })
+            }
+        }
+    }
+
+    It "emits Output, Information and Error records from the poll loop" {
+        $job = newFakeJob @('out-1') @('info-1') @('err-1') 1
+
+        $items = InModuleScope PratBase -Parameters @{ job = $job } { Read-JobStreams $job }
+
+        $items | Should -Contain 'out-1'
+        $items | Should -Contain 'info-1'
+        $items | Should -Contain 'err-1'   # the stream Invoke-PesterAsJob used to drop
+    }
+
+    It "emits records that only arrive after the job finished" {
+        $job = newFakeJob @('out-late') @() @('err-late') 0
+
+        $items = InModuleScope PratBase -Parameters @{ job = $job } { Read-JobStreams $job }
+
+        $items | Should -Contain 'out-late'
+        $items | Should -Contain 'err-late'
+    }
+
+    It "emits nothing when every stream is empty" {
+        $job = newFakeJob @() @() @() 1
+
+        $items = InModuleScope PratBase -Parameters @{ job = $job } { Read-JobStreams $job }
+
+        $items | Should -BeNullOrEmpty
+    }
+}

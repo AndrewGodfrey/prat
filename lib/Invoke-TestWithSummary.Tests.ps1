@@ -76,6 +76,13 @@ Describe "Invoke-TestWithSummary" {
         Should -Invoke Write-TestRunResult -Times 1 -ParameterFilter { $FatalError -eq "exit code: 1" }
     }
 
+    It "calls Write-TestRunResult with Notice from GetTestResult" {
+        invokeHarness @{
+            GetTestResult = { param($s) @{ Passed = 0; Failed = 0; FatalError = $null; Notice = "0 of 4 tests ran" } }
+        }
+        Should -Invoke Write-TestRunResult -Times 1 -ParameterFilter { $Notice -eq "0 of 4 tests ran" }
+    }
+
     It "passes coverage summary built from GetCoverageFile path" {
         $covXml = "$TestDrive/cov.xml"
         @'
@@ -128,6 +135,15 @@ Describe "Invoke-TestWithSummary" {
         $result.CoverageData.Total     | Should -Be 10
         $result.CoverageData.Unit      | Should -Be "lines"
         $result.RunDir           | Should -Not -BeNullOrEmpty
+    }
+
+    It "carries Notice into the -PassThru result, so a merge can render it" {
+        $result = invokeHarness @{
+            GetTestResult = { param($s) @{ Passed = 0; Failed = 0; FatalError = $null; Notice = "0 of 4 tests ran" } }
+            PassThru      = $true
+        }
+
+        $result.Notice | Should -Be "0 of 4 tests ran"
     }
 
     It "returns only the result hashtable when -PassThru is set and ProcessLine emits live lines" {

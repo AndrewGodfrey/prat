@@ -219,6 +219,76 @@ Describe "Write-TestRunResult" {
         $output | Select-Object -First 1 | Should -Match '^\x1b\[91m'
         $output | Where-Object { $_ -match 'See ' } | Should -BeNullOrEmpty
     }
+
+    It "renders known counts alongside a fatal error, on one line, in red" {
+        # The container-failure case: tests did run and pass, and a whole file still failed to run.
+        $runDir = "$TestDrive/wr-fatal-with-counts"
+        New-Item $runDir -ItemType Directory | Out-Null
+
+        $output = Write-TestRunResult -Passed 5 -Failed 0 -FatalError "1 test file failed to run" -RunDir $runDir
+
+        $output | Select-Object -First 1 | Should -Match '^\x1b\[91m'
+        $summary = @(Get-Content "$runDir/summary.txt")
+        $summary.Count | Should -Be 1
+        $summary[0]    | Should -Match "Passed: 5, Failed: 0\. 1 test file failed to run\."
+        $summary[0]    | Should -Not -Match "no result parsed"
+    }
+
+    It "emits yellow with the notice text, on one line, when -Notice is set" {
+        $runDir = "$TestDrive/wr-notice"
+        New-Item $runDir -ItemType Directory | Out-Null
+
+        $output = Write-TestRunResult -Passed 0 -Failed 0 -Notice "0 of 4 tests ran" -RunDir $runDir
+
+        $output | Select-Object -First 1 | Should -Match '^\x1b\[93m'
+        $summary = @(Get-Content "$runDir/summary.txt")
+        $summary.Count | Should -Be 1
+        $summary[0]    | Should -Match "Passed: 0, Failed: 0\. 0 of 4 tests ran\."
+    }
+
+    It "renders the fatal error, not the notice, when both are set" {
+        $runDir = "$TestDrive/wr-notice-and-fatal"
+        New-Item $runDir -ItemType Directory | Out-Null
+
+        $output = Write-TestRunResult -Passed 0 -Failed 0 -Notice "0 of 4 tests ran" `
+            -FatalError "no tests discovered under C:/x" -RunDir $runDir
+
+        $output | Select-Object -First 1 | Should -Match '^\x1b\[91m'
+        $summary = Get-Content "$runDir/summary.txt"
+        $summary | Should -Match "no tests discovered under C:/x"
+        $summary | Should -Not -Match "0 of 4 tests ran"
+    }
+
+    It "keeps a notice yellow even when coverage is met" {
+        # The green-line-with-yellow-coverage special case must not claw the line back to green.
+        $runDir = "$TestDrive/wr-notice-coverage"
+        New-Item $runDir -ItemType Directory | Out-Null
+
+        $output = Write-TestRunResult -CoverageData @{ Pct = 85; Target = 70; Covered = 17; Total = 20; Unit = "Lines"; FileCount = 3 } `
+            -Passed 0 -Failed 0 -Notice "0 of 4 tests ran" -RunDir $runDir
+
+        $output | Select-Object -First 1 | Should -Match '^\x1b\[93m'
+    }
+
+    It "still escalates to red for mass failures when a notice is also set" {
+        # Reachable from a merged run: one leg's tests were all filtered out (notice), another leg
+        # failed hard. The notice must not downgrade the failure colour.
+        $runDir = "$TestDrive/wr-notice-vs-failures"
+        New-Item $runDir -ItemType Directory | Out-Null
+
+        $output = Write-TestRunResult -Passed 3 -Failed 7 -Notice "0 of 4 tests ran" -RunDir $runDir -FailureThreshold 5
+
+        $output | Select-Object -First 1 | Should -Match '^\x1b\[91m'
+    }
+
+    It "keeps the failure hint when a notice is also set" {
+        $runDir = "$TestDrive/wr-notice-hint"
+        New-Item $runDir -ItemType Directory | Out-Null
+
+        $output = Write-TestRunResult -Passed 3 -Failed 2 -FailuresSeen 2 -Notice "0 of 4 tests ran" -RunDir $runDir
+
+        $output | Where-Object { $_ -match 'test-run\.txt' } | Should -Not -BeNullOrEmpty
+    }
 }
 
 Describe "Convert-CoberturaXmlFile" {
@@ -604,6 +674,68 @@ Describe "Merge-TestSummary" {
         $result = Merge-TestSummary @($a, $b) ([TimeSpan]::Zero) -PassThru
 
         @($result.FailureLogs).Count | Should -Be 0
+    }
+
+    It "keeps the counts a healthy constituent parsed, when another constituent is fatal" {
+        $runDir = "$TestDrive/ms-fatal-keeps-counts"; New-Item $runDir -ItemType Directory | Out-Null
+        $a = @{ CoverageData = $null; Passed = $null; Failed = $null
+                FatalError = "no tests discovered under C:/x"; FailuresSeen = 0; FailureThreshold = 5; RunDir = $runDir }
+        $b = @{ CoverageData = $null; Passed = 7; Failed = 0
+                FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-fatal-keeps-counts-b" }
+
+        $result = Merge-TestSummary @($a, $b) ([TimeSpan]::Zero) -PassThru
+
+        $result.Passed     | Should -Be 7
+        $result.Failed     | Should -Be 0
+        $result.FatalError | Should -Match "no tests discovered"
+    }
+
+    It "reports no counts at all when no constituent parsed any" {
+        $a = @{ CoverageData = $null; Passed = $null; Failed = $null
+                FatalError = "a: boom"; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-nocounts-a" }
+        $b = @{ CoverageData = $null; Passed = $null; Failed = $null
+                FatalError = "b: boom"; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-nocounts-b" }
+
+        $result = Merge-TestSummary @($a, $b) ([TimeSpan]::Zero) -PassThru
+
+        $result.Passed | Should -BeNullOrEmpty
+        $result.Failed | Should -BeNullOrEmpty
+    }
+
+    It "synthesises a fatal error for a dead leg, instead of absorbing it as 0" {
+        # A leg whose runner produced neither counts nor an error of its own — the measured silent
+        # path: summing it as 0 made the merged line green.
+        $a = @{ CoverageData = $null; Passed = $null; Failed = $null
+                FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-dead-a" }
+        $b = @{ CoverageData = $null; Passed = 7; Failed = 0
+                FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-dead-b" }
+
+        $result = Merge-TestSummary @($a, $b) ([TimeSpan]::Zero) -PassThru
+
+        $result.FatalError | Should -Match "ms-dead-a"
+    }
+
+    It "carries a constituent's Notice through the merge" {
+        $a = @{ CoverageData = $null; Passed = 0; Failed = 0; Notice = "0 of 4 tests ran"
+                FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-notice-a" }
+        $b = @{ CoverageData = $null; Passed = 7; Failed = 0
+                FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-notice-b" }
+
+        $result = Merge-TestSummary @($a, $b) ([TimeSpan]::Zero) -PassThru
+
+        $result.Notice | Should -Be "0 of 4 tests ran"
+        $result.Passed | Should -Be 7
+    }
+
+    It "joins notices from more than one constituent" {
+        $a = @{ CoverageData = $null; Passed = 0; Failed = 0; Notice = "0 of 4 tests ran"
+                FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-notice2-a" }
+        $b = @{ CoverageData = $null; Passed = 0; Failed = 0; Notice = "0 of 9 tests ran"
+                FatalError = $null; FailuresSeen = 0; FailureThreshold = 5; RunDir = "$TestDrive/ms-notice2-b" }
+
+        $result = Merge-TestSummary @($a, $b) ([TimeSpan]::Zero) -PassThru
+
+        $result.Notice | Should -Be "0 of 4 tests ran; 0 of 9 tests ran"
     }
 }
 

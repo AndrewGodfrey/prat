@@ -6,7 +6,6 @@ BeforeAll {
 Describe "Invoke-DotnetTestWithSummary filter" {
     BeforeAll {
         # Create fake dotnet.cmd that outputs xUnit-style test results.
-        # Exit 0 to prevent the script's 'exit $exitCode' from terminating the test runner.
         $script:fakeDotnetDir = Join-Path $TestDrive "fakedotnet"
         New-Item $script:fakeDotnetDir -ItemType Directory | Out-Null
         Set-Content (Join-Path $script:fakeDotnetDir "dotnet.cmd") (@'
@@ -81,5 +80,64 @@ exit /b 0
         } finally {
             $env:PATH = $savedPath
         }
+    }
+}
+
+Describe "Invoke-DotnetTestWithSummary zero-test classification" {
+    BeforeAll {
+        function newFakeDotnet($dir, $summaryLine) {
+            New-Item $dir -ItemType Directory -Force | Out-Null
+            Set-Content "$dir/dotnet.cmd" (@"
+@echo off
+echo Test run for foo.dll (.NETCoreApp)
+echo Starting test execution, please wait...
+echo $summaryLine
+exit /b 0
+"@.Trim()) -Encoding utf8NoBOM
+            $dir
+        }
+
+        function runWithFakeDotnet($fakeDir, $repoRoot) {
+            New-Item $repoRoot -ItemType Directory -Force | Out-Null
+            $savedPath = $env:PATH
+            $env:PATH = "$fakeDir;$env:PATH"
+            try {
+                & $script:dotnetScript -TestArgs @("fake.csproj") -NoCoverage -RepoRoot $repoRoot `
+                    -OutputDir "$repoRoot/auto/testRuns" -PassThru
+            } finally {
+                $env:PATH = $savedPath
+            }
+        }
+    }
+
+    It "reports a fatal error when the run reported a total of 0 tests" {
+        $fake = newFakeDotnet "$TestDrive/fakedotnet-none" `
+            "Passed!  - Failed:     0, Passed:     0, Skipped:     0, Total:     0, Duration: 1 ms"
+
+        $result = runWithFakeDotnet $fake "$TestDrive/repo-dn-no-tests"
+
+        $result.FatalError | Should -Match 'no tests discovered'
+    }
+
+    It "reports a fatal error when the run produced no summary line at all" {
+        # Measured against a real xunit project with a filter matching nothing (2026-08): dotnet
+        # test prints "A total of 1 test files matched the specified pattern.", no result summary,
+        # and exits 0. Nothing ran, and nothing said so.
+        $fake = newFakeDotnet "$TestDrive/fakedotnet-silent" `
+            "A total of 1 test files matched the specified pattern."
+
+        $result = runWithFakeDotnet $fake "$TestDrive/repo-dn-silent"
+
+        $result.FatalError | Should -Match 'no tests discovered'
+    }
+
+    It "leaves an ordinary passing run free of a fatal error" {
+        $fake = newFakeDotnet "$TestDrive/fakedotnet-pass" `
+            "Passed!  - Failed:     0, Passed:     3, Skipped:     0, Total:     3, Duration: 1 ms"
+
+        $result = runWithFakeDotnet $fake "$TestDrive/repo-dn-passing"
+
+        $result.FatalError | Should -BeNullOrEmpty
+        $result.Passed     | Should -Be 3
     }
 }

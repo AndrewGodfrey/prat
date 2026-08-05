@@ -55,6 +55,53 @@ def test_add():
     }
 }
 
+Describe "Invoke-PytestWithSummary zero-test classification" {
+    BeforeAll {
+        $script:pytestScript = "$PSScriptRoot/Invoke-PytestWithSummary.ps1"
+
+        # A fake `python` ahead of the real one on PATH, so the exit code and summary line are the
+        # test's to choose. Same device as Invoke-DotnetTestWithSummary.Tests.ps1's fake dotnet.
+        function newFakePython($dir, $summaryLine, $exitCode) {
+            New-Item $dir -ItemType Directory -Force | Out-Null
+            Set-Content "$dir/python.cmd" (@"
+@echo off
+echo $summaryLine
+exit /b $exitCode
+"@.Trim()) -Encoding utf8NoBOM
+            $dir
+        }
+
+        function runWithFakePython($fakeDir, $repoRoot) {
+            New-Item $repoRoot -ItemType Directory -Force | Out-Null
+            $savedPath = $env:PATH
+            $env:PATH = "$fakeDir;$env:PATH"
+            try {
+                & $script:pytestScript -NoCoverage -RepoRoot $repoRoot -WorkingDir $repoRoot `
+                    -OutputDir "$repoRoot/auto/testRuns" -PassThru
+            } finally {
+                $env:PATH = $savedPath
+            }
+        }
+    }
+
+    It "reports a fatal error when pytest collected nothing (exit code 5)" {
+        $fake = newFakePython "$TestDrive/fakepy-none" "===== no tests ran in 0.01s =====" 5
+
+        $result = runWithFakePython $fake "$TestDrive/repo-no-tests"
+
+        $result.FatalError | Should -Match 'no tests discovered'
+    }
+
+    It "leaves an ordinary passing run free of a fatal error" {
+        $fake = newFakePython "$TestDrive/fakepy-pass" "===== 3 passed in 0.01s =====" 0
+
+        $result = runWithFakePython $fake "$TestDrive/repo-passing"
+
+        $result.FatalError | Should -BeNullOrEmpty
+        $result.Passed     | Should -Be 3
+    }
+}
+
 Describe "parsePytestSummary" {
     It "returns null for a line not starting with '='" {
         parsePytestSummary "3 passed in 1.2s" | Should -BeNullOrEmpty

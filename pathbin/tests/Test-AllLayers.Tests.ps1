@@ -77,6 +77,32 @@ Describe "Test-AllLayers" {
         $output -join "`n" | Should -Match 'b: Passed: 1, Failed: 0'
     }
 
+    It "carries a layer's Notice into the merged summary" {
+        Mock Start-LayerTestJob {
+            param($Layer, [switch] $NoCoverage)
+            makeJob -State 'Completed' -Name $Layer.Name `
+                -Output @(@{ Passed = 0; Failed = 0; FailureThreshold = 5; Notice = '0 of 4 tests ran' })
+        } -ParameterFilter { $Layer.Name -eq 'a' }
+
+        & $script -NoCoverage
+
+        Should -Invoke Write-TestRunResult -ParameterFilter { $Notice -eq '0 of 4 tests ran' }
+    }
+
+    It "prints a layer that ran nothing in yellow, with its notice" {
+        Mock Start-LayerTestJob {
+            param($Layer, [switch] $NoCoverage)
+            makeJob -State 'Completed' -Name $Layer.Name `
+                -Output @(@{ Passed = 0; Failed = 0; FailureThreshold = 5; Notice = '0 of 4 tests ran' })
+        } -ParameterFilter { $Layer.Name -eq 'a' }
+
+        $output = & $script -NoCoverage
+
+        $line = $output | Where-Object { $_ -match '^\x1b\[\d+ma: ' }
+        $line | Should -Match '\x1b\[93m'
+        $line | Should -Match '0 of 4 tests ran'
+    }
+
     It "exits 0 when every layer is clean" {
         & $script -NoCoverage
 

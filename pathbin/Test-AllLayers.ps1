@@ -53,8 +53,11 @@ function Format-LayerLine($LayerName, $Summary) {
     }
     $failed    = $Summary.Failed ?? 0
     $threshold = $Summary.FailureThreshold ?? 5
-    $color     = if ($failed -gt 0) { if ($failed -ge $threshold) { 91 } else { 93 } } else { 92 }
-    return Format-AnsiText "${LayerName}: Passed: $($Summary.Passed), Failed: $failed" $color
+    $notice    = if ($Summary.Notice) { ". $($Summary.Notice)" } else { "" }
+    $color     = if ($failed -gt 0) { if ($failed -ge $threshold) { 91 } else { 93 } }
+                 elseif ($Summary.Notice) { 93 }
+                 else { 92 }
+    return Format-AnsiText "${LayerName}: Passed: $($Summary.Passed), Failed: $failed$notice" $color
 }
 
 if ($MyInvocation.InvocationName -ne '.') {
@@ -140,7 +143,8 @@ if ($MyInvocation.InvocationName -ne '.') {
         -FailureThreshold $merged.FailureThreshold `
         -RunDir           $runDir `
         -FailureLogs      $merged.FailureLogs `
-        -FatalError       $merged.FatalError
+        -FatalError       $merged.FatalError `
+        -Notice           $merged.Notice
 
     $exitCode = if ($merged.FatalError) { 2 } elseif (($merged.Failed ?? 0) -gt 0) { 1 } else { 0 }
     exit $exitCode

@@ -82,6 +82,32 @@ and counted as **NotRun** — visible in `test-run.txt` but not in the console o
 "Passed" count therefore understates the discovered total. Before treating a passed-count drop
 across runs as a regression, check `test-run.txt` for the NotRun count.
 
+## Reading the summary line
+
+The colour of the one-line summary, in precedence order — first match wins:
+
+| Colour | Meaning |
+|---|---|
+| **red** | 5 or more tests failed. **Or** a fatal problem: nothing was discovered under the focus, a test file failed to run, or one leg of a multi-framework run produced no result at all. |
+| **yellow** | 1–4 tests failed. **Or** the runner's output couldn't be parsed for counts. **Or** tests were discovered and none of them ran (`0 of N tests ran`). |
+| **green** | At least one test ran, and none failed. |
+
+Two consequences worth holding onto:
+
+- **`Passed: 0, Failed: 0` is never green.** Zero tests executed is either red (nothing discovered)
+  or yellow (`0 of N tests ran` — all filtered out or `-Skip`ped, e.g. `t <path> -Integration` where
+  nothing carries the tag). Legitimate, but not a pass.
+- **A fatal problem is red even when the counts look fine**, so read the counts and the reason
+  together: `Passed: 12, Failed: 0. 1 test file failed to run.` means 12 tests passed *and* a whole
+  file never ran.
+
+The 5-failure threshold decides red vs. yellow, and also caps how many failure blocks print live —
+hence the `N failures suppressed` hint. Any run with failures names the `test-run.txt` holding them;
+a fatal one also echoes that log's last 20 lines.
+
+Separately, an all-passing run whose coverage is below target prints the coverage part yellow inside
+an otherwise-green line — that yellow is about coverage, not about the tests.
+
 ## Cached summary vs. fresh run
 
 Read `auto/testRuns/last/summary.txt` instead of re-running when no code has changed and you only

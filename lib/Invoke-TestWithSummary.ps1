@@ -11,7 +11,9 @@
 #   ProcessLine     — filters/passes each output line; receives ($line, $state); returns string|$null
 #   RenderResult    — post-run flush (e.g. pending partial lines); receives ($state)
 #   GetCoverageFile — locates/copies the coverage file; receives ($runDir); returns path|$null
-#   GetTestResult   — extracts pass/fail counts from state; receives ($state); returns @{Passed;Failed;FatalError}
+#   GetTestResult   — extracts pass/fail counts from state; receives ($state);
+#                     returns @{Passed;Failed;FatalError;Notice}. FatalError is red, Notice yellow;
+#                     both render alongside the counts (see Write-TestRunResult).
 #
 # The harness injects these keys into $state before the run:
 #   .logFile          — path to the run's test-run.txt
@@ -87,6 +89,7 @@ if ($PassThru) {
         Passed           = $testResult.Passed
         Failed           = $testResult.Failed
         FatalError       = $testResult.FatalError
+        Notice           = $testResult.Notice
         FailuresSeen     = $failuresSeen
         FailureThreshold = $failureThreshold
         RunDir           = $runDir
@@ -100,4 +103,5 @@ Write-TestRunResult `
     -Elapsed     ([DateTimeOffset]::UtcNow - $StartTime) `
     -FailuresSeen $failuresSeen -FailureThreshold $failureThreshold `
     -RunDir      $runDir `
-    -FatalError  $testResult.FatalError
+    -FatalError  $testResult.FatalError `
+    -Notice      $testResult.Notice

@@ -36,6 +36,10 @@ function Initialize-TestRunDir {
 #
 # $Passed/$Failed accept $null to signal "no result parsed" (yellow summary, fallback text).
 #
+# $FatalError (red) and $Notice (yellow) both render alongside known counts when there are any:
+# a run can have real passes and still be a failure (a test file that never ran), or be legitimately
+# empty (every discovered test filtered out). Fatal wins when both are set.
+#
 # $RunDir is where summary.txt goes. $FailureLogs names the run(s) whose test-run.txt actually
 # holds the failures — they differ for a merged run, where each constituent runner wrote its own
 # log and $RunDir is just the aggregation root. Each entry: @{ RunDir; Failed; FailuresSeen }.
@@ -50,7 +54,8 @@ function Write-TestRunResult {
         [string] $RunDir,
         [hashtable[]] $FailureLogs = @(),
         [int] $FailureThreshold = 5,
-        [string] $FatalError = $null
+        [string] $FatalError = $null,
+        [string] $Notice = $null
     )
     $failedCount = if ($null -ne $Failed) { [int]$Failed } else { 0 }
     $durationStr = Format-Duration $Elapsed.TotalSeconds
@@ -62,7 +67,8 @@ function Write-TestRunResult {
     } else { $null }
 
     $passFailText = if ($null -ne $Passed -and $null -ne $Failed) {
-        "Passed: $Passed, Failed: $Failed. $durationStr"
+        $qualifier = if ($FatalError) { " $FatalError." } elseif ($Notice) { " $Notice." } else { "" }
+        "Passed: $Passed, Failed: $Failed.$qualifier $durationStr"
     } elseif ($FatalError) {
         "Test run failed ($FatalError, no result parsed). $durationStr"
     } else {
@@ -71,9 +77,12 @@ function Write-TestRunResult {
 
     $plainSummary = (@($covText, $passFailText) | Where-Object { $_ }) -join " "
 
+    # Failures outrank a notice: a merged run can carry both, and the notice must not cost the
+    # red escalation. Notice only decides the colour of a run that would otherwise be green.
     $colorCode = if ($FatalError) { 91 }
                  elseif ($null -eq $Failed) { 93 }
                  elseif ($failedCount -gt 0) { if ($failedCount -ge $FailureThreshold) { 91 } else { 93 } }
+                 elseif ($Notice) { 93 }
                  else { 92 }
 
     $plainSummary | Out-File "$RunDir/summary.txt" -Encoding utf8NoBOM
@@ -124,7 +133,12 @@ function Write-TestRunResult {
 # or equal, any of which makes that target relevant — and whether Pester should also run. Pester is
 # skipped only when $ResolvedPath is confined inside a sub-target; an ancestor focus (including an
 # unfocused run) still needs it for whatever the sub-targets don't own.
-function Get-TestDispatch($ResolvedPath, $SubTargets) {
+#
+# $FocusHasPesterTests says whether the focus subtree holds any *.Tests.ps1 — the caller's answer,
+# so this stays pure. $false drops the catch-all Pester leg, but only when an overlapping sub-target
+# will run instead: with nothing else dispatched, the empty Pester run is what reports that there
+# was nothing to run, so it still goes.
+function Get-TestDispatch($ResolvedPath, $SubTargets, $FocusHasPesterTests = $true) {
     # A .ps1 focus belongs to the Pester run wherever it sits: no other framework can execute it, so
     # a sub-target handed one collects nothing and reports a green "Passed: 0, Failed: 0".
     if ($ResolvedPath -match '\.ps1$') { return @{ RunPester = $true; Targets = @() } }
@@ -140,7 +154,8 @@ function Get-TestDispatch($ResolvedPath, $SubTargets) {
         $ResolvedPath.StartsWith($subRoot + '/', 'InvariantCultureIgnoreCase') -or $ResolvedPath -ieq $subRoot
     }).Count -gt 0
 
-    @{ RunPester = -not $insideASubTarget; Targets = $overlapping }
+    $runPester = (-not $insideASubTarget) -and ($FocusHasPesterTests -or $overlapping.Count -eq 0)
+    @{ RunPester = $runPester; Targets = $overlapping }
 }
 
 # Merge-TestSummary: Combines N PassThru result objects (from Invoke-TestWithSummary) into a
@@ -156,10 +171,24 @@ function Merge-TestSummary {
         [switch]      $PassThru
     )
 
-    $errors = $Summaries | ForEach-Object { $_.FatalError } | Where-Object { $_ }
+    # A constituent that parsed no counts and reported no error of its own never ran: summing it as
+    # 0 makes it vanish inside an otherwise-green total. Name it instead.
+    $deadLegs = @($Summaries | Where-Object {
+        -not $_.FatalError -and $null -eq $_.Passed -and $null -eq $_.Failed
+    } | ForEach-Object {
+        if ($_.RunDir) { "no result from $($_.RunDir)" } else { "a test run produced no result" }
+    })
+    $errors = @($Summaries | ForEach-Object { $_.FatalError } | Where-Object { $_ }) + $deadLegs
     $fatalError = if ($errors) { $errors -join '; ' } else { $null }
-    $passed = if ($fatalError) { $null } else { ($Summaries | ForEach-Object { $_.Passed ?? 0 } | Measure-Object -Sum).Sum }
-    $failed = if ($fatalError) { $null } else { ($Summaries | ForEach-Object { $_.Failed ?? 0 } | Measure-Object -Sum).Sum }
+
+    $notices = @($Summaries | ForEach-Object { $_.Notice } | Where-Object { $_ })
+    $notice  = if ($notices) { $notices -join '; ' } else { $null }
+
+    # Counts survive a fatal constituent: what the healthy legs measured is still true, and
+    # Write-TestRunResult renders both. Null only when nothing anywhere parsed a count.
+    $withCounts = @($Summaries | Where-Object { $null -ne $_.Passed -or $null -ne $_.Failed })
+    $passed = if ($withCounts) { ($withCounts | ForEach-Object { $_.Passed ?? 0 } | Measure-Object -Sum).Sum } else { $null }
+    $failed = if ($withCounts) { ($withCounts | ForEach-Object { $_.Failed ?? 0 } | Measure-Object -Sum).Sum } else { $null }
 
     $withCoverage = @($Summaries | Where-Object { $_.CoverageData })
     if ($withCoverage) {
@@ -207,6 +236,7 @@ function Merge-TestSummary {
             Passed           = $passed
             Failed           = $failed
             FatalError       = $fatalError
+            Notice           = $notice
             FailuresSeen     = $failuresSeen
             FailureThreshold = $failureThreshold
             RunDir           = $runDir
@@ -223,7 +253,8 @@ function Merge-TestSummary {
         -FailureThreshold $failureThreshold `
         -RunDir           $runDir `
         -FailureLogs      $failureLogs `
-        -FatalError       $fatalError
+        -FatalError       $fatalError `
+        -Notice           $notice
 }
 
 # .SYNOPSIS

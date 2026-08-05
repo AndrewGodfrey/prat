@@ -71,9 +71,12 @@ Describe "Test-PratLayer.ps1 sub-target aggregation" {
         # Resolve-TestFocus requires a -Focus path to actually exist on disk, so this needs real
         # TestDrive directories (unlike Get-TestDispatch's own tests, which never touch the
         # filesystem). Merge-TestSummary also needs a real, writable RunDir for its output files.
+        # The .Tests.ps1 file is load-bearing too: the catch-all Pester leg is only dispatched
+        # where the focus subtree actually holds one.
         $root = (Get-Item "TestDrive:\").FullName.TrimEnd('\').Replace('\', '/')
         New-Item -ItemType Directory "$root/repo/lib/sub" -Force | Out-Null
         New-Item -ItemType Directory "$root/repo/lib/unrelated" -Force | Out-Null
+        Set-Content "$root/repo/Foo.Tests.ps1" "# a Pester test file" -Encoding utf8NoBOM
         $runDir = "$root/runDir"
         New-Item -ItemType Directory $runDir -Force | Out-Null
         $project = @{ root = "$root/repo"; id = "repo"; repo = @{ root = "$root/repo" } }
@@ -109,6 +112,17 @@ Describe "Test-PratLayer.ps1 sub-target aggregation" {
         $result = & $scriptToTest $project -CommandParameters @{Focus = "$root/repo/lib/unrelated"; PassThru = $true}
 
         $result.Passed | Should -Be 2
+    }
+
+    It "skips the catch-all Pester leg when the focus subtree holds no .ps1 tests" {
+        # $root/repo/lib is an ancestor of the sub-target and holds no *.Tests.ps1 of its own, so
+        # dispatching Pester would only produce an empty run for the merge to absorb.
+        function Get-PratTestTargetsUnder { subTargets }
+        Mock Invoke-PesterWithSummary { throw "should not be called — no .ps1 tests under the focus" }
+
+        $result = & $scriptToTest $project -CommandParameters @{Focus = "$root/repo/lib"; PassThru = $true}
+
+        $result.Passed | Should -Be 3
     }
 }
 

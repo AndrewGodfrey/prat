@@ -20,8 +20,19 @@ $repoRoot   = $repoRoot -replace '\\', '/'
 $outputDir  = if ($CommandParameters['OutputDir']) { $CommandParameters['OutputDir'] } else { Get-ProjectTestOutputDir $project }
 $pathToTest = &"$HOME/prat/lib/Resolve-TestFocus" $CommandParameters['Focus'] $repoRoot
 
+# Mirrors Pester's own default discovery (Run.TestExtension = '.Tests.ps1', recursive) — keep the
+# two in step. Sub-target roots are deliberately not excluded: Pester collects those too when given
+# an ancestor path.
+function focusHasPesterTests($path) {
+    $null -ne (Get-ChildItem $path -Recurse -File -Filter '*.Tests.ps1' -ErrorAction SilentlyContinue |
+                Select-Object -First 1)
+}
+
 $subTargets = @(Get-PratTestTargetsUnder $repoRoot)
-$dispatch   = Get-TestDispatch $pathToTest $subTargets
+# Only worth the scan (3ms for a small subtree, ~130ms for a whole repo) when there is a sub-target
+# that could run instead; Get-TestDispatch ignores the answer otherwise.
+$hasPesterTests = ($subTargets.Count -eq 0) -or (focusHasPesterTests $pathToTest)
+$dispatch   = Get-TestDispatch $pathToTest $subTargets $hasPesterTests
 
 if ($subTargets.Count -eq 0) {
     # No sub-targets — same plain Pester dispatch as before subproject aggregation existed.

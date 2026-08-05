@@ -99,7 +99,11 @@ if ($MyInvocation.InvocationName -ne '.') {
         } `
         -GetTestResult {
             param($state)
-            $fatalError = if ($null -eq $state.passed -and $state.exitCode -ne 0) {
+            # Exit code 5 is pytest's EXIT_NOTESTSCOLLECTED, which it otherwise reports as a
+            # perfectly ordinary "no tests ran" summary — Passed 0, Failed 0, green.
+            $fatalError = if ($state.exitCode -eq 5) {
+                "no tests discovered — pytest exit code 5"
+            } elseif ($null -eq $state.passed -and $state.exitCode -ne 0) {
                 "pytest exit code: $($state.exitCode)"
             } else { $null }
             @{ Passed = $state.passed; Failed = $state.failed; FatalError = $fatalError }

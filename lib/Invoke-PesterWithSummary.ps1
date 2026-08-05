@@ -35,6 +35,16 @@ function moveCoverageFile($tempFile, $coverageDest) {
     }
 }
 
+# One count off Pester's result object. A property the object doesn't carry reads as $null
+# ("unknown"), so a classification rule that needs it is skipped rather than seeing a 0 that
+# isn't there.
+function pesterCount($result, $name) {
+    if ($null -eq $result) { return $null }
+    $p = $result.PSObject.Properties[$name]
+    if ($null -eq $p) { return $null }
+    $p.Value
+}
+
 $savedVerbosePreference = $VerbosePreference
 if ($VerbosePreference -ne "SilentlyContinue") { $VerbosePreference = "SilentlyContinue" }
     Import-Module Pester
@@ -160,9 +170,25 @@ $runState = @{
     } `
     -GetTestResult {
         param($state)
-        @{
-            Passed     = if ($null -ne $state.result) { $state.result.PassedCount } else { $null }
-            Failed     = if ($null -ne $state.result) { $state.result.FailedCount } else { $null }
-            FatalError = $null
+        $r = $state.result
+        $total            = pesterCount $r 'TotalCount'
+        $failedContainers = pesterCount $r 'FailedContainersCount'
+        $passed           = pesterCount $r 'PassedCount'
+        $failed           = pesterCount $r 'FailedCount'
+
+        # Pester reports every "nothing ran" shape as a green Passed: 0, Failed: 0, so classify
+        # here. A green summary requires at least one test to have executed.
+        $fatalError = $null
+        $notice     = $null
+        if ($failedContainers -gt 0) {
+            # A whole file that never ran, whatever the other counts say — red even beside passes.
+            $fatalError = "$failedContainers test file$(if ($failedContainers -ne 1) { 's' }) failed to run"
+        } elseif ($null -eq $r -or $total -eq 0) {
+            $fatalError = "no tests discovered under $PathToTest"
+        } elseif ($total -gt 0 -and (($passed ?? 0) + ($failed ?? 0)) -eq 0) {
+            # Filtered out or all -Skip: a legitimate result, but not a green one.
+            $notice = "0 of $total tests ran"
         }
+
+        @{ Passed = $passed; Failed = $failed; FatalError = $fatalError; Notice = $notice }
     }
