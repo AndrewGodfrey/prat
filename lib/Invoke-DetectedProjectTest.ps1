@@ -61,6 +61,18 @@ function runDotnet([switch]$PassThru) {
 
 $frameworks = @(Get-DetectedTestFrameworks $project.root)
 
+# Only Pester runs .ps1 tests, and this dispatcher runs neither. Without this guard pytest/dotnet
+# accept the path, collect nothing, and report a green "Passed: 0, Failed: 0" — which reads as a
+# pass. Fail loudly instead.
+$focusPath = $CommandParameters['Focus']
+if ($focusPath -and ((Expand-TildePath $focusPath) -match '\.ps1$')) {
+    # Test-Codebase already walks up to the nearest ancestor declaring its own test command, so
+    # "run it from the parent" is not the remedy here: reaching this line means no ancestor does,
+    # or this dispatcher was invoked directly.
+    throw "Focus '$focusPath' is a Pester file, but project '$($project.id)' only has " +
+          "$($frameworks -join '/') tests, and no ancestor project declares a test command that runs Pester."
+}
+
 if ($frameworks.Count -eq 0) {
     # Shouldn't happen — Resolve-ProjectTestScript only points here when a marker was found.
     # Only reachable if it's deleted between detection and invocation.

@@ -125,6 +125,10 @@ function Write-TestRunResult {
 # skipped only when $ResolvedPath is confined inside a sub-target; an ancestor focus (including an
 # unfocused run) still needs it for whatever the sub-targets don't own.
 function Get-TestDispatch($ResolvedPath, $SubTargets) {
+    # A .ps1 focus belongs to the Pester run wherever it sits: no other framework can execute it, so
+    # a sub-target handed one collects nothing and reports a green "Passed: 0, Failed: 0".
+    if ($ResolvedPath -match '\.ps1$') { return @{ RunPester = $true; Targets = @() } }
+
     $overlapping = @($SubTargets | Where-Object {
         $subRoot = $_.root -replace '\\', '/'
         $subRoot.StartsWith($ResolvedPath + '/', 'InvariantCultureIgnoreCase') -or

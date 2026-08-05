@@ -36,6 +36,11 @@ function makeTestCommand([string]$cmd) {
                 # Not a real project — its `test` returns a plain
                 # string which would confuse aggregation code.
                 excludeFromAggregation = $true
+                subprojects = @{
+                    # Declares no `test`, so it resolves via marker auto-detection (conftest.py ->
+                    # pytest). Fixture for "a *.Tests.ps1 focus inside a pytest-only subproject".
+                    detectedSub = @{ path = "pytestSub"; excludeFromAggregation = $true }
+                }
             }
         }
         shortcuts = @{

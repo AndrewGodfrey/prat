@@ -36,6 +36,14 @@ Describe 'Get-TestDispatch' {
         $r.RunPester | Should -BeFalse
         $r.Targets.id | Should -Be @('subA')
     }
+    It 'focus = a *.Tests.ps1 inside a target: Pester runs, and the target is not asked to run it' {
+        # Only Pester runs .ps1 tests. Treating the sub-target as owning everything under its root
+        # would hand the file to pytest/dotnet, which collect nothing and report a green 0/0.
+        $r = Get-TestDispatch "$subA/Foo.Tests.ps1" $targets
+        $r.RunPester | Should -BeTrue
+        $r.Targets.Count | Should -Be 0
+    }
+
 
     It 'focus = the other target dir: only that one, Pester skipped' {
         $r = Get-TestDispatch $subB $targets

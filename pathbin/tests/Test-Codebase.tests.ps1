@@ -31,6 +31,16 @@ Describe "Test-Codebase" {
         $result = & $script $testCbDir -NoCoverage
         $result | Should -Be "testCb: test: bar: Focus=$testCbDir NoCoverage=True RepoRoot=$testCbDir"
     }
+    It "A *.Tests.ps1 focus inside a pytest-only subproject resolves to the parent that runs Pester" {
+        # The deepest project containing the file (testCb/detectedSub) auto-detects pytest only, so
+        # dispatching there would collect nothing and report a green 0/0.
+        $subTestFile = "$testCbDir\pytestSub\testCb_pytestSubFile.Tests.ps1"
+        New-Item -Type Directory "TestDrive:\pester-in-pytest-sub" | Out-Null
+        Push-Location "TestDrive:\pester-in-pytest-sub"
+        $result = & $script $subTestFile -NoCoverage
+        $result | Should -Be "testCb: test: bar: Focus=$subTestFile NoCoverage=True RepoRoot=$testCbDir"
+    }
+
 
     It "Forwards -PassThru through to CommandParameters" {
         New-Item -Type Directory "TestDrive:\passthru-test" | Out-Null

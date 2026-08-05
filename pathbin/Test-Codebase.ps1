@@ -38,6 +38,23 @@ else {
 $PSBoundParameters['Focus'] = $Focus
 
 $project = Get-PratProject -Location $Focus
+
+# Only Pester runs .ps1 tests. A project declaring no `test` of its own dispatches by marker
+# detection (pytest/dotnet), which would accept the path, collect nothing, and report a green
+# "Passed: 0, Failed: 0". Walk up to the nearest ancestor that declares a `test` — its dispatcher
+# is the one that runs Pester.
+if ($project -and -not $project.test -and $Focus -match '\.ps1$') {
+    $ancestor = $project
+    while ($ancestor -and -not $ancestor.test) {
+        $parentDir = Split-Path $ancestor.root -Parent
+        if (-not $parentDir) { break }
+        $next = Get-PratProject -Location $parentDir
+        if (-not $next -or $next.root -eq $ancestor.root) { break }
+        $ancestor = $next
+    }
+    if ($ancestor.test) { $project = $ancestor }
+}
+
 if ($project) { $PSBoundParameters['RepoRoot'] = $project.root }
 else {
     Write-Warning "No registered project found for path '$Focus'"

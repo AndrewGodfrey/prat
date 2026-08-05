@@ -57,6 +57,16 @@ Describe "Invoke-DetectedProjectTest.ps1 (pytest)" {
             & $scriptToTest $project -CommandParameters @{}
             Should -Invoke Invoke-PytestWithSummary -ParameterFilter { $TestArgs.Count -eq 0 }
         }
+
+        It "throws on a .ps1 focus no detected framework can run, rather than collecting nothing" {
+            { & $scriptToTest $project -CommandParameters @{Focus = "$($project.root)/myproject.Tests.ps1"} } |
+                Should -Throw "*Pester*"
+        }
+
+        It "names the project whose frameworks can't run it, so the message isn't just 'wrong file'" {
+            { & $scriptToTest $project -CommandParameters @{Focus = "$($project.root)/myproject.Tests.ps1"} } |
+                Should -Throw "*myrepo/myproject*"
+        }
     }
 }
 

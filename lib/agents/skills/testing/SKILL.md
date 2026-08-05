@@ -104,6 +104,9 @@ Conversely, read the failure *message* of a test that fails as expected: "red" a
 intended reason" are different states, and an import error, a missing fixture or a crash in setup
 look identical from the pass/fail count.
 
+An assertion that something is *absent* proves nothing unless the same run also shows the mechanism
+that would have produced it was live — assert both in the one test.
+
 ## Mid-task verification
 
 Any message describing a change you just made is a verification moment — not just the final one. Run
