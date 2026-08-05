@@ -38,6 +38,12 @@ dot-sourced; read the current state with `Get-PlanState -PlanFile <plan>`.
   on exactly those: two stand-ins for the same condition can raise different exception types. If
   only a stand-in is available, label the number as a proxy in the step.
 
+  Where the step fixes a **constant** — a timeout, poll interval, retry count, cap, threshold — measure the
+  quantity it has to accommodate and derive the value from that. Confirming that the first value you tried
+  works is not a derivation, and the two are indistinguishable in the finished step, so record the measurement
+  next to the constant ("the process settles in 37–50ms, so poll at 10ms"). A validated guess is usually both
+  larger than it needs to be and untethered to the thing that would invalidate it.
+
 - **Check the level of the change.** Before a step adds a mechanism — a retry, a connection or
   resource lifecycle, a cache, cancellation plumbing — to one module, count the sibling call sites
   that already own that concern. Grep for it; don't estimate. If several do, the step is probably
