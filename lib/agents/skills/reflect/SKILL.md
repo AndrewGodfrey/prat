@@ -18,3 +18,7 @@ There are various ways to address these, in decreasing order of preference:
 - change configuration to make the mistake impossible (e.g. a hook or permission rule)
 - use the `remember` skill to add it to context — it decides where, and how to keep additions
   from degrading always-loaded files
+
+Take action on the findings in this session: The session that produced a finding is the only one holding the
+context that makes it cheap to fix, so a general preference for short sessions is not a reason to defer
+here — reflect is the exception to it.
