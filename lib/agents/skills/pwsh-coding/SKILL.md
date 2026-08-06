@@ -34,6 +34,24 @@ param([Parameter(Mandatory)] [string] $Harness, [Parameter(Mandatory)] [scriptbl
 If mandatory enforcement is needed in advanced mode, capture remaining args explicitly:
 `[Parameter(ValueFromRemainingArguments)] $PassThrough`.
 
+The flip side: a non-advanced script silently absorbs *unknown named* arguments into `$ARGS` instead
+of failing. So common parameters look accepted and do nothing — `-WarningVariable w` leaves `$w`
+`$null`, `-ErrorAction Stop` is ignored. Add `[CmdletBinding()]` to any script whose caller (or test)
+relies on a common parameter.
+
+# `[Parameter(Mandatory)] [string]` rejects the empty string
+
+Mandatory means "not `$null` *and* not empty", so a parameter carrying data from outside — stdin, a
+file, a caller's argument — fails binding on input that is merely empty rather than missing, and in a
+non-interactive host that is a hard error rather than a prompt. If empty is a legal value, say so:
+
+```powershell
+[Parameter(Mandatory)] [AllowEmptyString()] [string] $ScriptText
+```
+
+The same applies to `[AllowEmptyCollection()]` for arrays. Worth checking whenever a refactor moves
+inline code into a function: the inline version happily handled `''`, and the extracted one won't.
+
 # Calling a script for its return value
 
 Use `& $file` not `. $file`. Dot-source runs the script in the current scope and imports its
@@ -431,6 +449,10 @@ shadows the module-exported function of the same name. Confirmed empirically in 
 defined in `Context BeforeAll` shadows the module export for `It` blocks within that context. This
 also works when the *production* code under test defines its own same-named function internally
 (e.g. a mock-seam helper) — the test's shadow, defined first, still wins.
+
+Skipping the shadow fails **silently**: `Mock Get-Foo` on a PATH-resolved `.ps1` is accepted with no
+error and the real script still runs, which reads exactly like a mock returning real-looking data.
+Check `(Get-Command X).CommandType` when a mock appears to be ignored.
 
 **Mocking a cmdlet keeps its original parameter types.** `Mock` generates a proxy that mimics the
 real command's parameter sets, including their declared types — so binding a plain test-double
