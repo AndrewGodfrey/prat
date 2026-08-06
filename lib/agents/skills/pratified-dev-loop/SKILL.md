@@ -149,6 +149,12 @@ project — `<repoRoot>/auto/testRuns/<project>/last/coverage.xml`, the same pat
 point at a different run, pass the file explicitly: `Get-FileCoverage ... -CoverageFile <path>` /
 `gcr -coverageFile <path>`.
 
+That inference is by *location*, so it misses when a file's tests belong to a different project than
+the directory it sits in — e.g. a `.Tests.ps1` inside a registered pytest subproject's directory is
+discovered by the parent project's Pester run, and its coverage lands in the parent's run dir, not
+the subproject's. Symptom: `Coverage file not found: …/<subprojectId>/last/coverage.xml`. Pass
+`-CoverageFile <repoRoot>/auto/testRuns/<parentProject>/last/coverage.xml`.
+
 `Get-FileCoverage` and `gcr` support JaCoCo/CoverageGutters and Cobertura XML formats — both read
 through the shared `lib/Get-CoverageDetails.ps1` parser, which is an internal script, not a command
 on PATH.
