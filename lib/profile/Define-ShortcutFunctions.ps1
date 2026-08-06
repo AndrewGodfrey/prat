@@ -32,7 +32,13 @@ function p($Target) {
 #
 # Why @args: Just "$args" doesn't work for named params - consider "w -directory". Here's a discussion: https://stackoverflow.com/questions/51219038/can-you-splat-positional-arguments-in-powershell
 # Tab-completion still doesn't work, but "w -di" does.
-function ls {(dir @args) | Format-Wide -AutoSize}
+#
+# Format-Wide only when last in the pipeline: mid-pipeline it would emit format records, on which
+# property access (`ls | % Name`) silently yields nulls — indistinguishable from "no files".
+function ls {
+    if ($MyInvocation.PipelinePosition -lt $MyInvocation.PipelineLength) { dir @args }
+    else { (dir @args) | Format-Wide -AutoSize }
+}
 
 function ds { dir @args | sort -Property LastWriteTime }
 
