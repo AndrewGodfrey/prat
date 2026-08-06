@@ -475,6 +475,22 @@ $captured = @{}
 $hook = { param($x) $captured.x = $x }
 ```
 
+# Pester code coverage does not cross a process boundary
+
+Pester instruments the process it runs in, so anything a test executes by spawning a child `pwsh` —
+the usual way to exercise a script end to end — contributes nothing. Those lines report as *missed*
+however thoroughly they are tested, in the same run where the same file's dot-sourced functions
+report as covered.
+
+`CodeCoverage.UseBreakpoints = $false` (Pester's profiler-based tracer, and `EXPERIMENTAL` by its
+own description) does not change this — measured on a file with both kinds of test, it produced an
+identical covered/missed split, and no measurable speed win on a ~350-test suite.
+
+The only lever is structural: give the script an entrypoint guard so its functions can be
+dot-sourced, and inject whatever starts the process, so the same logic can be driven in-process.
+What's left uncoverable is then just the guard body. Read a sub-100% number on such a file as that
+residue rather than as a testing gap.
+
 # Pester 5 gotchas
 
 **`TestDrive:` is shared within a `Context` block** — it is NOT reset between `It` blocks. Use distinct
