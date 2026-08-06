@@ -77,10 +77,15 @@ resolution on its own.
 
 ## Integration-tagged tests are excluded by default
 
-Without `-Integration`/`-IncludeIntegrationTests`, tests tagged `Integration` are filtered out
-and counted as **NotRun** — visible in `test-run.txt` but not in the console one-liner, whose
-"Passed" count therefore understates the discovered total. Before treating a passed-count drop
-across runs as a regression, check `test-run.txt` for the NotRun count.
+Without `-Integration`/`-IncludeIntegrationTests`, integration tests are filtered out — for Pester
+(`-Tag Integration`) and for pytest (`@pytest.mark.integration`, with the marker registered in the
+project's `conftest.py`). **dotnet ignores both switches**: they bind and are dropped, so every test
+runs.
+
+The excluded ones are still counted, under a different name per framework — `NotRun:` in Pester's
+trailer line, `N deselected` in pytest's summary line — and only in `test-run.txt`, not in the
+console one-liner, whose "Passed" count therefore understates the discovered total. Before treating
+a passed-count drop across runs as a regression, check `test-run.txt`.
 
 ## Reading the summary line
 
@@ -115,7 +120,8 @@ need pass/fail count or coverage %. Run fresh after any code change.
 
 ## Output files
 
-Every run writes to `auto/testRuns/last/`:
+Every run writes to `auto/testRuns/<project>/last/`, where `<project>` is the leaf of the project id
+(so a top-level project gets a segment too — `prat/auto/testRuns/prat/last/`):
 
 | File | Contents |
 |------|----------|

@@ -22,6 +22,8 @@ param(
     [string]   $RepoRoot,
     [string]   $WorkingDir,
     [switch]   $NoCoverage,
+    [switch]   $IncludeIntegrationTests,
+    [switch]   $Integration,
     [switch]   $PassThru
 )
 
@@ -35,6 +37,18 @@ function parsePytestSummary($line) {
         return @{ Passed = $p; Failed = $f + $e }
     }
     return $null
+}
+
+# pytest's equivalent of Invoke-PesterWithSummary's tag filtering: the `integration` marker.
+# A project that has never registered the marker matches nothing either way, so the default
+# filter is a no-op there rather than an error.
+function getPytestMarkerArgs([switch] $Integration, [switch] $IncludeIntegrationTests) {
+    if ($Integration -and $IncludeIntegrationTests) {
+        Write-Warning "-Integration takes precedence over -IncludeIntegrationTests; running only integration-marked tests."
+    }
+    if ($Integration)             { return @('-m', 'integration') }
+    if ($IncludeIntegrationTests) { return @() }
+    return @('-m', 'not integration')
 }
 
 if ($MyInvocation.InvocationName -ne '.') {
@@ -51,6 +65,7 @@ if ($MyInvocation.InvocationName -ne '.') {
     $noCoverageLocal    = $NoCoverage
     $testArgsLocal      = $TestArgs
     $workingDirLocal    = $WorkingDir
+    $markerArgsLocal    = getPytestMarkerArgs -Integration:$Integration -IncludeIntegrationTests:$IncludeIntegrationTests
     $coverageConfigPath = "$PSScriptRoot/pytestCoverage.cfg" -replace '\\', '/'
 
     & "$PSScriptRoot/Invoke-TestWithSummary.ps1" `
@@ -64,7 +79,7 @@ if ($MyInvocation.InvocationName -ne '.') {
             if ($workingDirLocal) { Push-Location $workingDirLocal }
             $env:COVERAGE_FILE = "$($runState.runDir)/.coverage"
             try {
-                $pytestArgs = @('-v', '-p', 'no:cacheprovider') + $testArgsLocal
+                $pytestArgs = @('-v', '-p', 'no:cacheprovider') + $markerArgsLocal + $testArgsLocal
                 if (-not $noCoverageLocal) {
                     $pytestArgs += @('--cov=.', '--cov-branch', "--cov-config=$coverageConfigPath",
                                      "--cov-report=xml:$($runState.runDir)/coverage.xml")

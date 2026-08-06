@@ -155,3 +155,28 @@ Describe "parsePytestSummary" {
         $result.Failed | Should -Be 0
     }
 }
+
+Describe "getPytestMarkerArgs" {
+    It "excludes integration-marked tests by default" {
+        getPytestMarkerArgs | Should -Be @('-m', 'not integration')
+    }
+
+    It "runs only integration-marked tests under -Integration" {
+        getPytestMarkerArgs -Integration | Should -Be @('-m', 'integration')
+    }
+
+    It "applies no marker filter under -IncludeIntegrationTests" {
+        @(getPytestMarkerArgs -IncludeIntegrationTests).Count | Should -Be 0
+    }
+
+    It "warns and lets -Integration win when both switches are given" {
+        $out = getPytestMarkerArgs -Integration -IncludeIntegrationTests 3>&1
+
+        $warnings   = @($out | Where-Object { $_ -is [System.Management.Automation.WarningRecord] })
+        $markerArgs = @($out | Where-Object { $_ -isnot [System.Management.Automation.WarningRecord] })
+
+        $warnings.Count | Should -Be 1
+        $warnings[0].Message | Should -Match '-Integration takes precedence'
+        $markerArgs | Should -Be @('-m', 'integration')
+    }
+}

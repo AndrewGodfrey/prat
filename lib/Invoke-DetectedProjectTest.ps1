@@ -8,7 +8,8 @@ param($project, [hashtable]$CommandParameters = @{})
 
 function Invoke-PytestWithSummary {
     param([string[]]$TestArgs, [string]$OutputDir, [string]$RepoRoot,
-          [string]$WorkingDir, [switch]$NoCoverage, [switch]$PassThru)
+          [string]$WorkingDir, [switch]$NoCoverage,
+          [switch]$IncludeIntegrationTests, [switch]$Integration, [switch]$PassThru)
     & "$PSScriptRoot/Invoke-PytestWithSummary.ps1" @PSBoundParameters
 }
 
@@ -36,6 +37,8 @@ function runPytest([switch]$PassThru) {
         -OutputDir  (Get-ProjectTestOutputDir $project) `
         -TestArgs   $testArgs `
         -NoCoverage:([bool]$CommandParameters['NoCoverage']) `
+        -Integration:([bool]$CommandParameters['Integration']) `
+        -IncludeIntegrationTests:([bool]$CommandParameters['IncludeIntegrationTests']) `
         -PassThru:$PassThru
 }
 

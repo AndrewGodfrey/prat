@@ -3,7 +3,8 @@ BeforeAll {
     $scriptToTest = "$PSScriptRoot/Invoke-DetectedProjectTest.ps1"
     function Invoke-PytestWithSummary(
         [string[]]$TestArgs, [string]$OutputDir, [string]$RepoRoot,
-        [string]$WorkingDir, [switch]$NoCoverage, [switch]$PassThru) {}
+        [string]$WorkingDir, [switch]$NoCoverage,
+        [switch]$IncludeIntegrationTests, [switch]$Integration, [switch]$PassThru) {}
     function Invoke-DotnetTestWithSummary(
         [string[]]$TestArgs, [string]$OutputDir, [string]$RepoRoot, [string]$WorkingDir,
         [switch]$NoCoverage, [switch]$NoBuild, [string]$WorkspaceFile, [switch]$UseAlternateCollector, [switch]$PassThru) {}
@@ -33,6 +34,22 @@ Describe "Invoke-DetectedProjectTest.ps1 (pytest)" {
     It "supports -NoCoverage" {
         & $scriptToTest $project -CommandParameters @{NoCoverage = $true}
         Should -Invoke Invoke-PytestWithSummary -ParameterFilter { $NoCoverage -eq $true }
+    }
+    It "excludes integration tests by default" {
+        & $scriptToTest $project -CommandParameters @{}
+        Should -Invoke Invoke-PytestWithSummary -ParameterFilter {
+            $Integration -eq $false -and $IncludeIntegrationTests -eq $false
+        }
+    }
+
+    It "supports -Integration" {
+        & $scriptToTest $project -CommandParameters @{Integration = $true}
+        Should -Invoke Invoke-PytestWithSummary -ParameterFilter { $Integration -eq $true }
+    }
+
+    It "supports -IncludeIntegrationTests" {
+        & $scriptToTest $project -CommandParameters @{IncludeIntegrationTests = $true}
+        Should -Invoke Invoke-PytestWithSummary -ParameterFilter { $IncludeIntegrationTests -eq $true }
     }
 
     It "forwards -PassThru and returns result" {
