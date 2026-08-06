@@ -166,6 +166,42 @@ console width, so it can come back blank in non-interactive sessions (pipe throu
 `$p | Select-Object id, root, parentId` — and reserve whole-object serialization for objects you
 built yourself from plain data.
 
+# Two differently-shaped result sets: the second one prints as blank rows
+
+The formatter picks the output table's columns from the **first** object it renders and reuses them
+for everything that follows, so a later object with different properties prints as an empty row — no
+error, no warning, and nothing in the exit code:
+
+```powershell
+[pscustomobject]@{X=1}; [pscustomobject]@{Y=2}
+# X
+# -
+# 1
+#            <- the second object; its data is simply gone
+```
+
+Both sets have to be rendered by the *auto-generated* table for this to bite — `[pscustomobject]`,
+`Select-Object` output, anything with no registered format view. Measured:
+
+<!-- prettier-ignore -->
+| Case | Result |
+|---|---|
+| `A` then `B` (different property sets) | `B` blank |
+| `A; B; A` | first and third render; the shape is locked for the whole stream, not just the next object |
+| `gci \| Select Name` then `gps \| Select Id` | second set blank, even though the typenames differ |
+| `@{X=1}` then `@{X=2;Y=3}` | renders, but the extra `Y` column is silently dropped |
+| strings or numbers interleaved with objects | fine — scalars don't lock the shape |
+| `Get-Item` then `[pscustomobject]` | fine — an object with a registered view does switch (to list) |
+
+It costs most when the output is read by something that can't re-run the script — a log, a
+transcript, a calling program — because a blank row is indistinguishable from a legitimately empty
+value. Ways out, in preference order:
+
+- Don't depend on the rendering: assert on values (`$result.Y`), not on printed rows.
+- Give the sets one shape (`Select-Object` the same properties), or emit one shape per script.
+- Format each set explicitly — `$setA | Format-Table; $setB | Format-Table` — which starts a fresh
+  table per set and renders both correctly, at a console and through `Out-String -Stream` alike.
+
 # Parameter forwarding in wrapper functions
 
 When writing a thin wrapper function that forwards all arguments to a script or another function,
