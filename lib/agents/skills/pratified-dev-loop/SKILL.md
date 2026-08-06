@@ -126,7 +126,7 @@ Every run writes to `auto/testRuns/last/`:
 - "CoverageGutters format" means one that the vscode coverage-gutters extension can read. It can
   read JaCoCo or Cobertura, but with particular requirements.
 
-Previous runs are rotated to `auto/testRuns/<timestamp>/`.
+Previous runs are rotated to `auto/testRuns/<project>/<timestamp>/`.
 
 When there are test failures, the summary output includes a hint with the path to `test-run.txt`.
 
@@ -139,9 +139,9 @@ Use `Get-FileCoverage -FilePath "C:\path\to\File.ps1"` for a per-function summar
 Use `Get-FileCoverage -Detail -FilePath "C:\path\to\File.ps1"` for a line-range summary.
 
 Both `Get-FileCoverage` and `gcr` infer the coverage file from the target's git repo root and prat
-project — `<repoRoot>/auto/testRuns/[<subprojectId>/]last/coverage.xml` — including the subproject
-segment when the target is inside a registered subproject. To point at a different run, pass the
-file explicitly: `Get-FileCoverage ... -CoverageFile <path>` / `gcr -coverageFile <path>`.
+project — `<repoRoot>/auto/testRuns/<project>/last/coverage.xml`, the same path `t` writes to. To
+point at a different run, pass the file explicitly: `Get-FileCoverage ... -CoverageFile <path>` /
+`gcr -coverageFile <path>`.
 
 `Get-FileCoverage` and `gcr` support JaCoCo/CoverageGutters and Cobertura XML formats — both read
 through the shared `lib/Get-CoverageDetails.ps1` parser, which is an internal script, not a command

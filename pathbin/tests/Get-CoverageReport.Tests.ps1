@@ -185,6 +185,54 @@ Describe "default coverageFile inference" {
         $fileRow | Should -Not -BeNullOrEmpty
     }
 
+    It 'uses the project subdirectory for a top-level project too — that is where `t` writes it' {
+        $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+        $repoDir = "$realTestDrive/gcr-toplevelrepo"
+        New-Item -ItemType Directory -Path $repoDir | Out-Null
+        git init $repoDir --quiet | Out-Null
+
+        # A registered project whose root IS the git root: no parentId, root -eq the repo.
+        function Get-PratProject { param($Location) @{ id = 'myrepo'; root = $repoDir } }
+
+        # Both locations hold coverage, so reading the stale one reads as a pass rather than a miss.
+        $staleDir = "$repoDir/auto/testRuns/last"
+        New-Item -ItemType Directory -Path $staleDir -Force | Out-Null
+        @"
+<report name="test">
+<package name="$repoDir/src">
+  <class name="$repoDir/src/Stale" sourcefilename="Stale.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="1" covered="1" />
+      <counter type="LINE" missed="0" covered="1" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+"@ | Set-Content "$staleDir/coverage.xml"
+
+        $projectDir = "$repoDir/auto/testRuns/myrepo/last"
+        New-Item -ItemType Directory -Path $projectDir -Force | Out-Null
+        @"
+<report name="test">
+<package name="$repoDir/src">
+  <class name="$repoDir/src/Fresh" sourcefilename="Fresh.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="1" covered="4" />
+      <counter type="LINE" missed="0" covered="1" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+"@ | Set-Content "$projectDir/coverage.xml"
+
+        $result = & $script -Path $repoDir -ShowAll -CoverageGoalPercent 0 -Unformatted -Ignore_OmitFromCoverageReport
+
+        @($result | Where-Object { $_.PSObject.Properties['File'] } | ForEach-Object { $_.File }) |
+            Should -Be @('src/Fresh.ps1')
+    }
+
     It "uses project subdirectory when project root is nested inside git root" {
         $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
         $repoDir   = "$realTestDrive/gcr-testcsproject"

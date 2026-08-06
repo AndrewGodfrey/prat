@@ -22,13 +22,10 @@ if ($null -eq $coverageFile -or $null -eq $PathBase) {
     $inferredRoot = Resolve-GitRoot $resolvedPath
     if ($null -eq $coverageFile) {
         if (-not $inferredRoot) { throw "Cannot infer coverage file: not in a git repo." }
-        $isNested = $project -and (
-            $project.ContainsKey('parentId') -or
-            ($project.root -replace '\\', '/') -ine $inferredRoot
-        )
-        # Project ids can be parent-prefixed ("myrepo/mysubproject"); the test-output dir is
-        # keyed by the leaf segment only (Get-ProjectTestOutputDir uses the same stripping).
-        $subDir = if ($isNested) { "$($project.id -replace '.*/', '')/" } else { '' }
+        # Every registered project gets its own segment under auto/testRuns — Get-ProjectTestOutputDir
+        # keys it on the leaf of the (possibly parent-prefixed) id, top-level projects included. An
+        # unregistered repo has no leaf, and falls back to the bare last/.
+        $subDir = if ($project) { "$($project.id -replace '.*/', '')/" } else { '' }
         $coverageFile = "$inferredRoot/auto/testRuns/$($subDir)last/coverage.xml"
     }
     if ($null -eq $PathBase) {
