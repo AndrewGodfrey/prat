@@ -60,15 +60,18 @@ state — don't re-run them here.
   warn about a cause the unit disproved, or rest on a measurement it invalidated. Update both in
   place; a reference to a step now in the done file should name it by its done-file number.
 
+- **Grep the other active plans too**, for the moved step's name (and, when closing the whole plan,
+  the plan's own filename). Distinguish provenance notes ("moved from X on DATE", "split out of X's
+  Y step" — safe to leave, meaningful even once X is gone) from live pointers ("see X's step N for
+  the full design" — redirect these to the done file, e.g. `<name>_done.md` step N, so the
+  reference still resolves). A live pointer also decides what the done entry has to keep: condensing
+  to final outcomes doesn't license dropping data another plan stands on. A file whose own header
+  says it's a point-in-time snapshot regenerated periodically (not continuously maintained) doesn't
+  need hand-patching — it self-corrects at the next regeneration.
+
 - **If the plan is now complete:**
   - Consider the remaining content in the plan file (title, background, design section, etc.)
     It might have permanent design info that belongs in a document - move that if so.
-  - Before deleting, grep other active plans for the plan's own filename. Distinguish provenance
-    notes ("moved from X on DATE", "split out of X's Y step" — safe to leave, meaningful even once
-    X is gone) from live pointers ("see X's step N for the full design" — redirect these to the
-    done file, e.g. `<name>_done.md` step N, so the reference still resolves). A file whose own
-    header says it's a point-in-time snapshot regenerated periodically (not continuously
-    maintained) doesn't need hand-patching — it self-corrects at the next regeneration.
   - Then, move all remaining content to the done file as a header block, then delete the plan
     file. Skip the pointer-advance step below — there is nothing to advance.
 
