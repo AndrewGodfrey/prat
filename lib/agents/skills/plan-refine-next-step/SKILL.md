@@ -50,7 +50,8 @@ dot-sourced; read the current state with `Get-PlanState -PlanFile <plan>`.
   an extraction, and planning it as a local tweak silently commits every future sibling to
   reimplementing the mechanism.
 
-- **Add a sub-item to check test coverage for modified lines.**
+- **Add a sub-item to check test coverage for modified lines** — for steps that change durable
+  code. A step that changes none gets no sub-item, not a conditional one.
 
 - **Decide whether to apply /review-changes at the end of the step.** This is particularly
   expensive in token costs. Worth it for complex changes that could benefit from an independent

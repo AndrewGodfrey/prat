@@ -31,10 +31,13 @@ For usage details, load the `pratified-dev-loop` skill.
 
 Write the test first, and run it to verify it fails in the expected way. Only implement after that.
 
-The criterion for whether something needs tests is whether it contains non-trivial logic — not its
-file extension or container. Logic embedded e.g. in a markdown skill file, or a config, is still source code,
-and is still subject to the same TDD discipline. If this means it's difficult to test where it currently is - address
-that. (Which could be by moving it, or by making it testable in place).
+The criterion for whether something needs tests: is durable encoded information being added, and
+would a test assert something beyond restating it? The artifact's category is irrelevant —
+production code, test-framework code, a tool only tests use, a config, logic in a markdown skill
+file, even properties of prose that gets processed into a published document: all TDD targets when
+both halves hold (so throwaway work — an ad-hoc query, a one-off script — is exempt). If something
+is difficult to test where it currently is - address that. (Which could be by moving it, or by
+making it testable in place.)
 
 Run tests after any fix, even when confident. Reasons: catches unknown unknowns, and gives the user
 evidence rather than just your assurance.
