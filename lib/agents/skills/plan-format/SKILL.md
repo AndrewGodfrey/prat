@@ -76,8 +76,9 @@ session reaching for the background signals an under-specified step. (Older plan
 `_ref.md` companion instead — same role; leave the name as is.)
 
 **`_done.md`** — completed steps, preserved for context and rationale. Move a step here once all its items
-are struck through. Note: This file lives in `plans/done/YYYY-Qn/`, where YYYY and n give the year and quarter when
-the done file was created.
+are struck through. This file lives in `plans/done/YYYY-Qn/` (year and quarter when the done file was
+created) from the moment it's created — even while the plan is still active. It never sits alongside
+the plan file.
 
 Split content into a companion file when it would make agents re-read stable material every time
 they update the plan. If content changes alongside the action steps, keep it in the main file.
