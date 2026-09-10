@@ -22,6 +22,8 @@ quantized to multiples of 15.6, so a real 47ms reads as 63.0 and a real 2ms read
 - `PYTHONPATH` — setting it has no effect.
 - finding other scripts in the same directory. Scripts that want to do this, need to do:
   `sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))`
+  pytest adds that directory itself, so its tests pass while running the same file as a script
+  raises `ModuleNotFoundError` — only a subprocess test covers it.
 
 For cross-repo imports (e.g. de code importing from prat), use `pip install -e` on the source
 package or add the path in the launcher script — not `sys.path.insert` in production source files.
@@ -47,7 +49,8 @@ to a system temp location. This applies whenever Python is called as a child of 
 that loaded the profile. If you're seeing `__pycache__` in source dirs
 despite the profile being loaded, the likely cause is a profile-less invocation.
 
-If you want no cache at all (e.g. in a test runner where compilation overhead is negligible and you want zero artifacts), add `-B` to the python invocation explicitly. 
+If you want no cache at all (e.g. in a test runner where compilation overhead is negligible and you
+want zero artifacts), add `-B` to the python invocation explicitly.
 
 # monkeypatch mutates the shared object, not a copy
 

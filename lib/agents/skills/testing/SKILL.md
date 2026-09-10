@@ -52,6 +52,9 @@ Anti-patterns:
 - Relative path with implicit current-directory dependency
 - Numeric edge cases (zero, overflow)
 - Generated code/config text checked only by string match, never verified to actually parse
+- Behavior driven by a shipped data file, exercised only against a fixture — a fixture written
+  alongside the code agrees with the design by construction, so it can't catch data that doesn't
+  (e.g. ordering, or a field the code assumes is set)
 - A predicate over text that embeds outside content (file contents, another tool's output, the
   model's own arguments) tested only with text that *should* match — the missing case is content
   crafted to satisfy the predicate without meaning it
