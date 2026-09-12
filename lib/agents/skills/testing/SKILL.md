@@ -40,6 +40,9 @@ Anti-patterns:
 - **Mock calls as a proxy**: don't assert on mock calls as a proxy for behavior you could assert more
   directly. If the function's job is to produce an output, assert on the output — not on how the
   internals got there. (When the call itself *is* the observable outcome, asserting on it is fine.)
+  The same trap without any mock: asserting the value you just changed rather than the one the user
+  reads. Where a value is copied between layers — provider → settings → rendered — a test at the
+  layer you edited passes while the copy downstream goes on being stale.
 
 ## Coverage blind spots
 
