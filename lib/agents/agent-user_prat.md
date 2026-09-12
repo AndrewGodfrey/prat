@@ -190,6 +190,10 @@ A comment earns its place by stating what the code can't: where a measured value
 constraint, a hazard, a link that has to stay in step. Not by restating what the line does, naming
 the idiom, or justifying a guard whose purpose is evident.
 
+A comment that cites another component names the component and lets that link carry the details.
+Restating them (the mechanism it uses, the file format it writes) duplicates a fact that can rot
+without anyone here noticing.
+
 A "we can't yet do X" comment additionally should:
 
 - Name the precise check or behavior we can't enforce, in succinct code terms.
