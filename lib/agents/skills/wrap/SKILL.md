@@ -45,7 +45,9 @@ state — don't re-run them here.
 - **Move the completed unit.** Cut the unit's step(s) — `first` through `last` — from the active
   plan and prepend them to the start of the corresponding `*_done.md` file, condensed to final
   outcomes — what changed and why, not the task list or how conclusions were reached. Do not leave
-  a copy in both files.
+  a copy in both files. If the done file doesn't exist yet, create it where the `plan-format`
+  skill's "Companion files" section says it lives — not alongside the plan — and add the opening
+  pointer line to the plan.
   - **Match the done file's own heading convention**, not just the active plan's current one — it
     may keep a numbering sequence the active plan stopped maintaining (e.g. older steps numbered,
     newer ones named-only). Check the done file's existing entries and continue that sequence. If
