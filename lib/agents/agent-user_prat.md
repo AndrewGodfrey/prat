@@ -70,9 +70,9 @@ how often it's referenced.
 
 ## Editing files
 
-When inserting content, anchor on the **smallest unique string** at the insertion point. Don't pull
-surrounding unchanged content into `old_string` — it causes a noisier diff and is more likely to
-fail on CRLF files.
+When inserting content, anchor on the **smallest unique region** at the insertion point. Don't
+restate surrounding unchanged lines — it causes a noisier diff and is more likely to fail on CRLF
+files.
 
 Re-read a file whenever it may have changed since you last read it — e.g. the user has edited it,
 or time has passed. Don't rely on a stale read.
@@ -164,8 +164,8 @@ a stray to silence it.
 
 Every claim needs evidence traced from the artifact itself, not an adjacent signal — whether the
 claim is about success, cost, a trend, a cause, or code behavior. "The script exited cleanly" is
-not evidence it worked: either the action was self-evidently verified (e.g. the Edit tool confirmed
-a match), or you checked the result. Four sharp recurring instances:
+not evidence it worked: either the action came back with a tool result you can point to, or you
+checked the result. Four sharp recurring instances:
 
 - Before claiming a function "never raises" or "handles all failure modes", trace every I/O/external
   call inside it — don't generalize from the exception types its try/except already names.
