@@ -243,6 +243,23 @@ flag `-NoCoverage:` and a separate positional argument `False`. The called scrip
 
 `@PSBoundParameters` forwards named parameters correctly, including switches with explicit values.
 
+# Feeding a multi-line script to an external interpreter
+
+There is no heredoc. `python - <<'PY'` parses as a redirection pwsh doesn't have, and the error names
+`&` in a pipeline rather than the heredoc, so it's easy to misread. Use a single-quoted here-string and
+a temp file:
+
+```pwsh
+$src = @'
+print("no $interpolation in a single-quoted here-string")
+'@
+Set-Content -Path $tmp -Value $src -Encoding utf8
+python $tmp
+```
+
+The closing `'@` must start at column 0. `python -c "..."` works for one-liners, but pwsh's own quoting
+rules apply to the string first, so anything with nested quotes is better off in a file.
+
 # Inconsistent ~ handling
 Unlike `$home`, Powershell doesn't expand `~` before passing it to things that don't understand it - like external
 programs or .NET APIs. So we have to be carefuly to expand it ourselves, in such cases.
