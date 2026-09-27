@@ -119,8 +119,12 @@ if ($format -eq 'report') {
         foreach ($sourcefile in $package.sourcefile) {
             $absPath = $leafToAbsPath[$sourcefile.name]
             if ($null -eq $absPath) { continue }
+            # `covered` and `missed` are both true for a line JaCoCo counts instructions on both
+            # sides of - a one-line `if (...) { ... }` whose body never ran, say.
             $perFileLineData[$absPath] = @(
-                $sourcefile.line | ForEach-Object { @{ nr = [int]$_.nr; covered = [int]$_.ci -gt 0 } }
+                $sourcefile.line | ForEach-Object {
+                    @{ nr = [int]$_.nr; covered = [int]$_.ci -gt 0; missed = [int]$_.mi -gt 0 }
+                }
             )
         }
     }
@@ -200,8 +204,12 @@ if ($format -eq 'report') {
                 }
             }
 
+            # Cobertura counts hits per line, so there is no partly-covered line here: `missed` is
+            # simply the negation, kept so both formats hand consumers the same shape.
             $perFileLineData[$filePath] = @(
-                $class.lines.line | Where-Object { $_ } | ForEach-Object { @{ nr = [int]$_.number; covered = [int]$_.hits -gt 0 } }
+                $class.lines.line | Where-Object { $_ } | ForEach-Object {
+                    @{ nr = [int]$_.number; covered = [int]$_.hits -gt 0; missed = [int]$_.hits -eq 0 }
+                }
             )
         }
     }

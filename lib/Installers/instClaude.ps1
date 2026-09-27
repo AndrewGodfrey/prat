@@ -13,15 +13,12 @@ function Install-ClaudeHarness {
     Install-Folder $stage "$home\.claude"
 
     if ('installHomeClaudeMd' -notin $Suppress) {
-        $fragments = @(Get-HarnessUserFragments)
-
-        # Splice prat-cc.md after the prat base (index 0) so CC-specific prat content
-        # precedes higher-layer (prefs/de) fragments.
-        $pratCcFile = "$PSScriptRoot\..\agents\harness-specific\prat-cc.md"
-        if (Test-Path $pratCcFile) {
-            $rest      = if ($fragments.Count -gt 1) { $fragments[1..($fragments.Count - 1)] } else { @() }
-            $fragments = @($fragments[0], $pratCcFile) + $rest
-        }
+        # CC only ever drives a Claude model, so the claude-family fragments are unconditional here.
+        # A harness that can drive more than one family selects them per launch instead.
+        $fragments = Get-HarnessFragmentList `
+            -Fragments       (Get-HarnessUserFragments) `
+            -HarnessFragment "$PSScriptRoot\..\agents\harness-specific\prat-cc.md" `
+            -ModelFragments  (Get-ModelUserFragments 'claude')
 
         Install-ClaudeUserInstructions $stage $fragments
     }
@@ -273,7 +270,9 @@ function Install-ClaudeAgentSandbox {
         [string[]] $safeDirectories = @(),
         [hashtable] $homeJunctions = @{},
         [string] $profileContent = $null,
-        [string] $sshPublicKeyPath = $null
+        [string] $sshPublicKeyPath = $null,
+        [string] $gitUserName = $null,
+        [string] $gitUserEmail = $null
     )
 
     $claudeHome = $claudeHome -replace '/', '\'
@@ -285,7 +284,9 @@ function Install-ClaudeAgentSandbox {
         -safeDirectories $safeDirectories `
         -homeJunctions   $homeJunctions `
         -profileContent  $profileContent `
-        -sshPublicKeyPath $sshPublicKeyPath
+        -sshPublicKeyPath $sshPublicKeyPath `
+        -gitUserName     $gitUserName `
+        -gitUserEmail    $gitUserEmail
 
     # Create symlinks after Install-LocalAgentSandbox has set ACLs and ensured targets exist.
     $agentHome = "$env:SystemDrive\Users\$agentUser"

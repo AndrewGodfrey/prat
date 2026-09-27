@@ -29,20 +29,43 @@ the new plan's design. Cite such records in "Related plans"; never fold or retir
 ---
 current-unit:
   first: "Step 2: <brief label>"
-  last:  "Step 2: <brief label>"
   state: ready-to-implement
+workflow: tick-tock              # the user's to declare; omitting it means this value
 ---
 ```
 
-`current-unit` points at a contiguous run of one or more steps — `first`/`last` are equal for the
-common single-step case, and differ only for a batched multi-step unit (see PlanState.ps1's header
-for the design rationale). A `refined` list may also appear — steps beyond the pointer already
+`current-unit` points at a contiguous run of one or more steps. A single-step unit writes down only
+`first`; a batched multi-step unit adds `last` (see PlanState.ps1's header for the design
+rationale). A `refined` list may also appear — steps beyond the pointer already
 planned to implementable detail. Read these keys freely; never hand-edit `state`/`refined` —
-write only via `. "$home/prat/lib/agents/PlanState.ps1"; Set-PlanState ...`. Never set
-`ready-to-implement` yourself, even for a unit whose design was settled in conversation — that
-transition is `/wrap`'s, which records the user's approval of the written spec; a new or reworked
-unit is `ready-to-plan` until then. `last` is currently set by manual frontmatter edit when
-declaring a multi-step unit — see PlanState.ps1's header.
+write only via `. "$home/prat/lib/agents/PlanState.ps1"; Set-PlanState ...`. When you finish
+refining a step, set `ready-for-refined-step-review`, in every mode. Whether you may then advance to
+`ready-to-implement` yourself is what `workflow` decides: in `tick-tock` only the user may, through
+`/wrap`, which records their approval of the refined step — so a new or reworked unit stays at
+`ready-for-refined-step-review` however settled its design felt in conversation. `last` is set by
+manual frontmatter edit when declaring a multi-step unit, and is written down only when it differs
+from `first` — see PlanState.ps1's header. Once declared, re-point such a unit with `-First` and
+`-Last` together; `-First` alone is refused there, and moves both ends of a single-step unit.
+
+`workflow` is declared by hand beside `current-unit`; `Set-PlanState` carries it but never writes
+it. It names which of three ways of working the plan runs in, and they differ only in who may
+advance the state:
+
+- `tick-tock` — the user reviews the refined step and the work. Absent or unrecognized values mean
+  this one, since loosening what a session may do needs a value we recognize.
+- `step-review` — the agent refines and implements; the user reviews the work.
+- `branch-review` — the agent refines, implements and commits a run of steps; the user reviews the
+  branch.
+
+The value is a mode name, not a loadable skill — do not `load_skill` it; each mode's behavior
+lives in the skills for the states it passes through.
+
+The same split governs the closing checkpoint (`ready-for-user-review`, where `/wrap` moves the unit
+to `_done.md` and advances the pointer): in `tick-tock` and `step-review` only the user invokes
+`/wrap`, recording their review of the work; in `branch-review` the agent invokes it itself, at the
+close of every step, since the user isn't there to. That closing `/wrap` still runs `/reflect` with no
+code changes even in `branch-review`, where nobody has reviewed a diff yet — the review happens across
+the whole branch afterward instead, so a fix landing here would still reach the user unreviewed.
 
 There is no `## Next step:` heading in this format; the frontmatter pointer replaces it. 
 (Older plans may still have the heading, or the older single-pointer `current-step` shape — treat
@@ -52,7 +75,7 @@ leftover heading.)
 **Opening lines** — pointers to companion files (if they exist):
 ```
 See `fooPlan_background.md` for settled design: <one-line summary>. Audience: planning sessions —
-step specs are self-contained without it.
+the refined steps are self-contained without it.
 See `fooPlan_done.md` for completed steps and design rationale.
 ```
 
@@ -63,15 +86,24 @@ changes don't reference private files"). Stays near the top so it's visible when
 — if it doesn't fit that, split it. `/wrap` closes a **unit**: by default one step, or a
 user-declared contiguous run of several when batching (see "Frontmatter" above). Headings must
 start with `Step` (e.g. `### Step 2: <brief label>`); the state script locates steps by matching
-`^##+ Step`. Label each sub-item `[AGENT]` or `[USER]`. Strike through completed items inline
-(`~~item~~ ✓ Done`) rather than deleting them, until the step is fully done — then move the whole
-step (or, for a multi-step unit, all its steps) to `_done.md`.
+`^##+ Step`. Label each sub-item `[AGENT]` or `[USER]`. Mark a completed item by prefixing it
+`[ ✓ Done ]` rather than deleting it, until the step is fully done — a prefix, not strikethrough,
+because `~~` doesn't span the line breaks a multi-line item has. Then move the whole
+step (or, for a multi-step unit, all its steps) to `_done.md`. Renumbering steps silently re-points
+`current-unit` and `refined` at different work — the state script keys a step on `Step N` and
+ignores the title — so re-write both through `Set-PlanState -First` (plus `-Last` for a batched
+unit) and `-Refined` after a renumber.
+
+A run spent working the steps out — restructuring what's left, splitting one, changing direction —
+has no `/wrap`: `/wrap` is approval to move on from a unit, and such a run may have refined nothing.
+It writes the pointer and `refined` through `Set-PlanState` as it goes, and ends when the shape is
+right.
 
 ## Companion files
 
 **`_background.md`** — settled design. Once design discussion closes, move everything between the
 opening pointers and the steps here. Audience is planning sessions; implementation sessions
-shouldn't need it, because the refine pass makes step specs self-contained — an implementation
+shouldn't need it, because the refine pass makes a step self-contained — an implementation
 session reaching for the background signals an under-specified step. (Older plans may have a
 `_ref.md` companion instead — same role; leave the name as is.)
 

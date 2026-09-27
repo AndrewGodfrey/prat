@@ -18,6 +18,11 @@ if ($env:__prat_shellDepth -eq '1' -and $null -ne $env:__prat_loopControllerPid)
 pratProfile_trace start "scriptProfile.ps1"
 
 $env:PYTHONPYCACHEPREFIX = "$home/prat/auto/pycache"
+# pytest's own cache goes in its rootdir - i.e. wherever an ad-hoc run was started from, inside a
+# source tree, under a .gitignore it writes itself so nothing ever reports the directory. Disabled
+# rather than redirected: `-o cache_dir=...` warns "Unknown config option" on every run that also
+# passes -p no:cacheprovider, which is what Invoke-PytestWithSummary does.
+$env:PYTEST_ADDOPTS = '-p no:cacheprovider'
 
 $_pratroot = Resolve-Path $PSScriptRoot\..\..
 

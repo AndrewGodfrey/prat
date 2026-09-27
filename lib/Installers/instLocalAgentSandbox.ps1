@@ -54,11 +54,15 @@ function Install-SandboxSshServer {
     $stage.SetStepComplete("sandboxSshServer")
 }
 
-function Get-AgentGitconfigContent([string[]] $directories) {
+function Get-AgentGitconfigContent([string[]] $directories, [string] $userName, [string] $userEmail) {
     # Generate a .gitconfig for a sandboxed agent account:
     # - [safe] entries suppress git's "dubious ownership" check for repos owned by the managing user
     # - [credential] disables credential helpers to prevent interactive auth dialogs
-    # - [user] provides a commit identity (commits are not expected but git errors without one)
+    # - [user] is the identity the caller declares for the agent. No default: whatever else attributes
+    #   work to this agent has to agree with it, and a default here would be a second copy to keep in step.
+    if (-not $userName -or -not $userEmail) {
+        throw "Get-AgentGitconfigContent needs the agent's git identity: both userName and userEmail are required"
+    }
     $safeLines = $directories | ForEach-Object { "`tdirectory = $($_ -replace '\\', '/')" }
     return @"
 [safe]
@@ -66,8 +70,8 @@ $($safeLines -join "`n")
 [credential]
 	helper =
 [user]
-	name = agent
-	email = agent@localhost
+	name = $userName
+	email = $userEmail
 "@
 }
 
@@ -261,6 +265,10 @@ function Compare-AgentAclSpec($Saved, $Desired) {
 # Content to write to the agent's PowerShell profile
 # (Documents\PowerShell\Microsoft.PowerShell_profile.ps1). Typically used to dot-source
 # the managing user's prat interactive profile so aliases like 't' are available.
+#
+# .PARAMETER gitUserName
+# .PARAMETER gitUserEmail
+# The git identity for the agent account's .gitconfig. Required — see Get-AgentGitconfigContent.
 function Install-LocalAgentSandbox {
     [CmdletBinding()]
     param(
@@ -271,7 +279,9 @@ function Install-LocalAgentSandbox {
         [string[]] $safeDirectories = @(),
         [hashtable] $homeJunctions = @{},
         [string] $profileContent = $null,
-        [string] $sshPublicKeyPath = $null
+        [string] $sshPublicKeyPath = $null,
+        [string] $gitUserName = $null,
+        [string] $gitUserEmail = $null
     )
 
     $agentHome = "$env:SystemDrive\Users\$agentUser"
@@ -361,9 +371,10 @@ function Install-LocalAgentSandbox {
             Install-TextToFile $stage (Join-Path $profileDir "Microsoft.PowerShell_profile.ps1") $profileContent
         }
 
-        # gitconfig safe.directory entries
+        # gitconfig: safe.directory entries and the agent's git identity
         $agentGitconfig = Join-Path $agentHome ".gitconfig"
-        Install-TextToFile $stage $agentGitconfig (Get-AgentGitconfigContent $safeDirectories) -SudoOnWrite
+        $gitconfig      = Get-AgentGitconfigContent $safeDirectories $gitUserName $gitUserEmail
+        Install-TextToFile $stage $agentGitconfig $gitconfig -SudoOnWrite
 
         # SSH authorized_keys — enables loopback SSH access from the managing user.
         # Done entirely elevated: after first run the file is owned by agentUser with no ACE for the user,

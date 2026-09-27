@@ -296,6 +296,45 @@ Describe "Get-FileCoverage" {
             $result[0].EndLine   | Should -Be 11
             $result[0].Status    | Should -Be "missed"
         }
+
+        It "reports a partly covered line as partial, not covered" {
+            $partialXml = @'
+<report name="test">
+<package name="C:/repo/pathbin">
+  <class name="C:/repo/pathbin/Foo" sourcefilename="Foo.ps1">
+    <method name="Get-Foo" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="1" covered="3" />
+    </method>
+  </class>
+  <sourcefile name="Foo.ps1">
+    <line nr="1" mi="0" ci="2" mb="0" cb="0" />
+    <line nr="2" mi="1" ci="1" mb="0" cb="0" />
+  </sourcefile>
+</package>
+</report>
+'@
+            $partialFile = "$TestDrive/partial-detail.xml"
+            $partialXml | Set-Content $partialFile
+
+            $result = & $script -FilePath "C:/repo/pathbin/Foo.ps1" -CoverageFile $partialFile -Detail
+
+            $result | Should -HaveCount 2
+            $result[0].StartLine | Should -Be 1
+            $result[0].Status    | Should -Be "covered"
+            $result[1].StartLine | Should -Be 2
+            $result[1].Status    | Should -Be "partial"
+        }
+
+        It "with -Function stops at the next function's first line" {
+            # The filter must not widen the selected function's range: without the following method's
+            # start line as a boundary, its lines get reported as part of the one asked for.
+            $result = & $script -FilePath "C:/repo/pathbin/Foo.ps1" -CoverageFile $detailFile -Detail -Function "<script>"
+
+            $result | Should -HaveCount 2
+            $result[0].Function | Should -Be "<script>"
+            $result[0].EndLine  | Should -Be 3
+            $result[1].EndLine  | Should -Be 5
+        }
     }
 
     It "accepts a relative file path by resolving against current directory" {

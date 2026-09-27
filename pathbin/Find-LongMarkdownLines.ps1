@@ -120,9 +120,12 @@ function Get-LongMarkdownLineFindings {
 
     Push-Location $Path
     try {
-        $gitFiles = git ls-files 2>$null
-        if ($LASTEXITCODE -eq 0 -and $gitFiles) {
-            $files = $gitFiles | Where-Object { $_ -match '\.md$' }
+        # --others so a file that isn't in the index yet gets checked too: a new file is the one most
+        # likely to be over the limit. --exclude-standard keeps .gitignore honoured. The exit code is
+        # the test for "this is a git repo", since a repo can legitimately list nothing.
+        $gitFiles = git ls-files --cached --others --exclude-standard 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            $files = @($gitFiles) | Where-Object { $_ -match '\.md$' }
         } else {
             Write-Warning "Not a git repo or git ls-files failed — scanning all .md files"
             $root = (Get-Location).Path

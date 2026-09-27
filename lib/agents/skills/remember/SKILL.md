@@ -16,6 +16,10 @@ active before their trigger could be recognized.
   observed harness behavior defaults here even if it looks general — promote to a harness-agnostic
   home only once the same behavior is seen in another harness. Concepts and conventions are
   different: see "What is not harness-specific" below — don't over-classify those.
+- **model-family-specific** (a habit of how a model was *tuned*, e.g. a prose tic) →
+  `agent-user-<family>_<layer>.md` beside the layer's `agent-user_<layer>.md`, which loads only for
+  sessions driving that family. Check first that it isn't really harness behavior: the same model
+  under two harnesses shares these, two models under one harness don't.
 - **Truly universal** (any prat user on any machine) → `prat/lib/agents/agent-user_prat.md`
   Note: this file loads in **every session**, not just when working in prat/prefs/de. Don't put
   guidance here that's only relevant when editing those repos — it will pollute unrelated sessions.

@@ -50,10 +50,10 @@ if ($null -eq $methods) {
     return @()
 }
 
-if ($Function) { $methods = $methods | Where-Object { $_.name -eq $Function } }
+$selected = if ($Function) { @($methods | Where-Object { $_.name -eq $Function }) } else { @($methods) }
 
 if (-not $Detail) {
-    $methods | ForEach-Object {
+    $selected | ForEach-Object {
         [pscustomobject] @{
             Function  = $_.name
             Line      = $_.startLine
@@ -67,16 +67,20 @@ if (-not $Detail) {
 $lines = $data.perFileLineData[$queryKey]
 if (-not $lines) { return @() }
 
+# Where a function's lines end is the next function's start - so the boundaries come from every
+# method in the file, not just the ones -Function asked for.
 $sortedMethods = @($methods | Sort-Object { $_.startLine })
+$wanted = $selected.name
 for ($i = 0; $i -lt $sortedMethods.Count; $i++) {
     $method    = $sortedMethods[$i]
     $nextStart = if ($i + 1 -lt $sortedMethods.Count) { $sortedMethods[$i + 1].startLine } else { [int]::MaxValue }
+    if ($method.name -notin $wanted) { continue }
     $methodLines = @($lines | Where-Object { $_.nr -ge $method.startLine -and $_.nr -lt $nextStart })
     if (-not $methodLines) { continue }
 
     $rangeStart = $null; $rangeEnd = $null; $rangeStatus = $null
     foreach ($line in $methodLines) {
-        $status = if ($line.covered) { 'covered' } else { 'missed' }
+        $status = if ($line.covered -and $line.missed) { 'partial' } elseif ($line.covered) { 'covered' } else { 'missed' }
         if ($null -eq $rangeStart) {
             $rangeStart = $line.nr; $rangeEnd = $line.nr; $rangeStatus = $status
         } elseif ($status -eq $rangeStatus) {

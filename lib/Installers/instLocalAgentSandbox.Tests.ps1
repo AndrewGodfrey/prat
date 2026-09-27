@@ -143,6 +143,35 @@ Describe "Install-LocalAgentSandbox" {
             }
         }
     }
+
+    Context "Agent gitconfig" {
+        It "writes the git identity it was given into the agent's gitconfig" {
+            # A stage whose only incomplete step is the home setup, so the interactive account-creation
+            # block stays skipped and the gitconfig write is the only home-setup work left (no junctions,
+            # no profile content, no ssh key given).
+            $stage = [PSCustomObject]@{}
+            $stage | Add-Member ScriptMethod GetIsStepComplete { param($id) -not $id.StartsWith('sandboxHomeSetup') }
+            $stage | Add-Member ScriptMethod GetStepState      { param($id) $null }
+            $stage | Add-Member ScriptMethod SetStepState      { param($id, $v) }
+            $stage | Add-Member ScriptMethod SetStepComplete   { param($id) }
+            $stage | Add-Member ScriptMethod OnChange          {}
+
+            InModuleScope Installers -Parameters @{ stage = $stage } {
+                param($stage)
+                $written = [System.Collections.Generic.List[string]]::new()
+                Mock applyPathGrants             {}
+                Mock applyAncestorTraverseGrants {}
+                Mock revokePathGrant             {}
+                Mock Install-TextToFile          { $written.Add($newText) }
+
+                Install-LocalAgentSandbox $stage -agentUser 'test_agent' -safeDirectories @('C:\Users\xyz\de') `
+                    -gitUserName 'someagent' -gitUserEmail 'someagent@example.com'
+
+                $written -join "`n" | Should -Match "name = someagent"
+                $written -join "`n" | Should -Match "email = someagent@example.com"
+            }
+        }
+    }
 }
 
 Describe "Get-CanonicalAclPath" {
@@ -329,7 +358,7 @@ Describe "Get-AgentGitconfigContent" {
 
     It "includes [safe] entries for each directory" {
         InModuleScope Installers {
-            $result = Get-AgentGitconfigContent @("C:\Users\xyz\de", "C:\Users\xyz\prat")
+            $result = Get-AgentGitconfigContent @("C:\Users\xyz\de", "C:\Users\xyz\prat") 'someagent' 'someagent@example.com'
 
             $result | Should -Match "\[safe\]"
             $result | Should -Match "directory = C:/Users/xyz/de"
@@ -339,33 +368,42 @@ Describe "Get-AgentGitconfigContent" {
 
     It "includes [credential] section with empty helper to suppress auth dialogs" {
         InModuleScope Installers {
-            $result = Get-AgentGitconfigContent @("C:\Users\xyz\de")
+            $result = Get-AgentGitconfigContent @("C:\Users\xyz\de") 'someagent' 'someagent@example.com'
 
             $result | Should -Match "\[credential\]"
             $result | Should -Match "helper\s*="
         }
     }
 
-    It "includes [user] section with a commit identity" {
+    It "writes the [user] identity it is given" {
         InModuleScope Installers {
-            $result = Get-AgentGitconfigContent @("C:\Users\xyz\de")
+            $result = Get-AgentGitconfigContent @("C:\Users\xyz\de") 'someagent' 'someagent@example.com'
 
             $result | Should -Match "\[user\]"
-            $result | Should -Match "name\s*="
-            $result | Should -Match "email\s*="
+            $result | Should -Match "name = someagent"
+            $result | Should -Match "email = someagent@example.com"
+        }
+    }
+
+    It "throws rather than writing a blank identity" {
+        # The caller owns the identity — there is no default here to fall back to, since a second copy of
+        # it would be a second thing to keep in step.
+        InModuleScope Installers {
+            { Get-AgentGitconfigContent @("C:\Users\xyz\de") '' 'someagent@example.com' } |
+                Should -Throw "*identity*"
         }
     }
 
     It "converts backslashes to forward slashes" {
         InModuleScope Installers {
-            $result = Get-AgentGitconfigContent @("C:\path\with\backslashes")
+            $result = Get-AgentGitconfigContent @("C:\path\with\backslashes") 'someagent' 'someagent@example.com'
             $result | Should -Match "directory = C:/path/with/backslashes"
         }
     }
 
     It "does not double-convert forward slashes" {
         InModuleScope Installers {
-            $result = Get-AgentGitconfigContent @("C:/already/forward")
+            $result = Get-AgentGitconfigContent @("C:/already/forward") 'someagent' 'someagent@example.com'
             $result | Should -Match "directory = C:/already/forward"
         }
     }

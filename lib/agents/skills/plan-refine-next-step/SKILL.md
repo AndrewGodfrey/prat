@@ -50,6 +50,10 @@ dot-sourced; read the current state with `Get-PlanState -PlanFile <plan>`.
   an extraction, and planning it as a local tweak silently commits every future sibling to
   reimplementing the mechanism.
 
+- **Before a step tightens an existing contract** — turning a tolerated input into an error — list what
+  relies on the tolerated case, including the skills that call the function in prose: those callers run no
+  tests, so nothing else will catch them.
+
 - **Add a sub-item to check test coverage for modified lines** — for steps that change durable
   code. A step that changes none gets no sub-item, not a conditional one.
 
@@ -66,8 +70,21 @@ dot-sourced; read the current state with `Get-PlanState -PlanFile <plan>`.
   them: read the current `Refined` list via `Get-PlanState`, append the newly refined step ids,
   and write the result back with `Set-PlanState -PlanFile <plan> -Refined <updated list>`.
 
-- **Report and hand off.** Tell the user the pointed-at step is refined and ready for their
-  review. State stays `ready-to-plan` until they've reviewed it; `/wrap` is how they record their
-  approval and advance to `ready-to-implement` — don't propose running it, that's the user's call
-  to make and initiate. If any further steps were refined ahead, name them in the report so the
-  user knows more than one step got planned.
+- **Record that the refine is done.**
+  ```powershell
+  Set-PlanState -PlanFile <plan> -State ready-for-refined-step-review
+  ```
+  Do this in every mode — it is what tells a later session that the step was
+  written rather than half-written.
+
+- **Then hand off or carry on, per `workflow`** (read it from `Get-PlanState`; see `plan-format` for
+  the key and its values):
+  - `tick-tock` — tell the user the pointed-at step is refined and ready for their review. `/wrap`
+    is how they record their approval and advance to `ready-to-implement` — don't propose running
+    it, that's the user's call to make and initiate.
+  - `step-review` or `branch-review` — the refine checkpoint is yours: advance with
+    `Set-PlanState -PlanFile <plan> -State ready-to-implement` and implement the step in this same
+    session. Summarize the refined step first, so the user reading along can stop you early.
+
+  Either way, if further steps were refined ahead, name them in the report so the user knows more
+  than one step got planned.

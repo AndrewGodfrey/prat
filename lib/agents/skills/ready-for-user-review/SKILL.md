@@ -26,15 +26,19 @@ a second review pass:
    ```
 4. Invoke `/reflect` — implementation lessons, captured now while the implementation context is
    loaded. (After that, review of the current step may continue in the current session, or may start in a new session).
+5. **In a `branch-review` run, continue in this same turn**: invoke `/wrap` yourself to close the
+   unit and move to the next step, rather than stopping for Review mode below — see `plan-format`'s
+   workflow section for why.
 
 ## Review mode
 
-Once a unit is ready-for-user-review, the user reviews and/or manually tests it. Expect a user-directed
-pass that isn't written in the plan, typically including one or more of: bug reports (investigate;
-fix immediately if small, report back otherwise), edits made directly by the user, change requests
-(cleanup, refactoring — including pre-existing issues that only surface during this pass — or even
-additional features in the same unit), test-coverage work (including pre-existing gaps), and plan
-additions. The user may stage and commit some changes while keeping others under review/test.
+In `tick-tock` and `step-review`, once a unit is ready-for-user-review, the user reviews and/or
+manually tests it. Expect a user-directed pass that isn't written in the plan, typically including
+one or more of: bug reports (investigate; fix immediately if small, report back otherwise), edits
+made directly by the user, change requests (cleanup, refactoring — including pre-existing issues
+that only surface during this pass — or even additional features in the same unit), test-coverage
+work (including pre-existing gaps), and plan additions. The user may stage and commit some changes
+while keeping others under review/test.
 
 Do not push toward `/wrap`. Only the user closes a unit — an explicit approval (e.g. "lgtm") or
 invoking `/wrap` themselves.

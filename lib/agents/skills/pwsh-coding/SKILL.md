@@ -220,6 +220,31 @@ value. Ways out, in preference order:
 - Format each set explicitly — `$setA | Format-Table; $setB | Format-Table` — which starts a fresh
   table per set and renders both correctly, at a console and through `Out-String -Stream` alike.
 
+# `Write-Host` labels jump ahead of the pipeline output they label
+
+`Write-Host` writes straight to the host; pipeline objects go through the formatter, which buffers
+while it waits to see whether more objects of the same shape follow. Labelling result sets with
+`Write-Host` therefore reorders the output — every label prints first, then one merged table:
+
+```powershell
+Write-Host "=== first ==="; [pscustomobject]@{ A = 1 }
+Write-Host "=== second ==="; [pscustomobject]@{ A = 2 }
+# === first ===
+# === second ===
+# A
+# -
+# 1
+# 2
+```
+
+Measured on pwsh 7.6.6. It reads as "the first command returned nothing and the second returned two
+rows" — a wrong conclusion about the command rather than about the rendering, which is expensive
+when the command is a query you are about to act on.
+
+Ways out: put the label in the data (`Select-Object @{n='Source';e={$name}}, ...`), or render each
+set yourself with `| Format-Table | Out-String | Write-Host`, which also fixes the shape-locking
+above.
+
 # Parameter forwarding in wrapper functions
 
 When writing a thin wrapper function that forwards all arguments to a script or another function,
@@ -243,6 +268,19 @@ flag `-NoCoverage:` and a separate positional argument `False`. The called scrip
 
 `@PSBoundParameters` forwards named parameters correctly, including switches with explicit values.
 
+**An `@array` splat binds positionally**, so it can't carry a named parameter at all: a
+`-Name`-looking element is just a string value to the callee. A script holding passthrough args in an
+array — typically a `[Parameter(ValueFromRemainingArguments = $true)]` catch-all — therefore has to
+declare any parameter it means to forward and pass it by name (`-CommitBranch $CommitBranch`).
+A `-Name:value` token arriving in such a catch-all is also split into two elements (`-Name:` and
+`value`), so re-splatting loses the pairing even when the callee does declare the parameter.
+
+**Adding a parameter to a script whose contract is "extra positional args land in `$ARGS`"** makes
+that parameter capture the first positional argument — a caller's prompt string, say — from every
+caller that doesn't bind it, silently. `[CmdletBinding(PositionalBinding = $false)]` plus an explicit
+`[Parameter(ValueFromRemainingArguments = $true)] [string[]] $PassThroughArgs` removes the ambiguity;
+`$ARGS` is unavailable in advanced mode anyway (see above), and the catch-all replaces it.
+
 # Feeding a multi-line script to an external interpreter
 
 There is no heredoc. `python - <<'PY'` parses as a redirection pwsh doesn't have, and the error names
@@ -259,6 +297,21 @@ python $tmp
 
 The closing `'@` must start at column 0. `python -c "..."` works for one-liners, but pwsh's own quoting
 rules apply to the string first, so anything with nested quotes is better off in a file.
+
+# `@{` inside an argument to a native command is parsed by pwsh first
+
+pwsh reads `@{` as the start of a hashtable literal wherever it appears in a bare argument, so a git
+revision expression carrying one never reaches git:
+
+```powershell
+git rev-list --count main..main@{upstream}
+# git.exe: ScriptBlock should only be specified as a value of the Command parameter.
+git rev-list --count 'main..main@{upstream}'   # correct
+```
+
+Measured on pwsh 7.6.6. The error is attributed to the native command and names ScriptBlock and
+Command — neither of which appears in the line — so it doesn't point at the token that caused it.
+Quote any argument containing `@{...}`: `@{upstream}`, `@{u}`, `@{2.days.ago}`, `HEAD@{1}`.
 
 # Inconsistent ~ handling
 Unlike `$home`, Powershell doesn't expand `~` before passing it to things that don't understand it - like external
@@ -522,6 +575,10 @@ the command was never called.
 test asserting a call happens only once (e.g. proving something is gated/cached) silently passes
 even when the code under test calls it twice — add `-Exactly` to actually assert the count.
 
+**`-BeNull` is null-or-empty, not strict `$null`.** It's a real operator (Pester
+prefix-matches it to `BeNullOrEmpty`), so `$null | Should -BeNull`, `'' | Should -BeNull`, and `@() |`
+all pass. When you specifically need "is `$null` and not merely empty", use `-Be $null` —
+`'' | Should -Be $null` fails.
 **`(Get-Item "TestDrive:\").FullName` has a trailing backslash.** After replacing `\\` with `/` you
 get a trailing `/`, so `"$realTestDrive/subdir"` becomes `...//subdir`. This silently breaks path
 matching when other tools (git, `Resolve-Path`) normalize to single slashes. Always trim:

@@ -8,8 +8,14 @@ BeforeAll {
 }
 
 Describe "Get-PlanStageLabel" {
-    It "maps ready-to-plan to planning" {
-        Get-PlanStageLabel 'ready-to-plan' | Should -Be 'planning'
+    It "maps ready-to-refine to refining" {
+        Get-PlanStageLabel 'ready-to-refine' | Should -Be 'refining'
+    }
+
+    It "maps ready-for-refined-step-review to refining" {
+        # Not a second kind of "reviewing" - the step is still in its refine phase, waiting to be
+        # approved, so the label answers "what is happening" the same way ready-to-refine's does.
+        Get-PlanStageLabel 'ready-for-refined-step-review' | Should -Be 'refining'
     }
 
     It "maps ready-to-implement to coding" {
@@ -18,10 +24,6 @@ Describe "Get-PlanStageLabel" {
 
     It "maps ready-for-user-review to reviewing" {
         Get-PlanStageLabel 'ready-for-user-review' | Should -Be 'reviewing'
-    }
-
-    It "defaults checkpointed to planning (pl always resolves it before a session goes live)" {
-        Get-PlanStageLabel 'checkpointed' | Should -Be 'planning'
     }
 
     It "defaults null/unrecognized state to planning" {

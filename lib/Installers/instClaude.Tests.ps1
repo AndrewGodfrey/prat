@@ -436,11 +436,14 @@ Describe "Install-ClaudeProjectMemory" {
 
 Describe "Install-ClaudeAgentSandbox" {
     BeforeAll {
-        $script:lasCapture = [PSCustomObject]@{ callCount = 0; rwPaths = $null }
+        $script:lasCapture = [PSCustomObject]@{ callCount = 0; rwPaths = $null; gitUserName = $null; gitUserEmail = $null }
         function global:Install-LocalAgentSandbox {
-            param($stage, $agentUser, $rwPaths, $roPaths, $safeDirectories, $homeJunctions, $profileContent, $sshPublicKeyPath)
+            param($stage, $agentUser, $rwPaths, $roPaths, $safeDirectories, $homeJunctions, $profileContent,
+                  $sshPublicKeyPath, $gitUserName, $gitUserEmail)
             $script:lasCapture.callCount++
             $script:lasCapture.rwPaths = $rwPaths
+            $script:lasCapture.gitUserName = $gitUserName
+            $script:lasCapture.gitUserEmail = $gitUserEmail
         }
         function global:Invoke-Gsudo([scriptblock]$sb) { }
     }
@@ -458,6 +461,14 @@ Describe "Install-ClaudeAgentSandbox" {
     It "calls Install-LocalAgentSandbox" {
         Install-ClaudeAgentSandbox $script:stage -agentUser 'test_agent' -claudeHome 'C:\dummy\home'
         $script:lasCapture.callCount | Should -Be 1
+    }
+
+    It "passes the agent's git identity through" {
+        Install-ClaudeAgentSandbox $script:stage -agentUser 'test_agent' -claudeHome 'C:\dummy\home' `
+            -gitUserName 'someagent' -gitUserEmail 'someagent@example.com'
+
+        $script:lasCapture.gitUserName  | Should -Be 'someagent'
+        $script:lasCapture.gitUserEmail | Should -Be 'someagent@example.com'
     }
 }
 

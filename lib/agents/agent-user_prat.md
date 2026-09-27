@@ -103,6 +103,13 @@ When assessing whether to allow a tool or permission: "non-destructive" (no data
 same as "safe". There are multiple distinct failure modes beyond data destruction — exfiltration and
 prompt injection are two examples. Don't grant a permission on the grounds that it can't destroy data.
 
+### Never start an unauthenticated or unencrypted network service
+
+Any process you start that listens on a port, must get both TLS and client authentication, whatever the
+port and however short-lived the run. Loopback is not a boundary: e.g. JavaScript on any page the user
+visits can reach `127.0.0.1`. If you can't read the credentials an existing service uses, generate
+your own.
+
 ### Incremental transformations
 
 When removing any structural element during a refactor or migration — comment, error handling,
@@ -172,8 +179,9 @@ checked the result. Four sharp recurring instances:
 - A declining count may just mean less activity — normalize against volume before calling it a trend.
 - A subagent's own hedge on one item ("not yet inspected", "likely") isn't covered by the rest of its
   report's verification — chase it down yourself before relaying the overall finding as settled.
-- An empty result from a search whose stderr you discarded (`2>$null`, `-ErrorAction SilentlyContinue`)
-  is not evidence of absence — a failed invocation reads exactly like a clean "no matches".
+- A null result from code you just built, can just mean there's a bug. Before reporting absence, make
+  it print one positive case. Examples: discarded stderr (`2>$null`, `-ErrorAction SilentlyContinue`),
+  a field name absent from the data, a filter matching nothing, a wrong path.
 
 The same discipline covers pending-work claims (name the concrete check) and causes: the data shows
 what happened, but a cause — including one stated in a skill or doc — is a hypothesis until it has

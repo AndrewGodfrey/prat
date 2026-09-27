@@ -184,6 +184,40 @@ Describe "Get-CoverageDetails" {
         $lines[3].covered | Should -Be $false
     }
 
+    It "records a partly covered line as both covered and missed" {
+        # A one-line `if (...) { ... }` is the usual source: the test exercises the condition but not
+        # the body, so JaCoCo reports ci and mi on the same line. Collapsing that to covered/not hides
+        # the miss from every consumer of this data.
+        $xml = @'
+<report name="test">
+<package name="C:/repo/pathbin">
+  <class name="C:/repo/pathbin/Foo" sourcefilename="Foo.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="1" covered="3" />
+    </method>
+  </class>
+  <sourcefile name="Foo.ps1">
+    <line nr="1" mi="0" ci="2" mb="0" cb="0" />
+    <line nr="2" mi="1" ci="1" mb="0" cb="0" />
+    <line nr="3" mi="2" ci="0" mb="0" cb="0" />
+  </sourcefile>
+</package>
+</report>
+'@
+        $f = "$TestDrive/partial-lines.xml"
+        $xml | Set-Content $f
+
+        $result = & $script -CoverageFile $f
+
+        $lines = $result.perFileLineData["C:/repo/pathbin/Foo.ps1"]
+        $lines[0].covered | Should -Be $true
+        $lines[0].missed  | Should -Be $false
+        $lines[1].covered | Should -Be $true
+        $lines[1].missed  | Should -Be $true
+        $lines[2].covered | Should -Be $false
+        $lines[2].missed  | Should -Be $true
+    }
+
     It "throws when PathBase is supplied, format is CoverageGutters, and a path is outside PathBase" {
         $xml = @'
 <report name="test">

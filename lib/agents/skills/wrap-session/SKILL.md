@@ -16,16 +16,9 @@ is also the last opportunity to record anything unique or interesting from this 
 transcript — for plan purposes it is never revisited. These notes are agent claims, not user
 agreement.
 
+This is the whole handover. The lifecycle state stays where it is: it records how far the unit got,
+and pausing a session doesn't change that.
+
 ## 2. Reflect
 
 Invoke `/reflect`.
-
-## 3. Set state
-
-```powershell
-. "$home/prat/lib/agents/PlanState.ps1"
-Set-PlanState -PlanFile <active plan> -State checkpointed
-```
-
-The launcher consumes `checkpointed` on its next launch for this plan: a fresh "do the next step"
-session, with older sessions kept for reference only.

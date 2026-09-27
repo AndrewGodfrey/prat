@@ -42,15 +42,22 @@ grows enough to justify the complexity.
 `requirements.txt` is for **runtime** dependencies only. Test tools or other SDK-like dependencies
 should be installed by `d` e.g. using Install-PratPackage.
 
-# `__pycache__` and `.pyc` files
+# `__pycache__`, `.pyc` and `.pytest_cache`
 
 `scriptProfile.ps1` sets `$env:PYTHONPYCACHEPREFIX`, which redirects all `__pycache__` output
-to a system temp location. This applies whenever Python is called as a child of a pwsh process
+to `prat/auto/pycache`. This applies whenever Python is called as a child of a pwsh process
 that loaded the profile. If you're seeing `__pycache__` in source dirs
 despite the profile being loaded, the likely cause is a profile-less invocation.
 
-If you want no cache at all (e.g. in a test runner where compilation overhead is negligible and you
-want zero artifacts), add `-B` to the python invocation explicitly.
+`t` passes `-B`, so test runs write no bytecode at all and don't depend on this. What does depend on
+it is every other way a repo's Python gets run — a command wrapper on `PATH`, an application started
+by hand — each of which imports from the source tree with bytecode writing on. Removing the prefix
+puts `__pycache__` back in those source dirs.
+
+The same profile sets `$env:PYTEST_ADDOPTS='-p no:cacheprovider'`, so an ad-hoc `pytest` leaves no
+`.pytest_cache` in the directory it was run from. Cost of that: `--lf`/`--ff` are still accepted but
+select nothing, so they quietly run the whole set (measured). `t` has never had the cache either —
+`Invoke-PytestWithSummary` passes the same flag.
 
 # monkeypatch mutates the shared object, not a copy
 

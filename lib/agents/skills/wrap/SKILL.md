@@ -1,6 +1,8 @@
 ---
 name: wrap
-description: Wraps up the active unit of work in the active plan. User-invocable only — do not trigger autonomously.
+description: Wraps up the active unit of work in the active plan. User-invocable only, except in a
+  `branch-review` run, where the agent invokes it itself at the close of each step — otherwise do
+  not trigger autonomously.
 ---
 
 The "active plan" is the plan file most relevant to this session — infer from context, or ask if
@@ -8,8 +10,9 @@ unclear. A "unit" is the plan's current-unit pointer — a contiguous run of one
 (`first`..`last`); see PlanState.ps1's header for the design rationale.
 
 This skill advances the active plan one lifecycle notch — records the user's approval of a
-refined unit (at ready-to-plan) or closes a completed one (at ready-for-user-review) — and always runs
-/reflect. /wrap-session closes a session instead. 
+refined unit (at ready-for-refined-step-review) or closes a completed one (at ready-for-user-review) — and
+always runs /reflect, which at this point records findings rather than making changes. /wrap-session closes a
+session instead.
 
 ## 0. Read the state
 
@@ -20,12 +23,13 @@ Get-PlanState -PlanFile <active plan>
 
 Dispatch on `state`:
 
-## `ready-to-plan` → advance to ready-to-implement
+## `ready-for-refined-step-review` (or `ready-to-refine`) → advance to ready-to-implement
 
 Invoking `/wrap` here is itself the user's approval of the refined unit — this skill doesn't ask,
-it acts.
+it acts. `ready-to-refine` lands in this arm too: a unit refined by hand or in conversation reaches
+`/wrap` without the refine pass that would have set the other state.
 
-Before writing anything, sanity-check that the pointed-at unit's spec (`first`..`last`) is
+Before writing anything, sanity-check that the pointed-at unit (`first`..`last`) is
 implementable — if it's still terse bullets or has open design questions, say so and stop rather
 than advance.
 
@@ -78,6 +82,10 @@ state — don't re-run them here.
     file. Skip the pointer-advance step below — there is nothing to advance.
 
 - Invoke `/reflect` — review lessons; the implementation `/reflect` already ran at ready-for-user-review.
+  Here it records findings and makes no code changes: the user has just reviewed a diff, and an edit landing
+  behind them is one they did not review. A fix you are sure of belonged in the work itself. The same rule
+  holds in a `branch-review` run, where this arm runs with nobody having reviewed a diff yet — see
+  `plan-format`'s workflow section for why.
 
 - **Advance the pointer.** Only once open questions (including any from the `/reflect`
   conversation) are resolved — never in the same turn as an open question:
@@ -86,21 +94,27 @@ state — don't re-run them here.
   ```
   Defaults to the next remaining step; if the user named a different step to do next, add
   `-ToStep 'Step N'`. The script sets `state` itself: `ready-to-implement` if the new pointer was
-  already refined, else `ready-to-plan`.
+  already refined, else `ready-to-refine`.
+  - **Closing the last remaining step lands at `ready-for-user-review`.** The step's body is cut to
+    the done file before the advance, so the pointer names a step that is no longer in the file and
+    nothing is left to point at. The advance returns cleanly (it does not throw) and leaves the plan
+    at `ready-for-user-review` with the pointer on the closed step — that is a finished plan, and the
+    whole branch is what the user reviews. Don't treat the missing heading as an error, and don't
+    re-point or delete the frontmatter.
 
 - **Report the result.** Name the new pointer and its resulting state. If the pointer came off
   the `refined` list (state now `ready-to-implement`), say so explicitly — the user should know
   the next step was pre-planned.
 
-## `ready-to-implement` or `checkpointed` → misfire guard
+## `ready-to-implement` → misfire guard
 
 The unit is mid-lifecycle — don't proceed. Point the user at `/ready-for-user-review` (implementation
 finished this session) or `/wrap-session` (pausing mid-unit).
 
-## No frontmatter block → treat as ready-to-plan
+## No frontmatter block → treat as ready-to-refine
 
 If `Get-PlanState` reports `HasFrontmatter` false, the plan predates the state mechanism and is
-being wrapped for the first time. Treat it as `ready-to-plan` and run that flow — `Set-PlanState`
+being wrapped for the first time. Treat it as `ready-to-refine` and run that flow — `Set-PlanState`
 initializes the frontmatter. This is safe under the convention that implementation goes through
 `/ready-for-user-review` first (which sets a state), so a plan reaching `/wrap` with no frontmatter is one
 where planning just finished. Exception: if this session actually wrote implementation code for the

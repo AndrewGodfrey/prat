@@ -185,6 +185,29 @@ Describe "Get-LongMarkdownLineFindings" {
 
             $result | Should -HaveCount 0
         }
+
+        It "flags an untracked file in a git repo" {
+            # Directory mode lists files with `git ls-files`, which without --others sees only the
+            # index - so a brand-new file, the case most in need of checking, was skipped silently.
+            git init -q $script:testDir 2>&1 | Out-Null
+            "short" | Set-Content "$script:testDir/tracked.md" -Encoding utf8NoBOM
+            git -C $script:testDir add tracked.md 2>&1 | Out-Null
+            ('a' * 130) | Set-Content "$script:testDir/untracked.md" -Encoding utf8NoBOM
+
+            $result = @(Get-LongMarkdownLineFindings -Path $script:testDir -MaxLength 120)
+
+            $result | Should -HaveCount 1
+        }
+
+        It "skips a gitignored file" {
+            git init -q $script:testDir 2>&1 | Out-Null
+            "ignored.md" | Set-Content "$script:testDir/.gitignore" -Encoding utf8NoBOM
+            ('a' * 130) | Set-Content "$script:testDir/ignored.md" -Encoding utf8NoBOM
+
+            $result = @(Get-LongMarkdownLineFindings -Path $script:testDir -MaxLength 120)
+
+            $result | Should -HaveCount 0
+        }
     }
 
     Context "single file" {

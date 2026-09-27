@@ -5,6 +5,29 @@ function Get-HarnessUserFragments {
     return $fragments
 }
 
+# Layer fragments holding instructions specific to one model family (e.g. suppressing Claude's prose
+# tics), base-first. Empty when no layer defines one for the family.
+function Get-ModelUserFragments {
+    param([Parameter(Mandatory)] [string] $Family)
+    $fragments = @(Resolve-PratLibFile "lib/agents/agent-user-$Family.md" -ListAll)
+    [array]::Reverse($fragments)
+    return $fragments
+}
+
+# The ordered fragment list a harness assembles user instructions from: layer fragments base-first,
+# a harness-specific fragment spliced in after the prat base (so harness content precedes the higher
+# layers it applies to), and model-family fragments appended last so they narrow everything before
+# them. Paths come back with forward slashes.
+function Get-HarnessFragmentList {
+    param([string[]] $Fragments, [string] $HarnessFragment, [string[]] $ModelFragments = @())
+    $Fragments = @($Fragments)
+    if ($HarnessFragment -and (Test-Path $HarnessFragment) -and ($Fragments.Count -gt 0)) {
+        $rest      = if ($Fragments.Count -gt 1) { $Fragments[1..($Fragments.Count - 1)] } else { @() }
+        $Fragments = @($Fragments[0], (Get-Item $HarnessFragment).FullName) + $rest
+    }
+    return @(@($Fragments) + @($ModelFragments) | ForEach-Object { $_ -replace '\\', '/' })
+}
+
 # Installs a harness user instructions file, assembled from registered fragments.
 function Install-HarnessUserInstructions {
     [CmdletBinding()]
