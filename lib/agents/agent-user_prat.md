@@ -242,8 +242,8 @@ suggestion is wrong — the user wants correctness, not compliance.
 
 ### External references
 
-When the user provides a URL, preserve it verbatim in any file you write it to — don't collapse
-to anchor form (`#123`) or a bare issue number.
+When a reference has a URL — from the user or a source you're reading — preserve it verbatim;
+e.g. don't collapse to a bare issue number (`#123`).
 
 ## Planning
 
