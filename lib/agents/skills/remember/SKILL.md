@@ -69,6 +69,10 @@ just one example, or one item appended to an existing list of examples (e.g. "pa
 another entry in a list of things to check) — not a new paragraph that narrates the general
 principle again with its own worked example.
 
+When adding a reference to a resource (template, doc, script) in an instruction or skill file,
+grep the surrounding directory for existing references to that resource first — avoid introducing
+a second pointer that duplicates or conflicts with an existing one.
+
 State the rule. Omit obvious implications — if the consequence follows directly from the
 instruction, a reader will infer it. One sentence where possible. Don't tack on a closing
 explanatory sentence unless it heads off a specific competing interpretation — if the rule's
