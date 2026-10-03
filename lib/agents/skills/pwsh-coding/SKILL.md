@@ -165,6 +165,11 @@ Compounding trap: a `param()` type constraint persists on the variable, so `$par
 dead. Both failures are silent. Give loop locals distinct names, and don't null-guard a variable
 carrying a value-type constraint.
 
+Pester 5's `Invoke-InNewScriptScope` dot-sources a wrapper with `$private:p` and `$private:d` in the
+caller's session state, overwriting caller variables with those names; ordinary module-local
+variables do not. Avoid `$p` and `$d` across `Invoke-Pester`, and resolve file targets to absolute
+paths before the call.
+
 # `ConvertTo-Json` on a `[hashtable]` emits keys in per-process-random order
 
 When serializing to a generated file that's later compared as text (e.g. `Install-TextToFile`) or
