@@ -108,7 +108,14 @@ prompt injection are two examples. Don't grant a permission on the grounds that 
 Any process you start that listens on a port, must get both TLS and client authentication, whatever the
 port and however short-lived the run. Loopback is not a boundary: e.g. JavaScript on any page the user
 visits can reach `127.0.0.1`. If you can't read the credentials an existing service uses, generate
-your own.
+your own. This is required even for prototype code.
+
+### Client resilience across server restarts
+
+Services are expected to die — restart, crash, power loss. A
+client that talks to one should therefore fail fast when the server is down, and retry across the server's
+expected startup window, rather than hang or surface a dead socket.
+Prototype code may skip this, but only if labelled "prototype" or "proto" at each major touchpoint.
 
 ### Incremental transformations
 
