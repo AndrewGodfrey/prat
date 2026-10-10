@@ -19,6 +19,11 @@ bump `installerVersion` for a change to the install *logic*, even without a pinn
 a real fix silently won't reach a machine that already recorded the old value complete. To force a
 re-run without a version bump, use `rppr` (below) rather than hand-editing/deleting instDb files.
 
+An interactive alias is installed by `d`, with `Install-InteractiveAlias` in the layer's
+`deployLayer_*.ps1`, not defined in a profile script. That puts every layer's aliases in one generated
+list, lets a higher layer take one out with `Remove-InteractiveAlias`, and defines it in the shell that
+ran `d` without a restart.
+
 Also, for architecture overview, dev loop commands, and codebase structure: read @`$HOME/prat/README.md`
 
 ## Deploy stages
