@@ -30,7 +30,7 @@ Describe "Install-UserPathEntry" {
 
             $script:mockUserPath | Should -Be "C:\a;C:\b;C:\new"
             $env:PATH | Should -Be "C:\a;C:\b;C:\new"
-            $stage.changeCount | Should -Be 2
+            $stage.changeCount | Should -Be 1
         }
 
         It "is idempotent when already present" {
@@ -54,7 +54,7 @@ Describe "Install-UserPathEntry" {
 
             $script:mockUserPath | Should -Be "C:\real\python;C:\WindowsApps;C:\other"
             $env:PATH | Should -Be "C:\real\python;C:\WindowsApps;C:\other"
-            $stage.changeCount | Should -Be 2
+            $stage.changeCount | Should -Be 1
         }
 
         It "moves an existing later occurrence to the front rather than duplicating" {
@@ -65,7 +65,7 @@ Describe "Install-UserPathEntry" {
 
             $script:mockUserPath | Should -Be "C:\real\python;C:\WindowsApps"
             $env:PATH | Should -Be "C:\real\python;C:\WindowsApps"
-            $stage.changeCount | Should -Be 2
+            $stage.changeCount | Should -Be 1
         }
 
         It "is idempotent when already first" {
@@ -74,6 +74,18 @@ Describe "Install-UserPathEntry" {
 
             Install-UserPathEntry $stage "C:\real\python" -Prepend
 
+            $stage.changeCount | Should -Be 0
+        }
+
+        It "does not report a change when only the process PATH differs from the persistent one" {
+            $script:mockUserPath = "C:\real\python;C:\WindowsApps"
+            $env:PATH = "C:\WindowsApps"
+
+            Install-UserPathEntry $stage "C:\real\python" -Prepend
+
+            # The process PATH is updated (transient convenience for this run), but that is
+            # not a durable change: the "updating" banner (OnChange) should not fire.
+            $env:PATH | Should -Be "C:\real\python;C:\WindowsApps"
             $stage.changeCount | Should -Be 0
         }
 

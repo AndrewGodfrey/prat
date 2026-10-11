@@ -49,13 +49,15 @@ function Install-UserPathEntry($stage, [string] $Path, [switch] $CurrentProcessO
     }
 
     $procEntries = @(($env:PATH -split ';') | Where-Object { $_ -ne '' })
+    # Process-ENV updates below are a transient convenience for the current run (so later
+    # install steps see the path). They are NOT a durable change, so they don't call
+    # OnChange() - otherwise every `d` run reports "updating" for a stage whose persistent
+    # state is already correct.
     if ($Prepend) {
         if ($procEntries.Count -eq 0 -or $procEntries[0] -ine $Path) {
-            $stage.OnChange()
             $env:PATH = (@($Path) + @($procEntries | Where-Object { $_ -ine $Path })) -join ';'
         }
     } elseif ($procEntries -notcontains $Path) {
-        $stage.OnChange()
         if (!$env:PATH.EndsWith(";")) { $env:PATH += ";" }
         $env:PATH += $Path
     }
