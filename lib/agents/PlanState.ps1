@@ -31,6 +31,8 @@ using module ..\PratBase\PratBase.psd1
 # Line-ending detection/preservation and range-based splicing are delegated to TextFileEditor's
 # LineArray class; this file only owns the YAML shape and the unit-pointer/advance logic.
 
+. "$PSScriptRoot/fileWrittenNotice.ps1"
+
 function ConvertFrom-PlanYamlScalar([string] $raw) {
     $v = $raw.Trim()
     if ($v.Length -ge 2 -and $v.StartsWith('"') -and $v.EndsWith('"')) {
@@ -217,10 +219,17 @@ function Write-PlanFrontmatter([string] $PlanFile, [LineArray] $LineArray, $Rang
     $newBlock  = [LineArray]::new($blockText)
     $LineArray.ReplaceLines($Range, $newBlock)
     [System.IO.File]::WriteAllText($PlanFile, $LineArray.ToString(), [System.Text.UTF8Encoding]::new($false))
+    Send-FileWrittenNotice -Path $PlanFile
+}
+
+# A full path against PowerShell's location: [System.IO.File] would resolve a relative one against the .NET current
+# directory, which Set-Location doesn't move, so Test-Path and the read/write could name different files.
+function Resolve-PlanFilePath([string] $PlanFile) {
+    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PlanFile)
 }
 
 function Get-PlanState([string] $PlanFile) {
-    $PlanFile = Expand-TildePath $PlanFile
+    $PlanFile = Resolve-PlanFilePath $PlanFile
     $raw = if (Test-Path $PlanFile) { [System.IO.File]::ReadAllText($PlanFile) } else { '' }
     $la = [LineArray]::new($raw)
     $found = Find-PlanFrontmatter $la
@@ -283,7 +292,7 @@ function Set-PlanState {
         throw "Set-PlanState: -Last needs -First."
     }
 
-    $PlanFile = Expand-TildePath $PlanFile
+    $PlanFile = Resolve-PlanFilePath $PlanFile
     $raw = if (Test-Path $PlanFile) { [System.IO.File]::ReadAllText($PlanFile) } else { '' }
     $la = [LineArray]::new($raw)
     $found = Find-PlanFrontmatter $la

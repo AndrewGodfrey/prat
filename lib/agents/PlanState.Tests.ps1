@@ -208,6 +208,33 @@ Describe "Get-PlanState edge cases" {
     }
 }
 
+Describe "Set-PlanState file path" {
+    It "sends a file-written notice with the full path, after the write" {
+        # Not $path: a ParameterFilter sees the mock's own -Path under that (case-insensitive) name.
+        $planPath = "$script:testDriveRoot/notice.md"
+        Mock Send-FileWrittenNotice { $script:stateAtNotice = (Get-PlanState $Path).State }
+
+        Set-PlanState -PlanFile $planPath -State 'ready-to-refine' | Out-Null
+
+        Should -Invoke Send-FileWrittenNotice -Times 1 -Exactly -ParameterFilter { ($Path -replace '\\', '/') -eq $planPath }
+        $script:stateAtNotice | Should -Be 'ready-to-refine'
+    }
+
+    It "resolves a relative path against PowerShell's location, for the write and the read" {
+        Mock Send-FileWrittenNotice { }
+        Push-Location -LiteralPath $script:testDriveRoot
+        try {
+            Set-PlanState -PlanFile 'relative.md' -State 'ready-to-refine' | Out-Null
+            $state = (Get-PlanState 'relative.md').State
+        } finally {
+            Pop-Location
+        }
+
+        Test-Path -LiteralPath "$script:testDriveRoot/relative.md" | Should -BeTrue
+        $state | Should -Be 'ready-to-refine'
+    }
+}
+
 Describe "Set-PlanState direct field updates" {
     It "writes a new file that doesn't exist yet" {
         $path = "$script:testDriveRoot/brand-new.md"
