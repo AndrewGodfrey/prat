@@ -584,6 +584,11 @@ even when the code under test calls it twice — add `-Exactly` to actually asse
 prefix-matches it to `BeNullOrEmpty`), so `$null | Should -BeNull`, `'' | Should -BeNull`, and `@() |`
 all pass. When you specifically need "is `$null` and not merely empty", use `-Be $null` —
 `'' | Should -Be $null` fails.
+**Watch out for backticks in `Should -BeLike` (and `-like`)**
+The match strings treat a backtick as a string escape character, independently of Powershell's string-literal 
+escaping rules, so a pattern quoting markdown code,
+`` '*section `# B` changed*' ``, never matches the literal backticks. Use `?` for them, or `-Match` with
+`[regex]::Escape`.
 **`(Get-Item "TestDrive:\").FullName` has a trailing backslash.** After replacing `\\` with `/` you
 get a trailing `/`, so `"$realTestDrive/subdir"` becomes `...//subdir`. This silently breaks path
 matching when other tools (git, `Resolve-Path`) normalize to single slashes. Always trim:
