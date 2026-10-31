@@ -170,6 +170,11 @@ caller's session state, overwriting caller variables with those names; ordinary 
 variables do not. Avoid `$p` and `$d` across `Invoke-Pester`, and resolve file targets to absolute
 paths before the call.
 
+# In `"..."`, a variable name runs on through letters, digits, `_`, `?` and `:`
+
+`"$name_old"`, `"?$name?"`, `"$foo:bar"` expand to nothing. Write `${name}`; for `.Prop` or `[i]`, write
+`$($foo.Prop)`.
+
 # `ConvertTo-Json` on a `[hashtable]` emits keys in per-process-random order
 
 When serializing to a generated file that's later compared as text (e.g. `Install-TextToFile`) or
@@ -279,6 +284,8 @@ array — typically a `[Parameter(ValueFromRemainingArguments = $true)]` catch-a
 declare any parameter it means to forward and pass it by name (`-CommitBranch $CommitBranch`).
 A `-Name:value` token arriving in such a catch-all is also split into two elements (`-Name:` and
 `value`), so re-splatting loses the pairing even when the callee does declare the parameter.
+
+**Splatting a single string** (`@f`) passes each character as an argument. Make it an array first: `$f = @($f)`.
 
 **Adding a parameter to a script whose contract is "extra positional args land in `$ARGS`"** makes
 that parameter capture the first positional argument — a caller's prompt string, say — from every
