@@ -112,6 +112,15 @@ are struck through. This file lives in `plans/done/YYYY-Qn/` (year and quarter w
 created) from the moment it's created — even while the plan is still active. It never sits alongside
 the plan file.
 
+**Not-doing records.** A step dropped on evidence, to stay off the work radar until something
+prompts it again, leaves the plan entirely. Its record goes to the component's design doc, under
+its open or deferred items: the decision and its evidence (dated), what would prompt a revisit,
+and any detail that wouldn't be easy to regenerate (a hazard found, an open question, how to
+measure). The `_done.md` gets a `## Not doing: <step> (date)` entry pointing there, so a later
+search of the plans finds it. To find the design doc: the component directory's `AGENTS.md` names
+it, else look in a `docs/` beside the component, then the user's default docs location. If there
+is none, the `_done.md` entry holds the whole record.
+
 Split content into a companion file when it would make agents re-read stable material every time
 they update the plan. If content changes alongside the action steps, keep it in the main file.
 
