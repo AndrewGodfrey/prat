@@ -115,6 +115,27 @@ Describe "Install-ClaudeSkillSet" {
         "$destDir\stale-skill" | Should -Not -Exist
     }
 
+    It "preserves repository-skill junctions while removing stale copied skills" {
+        mkdir "$srcDir\layer-skill" | Out-Null
+        "layer" | Out-File "$srcDir\layer-skill\SKILL.md" -Encoding utf8NoBOM
+        mkdir "$destDir\stale-skill" | Out-Null
+        "stale" | Out-File "$destDir\stale-skill\SKILL.md" -Encoding utf8NoBOM
+        $repoSkill = "$testDir\repository-skill"
+        mkdir $repoSkill | Out-Null
+        "repository" | Out-File "$repoSkill\SKILL.md" -Encoding utf8NoBOM
+        $link = Join-Path $destDir 'repo-skill'
+        New-Item -ItemType Junction -Path $link -Target $repoSkill | Out-Null
+        "$link\SKILL.md" | Should -Exist
+
+        Install-ClaudeSkillSet $stage @(@{ set = @("layer-skill"); srcDir = $srcDir }) $destDir
+
+        "$link\SKILL.md" | Should -Exist
+        (Get-Item -LiteralPath $link).LinkType | Should -Be 'Junction'
+        Get-Content "$repoSkill\SKILL.md" | Should -Be 'repository'
+        "$destDir\layer-skill\SKILL.md" | Should -Exist
+        "$destDir\stale-skill" | Should -Not -Exist
+    }
+
     It "does not remove a deployed skill dir that is still in the set" {
         mkdir "$srcDir\my-skill" | Out-Null
         "content" | Out-File "$srcDir\my-skill\SKILL.md" -Encoding utf8NoBOM

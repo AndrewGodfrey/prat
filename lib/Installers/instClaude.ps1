@@ -36,7 +36,7 @@ function Install-ClaudeHarness {
 
 # Install Claude Code skills into a target .claude/skills directory.
 # Deployed files get an auto-generated header and are set read-only to discourage editing the deployed copy.
-# Skills not in any set are removed from $destDir.
+# Copied skills not in any set are removed; repository junctions are managed by Sync-RepoSkillJunctions.
 #
 #   Install-ClaudeSkillSet $stage @(
 #       @{ set = @("skill-a"); srcDir = "path/to/skills1" }
@@ -102,7 +102,7 @@ function Install-ClaudeSkillSet($stage, $sources, [string] $destDir) {
         }
     }
     foreach ($destSkillDir in Get-ChildItem -Directory $destDir -ErrorAction SilentlyContinue) {
-        if ($destSkillDir.Name -notin $allNames) {
+        if (($destSkillDir.LinkType -ne 'Junction') -and ($destSkillDir.Name -notin $allNames)) {
             $stage.OnChange()
             Remove-Item $destSkillDir.FullName -Recurse -Force
         }
