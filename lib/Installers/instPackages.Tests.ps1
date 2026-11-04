@@ -239,6 +239,139 @@ Describe "installPratWingetPackage" {
     }
 }
 
+Describe "Windows Terminal package" {
+    BeforeAll {
+        Import-Module "$PSScriptRoot/../PratBase/PratBase.psd1" -Force
+        Import-Module "$PSScriptRoot/Installers.psd1" -Force
+    }
+
+    InModuleScope Installers {
+        BeforeEach {
+            $script:terminalInstalled = $false
+            Mock Get-AppxPackage {
+                if ($script:terminalInstalled) { [pscustomobject]@{ Name = 'Microsoft.WindowsTerminal' } }
+            }
+            Mock installPratWingetPackage { $script:terminalInstalled = $true }
+            Mock Write-Host {}
+            Mock Write-Progress {}
+            $script:terminalTracker = Start-Installation 'terminal-test' -InstallationDatabaseLocation (
+                Join-Path $TestDrive ([guid]::NewGuid().ToString())
+            )
+        }
+
+        AfterEach {
+            $script:terminalTracker.StopInstallation()
+        }
+
+        It "installs and verifies Terminal when it is not registered for the current user" {
+            Install-PratPackage $script:terminalTracker 'windowsTerminal'
+
+            $script:terminalInstalled | Should -BeTrue
+            Should -Invoke installPratWingetPackage -Exactly -Times 1 -ParameterFilter {
+                $wingetPackageId -eq 'Microsoft.WindowsTerminal'
+            }
+            Should -Invoke Get-AppxPackage -Exactly -Times 2 -ParameterFilter {
+                $Name -eq 'Microsoft.WindowsTerminal'
+            }
+        }
+
+        It "leaves an existing registered Terminal installation alone" {
+            $script:terminalInstalled = $true
+
+            Install-PratPackage $script:terminalTracker 'windowsTerminal'
+
+            Should -Invoke installPratWingetPackage -Exactly -Times 0
+        }
+
+        It "reports an installer that returns without registering Terminal" {
+            Mock installPratWingetPackage {}
+
+            { Install-PratPackage $script:terminalTracker 'windowsTerminal' } |
+                Should -Throw '*Terminal*not registered*'
+        }
+
+        It "propagates installation errors" {
+            Mock installPratWingetPackage { throw 'Terminal installation failed' }
+
+            { Install-PratPackage $script:terminalTracker 'windowsTerminal' } |
+                Should -Throw '*Terminal installation failed*'
+        }
+    }
+}
+
+Describe "installWget" {
+    BeforeAll {
+        Import-Module "$PSScriptRoot/Installers.psd1" -Force
+    }
+
+    InModuleScope Installers {
+        BeforeEach {
+            $script:wgetBin = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+            $script:wgetStage = [pscustomobject]@{}
+            $script:wgetStage | Add-Member ScriptMethod SetSubstage { param($name) }
+            Mock Install-Folder {
+                New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+            }
+            Mock Install-UserPathEntry {}
+            Mock Invoke-WebRequest {
+                Set-Content -LiteralPath $OutFile -Value 'downloaded executable'
+            }
+            Mock Get-FileHash {
+                @{
+                    Hash = if ($script:wgetIs64Bit) {
+                        '28068376AAB98FF7747AE1792FCB902AADBADC3EF25CA0422724387984CBCD5D'
+                    } else {
+                        '2F4BF7037894C412368EEF9525612282D5DD3341EB4F38270363D5960AB57725'
+                    }
+                }
+            }
+        }
+
+        It "installs a verified executable and exposes it ahead of older copies (<is64Bit>)" -ForEach @(
+            @{ is64Bit = $true; architecture = '64' }
+            @{ is64Bit = $false; architecture = '32' }
+        ) {
+            $script:wgetIs64Bit = $is64Bit
+
+            installWget $script:wgetStage $script:wgetBin -Is64Bit $is64Bit
+
+            Get-Content (Join-Path $script:wgetBin 'wget.exe') | Should -Be 'downloaded executable'
+            @(Get-ChildItem $script:wgetBin -File).Count | Should -Be 1
+            Should -Invoke Invoke-WebRequest -Exactly -Times 1 -ParameterFilter {
+                $Uri -eq "https://eternallybored.org/misc/wget/1.25.0/$architecture/wget.exe"
+            }
+            Should -Invoke Get-FileHash -Exactly -Times 1 -ParameterFilter { $Algorithm -eq 'SHA256' }
+            Should -Invoke Install-UserPathEntry -Exactly -Times 1 -ParameterFilter {
+                ($Path -eq $script:wgetBin) -and $Prepend
+            }
+        }
+
+        It "rejects a hash mismatch without replacing an existing executable" {
+            New-Item -ItemType Directory -Path $script:wgetBin | Out-Null
+            Set-Content (Join-Path $script:wgetBin 'wget.exe') 'existing executable'
+            Mock Get-FileHash { @{ Hash = 'wrong hash' } }
+
+            { installWget $script:wgetStage $script:wgetBin } | Should -Throw '*SHA-256*'
+
+            Get-Content (Join-Path $script:wgetBin 'wget.exe') | Should -Be 'existing executable'
+            @(Get-ChildItem $script:wgetBin -File).Count | Should -Be 1
+            Should -Invoke Install-UserPathEntry -Exactly -Times 0
+        }
+
+        It "propagates download failures and removes partial downloads" {
+            Mock Invoke-WebRequest {
+                Set-Content -LiteralPath $OutFile -Value 'partial download'
+                throw 'download failed'
+            }
+
+            { installWget $script:wgetStage $script:wgetBin } | Should -Throw '*download failed*'
+
+            @(Get-ChildItem $script:wgetBin -File).Count | Should -Be 0
+            Should -Invoke Install-UserPathEntry -Exactly -Times 0
+        }
+    }
+}
+
 Describe "getClaudeInstaller" {
     BeforeAll {
         Import-Module "$PSScriptRoot/Installers.psd1" -Force

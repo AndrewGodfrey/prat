@@ -184,6 +184,37 @@ function installForkGitClient($stage) {
     }
 }
 
+function installWget(
+    $stage,
+    [string] $binDir = "$PSScriptRoot\..\..\auto\pathbin",
+    [bool] $Is64Bit = [Environment]::Is64BitOperatingSystem
+) {
+    $version = '1.25.0'
+    $architecture = if ($Is64Bit) { '64' } else { '32' }
+    # SHA-256 of the publisher's standalone binaries, verified 2026-10-28: https://eternallybored.org/misc/wget/
+    $hashes = @{
+        '64' = '28068376AAB98FF7747AE1792FCB902AADBADC3EF25CA0422724387984CBCD5D'
+        '32' = '2F4BF7037894C412368EEF9525612282D5DD3341EB4F38270363D5960AB57725'
+    }
+
+    $binDir = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($binDir)
+    Install-Folder $stage $binDir
+    $download = Join-Path $binDir "wget-$([guid]::NewGuid()).download"
+    try {
+        $stage.SetSubstage("download wget $version ($architecture-bit)")
+        Invoke-WebRequest -Uri "https://eternallybored.org/misc/wget/$version/$architecture/wget.exe" -OutFile $download -TimeoutSec 120 -ErrorAction Stop
+        $hash = (Get-FileHash -LiteralPath $download -Algorithm SHA256 -ErrorAction Stop).Hash
+        if ($hash -ne $hashes[$architecture]) {
+            throw "wget $version download failed SHA-256 verification: expected $($hashes[$architecture]), got $hash"
+        }
+        Move-Item -LiteralPath $download -Destination (Join-Path $binDir 'wget.exe') -Force -ErrorAction Stop
+    } finally {
+        if (Test-Path -LiteralPath $download) { Remove-Item -LiteralPath $download -Force -ErrorAction Stop }
+    }
+
+    Install-UserPathEntry $stage $binDir -Prepend
+}
+
 function isClaudeRunning() {
     return [bool](Get-Process claude -ErrorAction SilentlyContinue)
 }
@@ -460,10 +491,21 @@ $pratPackages = @{
             Install-WingetPackage $stage "Microsoft.WinDbg" "$env:localappdata\Microsoft\WindowsApps\WinDbgX.exe"
         }
     }
+    windowsTerminal = @{
+        check = { $null -ne (Get-AppxPackage -Name Microsoft.WindowsTerminal -ErrorAction Stop) }
+        install = {
+            $stage.SetSubstage("install Windows Terminal")
+            installPratWingetPackage "Microsoft.WindowsTerminal"
+            if ($null -eq (Get-AppxPackage -Name Microsoft.WindowsTerminal -ErrorAction Stop)) {
+                throw "Windows Terminal installation completed, but the app is not registered for the current user"
+            }
+        }
+    }
     winmerge = @{
         install = { internal_installWinmerge $stage }
     }
     wget = @{
+        installerVersion = '2.0'
         install = {
             # Windows Powershell (I'm not sure about Powershell) by default aliases 'wget' to Invoke-WebRequest. This sucks because:
             # 1. the very common use case, "wget <url>", behaves differently.
@@ -476,12 +518,8 @@ $pratPackages = @{
 
             # wget documentation: https://www.gnu.org/software/wget/manual/
 
-            installPratWingetPackage "JernejSimoncic.Wget"
-
-            # The winget package updates PATH
-            #
-            # On one machine but not the other, it also created a symlink here: C:\Users\xyz\AppData\Local\Microsoft\WinGet\Links\wget.exe
-            # Dunno what that's about!
+            # The WinGet manifest's 1.21.4 URL redirects to HTML; use the publisher's current binary with a pinned hash.
+            installWget $stage
         }
     }
 }
@@ -537,4 +575,3 @@ function Install-PratPackage($installationTracker, [string] $packageId, $package
     internal_installPratPackage $stage $packageId $packageArgs
     $installationTracker.EndStage($stage)
 }
-
