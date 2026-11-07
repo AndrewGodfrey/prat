@@ -132,6 +132,30 @@ Describe "Get-AgentRoles" {
         $roles.default.ContainsKey('repoAgents') | Should -BeFalse
     }
 
+    Context "everyRoleSkillGroups" {
+        It "gives every role the groups each layer names, on top of the role's own" {
+            $contribs = @(
+                @{ skillGroups = @{ core = @('git'); always = @('label') }; everyRoleSkillGroups = @('always') }
+                @{ skillGroups = @{ alsoAlways = @('remember') }; everyRoleSkillGroups = @('alsoAlways') }
+                @{ roles = @{ default = @{ skillGroups = @('core') }; bare = @{ skills = @('x') } } }
+            )
+
+            $roles = Get-AgentRoles -Contributions $contribs
+
+            $roles.default.skills | Should -Be @('git', 'label', 'remember')
+            $roles.bare.skills    | Should -Be @('x', 'label', 'remember')
+        }
+
+        It "throws when one names an unknown skillGroup" {
+            $contribs = @(
+                @{ everyRoleSkillGroups = @('nope') }
+                @{ roles = @{ default = @{ skills = @('x') } } }
+            )
+
+            { Get-AgentRoles -Contributions $contribs } | Should -Throw "*unknown skillGroup 'nope'*"
+        }
+    }
+
     Context "harness filtering" {
         It "drops skills whose skillHarnesses allowlist excludes the harness" {
             $contribs = @(

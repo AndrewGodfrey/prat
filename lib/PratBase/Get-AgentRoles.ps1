@@ -1,9 +1,11 @@
 # Resolve layered agent-role definitions into a flat per-role skill map.
 #
 # Each layer contributes a `lib/agents/roles_<layer>.ps1` returning
-#   @{ skillGroups = @{ <groupName> = @(<skill>...) }; skillHarnesses = @{ <skill> = @(<harness>...) }; roles = @{ <roleName> = @{ skillGroups=@(...); skills=@(...); repo=...; repoSkills=@(...); repoAgents=@(...); repoInstructions=@(...) } } }
+#   @{ skillGroups = @{ <groupName> = @(<skill>...) }; everyRoleSkillGroups = @(<groupName>...); skillHarnesses = @{ <skill> = @(<harness>...) }; roles = @{ <roleName> = @{ skillGroups=@(...); skills=@(...); repo=...; repoSkills=@(...); repoAgents=@(...); repoInstructions=@(...) } } }
 # Lower layers (prat) define skill groups; the top layer (de) composes roles from them.
 # Groups, harness maps, and roles merge base-first, so a higher layer wins on a name collision.
+# everyRoleSkillGroups accumulate across layers: a lower layer can give every role a group, whichever
+# roles the top layer composes.
 #
 # skillHarnesses is a partial blocklist for harness-specific skills. Harness names
 # are opaque strings to prat.
@@ -29,23 +31,26 @@ function Get-AgentRoles {
     $mergedGroups    = @{}
     $mergedRoles     = @{}
     $mergedHarnesses = @{}
+    $everyRoleGroups = @()
     foreach ($c in $Contributions) {
+        if ($c.everyRoleSkillGroups) { $everyRoleGroups += $c.everyRoleSkillGroups }
         if ($c.skillGroups)    { foreach ($k in $c.skillGroups.Keys)    { $mergedGroups[$k]    = $c.skillGroups[$k] } }
         if ($c.skillHarnesses) { foreach ($k in $c.skillHarnesses.Keys) { $mergedHarnesses[$k] = $c.skillHarnesses[$k] } }
         if ($c.roles)          { foreach ($k in $c.roles.Keys)          { $mergedRoles[$k]     = $c.roles[$k]  } }
+    }
+
+    function groupSkills([string] $roleName, [string] $g) {
+        if (-not $mergedGroups.ContainsKey($g)) { throw "Role '$roleName' references unknown skillGroup '$g'" }
+        $mergedGroups[$g]
     }
 
     $resolved = @{}
     foreach ($roleName in $mergedRoles.Keys) {
         $role = $mergedRoles[$roleName]
         $skills = @()
-        if ($role.skillGroups) {
-            foreach ($g in $role.skillGroups) {
-                if (-not $mergedGroups.ContainsKey($g)) { throw "Role '$roleName' references unknown skillGroup '$g'" }
-                $skills += $mergedGroups[$g]
-            }
-        }
+        foreach ($g in @($role.skillGroups | Where-Object { $_ })) { $skills += groupSkills $roleName $g }
         if ($role.skills) { $skills += $role.skills }
+        foreach ($g in $everyRoleGroups) { $skills += groupSkills $roleName $g }
         if ($Harness) {
             $skills = @($skills | Where-Object { -not $mergedHarnesses.ContainsKey($_) -or $Harness -in $mergedHarnesses[$_] })
         }
