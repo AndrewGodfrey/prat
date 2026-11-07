@@ -2,7 +2,7 @@
 name: windows-edit-recovery
 description: Use when an Edit call just failed (string-not-found), when undoing an edit you just
   made, or before bulk edits in a Windows-hosted (CRLF) repo — a token rename across files,
-  replace_all, or a large multi-line replacement.
+  replace_all, or a large multi-line replacement — and after any Edit whose old_string spans lines.
 ---
 
 CRLF line endings make Edit-tool string matching and pwsh text replacement unreliable. Known failure
@@ -26,6 +26,13 @@ being targets. If any occurrence should be left untouched, use targeted individu
 For multi-line string replacements in pwsh scripts, use `.IndexOf()` + `.Substring()` rather than
 `.Replace()` with multi-line literals. Single-quoted PS strings don't expand `` `r`n ``, so `.Replace()`
 silently fails on CRLF content. Index-based splicing is reliable regardless of line endings.
+
+The Edit tool can also report success while corrupting whitespace: when `old_string` spans a CRLF
+line break, the written replacement has gained a run of spaces mid-line (e.g. inside a string
+literal) and over-indented continuation lines. After any Edit whose `old_string` spans lines, check
+`git diff` for the file. If it's mangled, don't retry the same Edit — it reproduces the damage.
+Repair with a single-line `old_string`, or splice via `[IO.File]::ReadAllText` + a regex that
+matches `\r\n\s+` across the break.
 
 When replacing a large block of text in a Windows file (CRLF line endings), the Edit tool's
 string matching can fail even when the content looks correct — "String to replace not found."
