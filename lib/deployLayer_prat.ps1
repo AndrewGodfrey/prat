@@ -41,6 +41,7 @@ function instSchTasks($it) {
     $stage = $it.StartStage('schTasks')
 
     Install-DailyScheduledTask $stage "test" "Prat - test task" $PSScriptRoot\schtasks\daily_test.ps1 "1:08AM"
+    # This display name is also the name the task reports its results under (see daily_cleanManagedDirectories.ps1).
     Install-DailyScheduledTask $stage "cleanManagedDirectories" "Prat - Clean managed directories"  $PSScriptRoot\schtasks\daily_cleanManagedDirectories.ps1 "1:30AM"
     $onLogonScripts = & (Resolve-PratLibFile "lib/schtasks/Get-OnLogonScripts.ps1")
     if ($onLogonScripts.Count -gt 0) {

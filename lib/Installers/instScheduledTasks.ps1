@@ -1,3 +1,4 @@
+. $PSScriptRoot\..\schtasks\scheduledTaskResults.ps1
 
 # Note: DisplayName is limited. e.g. spaces and dashes are allowed, but colons are not.
 function Add-ScriptScheduledTask($displayName, $scriptFile, $trigger) {
@@ -40,4 +41,23 @@ function Install-AtLogonScheduledTask($stage, $taskId, $displayName, $scriptFile
         Add-ScriptScheduledTask $displayName $scriptFile $trigger
         $stage.SetStepComplete("schTasks\$taskId")
     }
+}
+# For a migration step that removes a task installed by Install-DailyScheduledTask / Install-AtLogonScheduledTask.
+# Also removes its recorded result (else it would alert as stale forever), and clears its install step so that
+# re-adding the install line later registers it again.
+function Uninstall-ScheduledTask($stage, $taskId, $displayName, [string] $ResultDir) {
+    if (Get-ScheduledTask -TaskName $displayName -ErrorAction SilentlyContinue) {
+        $stage.OnChange()
+        Unregister-ScheduledTask -TaskName $displayName -Confirm:$false -ErrorAction Stop
+        # Verified for the same reason as in Add-ScriptScheduledTask.
+        if (Get-ScheduledTask -TaskName $displayName -ErrorAction SilentlyContinue) {
+            throw "Failed to remove scheduled task '$displayName'."
+        }
+    }
+
+    $resultArgs = @{ TaskName = $displayName }
+    if ($ResultDir) { $resultArgs.ResultDir = $ResultDir }
+    if (Remove-ScheduledTaskResult @resultArgs) { $stage.OnChange() }
+
+    if ($stage.GetIsStepComplete("schTasks\$taskId")) { $stage.ClearManualStep("schTasks\$taskId") }
 }

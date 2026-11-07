@@ -46,6 +46,16 @@ pratProfile_trace start "Set window title"
 pratSetWindowTitle
 pratProfile_trace end "Set window title"
 
+# Only in an interactive REPL: a tool/subprocess launches pwsh with one of these switches, and its output isn't read by a person.
+if (-not ([Environment]::GetCommandLineArgs() -match '^-(c|Command|e|ec|EncodedCommand|f|File)$')) {
+    # A bug here must not break shell startup.
+    try {
+        . $PSScriptRoot\..\schtasks\scheduledTaskResults.ps1
+        Write-ScheduledTaskAlerts
+    } catch { Write-Warning "Couldn't check scheduled task results: $_" }
+    pratProfile_trace done "Scheduled task alerts"
+}
+
 # For 'prompt' function: Call a hook script if the current location has changed
 function pratDetectLocationChange {
     $location = (Get-Location).Path

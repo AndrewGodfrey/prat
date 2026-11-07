@@ -45,6 +45,10 @@ Migration step pattern: call `$stage.NoteMigrationStep((Get-Date "YYYY-MM-DD"))`
 then use idempotent checks (e.g. `if (Test-Path ...)`) before making changes. The framework warns
 after 30 days — signal to remove the step.
 
+To remove a scheduled task, the step's change is `Uninstall-ScheduledTask $stage <taskId> <displayName>` (same
+arguments as its `Install-*ScheduledTask` call). It's idempotent, and it also removes the task's recorded result,
+which would otherwise alert as stale at every shell start.
+
 ## Repo registry merge semantics
 
 `Get-PratRepoIndex` (`lib/PratBase/pratRepos.ps1`) merges same-id repo entries across

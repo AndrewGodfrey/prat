@@ -76,7 +76,7 @@ FunctionsToExport = @(
 	'ConvertTo-DeepOrdered', 'Merge-DeepHashtable', 'Install-JsonToFile',
     'Install-SoftLinkToFile', 'Install-DirectoryJunction',
 	'Install-RegistryKey', 'Install-RegistryDwordValue', 'Install-RegistryStringValue', 'Install-RegistryBinaryValue',
-    'Install-DailyScheduledTask', 'Install-AtLogonScheduledTask',
+    'Install-DailyScheduledTask', 'Install-AtLogonScheduledTask', 'Uninstall-ScheduledTask',
 	'Install-InteractiveAlias', 'Remove-InteractiveAlias',
     'Get-DotnetSdkRequirement',
 	'Install-PratPackage', 'Set-ClaudePinnedVersion',
