@@ -36,6 +36,7 @@ commit.
 
 Prefer single-line commit messages. Depart only when it's important. Follow the pattern
 "verb + what you changed", with an optional prefix for context about where the change was made.
+Leave out the why: that belongs in the code (naming, structure, comments) or design docs.
 
 Examples:
 ```
