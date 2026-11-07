@@ -601,6 +601,10 @@ get a trailing `/`, so `"$realTestDrive/subdir"` becomes `...//subdir`. This sil
 matching when other tools (git, `Resolve-Path`) normalize to single slashes. Always trim:
 `((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')`.
 
+**`Set-Content -LiteralPath 'TestDrive:\x\f.txt'` writes to `C:\x\f.txt`** (`-Path` resolves correctly), and
+the resulting error is non-terminating. In code under test, resolve the directory to a provider path first,
+e.g. `(New-Item -ItemType Directory $dir -Force).FullName`.
+
 **Bare top-level code (outside any `Describe`/`BeforeAll`) only runs during discovery**, not during
 the run phase. A helper `function` defined at the top of the file, outside `Describe`, exists during
 discovery but is gone by the time `It` blocks execute — `CommandNotFoundException`. Move such helpers
