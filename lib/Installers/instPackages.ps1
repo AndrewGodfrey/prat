@@ -79,6 +79,16 @@ function installPratWingetPackage([string] $wingetPackageId, [switch] $MachineSc
     throw "winget failed. error code: $lastExitCode$errorName" # https://github.com/microsoft/winget-cli/blob/master/doc/windows/package-manager/winget/returnCodes.md
 }
 
+# Queries via Windows PowerShell: Appx fails to import in PowerShell Core on some machines (seen: Windows 10 22H2, pwsh 7.6, PlatformNotSupportedException).
+function testAppxPackageRegistered([string] $name) {
+    $registered = powershell.exe -NoProfile -NonInteractive -Command {
+        param($n)
+        [bool](Get-AppxPackage -Name $n -ErrorAction Stop)
+    } -args $name
+    if ($LASTEXITCODE -ne 0) { throw "Get-AppxPackage query for '$name' failed (exit $LASTEXITCODE)" }
+    $registered
+}
+
 function internal_installDitto($stage) {
     # Installs Ditto (a clipboard manager). What I like about it:
     # - Ctrl-Shift-V to paste without formatting (to any app, not just ones that have this feature)
@@ -492,11 +502,11 @@ $pratPackages = @{
         }
     }
     windowsTerminal = @{
-        check = { $null -ne (Get-AppxPackage -Name Microsoft.WindowsTerminal -ErrorAction Stop) }
+        check = { testAppxPackageRegistered 'Microsoft.WindowsTerminal' }
         install = {
             $stage.SetSubstage("install Windows Terminal")
             installPratWingetPackage "Microsoft.WindowsTerminal"
-            if ($null -eq (Get-AppxPackage -Name Microsoft.WindowsTerminal -ErrorAction Stop)) {
+            if (-not (testAppxPackageRegistered 'Microsoft.WindowsTerminal')) {
                 throw "Windows Terminal installation completed, but the app is not registered for the current user"
             }
         }

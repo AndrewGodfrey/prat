@@ -248,9 +248,7 @@ Describe "Windows Terminal package" {
     InModuleScope Installers {
         BeforeEach {
             $script:terminalInstalled = $false
-            Mock Get-AppxPackage {
-                if ($script:terminalInstalled) { [pscustomobject]@{ Name = 'Microsoft.WindowsTerminal' } }
-            }
+            Mock testAppxPackageRegistered { $script:terminalInstalled }
             Mock installPratWingetPackage { $script:terminalInstalled = $true }
             Mock Write-Host {}
             Mock Write-Progress {}
@@ -270,8 +268,8 @@ Describe "Windows Terminal package" {
             Should -Invoke installPratWingetPackage -Exactly -Times 1 -ParameterFilter {
                 $wingetPackageId -eq 'Microsoft.WindowsTerminal'
             }
-            Should -Invoke Get-AppxPackage -Exactly -Times 2 -ParameterFilter {
-                $Name -eq 'Microsoft.WindowsTerminal'
+            Should -Invoke testAppxPackageRegistered -Exactly -Times 2 -ParameterFilter {
+                $name -eq 'Microsoft.WindowsTerminal'
             }
         }
 
@@ -295,6 +293,28 @@ Describe "Windows Terminal package" {
 
             { Install-PratPackage $script:terminalTracker 'windowsTerminal' } |
                 Should -Throw '*Terminal installation failed*'
+        }
+    }
+}
+
+Describe "testAppxPackageRegistered" {
+    BeforeAll {
+        Import-Module "$PSScriptRoot/Installers.psd1" -Force
+    }
+
+    InModuleScope Installers {
+        It "returns true when a matching package is registered for the current user" {
+            testAppxPackageRegistered '*' | Should -BeTrue
+        }
+
+        It "returns false when no matching package is registered" {
+            testAppxPackageRegistered 'NoSuch.Package.ForPratTests' | Should -BeFalse
+        }
+
+        It "throws when the Windows PowerShell query fails" {
+            Mock powershell.exe { $global:LASTEXITCODE = 1 }
+
+            { testAppxPackageRegistered 'Some.Package' } | Should -Throw "*'Some.Package'*failed*"
         }
     }
 }
