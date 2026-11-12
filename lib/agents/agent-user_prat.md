@@ -54,8 +54,8 @@ See the `testing` skill for more detail. Assume all repos are pratified — use 
 either in its own `AGENTS.md` (e.g. `**Pratified:** No`) or in the user's personal instructions
 (for repos where editing `AGENTS.md` isn't possible).
 
-When context is compacted/summarized, record the state of each test run (not yet run / verified red /
-verified green) alongside file changes. These are distinct states with different implications.
+Record the state of each test run (not yet run / verified red / verified green) alongside file changes
+as it changes, since compaction can happen without warning. These are distinct states with different implications.
 
 There is no such thing as "indirect" test coverage: a coverage tool only reports a line as covered
 if it actually executed, so a function every test replaces with a mock is uncovered, regardless of
