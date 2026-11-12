@@ -181,6 +181,29 @@ function Install-RoleDirGitRepo($stage, [string] $roleDir) {
             '*'
         ) -join "`n" | Set-Content -LiteralPath $gitignore -Encoding utf8NoBOM
     }
+    Install-RoleDirWorktreeBlocker $stage $roleDir
+}
+
+# Block 'git worktree add' in a role dir by making .git/worktrees a file. The role repo has no commits
+# and ignores everything, so a worktree of it is empty and the role's skills don't load there. Harnesses
+# that offer worktree sessions (e.g. the Copilot app) then fail at creation instead of starting a session
+# with no skills.
+function Install-RoleDirWorktreeBlocker($stage, [string] $roleDir) {
+    $worktrees = Join-Path $roleDir '.git/worktrees'
+    if (Test-Path -LiteralPath $worktrees -PathType Leaf) { return }
+    if (Test-Path -LiteralPath $worktrees -PathType Container) {
+        if (Get-ChildItem -LiteralPath $worktrees -Force) {
+            Write-Warning ("Not blocking worktrees in '$roleDir': it has live worktrees. Remove them " +
+                "(e.g. archive their sessions, then 'git worktree prune') and redeploy.")
+            return
+        }
+        $stage.OnChange()
+        Remove-Item -LiteralPath $worktrees -Force
+    } else {
+        $stage.OnChange()
+    }
+    'disabled: role dirs block worktrees (see Install-RoleDirWorktreeBlocker in prat)' |
+        Set-Content -LiteralPath $worktrees -Encoding utf8NoBOM
 }
 
 # Install Claude Code agents or commands from a flat directory of .md files into a target

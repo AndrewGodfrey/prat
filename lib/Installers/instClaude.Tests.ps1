@@ -626,4 +626,50 @@ Describe "Install-AgentRoles" {
             Get-Content "$destParent\default\.gitignore" | Should -Be 'sentinel'
         }
     }
+
+    Context "worktree blocking" {
+        It "replaces .git/worktrees with a file, so 'git worktree add' fails" {
+            newSkill $pratSrc 'test'
+
+            Install-AgentRoles $stage @{ default = @{ skills = @('test') } } $destParent -skillSources @($pratSrc)
+
+            "$destParent\default\.git\worktrees" | Should -Exist
+            (Get-Item "$destParent\default\.git\worktrees") | Should -BeOfType [System.IO.FileInfo]
+            git -C "$destParent\default" worktree add --orphan "$testDir\wt" 2>&1 | Out-Null
+            $LASTEXITCODE | Should -Not -Be 0
+            "$testDir\wt\.git" | Should -Not -Exist
+        }
+
+        It "replaces an empty .git/worktrees dir" {
+            newSkill $pratSrc 'test'
+            mkdir "$destParent\default\.git\worktrees" -Force | Out-Null
+
+            Install-AgentRoles $stage @{ default = @{ skills = @('test') } } $destParent -skillSources @($pratSrc)
+
+            (Get-Item "$destParent\default\.git\worktrees") | Should -BeOfType [System.IO.FileInfo]
+        }
+
+        It "leaves an existing blocker file alone" {
+            newSkill $pratSrc 'test'
+            mkdir "$destParent\default\.git" -Force | Out-Null
+            "sentinel" | Out-File "$destParent\default\.git\worktrees" -Encoding utf8NoBOM
+            "x" | Out-File "$destParent\default\.gitignore" -Encoding utf8NoBOM
+
+            Install-AgentRoles $stage @{ default = @{ skills = @('test') } } $destParent -skillSources @($pratSrc)
+
+            Get-Content "$destParent\default\.git\worktrees" | Should -Be 'sentinel'
+        }
+
+        It "warns and keeps a .git/worktrees dir that holds live worktrees" {
+            newSkill $pratSrc 'test'
+            mkdir "$destParent\default\.git\worktrees\some-wt" -Force | Out-Null
+
+            $warnings = @(Install-AgentRoles $stage @{ default = @{ skills = @('test') } } $destParent -skillSources @($pratSrc) 3>&1 |
+                Where-Object { $_ -is [System.Management.Automation.WarningRecord] })
+
+            "$destParent\default\.git\worktrees\some-wt" | Should -Exist
+            $warnings | Should -HaveCount 1
+            "$warnings" | Should -BeLike '*worktree*'
+        }
+    }
 }
