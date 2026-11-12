@@ -101,7 +101,8 @@ unit) and `-Refined` after a renumber.
 A run spent working the steps out — restructuring what's left, splitting one, changing direction —
 has no `/wrap`: `/wrap` is approval to move on from a unit, and such a run may have refined nothing.
 It writes the pointer and `refined` through `Set-PlanState` as it goes, and ends when the shape is
-right.
+right. A request to "discuss" a plan asks for this kind of run: talk it through, take session notes as
+needed, and edit the plan file as decisions land. Executing the plan's steps is out of scope.
 
 ## Companion files
 
