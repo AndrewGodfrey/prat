@@ -165,6 +165,9 @@ Compounding trap: a `param()` type constraint persists on the variable, so `$par
 dead. Both failures are silent. Give loop locals distinct names, and don't null-guard a variable
 carrying a value-type constraint.
 
+Dot-sourcing a script in a Pester `BeforeAll` also binds its `param()` names (e.g. `$PipelineProfile`)
+in that scope, shadowing a test variable of the same name in any casing; give test variables distinct names.
+
 Pester 5's `Invoke-InNewScriptScope` dot-sources a wrapper with `$private:p` and `$private:d` in the
 caller's session state, overwriting caller variables with those names; ordinary module-local
 variables do not. Avoid `$p` and `$d` across `Invoke-Pester`, and resolve file targets to absolute
@@ -586,6 +589,7 @@ the command was never called.
 **`Should -Invoke X -Times N` without `-Exactly` means "at least N," not "exactly N."** A regression
 test asserting a call happens only once (e.g. proving something is gated/cached) silently passes
 even when the code under test calls it twice — add `-Exactly` to actually assert the count.
+The count covers every call in the `It` (default `-Scope It`), including calls made by setup steps earlier in it.
 
 **`-BeNull` is null-or-empty, not strict `$null`.** It's a real operator (Pester
 prefix-matches it to `BeNullOrEmpty`), so `$null | Should -BeNull`, `'' | Should -BeNull`, and `@() |`
