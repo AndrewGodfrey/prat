@@ -33,7 +33,13 @@ function Set-PratBinPaths {
     $now = [datetime]::UtcNow
     $entries = @()
     if (Test-Path -LiteralPath $CacheFile) {
-        $cache = Get-Content -LiteralPath $CacheFile -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        # The cache is only an optimization, and concurrent shell startups can catch it mid-replace or truncated.
+        # Treat any read or parse failure as a miss.
+        try {
+            $cache = Get-Content -LiteralPath $CacheFile -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        } catch {
+            $cache = $null
+        }
         if ($cache.Version -eq 2) {
             $entries = @($cache.Entries | Where-Object { [datetime]$_.CreatedUtc -gt $now.AddDays(-7) })
         }
@@ -63,13 +69,13 @@ function Set-PratBinPaths {
     $CacheFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($CacheFile)
     $null = [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($CacheFile))
     $temporaryFile = "$CacheFile.$([guid]::NewGuid()).tmp"
+    # $env:Path is already set, so a failed cache write (e.g. another shell holding the file) only costs a future miss.
     try {
         $cache | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $temporaryFile -Encoding utf8NoBOM -ErrorAction Stop
         [IO.File]::Move($temporaryFile, $CacheFile, $true)
+    } catch {
     } finally {
-        if (Test-Path -LiteralPath $temporaryFile) {
-            Remove-Item -LiteralPath $temporaryFile -ErrorAction Stop
-        }
+        Remove-Item -LiteralPath $temporaryFile -ErrorAction Ignore
     }
 }
 

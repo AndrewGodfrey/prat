@@ -149,6 +149,34 @@ Describe 'Set-PratBinPaths' {
 
         Should -Invoke Resolve-JunctionInPath -Exactly -Times 2 -ParameterFilter { $path -eq 'C:\input1\bin' }
     }
+
+    It 'treats an unreadable cache as a miss and rewrites it' {
+        Set-Content -LiteralPath $script:cacheFile -Value '{ truncated'
+        $env:Path = 'C:\first\bin'
+
+        Set-PratBinPaths -CacheFile $script:cacheFile
+
+        $env:Path | Should -Be "C:\first\bin;C:\junction\prat\pathbin;$home\prat\auto\pathbin"
+        $cache = Get-Content -LiteralPath $script:cacheFile -Raw | ConvertFrom-Json
+        @($cache.Entries.InputPath) | Should -Be @('C:\first\bin')
+    }
+
+    It 'still sets PATH when another process holds the cache open and blocks replacing it' {
+        $env:Path = 'C:\first\bin'
+        Set-PratBinPaths -CacheFile $script:cacheFile
+        $before = Get-Content -LiteralPath $script:cacheFile -Raw
+        $env:Path = 'C:\second\bin'
+        $handle = [IO.File]::Open($script:cacheFile, 'Open', 'Read', 'Read')
+        try {
+            Set-PratBinPaths -CacheFile $script:cacheFile
+        } finally {
+            $handle.Dispose()
+        }
+
+        $env:Path | Should -Be "C:\second\bin;C:\junction\prat\pathbin;$home\prat\auto\pathbin"
+        (Get-Content -LiteralPath $script:cacheFile -Raw) | Should -BeExactly $before
+        @(Get-ChildItem -LiteralPath $TestDrive -Filter '*.tmp') | Should -HaveCount 0
+    }
 }
 
 Describe 'addJunctionPath' {
