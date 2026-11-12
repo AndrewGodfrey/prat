@@ -140,10 +140,12 @@ correlation.
 
 After proposing a code fix, consider what else it affects beyond the target problem.
 
-When investigating whether your changes caused pipeline failures, enumerate all non-feature-gated
-changes (DI registrations, constructor params, interface additions, config) before concluding
-failures are unrelated. Feature-gate reasoning alone is insufficient — startup and wiring changes
-affect every code path.
+When investigating whether your changes caused test failures (pipeline, deployed environment, or
+unit), enumerate all non-feature-gated changes (DI registrations, constructor params, interface
+additions, config) before concluding failures are unrelated. Feature-gate reasoning alone is
+insufficient — startup and wiring changes affect every code path. Likewise, a failure that also
+occurs on a baseline isn't discountable on that alone: also assess whether the coverage it masks
+bears on your change, and state that reasoning wherever you report the failure as discounted.
 
 When challenged on a causal hypothesis (e.g. "you made the edit while I was responding"), don't
 restate it — either produce evidence or investigate. Repeating an unverified claim after pushback
