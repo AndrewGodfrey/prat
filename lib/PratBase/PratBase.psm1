@@ -281,6 +281,7 @@ function Invoke-PesterAsJob {
 . $PSScriptRoot\Resolve-JunctionInPath.ps1
 . $PSScriptRoot\pratRepos.ps1
 . $PSScriptRoot\Get-AgentRoles.ps1
+. $PSScriptRoot\Get-AgentSkillSources.ps1
 . $PSScriptRoot\Sync-RepoSkillJunctions.ps1
 . $PSScriptRoot\Sync-RoleAgents.ps1
 . $PSScriptRoot\Get-DevToolPath.ps1

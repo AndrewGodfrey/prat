@@ -114,8 +114,8 @@ function Install-ClaudeSkillSet($stage, $sources, [string] $destDir) {
 
 # Deploy per-role skill dirs to <destParent>/<roleName>/.claude/skills/, and make each role dir a
 # git repo (see Install-RoleDirGitRepo).
-# Skill sources are discovered from the installed layers (prat -> prefs -> de); each role's skills
-# are grouped by the source dir that provides them and handed to Install-ClaudeSkillSet.
+# Skill sources come from Get-AgentSkillSources; each role's skills are grouped by the source dir
+# that provides them and handed to Install-ClaudeSkillSet.
 # Throws if a role names a skill that no source provides (catches typos and source drift).
 # Role dirs under $destParent that aren't in $roles are removed.
 #
@@ -123,13 +123,7 @@ function Install-ClaudeSkillSet($stage, $sources, [string] $destDir) {
 # Test seam: -skillSources injects the base-first source dir list (normally discovered from the layers).
 function Install-AgentRoles($stage, [hashtable] $roles, [string] $destParent = "$home/agentRoles", [string[]] $skillSources) {
     if (-not $PSBoundParameters.ContainsKey('skillSources')) {
-        # Skill source dirs in base-first order (prat -> prefs -> de)
-        $layers = @(Get-CodebaseLayers)
-        [array]::Reverse($layers)
-        $skillSources = @($layers | ForEach-Object {
-            $dir = Join-Path $_.Path 'lib/agents/skills'
-            if (Test-Path $dir) { $dir }
-        } | Where-Object { $_ })
+        $skillSources = @(Get-AgentSkillSources)
     }
 
     foreach ($roleName in $roles.Keys) {
