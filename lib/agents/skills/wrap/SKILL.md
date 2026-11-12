@@ -43,6 +43,11 @@ Set-PlanState -PlanFile <active plan> -State ready-to-implement
 
 ## `ready-for-user-review` → close the unit
 
+Load `pr-workflow` to resolve the effective publication policy by combining each source repository's
+policy with the user's per-repository policy. Its PR
+tracking instructions replace the completed-unit destination below for work awaiting a PR merge.
+Work covered by a direct-commit policy uses the done-file destination below.
+
 `/ready-for-user-review` already ran the wrap list and any inline step requirements before recording this
 state — don't re-run them here.
 

@@ -4,7 +4,7 @@ description: Use when creating or restructuring a working-coordination plan file
   iterative-work plan shared by user + agent, with no audience beyond them.
 ---
 
-For published plans (design docs, roadmaps, deliverable plans), don't apply this format; 
+For published plans (design docs, roadmaps, deliverable plans), don't apply this format;
 ask the user about structure instead.
 
 A working-coordination plan file should be action-focused — easy to update, easy to resume from.
@@ -12,6 +12,10 @@ The format here is for plans the user and agent iterate on together and discard 
 is done; it's not appropriate for plans intended for a wider audience.
 
 ## Before creating: search for overlapping plans
+
+Load `pr-workflow` to resolve the effective publication policy by combining each source repository's
+policy with the user's per-repository policy before choosing the plan structure.
+Apply its "In review" section only to work requiring pull requests.
 
 Search the plans directory the new file is going into — all subdirectories except `done/` — for the
 new plan's key terms. Note real overlaps in the new plan as a short "Related plans" list. If the new
@@ -67,7 +71,7 @@ close of every step, since the user isn't there to. That closing `/wrap` still r
 code changes even in `branch-review`, where nobody has reviewed a diff yet — the review happens across
 the whole branch afterward instead, so a fix landing here would still reach the user unreviewed.
 
-There is no `## Next step:` heading in this format; the frontmatter pointer replaces it. 
+There is no `## Next step:` heading in this format; the frontmatter pointer replaces it.
 (Older plans may still have the heading, or the older single-pointer `current-step` shape — treat
 either as the pointer, migrate it into `current-unit` frontmatter via the script, and delete any
 leftover heading.)

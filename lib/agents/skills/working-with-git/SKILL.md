@@ -9,6 +9,11 @@ description: Use before using git to make state changes, e.g. before using git t
 This user monitors changes via a git GUI client. This not only visualizes agent changes well, but also
 catches e.g. tests that created files in the wrong place.
 
+Before choosing how to publish changes, load `pr-workflow` and resolve the effective publication
+policy by combining the actual source repository's policy with the user's per-repository policy.
+The agent role does not determine whether changes need a PR.
+That policy does not grant permission for the git operations governed below.
+
 ## If we're not in a development branch
 
 i.e. we're currently on 'main' or 'master': by default, the user expects you to use git only for

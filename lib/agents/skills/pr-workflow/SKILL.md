@@ -1,11 +1,34 @@
 ---
 name: pr-workflow
-description: Use when working on a project where changes are submitted via pull request rather
-  than committed directly — e.g. an external repo like llamacpp. Modifies wrap and plan-format
-  behavior to track the PR lifecycle.
+description: Use before creating a working plan or closing completed work to combine repository
+  and user per-repository publication policies. Defaults to pull requests, with explicit
+  direct-commit exceptions. Modifies wrap and plan-format behavior for work requiring PRs.
 ---
 
-This skill adds a PR tracking layer on top of the base `wrap` and `plan-format` behavior.
+## Resolve effective publication policy
+
+Determine policy for the current contributor in each source repository being changed, independently
+of the agent role or the directory holding the plan/session. Combine the repository's publication
+policy (`AGENTS.md` / `CLAUDE.md`) with the user's per-repository policy from personal or explicit
+instructions to resolve the effective publication policy for these changes. A contributor-specific exception
+applies only to that contributor's changes; it does not change the workflow for external contributions.
+If requirements conflict without an applicable explicit exception, ask the user to resolve the conflict.
+When neither policy specifies a workflow, default to pull requests.
+
+An explicit direct-commit policy (including a wiki-like documentation workflow) uses the base
+`wrap` and `plan-format` behavior; the PR modifications below do not apply to the covered changes.
+Do not infer a direct-commit exception merely because a repository contains documentation.
+For multi-repository work, track PRs only for changes whose effective policy requires them.
+
+If a unit mixes work requiring PRs with work covered by a direct-commit policy, keep one entry in "In review"
+until all required PRs merge. Record the direct-commit changes in that entry too; do not copy
+the unit into both "In review" and `_done.md`.
+
+Publication policy does not authorize staging, committing, pushing, or creating a PR. Follow
+the user's authorization for those operations separately.
+
+For work requiring PRs, this skill adds a PR tracking layer on top of the base `wrap` and
+`plan-format` behavior.
 
 ## Modification to `wrap`
 
@@ -29,7 +52,7 @@ The step stays in "In review" until the PR merges. Once it lands, tell the agent
 
 ## Modification to `plan-format`
 
-Plans for PR-workflow projects have an additional section:
+Plans containing work requiring PRs have an additional section:
 
 **In review** — steps where coding is done but the PR is still in flight. Each entry has a
 checklist tracking post-coding work. `/wrap` moves steps here; `/land-step` moves them to
@@ -44,7 +67,7 @@ checklist tracking post-coding work. `/wrap` moves steps here; `/land-step` move
 Delete inapplicable checklist items rather than leaving them unchecked.
 
 Steps move: active plan → **In review** (via `/wrap`) → `_done.md` (via `/land-step`).
-In non-PR projects they move: active plan → `_done.md` (via `/wrap`) directly.
+For work covered entirely by a direct-commit policy, they move: active plan → `_done.md` (via `/wrap`) directly.
 
 ## `/land-step` user command
 
