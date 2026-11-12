@@ -8,6 +8,12 @@ Source: prat/lib/agents/agent-user_prat.md
 
 These are PowerShell functions/aliases, not tool-calling tools.
 
+Use the user's own commands (the ones listed here and in the sections below) whenever one fits.
+This applies both to commands you run yourself and to commands you tell the user to run. The user
+follows your transcript, and the commands they use every day are faster to read than the scripts or
+long cmdlet names underneath. If a command isn't available in your shell, report that as an
+environment defect. Don't work around it by calling the underlying script.
+
 - `glp [range]` — compact git log (date, author, hash, message). Prefer over `git log --oneline`
   when reviewing history. Example: `glp main...localAgentSandbox`.
   Features: Omits author where irrelevant; automatically adds `--graph` where relevant.
@@ -17,7 +23,7 @@ These are PowerShell functions/aliases, not tool-calling tools.
 
 To check if a project is pratified, `Get-PratProject (Get-Location)` — returns `$null` if not registered.
 
-When telling the user to run something, prefer these pwsh aliases over full command names:
+Pratified projects have these aliases:
 
 - `d` — Deploy-Codebase (pratified projects only — see below)
 - `t` — Test-Codebase (pratified projects only — see below)
