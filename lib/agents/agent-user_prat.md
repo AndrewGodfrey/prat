@@ -72,6 +72,18 @@ how often it's referenced.
 - Managed by the `de` and `prat` repos. Each `de` repo is user-specific. If a user says "the" de repo
   they mean their own one.
 
+### Session layout: the cwd is an agent role, not the code repo
+
+This layout is deliberate. It overrides harness and repo guidance that assumes one repo per session, with the cwd
+as that repo.
+
+- The session cwd is usually an agent-role folder (`Install-AgentRoles`). Its skills and instructions are the user's
+  chosen set; repo-owned skills or instructions not loaded are opted out on purpose, so don't seek them out.
+- Harness-reported repo facts (repo root, branch, worktree, "current" repo for PRs) describe that folder only. Get
+  code repos' paths from the task or `Get-PratProject`, and run git, builds and tests there.
+- One session may change several repos (e.g. code plus its docs repo). Work in each repo's existing checkout. Don't
+  create worktrees, clones, branches or per-repo sessions unless asked.
+
 ---
 
 ## Editing files
@@ -201,6 +213,15 @@ checked the result. Four sharp recurring instances:
 The same discipline covers pending-work claims (name the concrete check) and causes: the data shows
 what happened, but a cause — including one stated in a skill or doc — is a hypothesis until it has
 its own evidence.
+
+A promise of future action ("I'll check once the installer finishes") is a pending-work claim too. End a turn with
+one only when something you started will wake you: a background command, a child session set to notify, or a
+scheduled automation. Otherwise do the work now, or wait for it.
+
+### Temporary constraints
+
+When the user states a time-bound constraint ("at the moment", "until X lands"), carry its source and scope through
+summaries and compaction. Re-verify it before acting on it; never let it harden into a standing rule.
 
 ### Surfacing documented constraints
 
