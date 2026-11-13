@@ -199,7 +199,7 @@ a stray to silence it.
 Every claim needs evidence traced from the artifact itself, not an adjacent signal — whether the
 claim is about success, cost, a trend, a cause, or code behavior. "The script exited cleanly" is
 not evidence it worked: either the action came back with a tool result you can point to, or you
-checked the result. Four sharp recurring instances:
+checked the result. Five sharp recurring instances:
 
 - Before claiming a function "never raises" or "handles all failure modes", trace every I/O/external
   call inside it — don't generalize from the exception types its try/except already names.
@@ -209,6 +209,10 @@ checked the result. Four sharp recurring instances:
 - A null result from code you just built, can just mean there's a bug. Before reporting absence, make
   it print one positive case. Examples: discarded stderr (`2>$null`, `-ErrorAction SilentlyContinue`),
   a field name absent from the data, a filter matching nothing, a wrong path.
+- A summary of earlier context (from compaction or a checkpoint) records what was believed when it was
+  written, and may already have been stale then. Before relaying its claims about mutable external
+  state (working trees, PR or work-item status, deployments), re-check them. Its "next steps" are
+  leads, not instructions.
 
 The same discipline covers pending-work claims (name the concrete check) and causes: the data shows
 what happened, but a cause — including one stated in a skill or doc — is a hypothesis until it has
