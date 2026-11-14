@@ -21,6 +21,21 @@ BeforeAll {
 }
 
 Describe "Open-Workspace" {
+    It "makes the resolved project available to a registry workspace scriptblock" {
+        Mock Write-Host {}
+        $checkoutRoot = (Get-Item 'TestDrive:\').FullName.TrimEnd('\')
+        $profileFile = Join-Path $checkoutRoot 'codebaseProfile_test.ps1'
+        "@{ '.' = @{ repos = @{ myrepo = @{ root = '$checkoutRoot'; workspace = { `$project.root } } } } }" |
+            Set-Content $profileFile
+        Mock Get-RepoProfileFiles -ModuleName PratBase { @($profileFile) }
+
+        $workspaceProject = Get-PratProject $checkoutRoot
+        $workspaceProject.id | Should -Be 'myrepo'
+        Mock Get-PratProject { $workspaceProject }
+
+        Open-Workspace | Should -Be $checkoutRoot
+    }
+
     It "runs the given script with a temporary environment" {
         Mock Write-Host {}
         $prev = pushTestEnvironment

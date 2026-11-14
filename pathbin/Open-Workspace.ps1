@@ -6,6 +6,7 @@
 # .NOTES
 # With no params, opens the default workspace for the repo / project.
 # Given a script, runs it. 
+# Workspace scriptblocks can use $project to access the selected project.
 # Given a file, launches it.
 # 
 # .EXAMPLE
@@ -65,7 +66,7 @@ if ($workspace -is [ScriptBlock]) {
     try {
         appendContextPath $project.cachedEnvDelta $project.id
         Write-Host -ForegroundColor Green $Description
-        Invoke-CommandWithCachedEnvDelta $workspace $project.cachedEnvDelta
+        Invoke-CommandWithCachedEnvDelta ($workspace.GetNewClosure()) $project.cachedEnvDelta
     } finally {
         $env:__prat_contextPath = $savedContextPath
     }
