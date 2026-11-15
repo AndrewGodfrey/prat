@@ -15,6 +15,12 @@ Describe "Get-ProjectTestOutputDir" {
         Get-ProjectTestOutputDir $project | Should -Be "C:/myrepo/auto/testRuns/myproject"
     }
 
+    It "uses the project's declared testOutputDir when it has one" {
+        $project = @{ root = "C:/does-not-exist"; id = "myproject"; repo = @{ root = "C:/myrepo" }; testOutputDir = "C:\elsewhere\runs" }
+
+        Get-ProjectTestOutputDir $project | Should -Be "C:/elsewhere/runs"
+    }
+
     It "falls back to the git toplevel (via Get-ProjectRepoRoot) when there is no parent repo" {
         $root = (Get-Item "TestDrive:\").FullName.TrimEnd('\').Replace('\', '/')
         New-Item -ItemType Directory "$root/gitRepo/standalone" -Force | Out-Null

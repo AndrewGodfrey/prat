@@ -233,6 +233,36 @@ Describe "default coverageFile inference" {
             Should -Be @('src/Fresh.ps1')
     }
 
+    It "reads coverage from the project's declared testOutputDir" {
+        $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
+        $repoDir = "$realTestDrive/gcr-declaredoutput"
+        $outputDir = "$realTestDrive/elsewhere/testRuns/mysuite"
+        New-Item -ItemType Directory -Path $repoDir | Out-Null
+        git init $repoDir --quiet | Out-Null
+
+        function Get-PratProject { param($Location) @{ id = 'myrepo'; root = $repoDir; testOutputDir = $outputDir } }
+
+        New-Item -ItemType Directory -Path "$outputDir/last" -Force | Out-Null
+        @"
+<report name="test">
+<package name="$repoDir/src">
+  <class name="$repoDir/src/Declared" sourcefilename="Declared.ps1">
+    <method name="&lt;script&gt;" desc="()" line="1">
+      <counter type="INSTRUCTION" missed="0" covered="1" />
+      <counter type="LINE" missed="0" covered="1" />
+      <counter type="METHOD" missed="0" covered="1" />
+    </method>
+  </class>
+</package>
+</report>
+"@ | Set-Content "$outputDir/last/coverage.xml"
+
+        $result = & $script -Path $repoDir -ShowAll -CoverageGoalPercent 0 -Unformatted -Ignore_OmitFromCoverageReport
+
+        @($result | Where-Object { $_.PSObject.Properties['File'] } | ForEach-Object { $_.File }) |
+            Should -Be @('src/Declared.ps1')
+    }
+
     It "uses project subdirectory when project root is nested inside git root" {
         $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
         $repoDir   = "$realTestDrive/gcr-testcsproject"

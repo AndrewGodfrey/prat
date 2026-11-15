@@ -297,8 +297,10 @@ function Get-PratProject {
 # .SYNOPSIS
 # Namespaced OutputDir for $Project's test run: <repo root>/auto/testRuns/<project id's last
 # segment>, so nested projects don't collide. Repo root is $Project.repo.root for a subproject,
-# else `git rev-parse --show-toplevel` (a top-level project with no parent).
+# else `git rev-parse --show-toplevel` (a top-level project with no parent). A project whose test
+# command writes elsewhere declares that dir as testOutputDir.
 function Get-ProjectTestOutputDir($Project) {
+    if ($Project.testOutputDir) { return $Project.testOutputDir -replace '\\', '/' }
     $repoRoot = if ($Project.repo) {
         $Project.repo.root -replace '\\', '/'
     } else {

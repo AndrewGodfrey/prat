@@ -21,12 +21,16 @@ if ($null -eq $coverageFile -or $null -eq $PathBase) {
     $project      = try { Get-PratProject -Location $resolvedPath } catch { $null }
     $inferredRoot = Resolve-GitRoot $resolvedPath
     if ($null -eq $coverageFile) {
-        if (-not $inferredRoot) { throw "Cannot infer coverage file: not in a git repo." }
-        # Every registered project gets its own segment under auto/testRuns — Get-ProjectTestOutputDir
-        # keys it on the leaf of the (possibly parent-prefixed) id, top-level projects included. An
-        # unregistered repo has no leaf, and falls back to the bare last/.
-        $subDir = if ($project) { "$($project.id -replace '.*/', '')/" } else { '' }
-        $coverageFile = "$inferredRoot/auto/testRuns/$($subDir)last/coverage.xml"
+        $outputDir = if ($project -and ($project.root -or $project.testOutputDir)) {
+            Get-ProjectTestOutputDir $project
+        } else {
+            if (-not $inferredRoot) { throw "Cannot infer coverage file: not in a git repo." }
+            # Keyed like Get-ProjectTestOutputDir, for a registration without a root (which
+            # Get-ProjectTestOutputDir can't resolve). An unregistered repo has no leaf, and falls
+            # back to the bare testRuns/.
+            if ($project) { "$inferredRoot/auto/testRuns/$($project.id -replace '.*/', '')" } else { "$inferredRoot/auto/testRuns" }
+        }
+        $coverageFile = "$outputDir/last/coverage.xml"
     }
     if ($null -eq $PathBase) {
         # Prefer the project root (agrees with Get-FileCoverage for a nested subproject) over the
