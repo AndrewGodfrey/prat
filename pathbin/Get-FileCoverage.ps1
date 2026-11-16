@@ -67,23 +67,33 @@ if (-not $Detail) {
 $lines = $data.perFileLineData[$queryKey]
 if (-not $lines) { return @() }
 
-# Where a function's lines end is the next function's start - so the boundaries come from every
-# method in the file, not just the ones -Function asked for.
+$lineIndex = @{}
+for ($j = 0; $j -lt $lines.Count; $j++) { $lineIndex[$lines[$j].nr] = $j }
+
+# Cobertura lists each method's own lines. JaCoCo doesn't, so there a function's lines end at the
+# next function's start - and those boundaries come from every method in the file, not just the
+# ones -Function asked for.
 $sortedMethods = @($methods | Sort-Object { $_.startLine })
 $wanted = $selected.name
 for ($i = 0; $i -lt $sortedMethods.Count; $i++) {
     $method    = $sortedMethods[$i]
     $nextStart = if ($i + 1 -lt $sortedMethods.Count) { $sortedMethods[$i + 1].startLine } else { [int]::MaxValue }
     if ($method.name -notin $wanted) { continue }
-    $methodLines = @($lines | Where-Object { $_.nr -ge $method.startLine -and $_.nr -lt $nextStart })
+    $methodLines = if ($null -ne $method.lineNumbers) {
+        @($lines | Where-Object { $_.nr -in $method.lineNumbers })
+    } else {
+        @($lines | Where-Object { $_.nr -ge $method.startLine -and $_.nr -lt $nextStart })
+    }
     if (-not $methodLines) { continue }
 
     $rangeStart = $null; $rangeEnd = $null; $rangeStatus = $null
     foreach ($line in $methodLines) {
         $status = if ($line.covered -and $line.missed) { 'partial' } elseif ($line.covered) { 'covered' } else { 'missed' }
+        # A range also breaks where another method's line sits between two of this method's lines.
+        $adjacent = ($null -ne $rangeEnd) -and (($lineIndex[$line.nr] - $lineIndex[$rangeEnd]) -eq 1)
         if ($null -eq $rangeStart) {
             $rangeStart = $line.nr; $rangeEnd = $line.nr; $rangeStatus = $status
-        } elseif ($status -eq $rangeStatus) {
+        } elseif (($status -eq $rangeStatus) -and $adjacent) {
             $rangeEnd = $line.nr
         } else {
             [pscustomobject] @{ Function = $method.name; StartLine = $rangeStart; EndLine = $rangeEnd; Status = $rangeStatus }

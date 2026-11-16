@@ -153,7 +153,8 @@ if ($format -eq 'report') {
         }
 
         @{ lineCovered = $lineCovered; lineMissed = $lineMissed; startLine = $startLine
-           instrCovered = $instrCovered; instrMissed = $instrMissed }
+           instrCovered = $instrCovered; instrMissed = $instrMissed
+           lineNumbers = @($methodLines | ForEach-Object { [int]$_.number }) }
     }
 
     function addCoberturaMethodEntry($filePath, $name, $counts) {
@@ -176,6 +177,7 @@ if ($format -eq 'report') {
         [void]$perFileMethodData[$filePath].Add(@{
             name        = $name
             startLine   = $counts.startLine
+            lineNumbers = $counts.lineNumbers
             INSTRUCTION = @{missed=$counts.instrMissed; covered=$counts.instrCovered}
             LINE        = @{missed=$counts.lineMissed;  covered=$counts.lineCovered}
         })
@@ -189,6 +191,7 @@ if ($format -eq 'report') {
             if ($null -eq $perFileReport[$filePath]) {
                 $perFileReport[$filePath]     = newCounters
                 $perFileMethodData[$filePath] = [System.Collections.ArrayList]@()
+                $perFileLineData[$filePath]   = @()
             }
 
             foreach ($method in $class.methods.method) {
@@ -206,12 +209,17 @@ if ($format -eq 'report') {
 
             # Cobertura counts hits per line, so there is no partly-covered line here: `missed` is
             # simply the negation, kept so both formats hand consumers the same shape.
-            $perFileLineData[$filePath] = @(
+            # A file can hold several classes (e.g. nested ones), so its line data accumulates.
+            $perFileLineData[$filePath] += @(
                 $class.lines.line | Where-Object { $_ } | ForEach-Object {
                     @{ nr = [int]$_.number; covered = [int]$_.hits -gt 0; missed = [int]$_.hits -eq 0 }
                 }
             )
         }
+    }
+
+    foreach ($key in @($perFileLineData.Keys)) {
+        $perFileLineData[$key] = @($perFileLineData[$key] | Sort-Object { $_.nr })
     }
 }
 

@@ -238,6 +238,96 @@ Describe "Get-FileCoverage" {
         }
     }
 
+    Context "Cobertura file with several classes (e.g. a nested class)" {
+        It "-Detail returns line ranges from every class in the file" {
+            $coberturaXml = @'
+<coverage>
+  <packages>
+    <package name="pkg">
+      <classes>
+        <class name="Outer" filename="C:/repo/src/Foo.cs">
+          <methods>
+            <method name="Run"><lines><line number="10" hits="1" /><line number="11" hits="0" /></lines></method>
+          </methods>
+          <lines><line number="10" hits="1" /><line number="11" hits="0" /></lines>
+        </class>
+        <class name="Outer/Inner" filename="C:/repo/src/Foo.cs">
+          <methods>
+            <method name=".ctor"><lines><line number="20" hits="1" /></lines></method>
+          </methods>
+          <lines><line number="20" hits="1" /></lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $coberturaFile = "$TestDrive/fcov-multiclass-detail.xml"
+            $coberturaXml | Set-Content $coberturaFile
+
+            $result = & $script -FilePath "C:/repo/src/Foo.cs" -CoverageFile $coberturaFile -Detail
+
+            $result | Should -HaveCount 3
+            ($result | ForEach-Object { "$($_.Function):$($_.StartLine)-$($_.EndLine):$($_.Status)" }) |
+                Should -Be @('Run:10-10:covered', 'Run:11-11:missed', '.ctor:20-20:covered')
+        }
+
+        It "-Detail orders a class's lines by number when the file lists them out of order" {
+            # e.g. coverlet lists a primary constructor's field-initializer line after its parameter lines.
+            $coberturaXml = @'
+<coverage>
+  <packages>
+    <package name="pkg">
+      <classes>
+        <class name="Outer" filename="C:/repo/src/Foo.cs">
+          <methods>
+            <method name="Run"><lines><line number="10" hits="1" /><line number="11" hits="1" /><line number="12" hits="0" /></lines></method>
+          </methods>
+          <lines><line number="12" hits="0" /><line number="10" hits="1" /><line number="11" hits="1" /></lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $coberturaFile = "$TestDrive/fcov-unordered-detail.xml"
+            $coberturaXml | Set-Content $coberturaFile
+
+            $result = & $script -FilePath "C:/repo/src/Foo.cs" -CoverageFile $coberturaFile -Detail
+
+            ($result | ForEach-Object { "$($_.Function):$($_.StartLine)-$($_.EndLine):$($_.Status)" }) |
+                Should -Be @('Run:10-11:covered', 'Run:12-12:missed')
+        }
+
+        It "-Detail attributes each line to the method that lists it, even when methods interleave" {
+            # e.g. a primary constructor's field initializer (line 30) sits after a static constructor's lines.
+            $coberturaXml = @'
+<coverage>
+  <packages>
+    <package name="pkg">
+      <classes>
+        <class name="Outer" filename="C:/repo/src/Foo.cs">
+          <methods>
+            <method name=".ctor"><lines><line number="10" hits="1" /><line number="30" hits="1" /></lines></method>
+            <method name=".cctor"><lines><line number="20" hits="0" /><line number="21" hits="0" /></lines></method>
+          </methods>
+          <lines><line number="10" hits="1" /><line number="20" hits="0" /><line number="21" hits="0" /><line number="30" hits="1" /></lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $coberturaFile = "$TestDrive/fcov-interleaved-detail.xml"
+            $coberturaXml | Set-Content $coberturaFile
+
+            $result = & $script -FilePath "C:/repo/src/Foo.cs" -CoverageFile $coberturaFile -Detail
+
+            ($result | ForEach-Object { "$($_.Function):$($_.StartLine)-$($_.EndLine):$($_.Status)" }) |
+                Should -Be @('.ctor:10-10:covered', '.ctor:30-30:covered', '.cctor:20-21:missed')
+        }
+    }
+
     Context "-Detail" {
         BeforeAll {
             $detailXml = @'
