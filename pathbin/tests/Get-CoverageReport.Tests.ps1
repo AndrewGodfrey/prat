@@ -448,8 +448,8 @@ Describe "auto/ exclusion with PathBase" {
     }
 }
 
-Describe "Cobertura instruction-unit column naming" {
-    It "names the instruction column 'Branches' for Cobertura input" {
+Describe "Cobertura omits the instruction column" {
+    It "has no instruction column for Cobertura input" {
         $realTestDrive = ((Get-Item "TestDrive:\").FullName -replace '\\', '/').TrimEnd('/')
         $coberturaFile = "$realTestDrive/gcr-cobertura.xml"
         @'
@@ -481,11 +481,13 @@ Describe "Cobertura instruction-unit column naming" {
 
         $fileRow = $result | Where-Object { $_.PSObject.Properties['File'] }
         $fileRow | Should -Not -BeNullOrEmpty
-        $fileRow.PSObject.Properties['Branches'] | Should -Not -BeNullOrEmpty
+        # LINE is the only coverage counter for Cobertura; the instruction column is absent.
+        $fileRow.Lines | Should -Be 50
         $fileRow.PSObject.Properties['Instructions'] | Should -BeNullOrEmpty
+        $fileRow.PSObject.Properties['Branches'] | Should -BeNullOrEmpty
 
         $totalsRow = $result | Where-Object { -not $_.PSObject.Properties['File'] -and $_.PSObject.Properties['Lines'] }
-        $totalsRow.PSObject.Properties['Branches'] | Should -Not -BeNullOrEmpty
+        $totalsRow.Lines | Should -Be 50
         $totalsRow.PSObject.Properties['Instructions'] | Should -BeNullOrEmpty
     }
 }

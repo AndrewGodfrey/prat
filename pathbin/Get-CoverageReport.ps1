@@ -76,6 +76,7 @@ function FileMeetsGoal($data, $goalPercent) {
     # It's common to add a wrapper method explicitly to create a safe point to mock. So then that wrapper isn't covered or worth covering.
     # A small script with 3 wrappers would be a very reasonable situation, but would count as only having  25% method coverage.
     foreach ($counterType in @("LINE", "INSTRUCTION")) {
+        if (-not $data.Contains($counterType)) { continue }  # Cobertura has no INSTRUCTION
         $coverage = CalculateCoverage $data[$counterType] -AsDouble
         if ($coverage -lt $goalPercent) {
             return $false
@@ -124,7 +125,9 @@ function IsFileOmitted($filename) {
 $report = LoadCoverageReport $coverageFile $PathBase
 # return $report.GetEnumerator() | Sort-Object Name
 $filesMeetingGoal = 0
-$instrUnit = $report.instructionUnit ?? "Instructions"
+# Cobertura has no INSTRUCTION counter (see Get-CoverageDetails.ps1), so the instruction column
+# is omitted for it rather than shown as an empty or fabricated value.
+$hasInstruction = $null -ne $report.instructionUnit
 
 $mungedPerFileReport = @($report.perFileReport.GetEnumerator() | Sort-Object Name | ForEach-Object {
     $name = $_.Name
@@ -145,11 +148,18 @@ $mungedPerFileReport = @($report.perFileReport.GetEnumerator() | Sort-Object Nam
     }
 
     if ($ShowAll -or !$fileMeetsGoal) {
+        if ($hasInstruction) {
+            return [pscustomobject] @{
+                File         = $name
+                Methods      = CalculateCoverage $data.METHOD
+                Lines        = CalculateCoverage $data.LINE
+                Instructions = CalculateCoverage $data.INSTRUCTION
+            }
+        }
         return [pscustomobject] @{
-            File      = $name
-            Methods   = CalculateCoverage $data.METHOD
-            Lines     = CalculateCoverage $data.LINE
-            $instrUnit = CalculateCoverage $data.INSTRUCTION
+            File    = $name
+            Methods = CalculateCoverage $data.METHOD
+            Lines   = CalculateCoverage $data.LINE
         }
     }
 })
@@ -187,12 +197,19 @@ if ($mungedPerFileReport.Count -gt 1) {
 
 emitRows $mungedPerFileReport $Unformatted
 
-$totals = @(
-    [pscustomobject] @{
-        Methods    = CalculateCoverage $report.totals.METHOD
-        Lines      = CalculateCoverage $report.totals.LINE
-        $instrUnit = CalculateCoverage $report.totals.INSTRUCTION
-})
+$totals = @()
+if ($hasInstruction) {
+    $totals += [pscustomobject] @{
+        Methods      = CalculateCoverage $report.totals.METHOD
+        Lines        = CalculateCoverage $report.totals.LINE
+        Instructions = CalculateCoverage $report.totals.INSTRUCTION
+    }
+} else {
+    $totals += [pscustomobject] @{
+        Methods = CalculateCoverage $report.totals.METHOD
+        Lines   = CalculateCoverage $report.totals.LINE
+    }
+}
 
 emitRows $totals $Unformatted
 

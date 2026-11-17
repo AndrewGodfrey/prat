@@ -2,16 +2,17 @@
 # Parses a coverage XML file (CoverageGutters/JaCoCo or Cobertura format).
 #
 # Returns @{ totals; perFileReport; perFileMethodData; instructionUnit }:
-#   totals            - @{ INSTRUCTION; LINE; METHOD } aggregated across all files
+#   totals            - @{ INSTRUCTION?; LINE; METHOD } aggregated across all files
 #   perFileReport     - hashtable keyed by file path (base-relative when -PathBase applies,
-#                        else absolute) → @{ INSTRUCTION; LINE; METHOD }
+#                        else absolute) → @{ INSTRUCTION?; LINE; METHOD }
 #   perFileMethodData - hashtable keyed the same way → list of
-#                       @{ name; startLine; INSTRUCTION=@{missed;covered}; LINE=@{missed;covered} }
-#   instructionUnit   - "Instructions" for JaCoCo/CoverageGutters; "Branches" for Cobertura
+#                       @{ name; startLine; lineNumbers?; INSTRUCTION?; LINE=@{missed;covered} }
+#   instructionUnit   - "Instructions" for JaCoCo/CoverageGutters; $null for Cobertura
 #
-# Cobertura: INSTRUCTION uses branch condition-coverage as a proxy (counting branch outcomes
-# rather than instructions); for non-branching lines, 1 covered/missed per line as before.
+# INSTRUCTION is present only for JaCoCo/CoverageGutters. Cobertura has no instruction measure -
+# LINE is its counter - so the INSTRUCTION key is omitted and instructionUnit is $null.
 # METHOD is derived from per-method line coverage (a method is covered if it has ≥1 hit > 0).
+# lineNumbers (per method) is present for Cobertura only, which lists each method's own lines.
 #
 # .PARAMETER CoverageFile
 # Path to the coverage XML file. Auto-detects format from the root element.
@@ -41,7 +42,11 @@ if ($format -ne 'report' -and $format -ne 'coverage') {
     throw "Invalid coverage file: $CoverageFile - unrecognized root element '$format'"
 }
 
-function newCounters { @{ INSTRUCTION = @{missed=0; covered=0}; LINE = @{missed=0; covered=0}; METHOD = @{missed=0; covered=0} } }
+function newCounters([switch]$NoInstruction) {
+    $c = @{ LINE = @{missed=0; covered=0}; METHOD = @{missed=0; covered=0} }
+    if (-not $NoInstruction) { $c.INSTRUCTION = @{missed=0; covered=0} }
+    $c
+}
 
 function addCounters($target, $counters) {
     foreach ($c in $counters) {
@@ -80,7 +85,7 @@ function resolveFilePath($package, $class) {
     return stripBase ($path.Replace('\', '/'))
 }
 
-$totals        = newCounters
+$totals        = newCounters -NoInstruction:$($format -ne 'report')
 $perFileReport = @{}
 $perFileMethodData = @{}
 $perFileLineData   = @{}
@@ -142,18 +147,7 @@ if ($format -eq 'report') {
             [int]($methodLines | ForEach-Object { [int]$_.number } | Measure-Object -Minimum).Minimum
         } else { 0 }
 
-        $instrCovered = 0; $instrMissed = 0
-        foreach ($line in $methodLines) {
-            if ($line.branch -eq 'True' -and $line.'condition-coverage' -match '\((\d+)/(\d+)\)') {
-                $instrCovered += [int]$Matches[1]
-                $instrMissed  += [int]$Matches[2] - [int]$Matches[1]
-            } else {
-                if ([int]$line.hits -gt 0) { $instrCovered++ } else { $instrMissed++ }
-            }
-        }
-
         @{ lineCovered = $lineCovered; lineMissed = $lineMissed; startLine = $startLine
-           instrCovered = $instrCovered; instrMissed = $instrMissed
            lineNumbers = @($methodLines | ForEach-Object { [int]$_.number }) }
     }
 
@@ -161,24 +155,19 @@ if ($format -eq 'report') {
         $methodCovered = if ($counts.lineCovered -gt 0) { 1 } else { 0 }
         $methodMissed  = 1 - $methodCovered
 
-        $perFileReport[$filePath].LINE.covered        += $counts.lineCovered
-        $perFileReport[$filePath].LINE.missed         += $counts.lineMissed
-        $perFileReport[$filePath].INSTRUCTION.covered += $counts.instrCovered
-        $perFileReport[$filePath].INSTRUCTION.missed  += $counts.instrMissed
-        $perFileReport[$filePath].METHOD.covered      += $methodCovered
-        $perFileReport[$filePath].METHOD.missed       += $methodMissed
-        $totals.LINE.covered        += $counts.lineCovered
-        $totals.LINE.missed         += $counts.lineMissed
-        $totals.INSTRUCTION.covered += $counts.instrCovered
-        $totals.INSTRUCTION.missed  += $counts.instrMissed
-        $totals.METHOD.covered      += $methodCovered
-        $totals.METHOD.missed       += $methodMissed
+        $perFileReport[$filePath].LINE.covered   += $counts.lineCovered
+        $perFileReport[$filePath].LINE.missed    += $counts.lineMissed
+        $perFileReport[$filePath].METHOD.covered += $methodCovered
+        $perFileReport[$filePath].METHOD.missed  += $methodMissed
+        $totals.LINE.covered   += $counts.lineCovered
+        $totals.LINE.missed    += $counts.lineMissed
+        $totals.METHOD.covered += $methodCovered
+        $totals.METHOD.missed  += $methodMissed
 
         [void]$perFileMethodData[$filePath].Add(@{
             name        = $name
             startLine   = $counts.startLine
             lineNumbers = $counts.lineNumbers
-            INSTRUCTION = @{missed=$counts.instrMissed; covered=$counts.instrCovered}
             LINE        = @{missed=$counts.lineMissed;  covered=$counts.lineCovered}
         })
     }
@@ -189,7 +178,7 @@ if ($format -eq 'report') {
             $filePath = if ([System.IO.Path]::IsPathRooted($filename)) { stripBase $filename } else { $filename }
 
             if ($null -eq $perFileReport[$filePath]) {
-                $perFileReport[$filePath]     = newCounters
+                $perFileReport[$filePath]     = newCounters -NoInstruction
                 $perFileMethodData[$filePath] = [System.Collections.ArrayList]@()
                 $perFileLineData[$filePath]   = @()
             }
@@ -228,5 +217,5 @@ if ($format -eq 'report') {
     perFileReport     = $perFileReport
     perFileMethodData = $perFileMethodData
     perFileLineData   = $perFileLineData
-    instructionUnit   = if ($format -eq 'report') { "Instructions" } else { "Branches" }
+    instructionUnit   = if ($format -eq 'report') { "Instructions" } else { $null }
 }

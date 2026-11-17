@@ -33,7 +33,6 @@ $pathBase = if ($project -and $project.root) { $project.root } else { Resolve-Gi
 $normalizedPathBase = if ($pathBase) { ([string]$pathBase -replace '\\', '/').TrimEnd('/') } else { $null }
 
 $data = & "$PSScriptRoot/../lib/Get-CoverageDetails.ps1" -CoverageFile $CoverageFile -PathBase $pathBase
-$unitName = $data.instructionUnit ?? "Instructions"
 
 $resolved = Resolve-Path $FilePath -ErrorAction SilentlyContinue
 $absolutePath = ($resolved ? $resolved.Path : $FilePath).Replace('\', '/')
@@ -53,12 +52,24 @@ if ($null -eq $methods) {
 $selected = if ($Function) { @($methods | Where-Object { $_.name -eq $Function }) } else { @($methods) }
 
 if (-not $Detail) {
+    # Cobertura has no INSTRUCTION counter (see Get-CoverageDetails.ps1) - its per-function
+    # measure is LINE, so the column falls back to it and is named "Lines".
+    $hasInstruction = $null -ne $data.instructionUnit
     $selected | ForEach-Object {
-        [pscustomobject] @{
-            Function  = $_.name
-            Line      = $_.startLine
-            $unitName = $_.INSTRUCTION.covered
-            Missed    = $_.INSTRUCTION.missed
+        if ($hasInstruction) {
+            [pscustomobject] @{
+                Function     = $_.name
+                Line         = $_.startLine
+                Instructions = $_.INSTRUCTION.covered
+                Missed       = $_.INSTRUCTION.missed
+            }
+        } else {
+            [pscustomobject] @{
+                Function = $_.name
+                Line     = $_.startLine
+                Lines    = $_.LINE.covered
+                Missed   = $_.LINE.missed
+            }
         }
     }
     return

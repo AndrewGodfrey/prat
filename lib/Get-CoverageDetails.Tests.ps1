@@ -340,14 +340,14 @@ Describe "Get-CoverageDetails" {
             $result.perFileReport["C:/repo/src/Foo.cs"].LINE.missed  | Should -Be 1
         }
 
-        It "uses LINE as proxy for INSTRUCTION" {
+        It "emits no INSTRUCTION counter for Cobertura input" {
             $result = & $script -CoverageFile $coberturaFile
 
-            $result.perFileReport["C:/repo/src/Foo.cs"].INSTRUCTION.covered | Should -Be 3
-            $result.perFileReport["C:/repo/src/Foo.cs"].INSTRUCTION.missed  | Should -Be 1
+            $result.perFileReport["C:/repo/src/Foo.cs"].Contains('INSTRUCTION') | Should -BeFalse
+            $result.totals.Contains('INSTRUCTION') | Should -BeFalse
         }
 
-        It "builds per-file method data with name, startLine inferred from first line, and LINE/INSTRUCTION coverage" {
+        It "builds per-file method data with name, startLine inferred from first line, and LINE coverage" {
             $result = & $script -CoverageFile $coberturaFile
 
             $methods = $result.perFileMethodData["C:/repo/src/Foo.cs"]
@@ -357,8 +357,6 @@ Describe "Get-CoverageDetails" {
             $methods[0].startLine           | Should -BeOfType [int]
             $methods[0].LINE.covered        | Should -Be 1
             $methods[0].LINE.missed         | Should -Be 1
-            $methods[0].INSTRUCTION.covered | Should -Be 1
-            $methods[0].INSTRUCTION.missed  | Should -Be 1
             $methods[1].name                | Should -Be "GreetFormal"
             $methods[1].startLine           | Should -Be 10
             $methods[1].LINE.covered        | Should -Be 2
@@ -689,7 +687,7 @@ Describe "Get-CoverageDetails" {
             $result.perFileLineData["C:/repo/Empty.cs"] | Should -HaveCount 0
         }
 
-        It "uses branch condition-coverage as proxy for INSTRUCTION on branching lines" {
+        It "counts branching lines by hits, not by branch outcomes, and emits no INSTRUCTION" {
             $branchXml = @'
 <coverage>
   <packages>
@@ -725,56 +723,17 @@ Describe "Get-CoverageDetails" {
 
             $result = & $script -CoverageFile $f
 
-            # LINE: lines with hits>0 are covered (5, 9, 12), line 6 and 15 are missed
+            # LINE: lines with hits>0 are covered (5, 9, 12), line 6 and 15 are missed.
+            # Branching lines count by hits, not by branch outcomes; there is no INSTRUCTION.
             $result.perFileReport["C:/repo/src/Branches.cs"].LINE.covered | Should -Be 3
             $result.perFileReport["C:/repo/src/Branches.cs"].LINE.missed  | Should -Be 2
-            # INSTRUCTION uses branch proxy:
-            #   line 5  (non-branch, hit)    → 1 covered
-            #   line 6  (non-branch, missed) → 1 missed
-            #   line 9  (50%: 1/2)           → 1 covered + 1 missed
-            #   line 12 (100%: 2/2)          → 2 covered + 0 missed
-            #   line 15 (0%: 0/2)            → 0 covered + 2 missed
-            $result.perFileReport["C:/repo/src/Branches.cs"].INSTRUCTION.covered | Should -Be 4
-            $result.perFileReport["C:/repo/src/Branches.cs"].INSTRUCTION.missed  | Should -Be 4
+            $result.perFileReport["C:/repo/src/Branches.cs"].Contains('INSTRUCTION') | Should -BeFalse
         }
 
-        It "falls back to hit-based counting when branch line has no (n/m) in condition-coverage" {
-            $xml = @'
-<coverage>
-  <packages>
-    <package name="MyPackage">
-      <classes>
-        <class filename="C:/repo/src/Fallback.cs">
-          <methods>
-            <method name="Run" signature="()">
-              <lines>
-                <line number="1" hits="2" branch="True" condition-coverage="100%" />
-              </lines>
-            </method>
-          </methods>
-          <lines>
-            <line number="1" hits="2" branch="True" condition-coverage="100%" />
-          </lines>
-        </class>
-      </classes>
-    </package>
-  </packages>
-</coverage>
-'@
-            $f = "$TestDrive/cobertura-branch-fallback.xml"
-            $xml | Set-Content $f
-
-            $result = & $script -CoverageFile $f
-
-            # Falls back to hit-based: hits=2 > 0 → 1 covered, 0 missed
-            $result.perFileReport["C:/repo/src/Fallback.cs"].INSTRUCTION.covered | Should -Be 1
-            $result.perFileReport["C:/repo/src/Fallback.cs"].INSTRUCTION.missed  | Should -Be 0
-        }
-
-        It "returns instructionUnit = 'Branches' for Cobertura format" {
+        It "returns no instructionUnit for Cobertura format" {
             $result = & $script -CoverageFile $coberturaFile
 
-            $result.instructionUnit | Should -Be "Branches"
+            $result.instructionUnit | Should -Be $null
         }
 
         It "accumulates classes from multiple packages" {
@@ -857,8 +816,6 @@ Describe "Get-CoverageDetails" {
             $methods[0].startLine               | Should -Be 1
             $methods[0].LINE.covered             | Should -Be 2
             $methods[0].LINE.missed              | Should -Be 1
-            $methods[0].INSTRUCTION.covered      | Should -Be 2
-            $methods[0].INSTRUCTION.missed       | Should -Be 2
 
             $result.perFileReport["C:/repo/pkg/prigTools.py"].LINE.covered | Should -Be 2
             $result.perFileReport["C:/repo/pkg/prigTools.py"].LINE.missed  | Should -Be 1

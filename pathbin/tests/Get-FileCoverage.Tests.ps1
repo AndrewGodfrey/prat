@@ -57,7 +57,7 @@ Describe "Get-FileCoverage" {
         $warnings[0] | Should -Match "NotInReport.ps1"
     }
 
-    It "names the instruction column 'Branches' for Cobertura input" {
+    It "names the line column 'Lines' for Cobertura input" {
         $coberturaXml = @'
 <coverage>
   <packages>
@@ -88,8 +88,8 @@ Describe "Get-FileCoverage" {
         $result = & $script -FilePath "C:/repo/src/Foo.cs" -CoverageFile $coberturaFile
 
         $result | Should -HaveCount 1
-        $result[0].Branches | Should -Be 1
-        $result[0].Missed   | Should -Be 1
+        $result[0].Lines  | Should -Be 1
+        $result[0].Missed | Should -Be 1
     }
 
     Context "Cobertura relative filename resolution" {
@@ -123,8 +123,8 @@ Describe "Get-FileCoverage" {
             $result = & $script -FilePath "$root/pkg/Foo.py" -CoverageFile $coverageFile
 
             $result | Should -HaveCount 1
-            $result[0].Branches | Should -Be 1
-            $result[0].Missed   | Should -Be 1
+            $result[0].Lines  | Should -Be 1
+            $result[0].Missed | Should -Be 1
         }
 
         It "matches regardless of the writer's <sources> value (cross-island case)" {
@@ -162,12 +162,12 @@ Describe "Get-FileCoverage" {
             $result = & $script -FilePath "$root/mymodule.py" -CoverageFile $coverageFile
 
             $result | Should -HaveCount 1
-            $result[0].Branches | Should -Be 1
+            $result[0].Lines | Should -Be 1
         }
     }
 
     Context "Cobertura methodless class (coverage.py)" {
-        It "returns one '(file)' row with branch counts" {
+        It "returns one '(file)' row with line counts" {
             $coberturaXml = @'
 <coverage>
   <packages>
@@ -194,8 +194,8 @@ Describe "Get-FileCoverage" {
             $result | Should -HaveCount 1
             $result[0].Function | Should -Be "(file)"
             $result[0].Line     | Should -Be 1
-            $result[0].Branches | Should -Be 2
-            $result[0].Missed   | Should -Be 2
+            $result[0].Lines    | Should -Be 2
+            $result[0].Missed   | Should -Be 1
         }
 
         It "-Detail returns covered/missed line ranges for the synthesized method" {
@@ -616,7 +616,7 @@ Describe "Get-FileCoverage" {
             $result = & $script -FilePath "$repoDir/src/Foo.py" -CoverageFile $coverageFile
 
             $result | Should -HaveCount 1
-            $result[0].Branches | Should -Be 1
+            $result[0].Lines | Should -Be 1
         }
 
         It "names the inferred PathBase in the miss warning" {
