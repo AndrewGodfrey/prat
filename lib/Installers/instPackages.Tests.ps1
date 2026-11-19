@@ -184,35 +184,88 @@ Describe "Install-PratPackage" {
     }
 }
 
-Describe "Get-DotnetSdkRequirement" {
+Describe "dotnetSdk compatibility check" {
     BeforeAll {
         Import-Module "$PSScriptRoot/Installers.psd1" -Force
     }
 
-    It "latestFeature: Pattern is major.minor.*, Major is major version" {
-        Set-Content "TestDrive:\gj-lf.json" '{"sdk":{"version":"8.0.100","rollForward":"latestFeature"}}'
-        $result = InModuleScope Installers { Get-DotnetSdkRequirement "TestDrive:\gj-lf.json" }
-        $result.Major   | Should -Be '8'
-        $result.Pattern | Should -Be '8.0.*'
-    }
+    InModuleScope Installers {
+        BeforeEach {
+            $previousProgramFiles = $env:ProgramFiles
+            $previousExitCode = $global:LASTEXITCODE
+            $env:ProgramFiles = (New-Item "$TestDrive\$([guid]::NewGuid())" -ItemType Directory).FullName
+            $dotnetDir = New-Item "$env:ProgramFiles\dotnet" -ItemType Directory
+            $dotnetExe = (New-Item "$dotnetDir\dotnet.exe" -ItemType File).FullName
+            $sdkDir = New-Item "$dotnetDir\sdk\10.0.100" -ItemType Directory -Force
+            $repoRoot = (New-Item "$TestDrive\$([guid]::NewGuid())" -ItemType Directory).FullName
+            $packageArgs = @("$repoRoot\global.json")
+            Set-Content $packageArgs[0] '{"sdk":{"version":"10.0.302","rollForward":"latestFeature"}}'
+            $initialLocation = (Get-Location).Path
+            $probe = @{ exitCode = 0; location = $null }
+            function Invoke-Gsudo { param([scriptblock] $ScriptBlock) throw 'Unexpected elevation in a unit test.' }
+            Mock Invoke-DotnetSdkVersion {
+                $probe.location = (Get-Location).Path
+                $probe.version = (Get-Content '.\global.json' -Raw | ConvertFrom-Json).sdk.version
+                @{ ExitCode = $probe.exitCode; Output = 'SDK diagnostic' }
+            }
+        }
 
-    It "latestMinor: Pattern is major.*" {
-        Set-Content "TestDrive:\gj-lm.json" '{"sdk":{"version":"9.1.200","rollForward":"latestMinor"}}'
-        $result = InModuleScope Installers { Get-DotnetSdkRequirement "TestDrive:\gj-lm.json" }
-        $result.Major   | Should -Be '9'
-        $result.Pattern | Should -Be '9.*'
-    }
+        AfterEach {
+            $env:ProgramFiles = $previousProgramFiles
+            $global:LASTEXITCODE = $previousExitCode
+        }
 
-    It "latestMajor: Pattern is *" {
-        Set-Content "TestDrive:\gj-lmaj.json" '{"sdk":{"version":"8.0.100","rollForward":"latestMajor"}}'
-        $result = InModuleScope Installers { Get-DotnetSdkRequirement "TestDrive:\gj-lmaj.json" }
-        $result.Major   | Should -Be '8'
-        $result.Pattern | Should -Be '*'
-    }
+        It "rejects an older SDK in the same major/minor rather than skipping installation" {
+            $probe.exitCode = -2147450725
 
-    It "throws on unsupported rollForward value" {
-        Set-Content "TestDrive:\gj-bad.json" '{"sdk":{"version":"8.0.100","rollForward":"disable"}}'
-        { InModuleScope Installers { Get-DotnetSdkRequirement "TestDrive:\gj-bad.json" } } | Should -Throw "*disable*"
+            & $pratPackages.dotnetSdk.check | Should -BeFalse
+            $probe.location | Should -Be $repoRoot
+            (Get-Location).Path | Should -Be $initialLocation
+        }
+
+        It "accepts the system host's resolution of global.json and restores location" {
+            & $pratPackages.dotnetSdk.check | Should -BeTrue
+
+            $probe.location | Should -Be $repoRoot
+            Should -Invoke Invoke-DotnetSdkVersion -Exactly -Times 1 -ParameterFilter { $DotnetPath -eq $dotnetExe }
+            (Get-Location).Path | Should -Be $initialLocation
+        }
+
+        It "reports a missing system host as requiring installation" {
+            Remove-Item $dotnetExe
+
+            & $pratPackages.dotnetSdk.check | Should -BeFalse
+            Should -Invoke Invoke-DotnetSdkVersion -Exactly -Times 0
+        }
+
+        It "propagates unexpected host failures instead of treating them as a missing SDK" {
+            $probe.exitCode = 7
+
+            { & $pratPackages.dotnetSdk.check } | Should -Throw '*7*SDK diagnostic*'
+            (Get-Location).Path | Should -Be $initialLocation
+        }
+
+        It "honors a generated SDK specification with a different filename and removes the probe directory" {
+            Move-Item $packageArgs[0] "$repoRoot\custom.json"
+            $packageArgs = @("$repoRoot\custom.json")
+
+            & $pratPackages.dotnetSdk.check | Should -BeTrue
+
+            $probe.version | Should -Be '10.0.302'
+            $probe.location | Should -Not -Be $repoRoot
+            Test-Path $probe.location | Should -BeFalse
+            (Get-Location).Path | Should -Be $initialLocation
+        }
+
+        It "fails installation explicitly if the resulting SDK is still incompatible" {
+            $probe.exitCode = -2147450725
+            $stage = [pscustomobject]@{}
+            $stage | Add-Member ScriptMethod SetSubstage { param($description) }
+            Mock Invoke-WebRequest {}
+            Mock Invoke-Gsudo {}
+
+            { & $pratPackages.dotnetSdk.install $stage } | Should -Throw '*SDK installation*global.json*'
+        }
     }
 }
 

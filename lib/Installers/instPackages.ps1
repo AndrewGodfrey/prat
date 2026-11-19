@@ -27,18 +27,45 @@
 #
 
 
-function Get-DotnetSdkRequirement($globalJsonPath) {
-    $globalJson = Get-Content $globalJsonPath | ConvertFrom-Json
-    $parts      = $globalJson.sdk.version -split '\.'
-    $major      = $parts[0]
-    $minor      = $parts[1]
-    $pattern    = switch ($globalJson.sdk.rollForward) {
-        'latestFeature' { "$major.$minor.*" }
-        'latestMinor'   { "$major.*" }
-        'latestMajor'   { '*' }
-        default         { throw "Unsupported rollForward value in $($globalJsonPath): '$($globalJson.sdk.rollForward)'" }
+function Invoke-DotnetSdkVersion([string] $DotnetPath) {
+    $output = & $DotnetPath --version 2>&1
+    @{ ExitCode = $LASTEXITCODE; Output = $output }
+}
+
+function Test-DotnetSdkRequirement([string] $globalJsonPath) {
+    $globalJsonFile = (Resolve-Path -LiteralPath $globalJsonPath -ErrorAction Stop).ProviderPath
+    $dotnet = Join-Path $env:ProgramFiles 'dotnet\dotnet.exe'
+    if (-not (Test-Path -LiteralPath $dotnet)) { return $false }
+
+    $probeRoot = $null
+    $pushedLocation = $false
+    try {
+        $workingDir = Split-Path $globalJsonFile
+        if ((Split-Path $globalJsonFile -Leaf) -ne 'global.json') {
+            # The SDK resolver only reads global.json; callers may supply generated specifications with other names.
+            $probeRoot = Join-Path $env:TEMP "dotnet-sdk-probe-$([guid]::NewGuid())"
+            New-Item $probeRoot -ItemType Directory -ErrorAction Stop | Out-Null
+            Copy-Item -LiteralPath $globalJsonFile -Destination (Join-Path $probeRoot 'global.json') -ErrorAction Stop
+            $workingDir = $probeRoot
+        }
+        Push-Location $workingDir -ErrorAction Stop
+        $pushedLocation = $true
+        $result = Invoke-DotnetSdkVersion $dotnet
+        switch ($result.ExitCode) {
+            0 { return $true }
+            # CoreHostSdkNotFound (0x8000809B): SDK installation is required. Other host failures
+            # propagate to prebuild.
+            -2147450725 { return $false }
+            default { throw ".NET SDK detection failed (exit $($result.ExitCode)): $($result.Output -join "`n")" }
+        }
+    } finally {
+        if ($pushedLocation) { Pop-Location }
+        if ($probeRoot) {
+            $probeFile = Join-Path $probeRoot 'global.json'
+            if (Test-Path -LiteralPath $probeFile) { Remove-Item -LiteralPath $probeFile -ErrorAction Stop }
+            Remove-Item -LiteralPath $probeRoot -ErrorAction Stop
+        }
     }
-    @{ Major = $major; Pattern = $pattern }
 }
 
 # This is the 'spackle' mentioned in the file comment: Some packages emit "Path environment variable modified; restart your shell to use the new value.".
@@ -303,9 +330,7 @@ $pratPackages = @{
     dotnetSdk = @{
         dependencies = @("sudo")
         check = {
-            $req    = Get-DotnetSdkRequirement $packageArgs[0]
-            $sdkDir = "$env:programfiles/dotnet/sdk"
-            (Test-Path $sdkDir) -and [bool](Get-ChildItem $sdkDir -Directory -ErrorAction SilentlyContinue | Where-Object Name -like $req.Pattern)
+            Test-DotnetSdkRequirement $packageArgs[0]
         }
         install = {
             $globalJsonFile = $packageArgs[0]
@@ -320,6 +345,9 @@ $pratPackages = @{
                 if (($machinePath -split ';') -notcontains $using:dotnetDir) {
                     [System.Environment]::SetEnvironmentVariable("PATH", "$machinePath;$using:dotnetDir", "Machine")
                 }
+            }
+            if (-not (Test-DotnetSdkRequirement $globalJsonFile)) {
+                throw ".NET SDK installation did not satisfy global.json: $globalJsonFile"
             }
             $stage.SetSubstage("updating PATH")
             # Refresh current (non-elevated) process PATH
