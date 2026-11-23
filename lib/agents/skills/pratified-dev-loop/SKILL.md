@@ -147,7 +147,9 @@ Use `Get-FileCoverage -FilePath "C:\path\to\File.ps1"` for a per-function summar
 Use `Get-FileCoverage -Detail -FilePath "C:\path\to\File.ps1"` for a line-range summary.
 
 Both `Get-FileCoverage` and `gcr` infer the coverage file from the target's git repo root and prat
-project — `<repoRoot>/auto/testRuns/<project>/last/coverage.xml`, the same path `t` writes to. To
+project — `<repoRoot>/auto/testRuns/<project>/last/coverage.xml`, the same path `t` writes to. A
+project whose test command writes elsewhere declares that run dir's parent as `testOutputDir` in its
+registry entry; inference then uses `<testOutputDir>/last/coverage.xml`. To
 point at a different run, pass the file explicitly: `Get-FileCoverage ... -CoverageFile <path>` /
 `gcr -coverageFile <path>`.
 
