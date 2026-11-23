@@ -53,6 +53,14 @@ $VerbosePreference = $savedVerbosePreference
 $Configuration = [PesterConfiguration]::Default
 $Configuration.Run.PassThru = [bool] $true
 $Configuration.Run.Path = $PathToTest
+# auto/ holds generated output that carries its own *.Tests.ps1, so a whole-tree run would pick
+# them up. An explicit focus into auto/ still runs those tests, so skip the exclusion when the
+# focus path is under (or is) auto/.
+$autoRoot  = (Join-Path $RepoRoot 'auto').Replace('\', '/')
+$focusPath = "$PathToTest" -replace '\\', '/'
+if ($focusPath -ne $autoRoot -and -not $focusPath.StartsWith("$autoRoot/", [System.StringComparison]::OrdinalIgnoreCase)) {
+    $Configuration.Run.ExcludePath = @("$RepoRoot/auto/*")
+}
 $Configuration.Output.Verbosity = "Normal"
 if ($Integration -and $IncludeIntegrationTests) {
     Write-Warning "-Integration takes precedence over -IncludeIntegrationTests; running only Integration-tagged tests."

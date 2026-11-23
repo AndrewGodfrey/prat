@@ -39,6 +39,24 @@ Describe "Invoke-PesterWithSummary" {
         $outConf.CodeCoverage.Enabled.Value | Should -Be $false
     }
 
+    It "excludes the repo's auto/ tree from test discovery on a whole-tree run" {
+        & $coverageScript -NoCoverage -PathToTest $repoRoot -RepoRoot $repoRoot -OutputDir $script:outputDir
+
+        $outConf.Run.ExcludePath.Value | Should -Contain "$repoRoot/auto/*"
+    }
+
+    It "does not exclude auto/ when the focus path is under auto/" {
+        & $coverageScript -NoCoverage -PathToTest "$repoRoot/auto\proj" -RepoRoot $repoRoot -OutputDir $script:outputDir
+
+        $outConf.Run.ExcludePath.Value | Should -BeNullOrEmpty
+    }
+
+    It "does not exclude auto/ when the focus path is auto/ itself" {
+        & $coverageScript -NoCoverage -PathToTest "$repoRoot/auto" -RepoRoot $repoRoot -OutputDir $script:outputDir
+
+        $outConf.Run.ExcludePath.Value | Should -BeNullOrEmpty
+    }
+
     It "supports code coverage by default" {
         & $coverageScript -PathToTest $repoRoot -RepoRoot $repoRoot -OutputDir $script:outputDir
 

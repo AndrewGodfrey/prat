@@ -133,6 +133,8 @@ Every run writes to `auto/testRuns/<project>/last/`, where `<project>` is the le
   read JaCoCo or Cobertura, but with particular requirements.
 
 Previous runs are rotated to `auto/testRuns/<project>/<timestamp>/`.
+`auto/` holds tool-generated output. Don't silently add files there from ad-hoc scripts or
+commands; use `$env:TEMP` for scratch work.
 
 When there are test failures, the summary output includes a hint with the path to `test-run.txt`.
 
