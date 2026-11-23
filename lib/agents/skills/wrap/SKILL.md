@@ -43,6 +43,9 @@ Set-PlanState -PlanFile <active plan> -State ready-to-implement
 
 ## `ready-for-user-review` → close the unit
 
+Before any commit or push the close calls for, read the repo's current git state: the user may already have
+committed or pushed some of the unit during review.
+
 Load `pr-workflow` to resolve the effective publication policy by combining each source repository's
 policy with the user's per-repository policy. Its PR
 tracking instructions replace the completed-unit destination below for work awaiting a PR merge.
