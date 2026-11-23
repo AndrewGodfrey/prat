@@ -196,12 +196,14 @@ if ($format -eq 'report') {
                 }
             }
 
-            # Cobertura counts hits per line, so there is no partly-covered line here: `missed` is
-            # simply the negation, kept so both formats hand consumers the same shape.
+            # A hit line is partly covered when some of its branches went untaken.
             # A file can hold several classes (e.g. nested ones), so its line data accumulates.
             $perFileLineData[$filePath] += @(
                 $class.lines.line | Where-Object { $_ } | ForEach-Object {
-                    @{ nr = [int]$_.number; covered = [int]$_.hits -gt 0; missed = [int]$_.hits -eq 0 }
+                    $hit = [int]$_.hits -gt 0
+                    $untakenBranch = $_.branch -eq 'True' -and $_.'condition-coverage' -match '\((\d+)/(\d+)\)' -and
+                        [int]$Matches[1] -lt [int]$Matches[2]
+                    @{ nr = [int]$_.number; covered = $hit; missed = (-not $hit) -or $untakenBranch }
                 }
             )
         }

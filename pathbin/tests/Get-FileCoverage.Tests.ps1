@@ -326,6 +326,36 @@ Describe "Get-FileCoverage" {
             ($result | ForEach-Object { "$($_.Function):$($_.StartLine)-$($_.EndLine):$($_.Status)" }) |
                 Should -Be @('.ctor:10-10:covered', '.ctor:30-30:covered', '.cctor:20-21:missed')
         }
+
+        It "-Detail reports a hit line with untaken branches as partial" {
+            $coberturaXml = @'
+<coverage>
+  <packages>
+    <package name="pkg">
+      <classes>
+        <class name="Outer" filename="C:/repo/src/Foo.cs">
+          <methods>
+            <method name="Run"><lines><line number="10" hits="1" /><line number="11" hits="1" /><line number="12" hits="1" /></lines></method>
+          </methods>
+          <lines>
+            <line number="10" hits="1" />
+            <line number="11" hits="3" branch="True" condition-coverage="50% (1/2)" />
+            <line number="12" hits="1" branch="True" condition-coverage="100% (2/2)" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
+'@
+            $coberturaFile = "$TestDrive/fcov-branch-partial-detail.xml"
+            $coberturaXml | Set-Content $coberturaFile
+
+            $result = & $script -FilePath "C:/repo/src/Foo.cs" -CoverageFile $coberturaFile -Detail
+
+            ($result | ForEach-Object { "$($_.Function):$($_.StartLine)-$($_.EndLine):$($_.Status)" }) |
+                Should -Be @('Run:10-10:covered', 'Run:11-11:partial', 'Run:12-12:covered')
+        }
     }
 
     Context "-Detail" {
