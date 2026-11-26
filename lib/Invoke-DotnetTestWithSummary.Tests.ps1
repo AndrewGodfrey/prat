@@ -83,6 +83,62 @@ exit /b 0
     }
 }
 
+Describe "Invoke-DotnetTestWithSummary console logger" {
+    BeforeAll {
+        $script:argsFakeDir = Join-Path $TestDrive "fakedotnet-args"
+        $script:argsFile    = Join-Path $script:argsFakeDir "args.txt"
+        New-Item $script:argsFakeDir -ItemType Directory | Out-Null
+        Set-Content (Join-Path $script:argsFakeDir "dotnet.cmd") (@'
+@echo off
+rem Redirection first: a trailing digit immediately before ">" would be read as a stream handle.
+>"%~dp0args.txt" echo %*
+echo Passed!  - Failed:     0, Passed:     1, Skipped:     0, Total:     1, Duration: 1 ms
+exit /b 0
+'@.Trim())
+
+        function runAndCaptureArgs([string[]] $testArgs, $repoRoot) {
+            New-Item $repoRoot -ItemType Directory -Force | Out-Null
+            # Deleted first so a run that never reaches the fake fails instead of reading the
+            # previous test's args.
+            Remove-Item $script:argsFile -ErrorAction Ignore
+            $savedPath = $env:PATH
+            $env:PATH = "$script:argsFakeDir;$env:PATH"
+            try {
+                & $script:dotnetScript -TestArgs $testArgs -NoCoverage -RepoRoot $repoRoot -OutputDir "$repoRoot/auto/testRuns" | Out-Null
+            } finally {
+                $env:PATH = $savedPath
+            }
+            Get-Content $script:argsFile -Raw
+        }
+    }
+
+    It "adds a minimal-verbosity console logger ahead of the caller's args" {
+        $recorded = runAndCaptureArgs @("fake.csproj") "$TestDrive/repo-logger-default"
+
+        # Ahead of $TestArgs: a caller ending its args with a "--" runsettings block would
+        # otherwise swallow the logger spec.
+        $recorded | Should -Match '--logger "?console;verbosity=minimal"?\s+fake\.csproj'
+    }
+
+    It "doesn't add a second console logger when the caller supplies one" {
+        $recorded = runAndCaptureArgs @("fake.csproj", "--logger", "console;verbosity=detailed") "$TestDrive/repo-logger-custom"
+
+        $recorded | Should -Match 'console;verbosity=detailed'
+        $recorded | Should -Not -Match 'verbosity=minimal'
+    }
+
+    It "recognizes a caller's console logger given as '<arg>'" -ForEach @(
+        @{ arg = '--logger:console;verbosity=detailed'; dir = 'repo-logger-colon' }
+        @{ arg = '--logger=console;verbosity=detailed'; dir = 'repo-logger-equals' }
+        @{ arg = '-l:console;verbosity=detailed';       dir = 'repo-logger-short' }
+    ) {
+        $recorded = runAndCaptureArgs @("fake.csproj", $arg) "$TestDrive/$dir"
+
+        $recorded | Should -Match 'console;verbosity=detailed'
+        $recorded | Should -Not -Match 'verbosity=minimal'
+    }
+}
+
 Describe "Invoke-DotnetTestWithSummary zero-test classification" {
     BeforeAll {
         function newFakeDotnet($dir, $summaryLine) {
@@ -139,5 +195,90 @@ exit /b 0
 
         $result.FatalError | Should -BeNullOrEmpty
         $result.Passed     | Should -Be 3
+    }
+}
+Describe "Invoke-DotnetTestWithSummary failure display budget" {
+    BeforeAll {
+        # A failing test shows up twice: the xUnit adapter's live diagnostic during the run, then
+        # the console logger's detail block afterwards.
+        function newFailingFakeDotnet($dir, [string[]] $testNames) {
+            New-Item $dir -ItemType Directory -Force | Out-Null
+            $lines  = @('@echo off',
+                        'echo Test run for foo.dll (.NETCoreApp)',
+                        'echo Starting test execution, please wait...')
+            $lines += $testNames | ForEach-Object { "echo [xUnit.net 00:00:00.11]     $_ [FAIL]" }
+            $lines += $testNames | ForEach-Object {
+                "echo   Failed $_ [1 ms]"
+                'echo   Error Message:'
+                'echo    Assert.Equal() Failure'
+            }
+            $lines += "echo Failed!  - Failed:     $($testNames.Count), Passed:     0, Skipped:     0, " +
+                      "Total:     $($testNames.Count), Duration: 1 ms"
+            $lines += 'exit /b 0'
+            Set-Content "$dir/dotnet.cmd" ($lines -join "`r`n") -Encoding utf8NoBOM
+            $dir
+        }
+
+        function runFailingTests($fakeDir, $repoRoot, [switch] $PassThru) {
+            New-Item $repoRoot -ItemType Directory -Force | Out-Null
+            $savedPath = $env:PATH
+            $env:PATH = "$fakeDir;$env:PATH"
+            try {
+                & $script:dotnetScript -TestArgs @("fake.csproj") -NoCoverage -RepoRoot $repoRoot `
+                    -OutputDir "$repoRoot/auto/testRuns" -PassThru:$PassThru
+            } finally {
+                $env:PATH = $savedPath
+            }
+        }
+
+        $script:threeFailures = @('HelloWorld.Tests.Alpha', 'HelloWorld.Tests.Beta', 'HelloWorld.Tests.Gamma')
+
+        # A failure line carrying no test name in either shape.
+        function newUnnamedFailureFakeDotnet($dir) {
+            New-Item $dir -ItemType Directory -Force | Out-Null
+            Set-Content "$dir/dotnet.cmd" (@'
+@echo off
+echo Test run for foo.dll (.NETCoreApp)
+echo Starting test execution, please wait...
+echo Failed
+echo Failed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 1 ms
+exit /b 0
+'@.Trim()) -Encoding utf8NoBOM
+            $dir
+        }
+    }
+
+    It "counts each failing test once, not once per line naming it" {
+        $fake = newFailingFakeDotnet "$TestDrive/fake-3fail" $script:threeFailures
+
+        $result = runFailingTests $fake "$TestDrive/repo-3fail" -PassThru
+
+        $result.Failed       | Should -Be 3
+        $result.FailuresSeen | Should -Be 3
+    }
+
+    It "shows every failing test's detail when the run is under the budget" {
+        $fake = newFailingFakeDotnet "$TestDrive/fake-3fail-shown" $script:threeFailures
+
+        $output = runFailingTests $fake "$TestDrive/repo-3fail-shown"
+
+        $output | Where-Object { $_ -match 'Failed HelloWorld\.Tests\.Gamma' } | Should -Not -BeNullOrEmpty
+    }
+
+    It "stops at the threshold, counting tests rather than output lines" {
+        $names = 1..7 | ForEach-Object { "HelloWorld.Tests.Case$_" }
+        $fake  = newFailingFakeDotnet "$TestDrive/fake-7fail" $names
+
+        $result = runFailingTests $fake "$TestDrive/repo-7fail" -PassThru
+
+        $result.Failed       | Should -Be 7
+        $result.FailuresSeen | Should -Be $result.FailureThreshold
+    }
+    It "counts a failure line that names no test on its own" {
+        $fake = newUnnamedFailureFakeDotnet "$TestDrive/fake-unnamed"
+
+        $result = runFailingTests $fake "$TestDrive/repo-unnamed" -PassThru
+
+        $result.FailuresSeen | Should -Be 1
     }
 }

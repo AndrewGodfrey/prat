@@ -52,7 +52,14 @@ $RepoRoot = $RepoRoot -replace '\\', '/'
 # Use -tl:off so we get parseable line-by-line output instead of terminal logger's progress UI.
 # Use -v:quiet to suppress per-project "succeeded" lines during build.
 # The test runner's own output (pass/fail) still comes through.
-$dotnetTestArgs = @("-tl:off", "-v:quiet") + $TestArgs
+# -v:quiet also drops the console logger's per-test output, so a failing test's error message and
+# stack trace never print (xUnit still names the test in its own "[FAIL]" line). An explicit
+# minimal console logger brings that detail back, ahead of $TestArgs so a caller's trailing "--"
+# runsettings block can't swallow it. A caller's own console logger wins: the last --logger spec
+# for a given logger is the one vstest uses, so ours would override the verbosity they asked for.
+$callerSetConsoleLogger = ($TestArgs -join ' ') -match '(^|\s)(--logger|-l)[:= ]"?console\b'
+$consoleLogger  = if ($callerSetConsoleLogger) { @() } else { @("--logger", "console;verbosity=minimal") }
+$dotnetTestArgs = @("-tl:off", "-v:quiet") + $consoleLogger + $TestArgs
 if ($NoBuild) { $dotnetTestArgs += "--no-build" }
 
 # Parse dotnet test summary line. Handles both terminal logger and classic formats:
@@ -80,6 +87,16 @@ function parseTestResult($line) {
     return $null
 }
 
+# The failing test a line names, or $null if it names none (such a line counts on its own).
+# Two shapes name the same test: the framework's own diagnostic during the run
+# ("[xUnit.net 00:00:00.11]     Ns.Cls.Test [FAIL]") and the console logger's detail header
+# afterwards ("  Failed Ns.Cls.Test [1 ms]").
+function failingTestName($line) {
+    if ($line -match '^\s*Failed\s+(\S+)') { return $Matches[1] }
+    if ($line -match '(\S+)\s+\[FAIL\]')   { return $Matches[1] }
+    return $null
+}
+
 if (-not $NoCoverage -and $CoverageCollector -eq "dotnet-coverage") {
     if (-not (Get-Command dotnet-coverage -ErrorAction SilentlyContinue)) {
         throw "dotnet-coverage not found. Install it with: dotnet tool install --global dotnet-coverage"
@@ -87,11 +104,12 @@ if (-not $NoCoverage -and $CoverageCollector -eq "dotnet-coverage") {
 }
 
 $runState = @{
-    result      = $null
+    result       = $null
     failuresSeen = 0
-    inFailure   = $false
-    buildDone   = $false
-    exitCode    = 0
+    failureNames = [System.Collections.Generic.HashSet[string]]::new()
+    inFailure    = $false
+    buildDone    = $false
+    exitCode     = 0
 }
 
 $coverageCollectorLocal = $CoverageCollector  # capture for closures
@@ -161,15 +179,22 @@ $testCommand = if (-not $NoCoverage -and $coverageCollectorLocal -eq "dotnet-cov
             return $null
         }
 
-        # Show failure lines (red), up to threshold
+        # Show failure lines (red), up to threshold. The threshold budgets failing *tests*, each of
+        # which names itself on two lines (see failingTestName) — spending a unit on both would halve
+        # the budget and drive Write-TestRunResult's suppressed count (Failed - FailuresSeen) negative,
+        # hiding the fact that anything was suppressed.
         if ($line.line -match '^\s*Failed|\[FAIL\]') {
-            if ($state.failuresSeen -lt $state.failureThreshold) {
-                $state.failuresSeen++
+            $failedTest   = failingTestName $line.line
+            $alreadyShown = $failedTest -and $state.failureNames.Contains($failedTest)
+            if ($alreadyShown -or $state.failuresSeen -lt $state.failureThreshold) {
+                if (-not $alreadyShown) {
+                    $state.failuresSeen++
+                    if ($failedTest) { $state.failureNames.Add($failedTest) | Out-Null }
+                }
                 $state.inFailure = $true
                 return Format-AnsiText $line.line 91
-            } else {
-                $state.inFailure = $false
             }
+            $state.inFailure = $false
             return $null
         }
 
