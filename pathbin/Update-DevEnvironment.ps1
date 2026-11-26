@@ -15,8 +15,10 @@ try {
     foreach ($layer in $layers) {
         Set-Location $layer.Path
         $branch = git rev-parse --abbrev-ref HEAD
-        if ($branch -ne 'main') {
-            throw "$($layer.Name): not on main (on '$branch') — switch to main before running ude"
+
+        $mainBranch = $layer.MainBranch ?? 'main'
+        if ($branch -ne $mainBranch) {
+            throw "$($layer.Name): not on $mainBranch (on '$branch') — switch to main before running ude"
         }
     }
 
