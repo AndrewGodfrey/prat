@@ -83,6 +83,8 @@ as that repo.
   code repos' paths from the task or `Get-PratProject`, and run git, builds and tests there.
 - One session may change several repos (e.g. code plus its docs repo). Work in each repo's existing checkout. Don't
   create worktrees, clones, branches or per-repo sessions unless asked.
+- To start another session, open it in a role folder, not a code repo. Pick the appropriate role from context,
+  e.g. often it will be the same role the current session is in.
 - Each repo has one checkout per machine, shared by concurrent workstreams. A repo is single-checkout unless
   explicitly vetted for multi-worktree use: build/test in the primary checkout only; any 2nd clone or worktree
   is read-only. Each workstream's topic branch (created by the user or on request) is switched in place; ask
