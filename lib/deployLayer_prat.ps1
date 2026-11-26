@@ -18,6 +18,7 @@ function main($Force) {
 
         # This is already done in Install-PratPhase3.ps1. Just putting it here for ease of Prat development.
         Install-PratPackage $it "pester"
+        Install-PratPackage $it "pytest"
     } catch {
         if ($null -ne $it) { $it.ReportErrorContext($error[0]) }
         throw
