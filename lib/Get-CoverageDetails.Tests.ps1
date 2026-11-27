@@ -790,9 +790,9 @@ Describe "Get-CoverageDetails" {
             $xml = @'
 <coverage>
   <packages>
-    <package name="prigTools">
+    <package name="myTools">
       <classes>
-        <class filename="C:/repo/pkg/prigTools.py">
+        <class filename="C:/repo/pkg/myTools.py">
           <methods/>
           <lines>
             <line number="1" hits="1" branch="False" />
@@ -810,17 +810,17 @@ Describe "Get-CoverageDetails" {
 
             $result = & $script -CoverageFile $f
 
-            $methods = $result.perFileMethodData["C:/repo/pkg/prigTools.py"]
+            $methods = $result.perFileMethodData["C:/repo/pkg/myTools.py"]
             $methods | Should -HaveCount 1
             $methods[0].name                    | Should -Be "(file)"
             $methods[0].startLine               | Should -Be 1
             $methods[0].LINE.covered             | Should -Be 2
             $methods[0].LINE.missed              | Should -Be 1
 
-            $result.perFileReport["C:/repo/pkg/prigTools.py"].LINE.covered | Should -Be 2
-            $result.perFileReport["C:/repo/pkg/prigTools.py"].LINE.missed  | Should -Be 1
-            $result.perFileReport["C:/repo/pkg/prigTools.py"].METHOD.covered | Should -Be 1
-            $result.perFileReport["C:/repo/pkg/prigTools.py"].METHOD.missed  | Should -Be 0
+            $result.perFileReport["C:/repo/pkg/myTools.py"].LINE.covered | Should -Be 2
+            $result.perFileReport["C:/repo/pkg/myTools.py"].LINE.missed  | Should -Be 1
+            $result.perFileReport["C:/repo/pkg/myTools.py"].METHOD.covered | Should -Be 1
+            $result.perFileReport["C:/repo/pkg/myTools.py"].METHOD.missed  | Should -Be 0
             $result.totals.LINE.covered | Should -Be 2
             $result.totals.LINE.missed  | Should -Be 1
         }
@@ -829,7 +829,7 @@ Describe "Get-CoverageDetails" {
             $xml = @'
 <coverage>
   <packages>
-    <package name="prigTools">
+    <package name="myTools">
       <classes>
         <class filename="C:/repo/pkg/Empty.py">
           <methods/>
