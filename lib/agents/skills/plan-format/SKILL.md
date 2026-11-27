@@ -106,8 +106,8 @@ needed, and edit the plan file as decisions land. Executing the plan's steps is 
 
 ## Companion files
 
-**`_background.md`** — settled design. Once design discussion closes, move everything between the
-opening pointers and the steps here. Audience is planning sessions; implementation sessions
+**`_background.md`** — settled design. Create it as soon as any settled design content exists — the main file tracks step status,
+background lives here. Audience is planning sessions; implementation sessions
 shouldn't need it, because the refine pass makes a step self-contained — an implementation
 session reaching for the background signals an under-specified step. (Older plans may have a
 `_ref.md` companion instead — same role; leave the name as is.)
@@ -126,8 +126,8 @@ search of the plans finds it. To find the design doc: the component directory's 
 it, else look in a `docs/` beside the component, then the user's default docs location. If there
 is none, the `_done.md` entry holds the whole record.
 
-Split content into a companion file when it would make agents re-read stable material every time
-they update the plan. If content changes alongside the action steps, keep it in the main file.
+Keep the main file to steps and status only — any settled design content, however short, belongs
+in `_background.md`. Content that changes alongside the action steps stays in the main file.
 
 If splitting an existing plan file to create a `_background.md`, load `working-with-git` first and
 follow the rename pattern: `git mv` the original to the new name, commit as a pure rename, then
