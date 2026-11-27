@@ -1,8 +1,9 @@
 ---
 name: wrap
-description: Wraps up the active unit of work in the active plan. User-invocable only, except in a
-  `branch-review` run, where the agent invokes it itself at the close of each step — otherwise do
-  not trigger autonomously.
+description: Advance the active plan's current unit one lifecycle notch — approve a refined unit, or
+  close a reviewed one. Scopes larger than a unit have their own verbs (`/wrap-session`,
+  `/land-step`, `/end-plan`). User-invocable only, except in a `branch-review` run, where the agent
+  invokes it itself at the close of each step — otherwise do not trigger autonomously.
 ---
 
 The "active plan" is the plan file most relevant to this session — infer from context, or ask if
@@ -11,8 +12,19 @@ unclear. A "unit" is the plan's current-unit pointer — a contiguous run of one
 
 This skill advances the active plan one lifecycle notch — records the user's approval of a
 refined unit (at ready-for-refined-step-review) or closes a completed one (at ready-for-user-review) — and
-always runs /reflect, which at this point records findings rather than making changes. /wrap-session closes a
-session instead.
+always runs /reflect, which at this point records findings rather than making changes.
+
+`/wrap` never acts on more than the current unit. The larger scopes each have their own verb, and
+a session that says "wrap" without one of these names means this skill — one notch of one unit:
+
+| Scope | Verb |
+| --- | --- |
+| a session, with its unit still open | `/wrap-session` — checkpoints the step bodies, leaves the state alone |
+| a step whose PR has merged | `/land-step` — moves it from pr-workflow's "In review" to the done file |
+| the whole plan | `/end-plan` — runs `/wrap` on the last unit first, then deletes the plan file |
+
+A branch has no verb of its own. In `branch-review` the agent `/wrap`s each step as it goes, and
+the branch is reviewed afterwards, then closed by `/land-step` or `/end-plan`.
 
 ## 0. Read the state
 

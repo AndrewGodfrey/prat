@@ -1,6 +1,7 @@
 ---
 name: land-step
-description: Part of the pr-workflow skill. User-invocable only — do not trigger autonomously.
+description: Move a step whose PR has merged, from the active plan's "In review" section to the done
+  file. Part of the pr-workflow skill. User-invocable only — do not trigger autonomously.
 ---
 
 Part of the `pr-workflow` skill — only meaningful when that skill is active. Moves a landed "In review" step to the done file.
